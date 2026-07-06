@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>개인 채용 ERP</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">HR</div>
+        <div>
+          <h1>개인 채용 ERP</h1>
+          <p>Vercel 배포용 v1</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-view="home">홈</button>
+        <button class="nav-btn" data-view="list">지원자 목록</button>
+        <button class="nav-btn" data-view="form">지원자 입력</button>
+        <button class="nav-btn" data-view="backup">백업/내보내기</button>
+      </nav>
+
+      <div class="security-box">
+        <strong>보안 안내</strong>
+        <p>이 버전은 서버 저장을 하지 않습니다. 데이터는 현재 브라우저의 localStorage에만 저장됩니다.</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h2 id="pageTitle">홈</h2>
+          <p id="pageSubTitle">오늘 확인할 지원자와 요약을 봅니다.</p>
+        </div>
+        <div class="top-actions">
+          <button id="sampleBtn" class="btn secondary">샘플 넣기</button>
+          <button id="newBtn" class="btn primary">신규 지원자</button>
+        </div>
+      </header>
+
+      <section id="homeView" class="view active">
+        <div class="stats-grid">
+          <div class="stat-card"><span>전체 지원자</span><strong id="statTotal">0</strong></div>
+          <div class="stat-card"><span>천안 지원자</span><strong id="statCheonan">0</strong></div>
+          <div class="stat-card"><span>평택 지원자</span><strong id="statPyeongtaek">0</strong></div>
+          <div class="stat-card"><span>연락 필요</span><strong id="statNeedContact">0</strong></div>
+        </div>
+
+        <div class="panel-grid">
+          <section class="panel">
+            <div class="panel-header">
+              <h3>오늘 볼 사람</h3>
+              <button class="link-btn" data-filter-shortcut="needContact">연락 필요만 보기</button>
+            </div>
+            <div id="todoList" class="card-list empty-ready"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>빠른 등록</h3>
+            </div>
+            <form id="quickForm" class="quick-form">
+              <input name="name" placeholder="성명" required />
+              <input name="phone" placeholder="연락처" />
+              <select name="workplace">
+                <option value="천안">천안</option>
+                <option value="평택">평택</option>
+                <option value="기타">기타</option>
+              </select>
+              <select name="contactStatus">
+                <option value="미연락">미연락</option>
+                <option value="연락완료">연락완료</option>
+                <option value="부재중">부재중</option>
+                <option value="면접예정">면접예정</option>
+                <option value="보류">보류</option>
+              </select>
+              <button class="btn primary" type="submit">빠른 등록</button>
+            </form>
+          </section>
+        </div>
+      </section>
+
+      <section id="listView" class="view">
+        <section class="panel">
+          <div class="filters">
+            <input id="searchInput" class="search" placeholder="이름, 연락처, 학교, 전공, 자격증 검색" />
+            <select id="workplaceFilter">
+              <option value="all">전체 근무지</option>
+              <option value="천안">천안</option>
+              <option value="평택">평택</option>
+              <option value="기타">기타/미입력</option>
+            </select>
+            <select id="statusFilter">
+              <option value="all">전체 상태</option>
+              <option value="미연락">미연락</option>
+              <option value="부재중">부재중</option>
+              <option value="연락완료">연락완료</option>
+              <option value="면접예정">면접예정</option>
+              <option value="면접완료">면접완료</option>
+              <option value="입사예정">입사예정</option>
+              <option value="보류">보류</option>
+              <option value="불합격">불합격</option>
+            </select>
+          </div>
+
+          <div class="segmented">
+            <button class="segment active" data-workplace-tab="all">전체</button>
+            <button class="segment" data-workplace-tab="천안">천안 지원자</button>
+            <button class="segment" data-workplace-tab="평택">평택 지원자</button>
+            <button class="segment" data-workplace-tab="기타">기타/미입력</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="applicant-table">
+              <thead>
+                <tr>
+                  <th>NO</th>
+                  <th>지원일</th>
+                  <th>상태</th>
+                  <th>근무지</th>
+                  <th>성명</th>
+                  <th>연락처</th>
+                  <th>학교</th>
+                  <th>전공</th>
+                  <th>자격증</th>
+                  <th>점수</th>
+                  <th>면접</th>
+                  <th>메모</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+              <tbody id="applicantTbody"></tbody>
+            </table>
+          </div>
+          <div id="emptyList" class="empty-state">등록된 지원자가 없습니다.</div>
+        </section>
+      </section>
+
+      <section id="formView" class="view">
+        <section class="panel">
+          <div class="panel-header">
+            <h3 id="formTitle">지원자 입력</h3>
+            <button id="resetFormBtn" class="btn secondary" type="button">입력 초기화</button>
+          </div>
+
+          <form id="applicantForm" class="form-grid">
+            <input type="hidden" name="id" />
+            <label>지원날짜<input name="applyDate" type="date" /></label>
+            <label>연락상태
+              <select name="contactStatus">
+                <option value="미연락">미연락</option>
+                <option value="연락완료">연락완료</option>
+                <option value="부재중">부재중</option>
+                <option value="문자발송">문자발송</option>
+                <option value="면접예정">면접예정</option>
+                <option value="면접완료">면접완료</option>
+                <option value="입사예정">입사예정</option>
+                <option value="보류">보류</option>
+                <option value="불합격">불합격</option>
+              </select>
+            </label>
+            <label>면접날짜<input name="interviewDate" type="date" /></label>
+            <label>면접시간<input name="interviewTime" type="time" /></label>
+            <label>입사날짜<input name="joinDate" type="date" /></label>
+            <label>지원경로<input name="source" placeholder="사람인/잡코리아/기타" /></label>
+            <label>지원근무지
+              <select name="workplace">
+                <option value="천안">천안</option>
+                <option value="평택">평택</option>
+                <option value="기타">기타</option>
+              </select>
+            </label>
+            <label>성명<input name="name" required /></label>
+            <label>연락처<input name="phone" /></label>
+            <label>이메일<input name="email" type="email" /></label>
+            <label>생년월일<input name="birth" placeholder="예: 1998.06.19" /></label>
+            <label>지역<input name="region" placeholder="예: 평택, 오산, 천안" /></label>
+            <label>학교<input name="school" /></label>
+            <label>최종학력<input name="education" placeholder="고졸/전문대졸/대졸/재학/예정" /></label>
+            <label>학과/전공<input name="major" /></label>
+            <label>학점<input name="gpa" placeholder="예: 3.69/4.5" /></label>
+            <label>경력<input name="career" placeholder="예: 반도체 장비 셋업 1년" /></label>
+            <label>자격증<input name="certs" placeholder="예: 산업안전산업기사, 전기기능사" /></label>
+            <label>출퇴근 여부<input name="commute" placeholder="가능/확인필요" /></label>
+            <label>점수<input name="score" type="number" min="0" max="100" placeholder="0~100" /></label>
+            <label class="full">상담내용/메모<textarea name="memo" rows="4"></textarea></label>
+            <label class="full">검토의견<textarea name="review" rows="3" placeholder="면접 추천 사유, 확인 필요사항 등"></textarea></label>
+            <div class="form-actions full">
+              <button class="btn primary" type="submit">저장</button>
+              <button id="deleteCurrentBtn" class="btn danger" type="button">현재 지원자 삭제</button>
+            </div>
+          </form>
+        </section>
+      </section>
+
+      <section id="backupView" class="view">
+        <section class="panel">
+          <h3>백업 / 내보내기</h3>
+          <p class="muted">지원자 데이터는 현재 브라우저에만 저장됩니다. 주기적으로 백업해두는 것을 추천합니다.</p>
+          <div class="backup-actions">
+            <button id="exportCsvBtn" class="btn primary">CSV 다운로드</button>
+            <button id="exportJsonBtn" class="btn secondary">JSON 백업 다운로드</button>
+            <label class="file-label">
+              JSON 백업 가져오기
+              <input id="importJsonInput" type="file" accept="application/json,.json" />
+            </label>
+            <button id="clearAllBtn" class="btn danger">전체 데이터 삭제</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h3>다음 단계 준비</h3>
+          <p class="muted">이력서 자동분석 기능은 다음 단계에서 PDF/DOCX 브라우저 내부 분석 방식으로 추가하는 것을 권장합니다. 이 v1에는 개인정보 파일 업로드 기능을 넣지 않았습니다.</p>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>
