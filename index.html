@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.0</title>
+  <title>이력서 관리 시스템 v10.1</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.0</p>
+          <p>Recruit ERP 2.0 · v10.1</p>
         </div>
       </div>
       <nav class="nav">
@@ -137,6 +137,7 @@
       <span>① 기본정보</span>
       <span>② 전화인터뷰</span>
       <span>③ 직무검토</span>
+      <span>Enter = 다음 칸 이동</span>
     </div>
   </div>
   <div class="form-hero-actions">
@@ -162,6 +163,7 @@
       <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
       <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학 등" /></label>
       <label>지역(시)<input id="region" placeholder="평택, 천안, 오산 등" /></label>
+      <label class="education-level">학력구분<select id="education"><option value="">선택</option><option>고졸</option><option>전졸</option><option>대졸</option><option>대학원</option><option>기타</option></select></label>
       <label>학교<input id="school" placeholder="학교명" /></label>
       <label>학과<input id="major" placeholder="전공/학과" /></label>
       <label class="wide">경력<input id="career" placeholder="반도체, PM, 설비, FE, FAB, PLC, 정비, 교대 등" /></label>

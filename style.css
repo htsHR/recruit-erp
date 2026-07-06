@@ -199,3 +199,61 @@ input::placeholder,textarea::placeholder{color:#8b98aa;font-weight:600}.sub-fiel
 @media(max-width:1180px){.app-shell{grid-template-columns:232px 1fr}.main{padding:22px}.topbar{margin:-22px -22px 22px;padding:16px 22px}.form-hero h3{font-size:30px}}
 @media(max-width:900px){.app-shell{display:block}.sidebar{position:relative;height:auto}.security-note{position:static;margin-top:16px}.main{padding:18px}.topbar{position:relative;margin:-18px -18px 18px}.stats-grid{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}}
 @media(max-width:700px){.form-hero{border-radius:24px}.form-hero h3{font-size:26px}.form-card-main{border-radius:22px;padding:17px}table{min-width:900px}}
+
+
+/* v10.1 입력 편의성·디테일 튜닝 */
+.form-hero-tags span:last-child{
+  background:rgba(20,184,166,.22);
+  border-color:rgba(153,246,228,.45);
+  color:#ecfeff;
+}
+.education-level select{
+  border-color:#93c5fd;
+  background:linear-gradient(180deg,#ffffff,#f5f9ff);
+  font-weight:900;
+}
+.education-level:before{
+  content:'🎓';
+  position:absolute;
+  transform:translateY(-2px);
+  opacity:.9;
+}
+.education-level{
+  position:relative;
+}
+.education-level span{display:none}
+.core-card .core-input-grid label{
+  position:relative;
+}
+.core-card .core-input-grid label:nth-child(12),
+.core-card .core-input-grid label:nth-child(13),
+.core-card .core-input-grid label:nth-child(14){
+  padding:12px;
+  border-radius:17px;
+  background:linear-gradient(180deg,#fbfdff,#f3f7ff);
+  border:1px solid #d9e5f7;
+}
+.core-card .core-input-grid label:nth-child(12)::after,
+.core-card .core-input-grid label:nth-child(13)::after,
+.core-card .core-input-grid label:nth-child(14)::after{
+  content:'이력서';
+  position:absolute;
+  right:12px;
+  top:11px;
+  font-size:10px;
+  font-weight:1000;
+  color:#2563eb;
+  background:#eaf2ff;
+  border:1px solid #cfe0ff;
+  border-radius:999px;
+  padding:2px 7px;
+}
+input:focus,select:focus,textarea:focus{
+  transform:translateY(-1px);
+}
+.form-card-main{
+  transition:box-shadow .18s ease, transform .18s ease;
+}
+.form-card-main:hover{
+  box-shadow:0 20px 44px rgba(15,23,42,.105);
+}
