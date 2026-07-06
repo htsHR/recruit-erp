@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v9.4</title>
+  <title>이력서 관리 시스템 v9.6</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
         <div class="brand-mark">이</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Resume Management v9.4</p>
+          <p>Resume Management v9.6</p>
         </div>
       </div>
       <nav class="nav">
@@ -124,91 +124,103 @@
       </section>
 
       <section id="form" class="page">
-        <form id="applicantForm" class="panel applicant-form-v5">
-          <input type="hidden" id="editId" />
-          <div class="form-top-actions">
-            <button type="submit" class="primary" id="submitBtn">지원자 등록</button>
-            <button type="button" class="ghost" id="btnResetForm">초기화</button>
-          </div>
+        <form id="applicantForm" class="applicant-form-v6">
 
-          <div class="split-form-grid">
-            <section class="form-card-main">
-              <div class="section-title">
-                <span>지원 기본정보</span>
-              </div>
-              <div class="form-grid two-grid core-input-grid">
-                <label>지원날짜<input id="applyDate" type="date" /></label>
-                <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
-                <label>성명<input id="name" required placeholder="홍길동" /></label>
-                <label>성별<select id="gender"><option value="">선택</option><option>남자</option><option>여자</option></select></label>
-                <label>생년월일<input id="birthYear" placeholder="1998.06.19" /></label>
-                <label>연령<input id="age" placeholder="자동/수동" /></label>
-                <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
-                <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
-                <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학 등" /></label>
-                <label>지역(시)<input id="region" placeholder="평택, 천안, 오산 등" /></label>
-                <label>최종학교<input id="school" placeholder="학교명" /></label>
-                <label>학과<input id="major" placeholder="전공/학과" /></label>
-                <label class="wide">경력<input id="career" placeholder="반도체, PM, 설비, FE, FAB, PLC, 정비, 교대 등" /></label>
-                <label class="wide">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전, 지게차, 운전면허 등" /></label>
-                <label class="compact-field">외국어/기타자격<input id="languageEtc" placeholder="OPIC, 토익스피킹 등" /></label>
-                <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>출근</option><option>보류</option><option>불합격</option><option>부적합</option><option>철회</option><option>취소</option><option>전형마감</option><option>연락두절</option></select></label>
-              </div>
-            </section>
+<input type="hidden" id="editId" />
 
-            <section class="form-card-main interview-card">
-              <div class="section-title">
-                <span>전화인터뷰·진행관리</span>
-              </div>
-              <div class="form-grid two-grid">
-                <label class="wide dorm-only">기숙사 사용<select id="dormUse"><option value="">선택</option><option>사용</option><option>미사용</option><option>확인필요</option><option>해당없음</option></select></label>
-                <label>면접날짜<input id="interviewDate" type="date" /></label>
-                <label>면접시간<select id="interviewTime"><option value="">선택</option><option>08:00</option><option>08:30</option><option>09:00</option><option>09:30</option><option>10:00</option><option>10:30</option><option>11:00</option><option>11:30</option><option>12:00</option><option>12:30</option><option>13:00</option><option>13:30</option><option>14:00</option><option>14:30</option><option>15:00</option><option>15:30</option><option>16:00</option><option>16:30</option><option>17:00</option><option>17:30</option><option>18:00</option><option>18:30</option><option>19:00</option><option>19:30</option><option>20:00</option></select></label>
-                <label>입사날짜<input id="hireDate" type="date" /></label>
-                <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
-                <label class="wide">상담내용<textarea id="consult" rows="4" placeholder="기숙사 사용 여부, 면접 가능일, 특이사항"></textarea></label>
-                <label class="wide">메모/다음액션<textarea id="memo" rows="3" placeholder="다음 연락, 내부 공유사항, 추가 확인사항"></textarea></label>
-              </div>
-            </section>
-          </div>
+<div class="form-hero designer-hero">
+  <div class="form-hero-copy">
+    <p class="form-kicker">NEW APPLICANT</p>
+    <h3>지원자 기본정보 입력</h3>
+    <p>이력서 핵심정보와 전화인터뷰 내용을 한 화면에서 정리합니다. 필요한 정보만 또렷하게 보이도록 구성했습니다.</p>
+    <div class="form-hero-tags">
+      <span>기본정보</span>
+      <span>전화인터뷰</span>
+      <span>직무검토</span>
+    </div>
+  </div>
+  <div class="form-hero-actions">
+    <button type="submit" class="primary hero-submit" id="submitBtn">지원자 등록</button>
+    <button type="button" class="ghost hero-reset" id="btnResetForm">초기화</button>
+  </div>
+</div>
 
-          <div class="wide duplicate-box" id="duplicateBox"></div>
+<div class="split-form-grid refined-grid">
+  <section class="form-card-main core-card">
+    <div class="section-title compact-title">
+      <span>기본정보</span>
+    </div>
+    <div class="form-grid two-grid core-input-grid">
+      <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option></select></label>
+      <label>지원날짜<input id="applyDate" type="date" /></label>
+      <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
+      <label>성명<input id="name" required placeholder="홍길동" /></label>
+      <label>성별<select id="gender"><option value="">선택</option><option>남자</option><option>여자</option></select></label>
+      <label>생년월일<input id="birthYear" placeholder="1998.06.19" /></label>
+      <label>연령<input id="age" placeholder="자동/수동" /></label>
+      <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
+      <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
+      <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학 등" /></label>
+      <label>지역(시)<input id="region" placeholder="평택, 천안, 오산 등" /></label>
+      <label>학교<input id="school" placeholder="학교명" /></label>
+      <label>학과<input id="major" placeholder="전공/학과" /></label>
+      <label class="wide">경력<input id="career" placeholder="반도체, PM, 설비, FE, FAB, PLC, 정비, 교대 등" /></label>
+      <label class="wide cert-field">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전, 지게차, 운전면허 등" /></label>
+      <label class="wide sub-field">외국어/기타자격<input id="languageEtc" placeholder="OPIC, 토익스피킹, 기타 자격 등" /></label>
+      <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>출근</option><option>보류</option><option>불합격</option><option>부적합</option><option>철회</option><option>취소</option><option>전형마감</option><option>연락두절</option></select></label>
+    </div>
+  </section>
 
-          <details class="form-section compact-details">
-            <summary><span>직무검토</span><small>검토점수·확인필요사항은 꼼꼼히 볼 때만 사용</small></summary>
-            <div class="form-grid detail-lite-grid">
-              <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option><option>재직중</option><option>재학중</option><option>PM경력</option><option>설비경력</option><option>확인필요</option></select></label>
-              <label>직무적합 분류<select id="jobFitCategory"><option value="">선택</option><option>PM 직접경력자</option><option>반도체 장비/FE 경험자</option><option>전기·설비 정비 경험자</option><option>기계·금형·차량정비 경험자</option><option>시설운영/설비이상대응 경험자</option><option>관련전공 신입</option><option>현장근무 적응형</option><option>직무연관 낮음</option><option>확인필요</option></select></label>
-              <label class="wide">판정사유<input id="decisionReason" placeholder="전공 적합, 경력 우수, 반도체 직접경험 확인 필요 등" /></label>
-              <div class="wide checkbox-block"><strong>확인필요사항</strong><div class="checkbox-grid compact-checks" id="checkNeedsGroup">
-                <label><input type="checkbox" name="checkNeeds" value="생년월일 확인" /> 생년월일 확인</label>
-                <label><input type="checkbox" name="checkNeeds" value="연락처 확인" /> 연락처 확인</label>
-                <label><input type="checkbox" name="checkNeeds" value="이메일 확인" /> 이메일 확인</label>
-                <label><input type="checkbox" name="checkNeeds" value="졸업/재학 확인" /> 졸업/재학 확인</label>
-                <label><input type="checkbox" name="checkNeeds" value="입사가능일 확인" /> 입사가능일 확인</label>
-                <label><input type="checkbox" name="checkNeeds" value="퇴사 가능일 확인" /> 퇴사 가능일 확인</label>
-                <label><input type="checkbox" name="checkNeeds" value="교대근무 가능 여부" /> 교대근무 가능 여부</label>
-                <label><input type="checkbox" name="checkNeeds" value="기숙사 사용 확인" /> 기숙사 사용 확인</label>
-                <label><input type="checkbox" name="checkNeeds" value="근무지 전환 가능 여부" /> 근무지 전환 가능 여부</label>
-                <label><input type="checkbox" name="checkNeeds" value="PM社 6개월 이상 경력기술서" /> PM社 경력기술서</label>
-                <label><input type="checkbox" name="checkNeeds" value="반도체 직접경험 확인" /> 반도체 직접경험 확인</label>
-                <label><input type="checkbox" name="checkNeeds" value="장비명/공정명 확인" /> 장비명/공정명 확인</label>
-              </div></div>
-              <div class="wide checkbox-block"><strong>자소서/태도 키워드</strong><div class="checkbox-grid compact-checks" id="selfIntroKeywordsGroup">
-                <label><input type="checkbox" name="selfIntroKeywords" value="책임감" /> 책임감</label>
-                <label><input type="checkbox" name="selfIntroKeywords" value="성실함" /> 성실함</label>
-                <label><input type="checkbox" name="selfIntroKeywords" value="교대근무 적응" /> 교대근무 적응</label>
-                <label><input type="checkbox" name="selfIntroKeywords" value="안전수칙 준수" /> 안전수칙 준수</label>
-                <label><input type="checkbox" name="selfIntroKeywords" value="문제해결" /> 문제해결</label>
-                <label><input type="checkbox" name="selfIntroKeywords" value="정비/점검" /> 정비/점검</label>
-                <label><input type="checkbox" name="selfIntroKeywords" value="소통/인수인계" /> 소통/인수인계</label>
-                <label><input type="checkbox" name="selfIntroKeywords" value="반도체 이해도" /> 반도체 이해도</label>
-                <label><input type="checkbox" name="selfIntroKeywords" value="지원동기 구체성" /> 지원동기 구체성</label>
-              </div></div>
-              <div class="wide score-preview" id="scorePreview">검토점수 미리보기: 0점</div>
-              <div class="wide score-note">검토점수는 참고용이며, 최종 판단은 담당자가 직접 확인합니다. 성별·연령은 검토점수에 반영하지 않습니다.</div>
-            </div>
-          </details>
+  <section class="form-card-main interview-card">
+    <div class="section-title compact-title">
+      <span>전화인터뷰·진행관리</span>
+    </div>
+    <div class="form-grid two-grid">
+      <label class="wide dorm-only">기숙사 사용<select id="dormUse"><option value="">선택</option><option>사용</option><option>미사용</option><option>확인필요</option><option>해당없음</option></select></label>
+      <label>면접날짜<input id="interviewDate" type="date" /></label>
+      <label>면접시간<select id="interviewTime"><option value="">선택</option><option>08:00</option><option>08:30</option><option>09:00</option><option>09:30</option><option>10:00</option><option>10:30</option><option>11:00</option><option>11:30</option><option>12:00</option><option>12:30</option><option>13:00</option><option>13:30</option><option>14:00</option><option>14:30</option><option>15:00</option><option>15:30</option><option>16:00</option><option>16:30</option><option>17:00</option><option>17:30</option><option>18:00</option><option>18:30</option><option>19:00</option><option>19:30</option><option>20:00</option></select></label>
+      <label>입사날짜<input id="hireDate" type="date" /></label>
+      <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
+      <label class="wide">상담내용<textarea id="consult" rows="4" placeholder="기숙사 사용 여부, 면접 가능일, 특이사항"></textarea></label>
+      <label class="wide">판정사유/메모/다음액션<textarea id="memo" rows="4" placeholder="판정사유, 다음 연락, 내부 공유사항, 추가 확인사항"></textarea></label>
+    </div>
+  </section>
+</div>
+
+<div class="wide duplicate-box" id="duplicateBox"></div>
+
+<details class="form-section compact-details review-only">
+  <summary><span>직무검토</span><small>확인필요사항과 검토점수는 필요할 때만 사용</small></summary>
+  <div class="form-grid detail-lite-grid">
+    <div class="wide checkbox-block"><strong>확인필요사항</strong><div class="checkbox-grid compact-checks" id="checkNeedsGroup">
+      <label><input type="checkbox" name="checkNeeds" value="생년월일 확인" /> 생년월일 확인</label>
+      <label><input type="checkbox" name="checkNeeds" value="연락처 확인" /> 연락처 확인</label>
+      <label><input type="checkbox" name="checkNeeds" value="이메일 확인" /> 이메일 확인</label>
+      <label><input type="checkbox" name="checkNeeds" value="졸업/재학 확인" /> 졸업/재학 확인</label>
+      <label><input type="checkbox" name="checkNeeds" value="입사가능일 확인" /> 입사가능일 확인</label>
+      <label><input type="checkbox" name="checkNeeds" value="퇴사 가능일 확인" /> 퇴사 가능일 확인</label>
+      <label><input type="checkbox" name="checkNeeds" value="교대근무 가능 여부" /> 교대근무 가능 여부</label>
+      <label><input type="checkbox" name="checkNeeds" value="기숙사 사용 확인" /> 기숙사 사용 확인</label>
+      <label><input type="checkbox" name="checkNeeds" value="근무지 전환 가능 여부" /> 근무지 전환 가능 여부</label>
+      <label><input type="checkbox" name="checkNeeds" value="PM社 6개월 이상 경력기술서" /> PM社 경력기술서</label>
+      <label><input type="checkbox" name="checkNeeds" value="반도체 직접경험 확인" /> 반도체 직접경험 확인</label>
+      <label><input type="checkbox" name="checkNeeds" value="장비명/공정명 확인" /> 장비명/공정명 확인</label>
+    </div></div>
+    <div class="wide checkbox-block"><strong>자소서/태도 키워드</strong><div class="checkbox-grid compact-checks" id="selfIntroKeywordsGroup">
+      <label><input type="checkbox" name="selfIntroKeywords" value="책임감" /> 책임감</label>
+      <label><input type="checkbox" name="selfIntroKeywords" value="성실함" /> 성실함</label>
+      <label><input type="checkbox" name="selfIntroKeywords" value="교대근무 적응" /> 교대근무 적응</label>
+      <label><input type="checkbox" name="selfIntroKeywords" value="안전수칙 준수" /> 안전수칙 준수</label>
+      <label><input type="checkbox" name="selfIntroKeywords" value="문제해결" /> 문제해결</label>
+      <label><input type="checkbox" name="selfIntroKeywords" value="정비/점검" /> 정비/점검</label>
+      <label><input type="checkbox" name="selfIntroKeywords" value="소통/인수인계" /> 소통/인수인계</label>
+      <label><input type="checkbox" name="selfIntroKeywords" value="반도체 이해도" /> 반도체 이해도</label>
+      <label><input type="checkbox" name="selfIntroKeywords" value="지원동기 구체성" /> 지원동기 구체성</label>
+    </div></div>
+    <div class="wide score-preview" id="scorePreview">검토점수 미리보기: 0점</div>
+    <div class="wide score-note">검토점수는 참고용이며, 최종 판단은 담당자가 직접 확인합니다. 성별·연령은 검토점수에 반영하지 않습니다.</div>
+  </div>
+</details>
         </form>
       </section>
 
