@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v9.6 디자이너 감성 입력 개선 버전
+// 이력서 관리 시스템 v10.0 Recruit ERP 2.0 디자인 베이스
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
