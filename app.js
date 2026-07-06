@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v10.0 Recruit ERP 2.0 디자인 베이스
+// 이력서 관리 시스템 v10.1 Recruit ERP 2.0 입력 편의성 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -233,7 +233,7 @@ function memoBlock(title, value){
 function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a); return `${a.name||'지원자'} / ${a.workplace||'근무지 미입력'} / ${a.phone||'연락처 없음'}
 상태: ${a.status||'-'} / 기숙사: ${a.dormUse||'-'} / 기타: ${a.extra||'-'} / 판정: ${finalDecisionOf(a)} / 검토점수: ${score}점
 직무적합: ${displayCategory(a)} / 경력구분: ${a.careerType||'-'}
-학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'} / 외국어·기타자격: ${a.languageEtc||'-'}
+학력구분: ${a.education||'-'} / 학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'} / 외국어·기타자격: ${a.languageEtc||'-'}
 세부점수: 전공 ${sc.major}/25, 경력 ${sc.career}/35, 자격 ${sc.cert}/20, 현장 ${sc.field}/20
 확인필요: ${a.checkNeeds||'-'}
 자격증: ${a.certs||'-'}
@@ -248,7 +248,7 @@ function viewApplicant(id){
       ${coreItem('연락상태',a.status)}${coreItem('면접일정',interview)}${coreItem('최종판정',finalDecisionOf(a))}
     </div>`;
   const resumeRows = [
-    detailRow('최종학교/전공',[a.school,a.major].filter(Boolean).join(' / ')), detailRow('경력',a.career),
+    detailRow('학력구분',a.education), detailRow('최종학교/전공',[a.school,a.major].filter(Boolean).join(' / ')), detailRow('경력',a.career),
     detailRow('자격증',a.certs), detailRow('외국어/기타자격',a.languageEtc), detailRow('경력구분',a.careerType), detailRow('기숙사 사용',a.dormUse)
   ].join('');
   const manageRows = [
@@ -312,8 +312,8 @@ function download(name, content, type='text/plain;charset=utf-8'){
   const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
 }
 function csv(){
-  const headers=['지원날짜','지원경로','기타','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일','연령','거주지역','기숙사사용','최종학교','전공/학과','외국어/기타자격','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜','면접시간','입사예정일','내최종판정','상담내용','판정/메모/다음액션','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
-  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.extra,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.dormUse,a.school,a.major,a.languageEtc,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.consult,[a.memo,a.decisionReason].filter(Boolean).join(' / '),sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
+  const headers=['지원날짜','지원경로','기타','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일','연령','거주지역','기숙사사용','학력구분','최종학교','전공/학과','외국어/기타자격','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜','면접시간','입사예정일','내최종판정','상담내용','판정/메모/다음액션','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
+  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.extra,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.dormUse,a.education,a.school,a.major,a.languageEtc,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.consult,[a.memo,a.decisionReason].filter(Boolean).join(' / '),sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
   download(`지원자명단_${today()}.csv`,'\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');
 }
 function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resume_management_backup_${today()}.json`,JSON.stringify(applicants,null,2),'application/json'); renderAll(); }
@@ -321,6 +321,17 @@ function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resu
 document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.go)));
 $('applicantForm').addEventListener('input',()=>{ updateScorePreview(); checkDuplicate(); });
+$('applicantForm').addEventListener('keydown', e=>{
+  if(e.key !== 'Enter') return;
+  const tag = e.target.tagName;
+  const type = (e.target.getAttribute('type') || '').toLowerCase();
+  if(tag === 'TEXTAREA' || type === 'submit' || type === 'button') return;
+  e.preventDefault();
+  const form = $('applicantForm');
+  const controls = [...form.querySelectorAll('input:not([type=hidden]), select, textarea')].filter(el=>!el.disabled && el.offsetParent !== null);
+  const idx = controls.indexOf(e.target);
+  if(idx >= 0 && controls[idx+1]) controls[idx+1].focus();
+});
 $('applicantForm').addEventListener('submit',e=>{
   e.preventDefault();
   const f=getForm();
