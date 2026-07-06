@@ -32,3 +32,37 @@ table{min-width:980px}
 .interview-card .section-title small{color:#31537d}
 @media(max-width:1180px){.split-form-grid{grid-template-columns:1fr}.small-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.small-detail-grid{grid-template-columns:1fr}.small-detail-grid .wide{grid-column:1/-1}}
+
+
+/* v9.5 가독성/입력 화면 정리 */
+:root{--line:#cbd5e1;--text:#111827;--muted:#4b5563}
+.form-top-actions{display:flex;justify-content:flex-end;gap:10px;align-items:center;margin-bottom:12px;padding:0 2px}
+.form-top-actions .primary,.form-top-actions .ghost{min-width:112px;height:42px}
+.form-card-main{background:#fff;border-color:#d1dae8;box-shadow:0 8px 22px rgba(15,23,42,.055)}
+.form-card-main.interview-card{background:#fff;border-color:#bfd2ee}
+.section-title{border-bottom:1px solid #e5e7eb;padding-bottom:10px;margin-bottom:14px}
+.section-title span{font-size:17px;color:#0f172a;letter-spacing:-.01em}
+.section-title small{display:none}
+label{color:#1f2937;font-size:13.5px;font-weight:950;letter-spacing:-.01em}
+input,select,textarea{border-color:#cbd5e1;color:#111827;min-height:43px;font-weight:650;background:#fff}
+input::placeholder,textarea::placeholder{color:#9aa4b2;font-weight:500}
+select{font-weight:750}
+.form-grid.two-grid input,.form-grid.two-grid select,.form-grid.two-grid textarea,.detail-lite-grid input,.detail-lite-grid select,.detail-lite-grid textarea{padding:10px 12px}
+.compact-field input{font-size:13px;min-height:40px;background:#fbfdff}
+.form-section{border-color:#d4deec;background:#fff}
+.form-section summary{background:#fff;color:#0f172a;border-bottom:1px solid #e5e7eb}
+.form-section summary span{font-weight:950;color:#0f172a}
+.form-section summary small{color:#64748b}
+.checkbox-block{background:#fff;border-color:#d4deec}
+.checkbox-grid label{color:#1f2937;border-color:#d4deec;background:#fbfdff}
+.score-preview,.score-note{background:#fff;border-color:#d4deec}
+.detail-row span{color:#334155;font-weight:850}
+.detail-row strong{color:#0f172a;font-weight:900}
+.detail-core-card .core-item span{color:#334155;font-weight:900}
+.summary-card{background:#fff;border-color:#d4deec}
+.detail-score-section{margin-top:18px;padding-top:14px;border-top:1px solid #e5e7eb}
+.detail-score-section h4{margin:0 0 10px;color:#0f172a}
+.detail-score{margin-bottom:10px;background:#fff;border-color:#d4deec}
+th{color:#1f2937;font-weight:950;background:#f1f5f9}
+td{color:#111827}.compact-sub{color:#475569}
+@media(max-width:700px){.form-top-actions{justify-content:stretch}.form-top-actions button{flex:1}.form-top-actions .primary,.form-top-actions .ghost{min-width:0}}
