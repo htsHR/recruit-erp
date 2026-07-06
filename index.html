@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>진쩌파트장 채용 ERP v3</title>
+  <title>진쩌파트장 채용 ERP v4</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">진</div>
-        <div><h1>진쩌파트장</h1><p>채용 ERP v3</p></div>
+        <div><h1>진쩌파트장</h1><p>채용 ERP v4</p></div>
       </div>
       <nav class="nav">
         <button class="nav-btn active" data-page="home">홈</button>
@@ -53,38 +53,66 @@
       </section>
 
       <section id="form" class="page">
-        <form id="applicantForm" class="panel form-grid">
+        <form id="applicantForm" class="panel applicant-form-v4">
           <input type="hidden" id="editId" />
-          <h3 class="wide form-title">지원자 기본정보</h3>
-          <label>지원날짜<input id="applyDate" type="date" /></label>
-          <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학, 기타" /></label>
-          <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>보류</option><option>불합격</option><option>연락두절</option></select></label>
-          <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
-          <label>성명<input id="name" required placeholder="홍길동" /></label>
-          <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
-          <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
-          <label>성별<select id="gender"><option value="">선택</option><option>남</option><option>여</option><option>미기재</option></select></label>
-          <label>연생<input id="birthYear" placeholder="1998 또는 980619" /></label>
-          <label>연령<input id="age" placeholder="자동/수동" /></label>
-          <label>지역<input id="region" placeholder="평택, 천안, 오산 등" /></label>
-          <label>출퇴근여부<select id="commute"><option value="">선택</option><option>가능</option><option>확인필요</option><option>어려움</option><option>기숙사문의</option></select></label>
-          <h3 class="wide form-title">학력/경력/평가</h3>
-          <label>학력<input id="education" placeholder="고졸, 전문대, 대졸 등" /></label>
-          <label>최종학력<input id="finalEducation" placeholder="졸업, 예정, 재학, 중퇴 등" /></label>
-          <label>학교<input id="school" placeholder="학교명" /></label>
-          <label>학과<input id="major" placeholder="전공/학과" /></label>
-          <label>자격증<input id="certs" placeholder="산업안전, 전기, 설비보전 등" /></label>
-          <label>경력/키워드<input id="career" placeholder="반도체, PM, 설비, FE, FAB 등" /></label>
-          <label>면접날짜<input id="interviewDate" type="date" /></label>
-          <label>면접시간<input id="interviewTime" type="time" /></label>
-          <label>입사예정일<input id="hireDate" type="date" /></label>
-          <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
-          <label>판정사유<input id="decisionReason" placeholder="전공 적합, 경력 우수, 거리 문제 등" /></label>
-          <label class="wide">상담내용<textarea id="consult" rows="3" placeholder="통화/상담 내용"></textarea></label>
-          <label class="wide">메모/다음액션<textarea id="memo" rows="4" placeholder="확인사항, 다음 연락, 특이사항"></textarea></label>
-          <div class="wide duplicate-box" id="duplicateBox"></div>
-          <div class="wide score-preview" id="scorePreview">PM점수 미리보기: 0점</div>
-          <div class="wide form-actions"><button type="submit" class="primary">저장</button><button type="button" class="ghost" id="btnResetForm">초기화</button></div>
+          <div class="form-guide">
+            <div>
+              <p class="eyebrow">지원자 입력</p>
+              <h3>먼저 핵심정보만 입력하고, 필요할 때 상세정보를 펼쳐요.</h3>
+              <p>목록 관리에 바로 필요한 항목을 위로 올리고, 학력/경력/판정 항목은 접어서 정리했습니다.</p>
+            </div>
+            <button type="button" class="ghost" id="btnResetForm">초기화</button>
+          </div>
+
+          <details class="form-section" open>
+            <summary><span>1. 핵심 입력</span><small>성명·근무지·연락·면접만 먼저</small></summary>
+            <div class="form-grid simple-grid">
+              <label>지원날짜<input id="applyDate" type="date" /></label>
+              <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
+              <label>성명<input id="name" required placeholder="홍길동" /></label>
+              <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
+              <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학, 기타" /></label>
+              <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>보류</option><option>불합격</option><option>연락두절</option></select></label>
+              <label>면접날짜<input id="interviewDate" type="date" /></label>
+              <label>면접시간<input id="interviewTime" type="time" /></label>
+              <label class="wide">상담내용<textarea id="consult" rows="3" placeholder="통화/상담 내용"></textarea></label>
+              <label class="wide">메모/다음액션<textarea id="memo" rows="3" placeholder="확인사항, 다음 연락, 특이사항"></textarea></label>
+            </div>
+          </details>
+
+          <details class="form-section">
+            <summary><span>2. 학력·경력 상세</span><small>이력서 확인 후 천천히 입력</small></summary>
+            <div class="form-grid simple-grid">
+              <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
+              <label>성별<select id="gender"><option value="">선택</option><option>남</option><option>여</option><option>미기재</option></select></label>
+              <label>연생<input id="birthYear" placeholder="1998 또는 980619" /></label>
+              <label>연령<input id="age" placeholder="자동/수동" /></label>
+              <label>지역<input id="region" placeholder="평택, 천안, 오산 등" /></label>
+              <label>출퇴근여부<select id="commute"><option value="">선택</option><option>가능</option><option>확인필요</option><option>어려움</option><option>기숙사문의</option></select></label>
+              <label>학력<input id="education" placeholder="고졸, 전문대, 대졸 등" /></label>
+              <label>최종학력<input id="finalEducation" placeholder="졸업, 예정, 재학, 중퇴 등" /></label>
+              <label>학교<input id="school" placeholder="학교명" /></label>
+              <label>학과<input id="major" placeholder="전공/학과" /></label>
+              <label class="wide">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전 등" /></label>
+              <label class="wide">경력/키워드<input id="career" placeholder="반도체, PM, 설비, FE, FAB 등" /></label>
+            </div>
+          </details>
+
+          <details class="form-section">
+            <summary><span>3. 판정·입사 관리</span><small>검토 후 최종 정리</small></summary>
+            <div class="form-grid simple-grid">
+              <label>입사예정일<input id="hireDate" type="date" /></label>
+              <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
+              <label class="wide">판정사유<input id="decisionReason" placeholder="전공 적합, 경력 우수, 거리 문제 등" /></label>
+              <div class="wide duplicate-box" id="duplicateBox"></div>
+              <div class="wide score-preview" id="scorePreview">PM점수 미리보기: 0점</div>
+            </div>
+          </details>
+
+          <div class="sticky-save-bar">
+            <div><strong>입력 후 저장</strong><span>수정 중이면 같은 버튼으로 반영됩니다.</span></div>
+            <button type="submit" class="primary">저장</button>
+          </div>
         </form>
       </section>
 
