@@ -1,3 +1,4 @@
+// 이력서 관리 시스템 v8 이력서 양식 맞춤형 버전
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -37,7 +38,8 @@ function normalize(a){ return {
   id:a.id||uid(), createdAt:a.createdAt||new Date().toISOString(), updatedAt:a.updatedAt||'',
   applyDate:a.applyDate||'', source:a.source||'', status:a.status||'미연락', workplace:a.workplace||'',
   name:a.name||'', phone:a.phone||'', email:a.email||'', gender:a.gender||'', birthYear:a.birthYear||'', age:a.age||'', region:a.region||'', commute:a.commute||'',
-  education:a.education||'', finalEducation:a.finalEducation||'', school:a.school||'', major:a.major||'', certs:a.certs||'', career:a.career||'',
+  education:a.education||'', finalEducation:a.finalEducation||'', school:a.school||'', major:a.major||'', certs:a.certs||'', career:a.career||'', careerType:a.careerType||'', jobFitCategory:a.jobFitCategory||'',
+  checkNeeds:a.checkNeeds||'', selfIntroKeywords:a.selfIntroKeywords||'',
   interviewDate:a.interviewDate||'', interviewTime:a.interviewTime||'', hireDate:a.hireDate||'', finalDecision:a.finalDecision||'', decisionReason:a.decisionReason||'', consult:a.consult||'', memo:a.memo||''
 }; }
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants)); renderAll(); }
@@ -52,17 +54,35 @@ function calcAge(v){
   if(!year || year < 1950 || year > new Date().getFullYear()) return '';
   return String(new Date().getFullYear() - year);
 }
-function calcScore(a){
-  const text = `${a.education||''} ${a.finalEducation||''} ${a.school||''} ${a.major||''} ${a.certs||''} ${a.career||''} ${a.consult||''} ${a.memo||''}`.toLowerCase();
-  let score = 0;
-  if(/pm|예방정비|설비|장비|maintenance|field|fe|셋업|set.?up|반도체|fab|클린룸|방진복|esc|웨이퍼|chamber|particle|cmp|cvd|pvd|etch|필드/.test(text)) score += 40;
-  if(/전기|전자|기계|반도체|자동화|메카|화공|산업경영|공학|금형|정비/.test(text)) score += 20;
-  if(/산업안전|전기|기계|설비보전|자동화|위험물|기능사|산업기사|기사|운전면허|컴활|공유압|지게차/.test(text)) score += 20;
-  if(/개선|원인|분석|트러블|표준화|매뉴얼|인수인계|정비|점검|교대|책임|소통/.test(text)) score += 10;
-  if(a.name && a.phone && a.workplace && a.applyDate) score += 10;
-  return Math.min(score,100);
+function textOf(a){ return `${a.education||''} ${a.finalEducation||''} ${a.school||''} ${a.major||''} ${a.certs||''} ${a.career||''} ${a.consult||''} ${a.memo||''} ${a.decisionReason||''} ${a.selfIntroKeywords||''}`.toLowerCase(); }
+function deriveScores(a){
+  const text=textOf(a);
+  let major=0, career=0, cert=0, field=0;
+  if(/반도체|전기|전자|기계|자동화|메카|설비|정비|금형|항공정비|컴퓨터소프트웨어|융합소프트웨어/.test(text)) major += 15;
+  if(/반도체장비|전기에너지|전기전자|전기공학|기계자동차|반도체과학|전기전공|반도체장비설계/.test(text)) major += 10;
+  if(/pm|예방정비|설비|장비|maintenance|field|fe|셋업|set.?up|반도체|fab|클린룸|방진복|plc|drive|analyzer|bhs|정비|유지보수|기술지원|설비이상대응/.test(text)) career += 25;
+  if(/pm경력|pm 직접|반도체 장비|장비 셋업|전기정비|시설운영|포스코|에스원|에이치앤에스테크|현장|경력/.test(text)) career += 10;
+  if(/전기기능사|전기산업기사|전기기사|산업안전|기계|설비보전|반도체설비보전|항공기정비|지게차|굴착기|기능사|산업기사|기사|운전면허|소방안전|컴활|adsp/.test(text)) cert += 15;
+  if(/지게차|굴착기|운전면허|1종|기능사|기사|산업기사/.test(text)) cert += 5;
+  if(/교대|군|정비병|차량정비|안전|책임|성실|소통|인수인계|점검|현장|방진복|체력|보안|규정|매뉴얼|문제해결|트러블|개선/.test(text)) field += 15;
+  if(a.name && a.phone && a.workplace && a.applyDate) field += 5;
+  major=Math.min(major,25); career=Math.min(career,35); cert=Math.min(cert,20); field=Math.min(field,20);
+  return {major, career, cert, field, total:major+career+cert+field};
 }
-function grade(score){ if(score>=75) return '우선검토'; if(score>=55) return '검토가능'; if(score>=35) return '추가확인'; return '조건미흡 가능성'; }
+function calcScore(a){ return deriveScores(a).total; }
+function grade(score){ if(score>=80) return '우선검토'; if(score>=65) return '검토가능'; if(score>=45) return '추가확인'; return '조건미흡 가능성'; }
+function displayCategory(a){
+  if(a.jobFitCategory) return a.jobFitCategory;
+  const text=textOf(a);
+  if(/pm|예방정비/.test(text) && /반도체|설비|장비/.test(text)) return 'PM 직접경력자';
+  if(/반도체.*(장비|셋업|fe|field)|장비.*셋업|fe|field/.test(text)) return '반도체 장비/FE 경험자';
+  if(/전기정비|plc|drive|설비.*정비|유지보수|기술지원/.test(text)) return '전기·설비 정비 경험자';
+  if(/기계|금형|차량정비|항공정비|선반|밀링/.test(text)) return '기계·금형·차량정비 경험자';
+  if(/시설운영|설비이상대응|출입제어/.test(text)) return '시설운영/설비이상대응 경험자';
+  if(/전기|전자|기계|반도체|자동화|소프트웨어/.test(text)) return '관련전공 신입';
+  if(/교대|현장|군|보안|정비병|안전/.test(text)) return '현장근무 적응형';
+  return '확인필요';
+}
 function badgeClass(status){
   if(['부재중','미연락','연락두절'].includes(status)) return 'missed';
   if(['입사예정','면접완료','연락완료'].includes(status)) return 'good';
@@ -86,7 +106,7 @@ function isActive(a){ return !isFinished(a); }
 function setPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'홈',applicants:'지원자 목록',form:'지원자 입력',resumeauto:'자동분류 베타',today:'오늘 할 일',templates:'안내문구',backup:'백업/내보내기'};
+  const titleMap = {home:'홈',applicants:'지원자 목록',form:'지원자 입력',today:'오늘 할 일',templates:'안내문구',backup:'백업/내보내기'};
   $('page-title').textContent = titleMap[page] || '홈';
   if(page==='form' && !$('applyDate').value) $('applyDate').value = today();
   renderAll();
@@ -106,9 +126,11 @@ function backupNotice(){
   $('backupAlert').textContent = msg;
   $('lastBackupText').textContent = msg;
 }
+function shortNeeds(a){ return (a.checkNeeds||'').split(',').map(x=>x.trim()).filter(Boolean).slice(0,2); }
+function needsHtml(a){ const needs=shortNeeds(a); return needs.length?`<div class="need-tags">${needs.map(n=>`<span class="need-tag">${esc(n)}</span>`).join('')}</div>`:'-'; }
 function card(a){
   const score=calcScore(a), decision=a.finalDecision || grade(score);
-  return `<div class="person-card"><div><strong>${esc(a.name||'이름없음')} <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong><small>${esc(a.workplace||'근무지 미입력')} · ${esc(a.phone||'연락처 없음')} · ${score}점/${esc(decision)} · ${esc(nextAction(a))}</small></div><button class="mini" onclick="editApplicant('${a.id}')">수정</button></div>`;
+  return `<div class="person-card"><div><strong>${esc(a.name||'이름없음')} <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong><small>${esc(a.workplace||'근무지 미입력')} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)} · ${esc(nextAction(a))}</small></div><button class="mini" onclick="editApplicant('${a.id}')">수정</button></div>`;
 }
 function renderHomeLists(){
   const priority = applicants.filter(a=>['미연락','부재중','문자발송'].includes(a.status) || (a.status==='면접완료'&&!a.finalDecision)).slice(0,6);
@@ -148,18 +170,18 @@ function renderTable(){
   const rows=filtered();
   $('listSummary').textContent = `현재 ${rows.length}명 표시 · 정렬: ${$('sortSelect').selectedOptions[0]?.textContent || '최근 등록순'}${hideFinished ? ' · 종료/불합격 숨김 적용' : ''}`;
   $('applicantTbody').innerHTML=rows.length?rows.map(a=>{
-    const score=calcScore(a); const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
+    const score=calcScore(a); const decision=a.finalDecision || grade(score);
     return `<tr>
       <td><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></td>
       <td><strong>${esc(a.name||'')}</strong></td>
       <td>${esc(a.workplace||'')}</td>
       <td>${esc(a.phone||'')}</td>
-      <td>${esc(a.applyDate||'')}</td>
-      <td>${esc(interview||'-')}</td>
+      <td>${esc(a.region||'-')}</td>
       <td>${esc([a.school,a.major].filter(Boolean).join(' / ')||'-')}</td>
-      <td><span class="decision">${esc(a.finalDecision||'-')}</span></td>
-      <td>${score} · ${grade(score)}</td>
-      <td>${esc(nextAction(a))}</td>
+      <td>${esc(a.careerType||'-')}</td>
+      <td><span class="fit-tag">${esc(displayCategory(a))}</span></td>
+      <td>${needsHtml(a)}</td>
+      <td>${score} · ${esc(decision)}</td>
       <td class="row-actions"><button onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
   }).join(''):`<tr><td colspan="11" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
@@ -178,27 +200,40 @@ function renderToday(){
 function renderTemplateSelect(){ $('templateApplicant').innerHTML=applicants.map(a=>`<option value="${a.id}">${esc(a.name||'이름없음')} - ${esc(a.workplace||'')}</option>`).join('')||`<option value="">지원자 없음</option>`; }
 function renderAll(){ renderStats(); backupNotice(); renderHomeLists(); renderTable(); renderToday(); renderTemplateSelect(); updateScorePreview(); }
 
-const fields=['editId','applyDate','source','status','workplace','name','phone','email','gender','birthYear','age','region','commute','education','finalEducation','school','major','certs','career','interviewDate','interviewTime','hireDate','finalDecision','decisionReason','consult','memo'];
-function getForm(){ return fields.reduce((o,id)=>{ o[id]=$(id).value.trim(); return o; },{}); }
-function fillForm(a){ fields.forEach(id=>$(id).value=a[id]||''); updateScorePreview(); checkDuplicate(); }
-function resetForm(){ $('applicantForm').reset(); $('editId').value=''; $('applyDate').value=today(); $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; updateScorePreview(); }
+const fields=['editId','applyDate','source','status','workplace','name','phone','email','gender','birthYear','age','region','commute','education','finalEducation','school','major','careerType','jobFitCategory','certs','career','interviewDate','interviewTime','hireDate','finalDecision','decisionReason','consult','memo'];
+function getChecked(name){ return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(x=>x.value).join(', '); }
+function setChecked(name, value){ const values=String(value||'').split(',').map(x=>x.trim()).filter(Boolean); document.querySelectorAll(`input[name="${name}"]`).forEach(x=>x.checked=values.includes(x.value)); }
+function getForm(){ const o=fields.reduce((obj,id)=>{ obj[id]=$(id).value.trim(); return obj; },{}); o.checkNeeds=getChecked('checkNeeds'); o.selfIntroKeywords=getChecked('selfIntroKeywords'); return o; }
+function fillForm(a){ fields.forEach(id=>{ if($(id)) $(id).value=a[id]||''; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords', a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); }
+function resetForm(){ $('applicantForm').reset(); setChecked('checkNeeds',''); setChecked('selfIntroKeywords',''); $('editId').value=''; $('applyDate').value=today(); $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; updateScorePreview(); }
 function editApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ fillForm(a); setPage('form'); } }
 function duplicateApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ const copy={...a,id:'',name:a.name+' 복사',phone:'',email:'',createdAt:''}; fillForm(copy); setPage('form'); } }
 function deleteApplicant(id){ if(confirm('삭제할까요?')){ applicants=applicants.filter(a=>a.id!==id); save(); } }
 function detailRow(label, value){ return `<div class="detail-row"><span>${label}</span><strong>${esc(value||'-')}</strong></div>`; }
-function applicantSummary(a){ const score=calcScore(a); return `${a.name||'지원자'} / ${a.workplace||'근무지 미입력'} / ${a.phone||'연락처 없음'}\n상태: ${a.status||'-'} / 판정: ${a.finalDecision||grade(score)} / PM점수: ${score}점\n학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'}\n경력·키워드: ${a.career||'-'}\n자격증: ${a.certs||'-'}\n다음액션: ${nextAction(a)}\n메모: ${a.memo||'-'}`; }
+function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a); return `${a.name||'지원자'} / ${a.workplace||'근무지 미입력'} / ${a.phone||'연락처 없음'}
+상태: ${a.status||'-'} / 판정: ${a.finalDecision||grade(score)} / 검토점수: ${score}점
+직무적합: ${displayCategory(a)} / 경력구분: ${a.careerType||'-'}
+학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'}
+세부점수: 전공 ${sc.major}/25, 경력 ${sc.career}/35, 자격 ${sc.cert}/20, 현장 ${sc.field}/20
+확인필요: ${a.checkNeeds||'-'}
+자격증: ${a.certs||'-'}
+경력·키워드: ${a.career||'-'}
+메모: ${a.memo||'-'}`; }
 function viewApplicant(id){
   const a=applicants.find(x=>x.id===id); if(!a) return;
-  detailCurrentId=id; const score=calcScore(a);
+  detailCurrentId=id; const score=calcScore(a); const sc=deriveScores(a);
   $('detailTitle').textContent = `${a.name||'이름없음'} · ${a.workplace||'근무지 미입력'}`;
   $('detailBody').innerHTML = `
-    <div class="detail-score"><strong>${score}점</strong><span>${esc(a.finalDecision||grade(score))}</span><small>${esc(nextAction(a))}</small></div>
+    <div class="detail-score"><strong>${score}점</strong><span>${esc(a.finalDecision||grade(score))}</span><small>${esc(displayCategory(a))} · ${esc(nextAction(a))}</small></div>
+    <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${sc.field}/20</strong></div></div>
     <div class="detail-grid">
       ${detailRow('지원일',a.applyDate)}${detailRow('지원경로',a.source)}${detailRow('연락상태',a.status)}${detailRow('연락처',a.phone)}
+      ${detailRow('거주지역',a.region)}${detailRow('출퇴근',a.commute)}${detailRow('경력구분',a.careerType)}${detailRow('직무적합',displayCategory(a))}
       ${detailRow('면접일정',[a.interviewDate,a.interviewTime].filter(Boolean).join(' '))}${detailRow('입사예정일',a.hireDate)}
-      ${detailRow('지역',a.region)}${detailRow('출퇴근',a.commute)}${detailRow('학교',a.school)}${detailRow('학과',a.major)}
-      ${detailRow('학력',a.education)}${detailRow('최종학력',a.finalEducation)}
+      ${detailRow('학교',a.school)}${detailRow('학과',a.major)}${detailRow('학력',a.education)}${detailRow('최종학력',a.finalEducation)}
     </div>
+    <div class="detail-memo"><h4>확인필요사항</h4><p>${esc(a.checkNeeds||'-')}</p></div>
+    <div class="detail-memo"><h4>자소서/태도 키워드</h4><p>${esc(a.selfIntroKeywords||'-')}</p></div>
     <div class="detail-memo"><h4>자격증</h4><p>${esc(a.certs||'-')}</p></div>
     <div class="detail-memo"><h4>경력/키워드</h4><p>${esc(a.career||'-')}</p></div>
     <div class="detail-memo"><h4>상담내용</h4><p>${esc(a.consult||'-')}</p></div>
@@ -211,8 +246,8 @@ window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; wind
 function updateScorePreview(){
   if(!$('scorePreview')) return;
   if(!$('age').value && $('birthYear').value) $('age').value=calcAge($('birthYear').value);
-  const data=getForm(), score=calcScore(data);
-  $('scorePreview').textContent=`PM점수 미리보기: ${score}점 · ${grade(score)}`;
+  const data=getForm(), sc=deriveScores(data);
+  $('scorePreview').innerHTML=`검토점수 미리보기: <b>${sc.total}점 · ${grade(sc.total)}</b><div class="score-line"><span class="score-pill">전공 ${sc.major}/25</span><span class="score-pill">경력 ${sc.career}/35</span><span class="score-pill">자격 ${sc.cert}/20</span><span class="score-pill">현장 ${sc.field}/20</span></div>`;
 }
 function checkDuplicate(){
   const f=getForm();
@@ -241,138 +276,11 @@ function download(name, content, type='text/plain;charset=utf-8'){
   const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
 }
 function csv(){
-  const headers=['지원날짜','지원경로','연락상태','지원근무지','성명','연락처','이메일','성별','연생','연령','지역','출퇴근여부','학력','최종학력','학교','학과','자격증','경력','면접날짜','면접시간','입사예정일','내최종판정','판정사유','상담내용','메모','PM점수','추천등급','다음액션'];
-  const lines=[headers,...applicants.map(a=>[a.applyDate,a.source,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.commute,a.education,a.finalEducation,a.school,a.major,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.decisionReason,a.consult,a.memo,calcScore(a),grade(calcScore(a)),nextAction(a)])].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
+  const headers=['지원날짜','지원경로','연락상태','지원근무지','성명','연락처','이메일','성별','연생','연령','지역','출퇴근여부','학력','최종학력','학교','학과','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력','면접날짜','면접시간','입사예정일','내최종판정','판정사유','상담내용','메모','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
+  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.commute,a.education,a.finalEducation,a.school,a.major,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.decisionReason,a.consult,a.memo,sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
   download(`지원자명단_${today()}.csv`,'\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');
 }
 function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resume_management_backup_${today()}.json`,JSON.stringify(applicants,null,2),'application/json'); renderAll(); }
-
-function guessWorkplace(text){ if(/평택/.test(text)) return '평택'; if(/천안/.test(text)) return '천안'; return ''; }
-function matchLine(pattern, text){ const m = text.match(pattern); return m ? m[1].trim() : ''; }
-function firstMatch(patterns, text){ for(const p of patterns){ const m=text.match(p); if(m) return (m[1]||m[0]||'').trim(); } return ''; }
-function uniqueJoin(arr){ return [...new Set(arr.filter(Boolean))].join(', '); }
-function detectName(text){
-  const direct = firstMatch([/성명\s*[:：]?\s*([가-힣]{2,4})/,/이름\s*[:：]?\s*([가-힣]{2,4})/], text);
-  if(direct) return direct;
-  const lines=text.split(/\n+/).map(v=>v.trim()).filter(Boolean).slice(0,8);
-  const candidate = lines.find(line=>/^[가-힣]{2,4}$/.test(line));
-  return candidate || '';
-}
-function detectSchool(text){
-  const direct = firstMatch([/학교\s*[:：]?\s*([^\n]+)/,/출신학교\s*[:：]?\s*([^\n]+)/], text);
-  if(direct) return direct;
-  const m = text.match(/([가-힣A-Za-z0-9·\-\s]{2,40}(대학교|대학|전문대학|전문대|폴리텍|공업고등학교|고등학교))/);
-  return m ? m[1].trim() : '';
-}
-function detectMajor(text){
-  const direct = firstMatch([/전공\s*[:：]?\s*([^\n]+)/,/학과\s*[:：]?\s*([^\n]+)/], text);
-  if(direct) return direct;
-  const m = text.match(/([가-힣A-Za-z0-9·\-\s]{2,40}(학과|전공))/);
-  return m ? m[1].trim() : '';
-}
-function extractKeywords(text, list){ return list.filter(k => text.toLowerCase().includes(k.toLowerCase())); }
-function buildReasonParts(text){
-  const reasons=[];
-  if(/반도체|fab|웨이퍼|클린룸|방진복|chamber|esc|particle|cmp|cvd|pvd|etch/i.test(text)) reasons.push('반도체/설비 키워드 확인');
-  if(/pm|예방정비|maintenance|필드|field|fe|셋업|정비/i.test(text)) reasons.push('PM/정비 관련 경험 추정');
-  if(/전기|전자|기계|반도체|자동화|산업경영|금형|정비/.test(text)) reasons.push('직무 연관 전공/학과 추정');
-  if(/산업안전|전기|기계|설비보전|기사|산업기사|기능사|컴활|지게차/.test(text)) reasons.push('자격증/면허 단서 확인');
-  return reasons;
-}
-function analyzeResumeText(text, fileName=''){
-  const normalized = String(text||'').replace(/\r/g,'').replace(/\t/g,' ').replace(/\u00A0/g,' ');
-  const phone = firstMatch([/(01[016789][-\s]?\d{3,4}[-\s]?\d{4})/], normalized).replace(/\s/g,'');
-  const email = firstMatch([/([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/], normalized);
-  const birthYear = firstMatch([/생년월일\s*[:：]?\s*([0-9.\-]{6,10})/,/주민등록번호\s*[:：]?\s*([0-9]{6})/], normalized).replace(/[^0-9]/g,'');
-  const name = detectName(normalized);
-  const school = detectSchool(normalized);
-  const major = detectMajor(normalized);
-  const education = /고등학교|고졸/.test(normalized) ? '고졸' : /전문대/.test(normalized) ? '전문대' : /대학교|대학|대졸/.test(normalized) ? '대졸' : '';
-  const finalEducation = firstMatch([/(졸업예정|졸업|재학|수료|중퇴)/], normalized);
-  const certs = uniqueJoin(extractKeywords(normalized,['산업안전기사','전기기사','전기산업기사','설비보전기사','설비보전기능사','위험물산업기사','컴퓨터활용능력','컴활','지게차','공유압','기능사','산업기사','기사','운전면허']));
-  const careerKeywords = uniqueJoin(extractKeywords(normalized,['반도체','PM','설비','장비','FE','Field','예방정비','셋업','Set-up','FAB','클린룸','방진복','ESC','웨이퍼','Chamber','Particle','CMP','CVD','PVD','Etch','유지보수','정비']));
-  const workplace = guessWorkplace(normalized);
-  const reasonParts = buildReasonParts(normalized);
-  const memo = `자동분류 (${fileName || '파일'})${reasonParts.length ? ' · ' + reasonParts.join(', ') : ''}`;
-  const draft = normalize({
-    applyDate: today(), source: '이력서 자동분류', status: '미연락', workplace,
-    name, phone, email, birthYear, age: calcAge(birthYear), education, finalEducation, school, major,
-    certs, career: careerKeywords, decisionReason: reasonParts.join(', '), memo
-  });
-  const score = calcScore(draft);
-  draft.finalDecision = grade(score);
-  return { draft, score, reasonParts, rawText: normalized };
-}
-function renderResumeResult(result){
-  if(!result){
-    $('resumeResult').innerHTML='';
-    $('resumeReason').textContent='아직 분석 결과가 없습니다.';
-    $('resumeScoreTag').textContent='0점';
-    $('resumeRawText').value='';
-    return;
-  }
-  const a=result.draft;
-  $('resumeScoreTag').textContent=`${result.score}점 · ${a.finalDecision}`;
-  $('resumeReason').textContent = result.reasonParts.length ? result.reasonParts.join(' / ') : '명확한 키워드가 부족하여 기본 추출만 수행했습니다.';
-  $('resumeResult').innerHTML = [
-    ['파일명', a.source],['성명', a.name],['연락처', a.phone],['이메일', a.email],['지원근무지', a.workplace],['연생', a.birthYear],['연령', a.age],['학력', a.education],['최종학력', a.finalEducation],['학교', a.school],['학과', a.major],['자격증', a.certs],['경력/키워드', a.career],['자동 판정', a.finalDecision]
-  ].map(([k,v])=>`<div class="detail-row"><span>${esc(k)}</span><strong>${esc(v||'-')}</strong></div>`).join('');
-  $('resumeRawText').value = result.rawText || '';
-}
-async function extractTextFromFile(file){
-  const ext = (file.name.split('.').pop() || '').toLowerCase();
-  if(ext==='txt') return await file.text();
-  if(ext==='docx'){
-    const buffer = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({arrayBuffer: buffer});
-    return result.value;
-  }
-  if(ext==='pdf'){
-    const buffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({data: buffer}).promise;
-    let text='';
-    for(let i=1;i<=pdf.numPages;i++){
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items.map(item=>item.str).join(' ');
-      text += pageText + '\n';
-    }
-    return text;
-  }
-  throw new Error('지원하지 않는 형식입니다. PDF / DOCX / TXT만 가능합니다.');
-}
-async function analyzeResume(){
-  const file = $('resumeFile').files[0];
-  if(!file){ alert('먼저 파일을 선택해주세요.'); return; }
-  const ext = (file.name.split('.').pop() || '').toLowerCase();
-  if(ext==='doc'){ alert('DOC는 브라우저에서 안정적으로 자동분류하기 어려워요. 가능하면 PDF 또는 DOCX로 넣어주세요.'); return; }
-  try{
-    $('resumeStatus').textContent='파일을 읽는 중입니다...';
-    const text = await extractTextFromFile(file);
-    if(!text.trim()) throw new Error('텍스트를 추출하지 못했습니다. 스캔 PDF이거나 보호된 파일일 수 있습니다.');
-    $('resumeStatus').textContent='키워드와 기본정보를 분석하는 중입니다...';
-    currentResumeDraft = analyzeResumeText(text, file.name);
-    currentResumeDraft.draft.source = `자동분류 - ${file.name}`;
-    renderResumeResult(currentResumeDraft);
-    $('resumeStatus').textContent='분석 완료. 결과를 확인하고 입력폼으로 보내거나 바로 저장할 수 있습니다.';
-  }catch(err){
-    $('resumeStatus').textContent='분석 실패';
-    renderResumeResult(null);
-    alert(err.message || '이력서 분석 중 오류가 발생했습니다.');
-  }
-}
-function sendResumeToForm(){
-  if(!currentResumeDraft){ alert('먼저 이력서를 분석해주세요.'); return; }
-  fillForm(currentResumeDraft.draft);
-  setPage('form');
-}
-function saveResumeAsApplicant(){
-  if(!currentResumeDraft){ alert('먼저 이력서를 분석해주세요.'); return; }
-  applicants.unshift(normalize({...currentResumeDraft.draft,id:uid(),createdAt:new Date().toISOString()}));
-  save();
-  alert('자동분류 결과가 지원자 목록에 저장되었습니다.');
-  setPage('applicants');
-}
 
 // events
 
@@ -402,10 +310,6 @@ $('btnCsv').addEventListener('click', csv);
 $('btnJson').addEventListener('click', jsonBackup);
 $('jsonImport').addEventListener('change',e=>{ const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result); if(Array.isArray(data)){ applicants=data.map(normalize); save(); alert('가져오기 완료'); } else alert('지원자 백업 JSON 형식이 아닙니다.'); }catch{ alert('JSON 파일을 확인해주세요.'); } }; r.readAsText(file); });
 $('btnClearAll').addEventListener('click',()=>{ if(confirm('현재 브라우저의 모든 지원자 데이터를 삭제할까요?')){ applicants=[]; save(); } });
-$('btnAnalyzeResume').addEventListener('click', analyzeResume);
-$('btnResumeToForm').addEventListener('click', sendResumeToForm);
-$('btnResumeSave').addEventListener('click', saveResumeAsApplicant);
-$('btnToggleRaw').addEventListener('click',()=>{ const box=$('resumeRawText'); box.classList.toggle('collapsed'); box.style.display = box.style.display==='none' ? 'block' : 'none'; });
 if($('btnCloseDetail')) $('btnCloseDetail').addEventListener('click', closeDetail);
 if($('detailBackdrop')) $('detailBackdrop').addEventListener('click', closeDetail);
 if($('btnDetailEdit')) $('btnDetailEdit').addEventListener('click',()=>{ const id=detailCurrentId; closeDetail(); if(id) editApplicant(id); });
@@ -413,4 +317,3 @@ if($('btnCopySummary')) $('btnCopySummary').addEventListener('click',async()=>{ 
 
 resetForm();
 renderAll();
-renderResumeResult(null);
