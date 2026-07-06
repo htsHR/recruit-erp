@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v9.5 입력 가독성 개선 버전
+// 이력서 관리 시스템 v9.6 디자이너 감성 입력 개선 버전
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -111,6 +111,8 @@ function setPage(page){
   const titleMap = {home:'홈',applicants:'지원자 목록',form:'지원자 입력',today:'오늘 할 일',templates:'안내문구',backup:'백업/내보내기'};
   $('page-title').textContent = titleMap[page] || '홈';
   if(page==='form' && !$('applyDate').value) $('applyDate').value = today();
+  const topActions = document.querySelector('.top-actions');
+  if(topActions) topActions.style.display = page==='form' ? 'none' : 'flex';
   renderAll();
 }
 function renderStats(){
@@ -235,7 +237,7 @@ function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a)
 세부점수: 전공 ${sc.major}/25, 경력 ${sc.career}/35, 자격 ${sc.cert}/20, 현장 ${sc.field}/20
 확인필요: ${a.checkNeeds||'-'}
 자격증: ${a.certs||'-'}
-메모: ${a.memo||'-'}`; }
+판정/메모: ${[a.memo,a.decisionReason].filter(Boolean).join(' / ')||'-'}`; }
 function viewApplicant(id){
   const a=applicants.find(x=>x.id===id); if(!a) return;
   detailCurrentId=id; const score=calcScore(a); const sc=deriveScores(a);
@@ -262,7 +264,7 @@ function viewApplicant(id){
     ${memoBlock('확인필요사항',a.checkNeeds)}
     ${memoBlock('자소서/태도 키워드',a.selfIntroKeywords)}
     ${memoBlock('상담내용',a.consult)}
-    ${memoBlock('메모/판정사유',[a.memo,a.decisionReason].filter(Boolean).join(' / '))}
+    ${memoBlock('판정사유/메모/다음액션',[a.memo,a.decisionReason].filter(Boolean).join(' / '))}
     <div class="detail-score-section"><h4>검토점수</h4><div class="detail-score"><strong>${score}점</strong><span>${esc(finalDecisionOf(a))}</span><small>${esc(displayCategory(a))} · ${esc(nextAction(a))}</small></div>
     <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${sc.field}/20</strong></div></div></div>`;
   $('detailModal').classList.add('show');
@@ -310,8 +312,8 @@ function download(name, content, type='text/plain;charset=utf-8'){
   const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
 }
 function csv(){
-  const headers=['지원날짜','지원경로','기타','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일','연령','거주지역','기숙사사용','최종학교','전공/학과','외국어/기타자격','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜','면접시간','입사예정일','내최종판정','판정사유','상담내용','메모','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
-  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.extra,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.dormUse,a.school,a.major,a.languageEtc,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.decisionReason,a.consult,a.memo,sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
+  const headers=['지원날짜','지원경로','기타','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일','연령','거주지역','기숙사사용','최종학교','전공/학과','외국어/기타자격','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜','면접시간','입사예정일','내최종판정','상담내용','판정/메모/다음액션','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
+  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.extra,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.dormUse,a.school,a.major,a.languageEtc,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.consult,[a.memo,a.decisionReason].filter(Boolean).join(' / '),sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
   download(`지원자명단_${today()}.csv`,'\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');
 }
 function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resume_management_backup_${today()}.json`,JSON.stringify(applicants,null,2),'application/json'); renderAll(); }
