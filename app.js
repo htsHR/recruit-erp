@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v9.3 실무 배치 개선 버전
+// 이력서 관리 시스템 v9.4 입력화면 실무 재정리 버전
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -231,7 +231,7 @@ function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a)
 상태: ${a.status||'-'} / 기숙사: ${a.dormUse||'-'} / 기타: ${a.extra||'-'} / 판정: ${finalDecisionOf(a)} / 검토점수: ${score}점
 직무적합: ${displayCategory(a)} / 경력구분: ${a.careerType||'-'}
 학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'} / 학점: ${a.gradePoint||'-'}
-최근근무처: ${a.lastCompany||'-'} / 담당업무: ${a.duties||'-'} / 퇴직사유: ${a.leaveReason||'-'}
+최근근무처: ${a.lastCompany||'-'} / 담당업무: ${a.duties||'-'}
 세부점수: 전공 ${sc.major}/25, 경력 ${sc.career}/35, 자격 ${sc.cert}/20, 현장 ${sc.field}/20
 확인필요: ${a.checkNeeds||'-'}
 자격증: ${a.certs||'-'}
@@ -246,9 +246,9 @@ function viewApplicant(id){
       ${coreItem('연락상태',a.status)}${coreItem('면접일정',interview)}${coreItem('최종판정',finalDecisionOf(a))}
     </div>`;
   const resumeRows = [
-    detailRow('최종학교/전공',[a.school,a.major].filter(Boolean).join(' / ')), detailRow('학력/졸업상태',[a.education,a.finalEducation].filter(Boolean).join(' / ')),
+    detailRow('최종학교/전공',[a.school,a.major].filter(Boolean).join(' / ')), detailRow('학력',a.education),
     detailRow('학점',a.gradePoint), detailRow('자격증',a.certs), detailRow('외국어/기타',a.languageEtc), detailRow('최근근무처',a.lastCompany),
-    detailRow('담당업무',a.duties), detailRow('퇴직사유',a.leaveReason), detailRow('경력구분',a.careerType), detailRow('기숙사 사용',a.dormUse), detailRow('출퇴근',a.commute)
+    detailRow('담당업무',a.duties), detailRow('경력구분',a.careerType), detailRow('기숙사 사용',a.dormUse)
   ].join('');
   const manageRows = [
     detailRow('지원일',a.applyDate), detailRow('지원경로',a.source), detailRow('지역',a.region), detailRow('이메일',a.email),
@@ -312,8 +312,8 @@ function download(name, content, type='text/plain;charset=utf-8'){
   const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
 }
 function csv(){
-  const headers=['지원날짜','지원경로','기타','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일/연생','연령','거주지역','기숙사사용','출퇴근여부','학력','졸업상태','최종학교','전공/학과','학점','외국어/기타','최근근무처','담당업무','퇴직사유','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜','면접시간','입사예정일','내최종판정','판정사유','상담내용','메모','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
-  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.extra,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.dormUse,a.commute,a.education,a.finalEducation,a.school,a.major,a.gradePoint,a.languageEtc,a.lastCompany,a.duties,a.leaveReason,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.decisionReason,a.consult,a.memo,sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
+  const headers=['지원날짜','지원경로','기타','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일/연생','연령','거주지역','기숙사사용','학력','최종학교','전공/학과','학점','외국어/기타','최근근무처','담당업무','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜','면접시간','입사예정일','내최종판정','판정사유','상담내용','메모','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
+  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.extra,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.dormUse,a.education,a.school,a.major,a.gradePoint,a.languageEtc,a.lastCompany,a.duties,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.decisionReason,a.consult,a.memo,sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
   download(`지원자명단_${today()}.csv`,'\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');
 }
 function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resume_management_backup_${today()}.json`,JSON.stringify(applicants,null,2),'application/json'); renderAll(); }
