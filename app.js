@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v9.2 실무 간소화 버전
+// 이력서 관리 시스템 v9.3 실무 배치 개선 버전
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ function esc(s){ return String(s ?? '').replace(/[&<>\"]/g, m=>({'&':'&amp;','<'
 function normalize(a){ return {
   id:a.id||uid(), createdAt:a.createdAt||new Date().toISOString(), updatedAt:a.updatedAt||'',
   applyDate:a.applyDate||'', source:a.source||'', extra:a.extra||a.etc||'', status:a.status||'미연락', workplace:a.workplace||'',
-  name:a.name||'', phone:a.phone||'', email:a.email||'', gender:a.gender||'', birthYear:a.birthYear||'', age:a.age||'', region:a.region||'', commute:a.commute||'',
+  name:a.name||'', phone:a.phone||'', email:a.email||'', gender:a.gender||'', birthYear:a.birthYear||'', age:a.age||'', region:a.region||'', commute:a.commute||'', dormUse:a.dormUse||'',
   education:a.education||'', finalEducation:a.finalEducation||'', school:a.school||'', major:a.major||'', gradePoint:a.gradePoint||'', languageEtc:a.languageEtc||'',
   certs:a.certs||'', career:a.career||'', lastCompany:a.lastCompany||'', duties:a.duties||'', leaveReason:a.leaveReason||'',
   careerType:a.careerType||'', jobFitCategory:a.jobFitCategory||'', checkNeeds:a.checkNeeds||'', selfIntroKeywords:a.selfIntroKeywords||'',
@@ -53,7 +53,7 @@ function calcAge(v){
   if(!year || year < 1950 || year > new Date().getFullYear()) return '';
   return String(new Date().getFullYear() - year);
 }
-function textOf(a){ return `${a.extra||''} ${a.education||''} ${a.finalEducation||''} ${a.school||''} ${a.major||''} ${a.gradePoint||''} ${a.languageEtc||''} ${a.certs||''} ${a.career||''} ${a.lastCompany||''} ${a.duties||''} ${a.leaveReason||''} ${a.careerType||''} ${a.jobFitCategory||''} ${a.consult||''} ${a.memo||''} ${a.decisionReason||''} ${a.selfIntroKeywords||''}`.toLowerCase(); }
+function textOf(a){ return `${a.dormUse||''} ${a.extra||''} ${a.education||''} ${a.finalEducation||''} ${a.school||''} ${a.major||''} ${a.gradePoint||''} ${a.languageEtc||''} ${a.certs||''} ${a.career||''} ${a.lastCompany||''} ${a.duties||''} ${a.leaveReason||''} ${a.careerType||''} ${a.jobFitCategory||''} ${a.consult||''} ${a.memo||''} ${a.decisionReason||''} ${a.selfIntroKeywords||''}`.toLowerCase(); }
 function deriveScores(a){
   const text=textOf(a);
   let major=0, career=0, cert=0, field=0;
@@ -204,12 +204,12 @@ function renderToday(){
 function renderTemplateSelect(){ $('templateApplicant').innerHTML=applicants.map(a=>`<option value="${a.id}">${esc(a.name||'이름없음')} - ${esc(a.workplace||'')}</option>`).join('')||`<option value="">지원자 없음</option>`; }
 function renderAll(){ renderStats(); backupNotice(); renderHomeLists(); renderTable(); renderToday(); renderTemplateSelect(); updateScorePreview(); }
 
-const fields=['editId','applyDate','source','extra','status','workplace','name','phone','email','gender','birthYear','age','region','commute','education','finalEducation','school','major','gradePoint','languageEtc','certs','career','lastCompany','duties','leaveReason','careerType','jobFitCategory','interviewDate','interviewTime','hireDate','finalDecision','decisionReason','consult','memo'];
+const fields=['editId','applyDate','source','extra','status','workplace','name','phone','email','gender','birthYear','age','region','commute','dormUse','education','finalEducation','school','major','gradePoint','languageEtc','certs','career','lastCompany','duties','leaveReason','careerType','jobFitCategory','interviewDate','interviewTime','hireDate','finalDecision','decisionReason','consult','memo'];
 function getChecked(name){ return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(x=>x.value).join(', '); }
 function setChecked(name, value){ const values=String(value||'').split(',').map(x=>x.trim()).filter(Boolean); document.querySelectorAll(`input[name="${name}"]`).forEach(x=>x.checked=values.includes(x.value)); }
 function getForm(){ const o=fields.reduce((obj,id)=>{ if($(id)) obj[id]=$(id).value.trim(); return obj; },{}); o.checkNeeds=getChecked('checkNeeds'); o.selfIntroKeywords=getChecked('selfIntroKeywords'); return o; }
-function fillForm(a){ fields.forEach(id=>{ if($(id)) $(id).value=a[id]||''; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords', a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); }
-function resetForm(){ $('applicantForm').reset(); setChecked('checkNeeds',''); setChecked('selfIntroKeywords',''); $('editId').value=''; $('applyDate').value=today(); $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; updateScorePreview(); }
+function fillForm(a){ fields.forEach(id=>{ if($(id)) $(id).value = id==='editId' ? (a.id||a.editId||'') : (a[id]||''); }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords', a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); updateFormMode(); }
+function resetForm(){ $('applicantForm').reset(); setChecked('checkNeeds',''); setChecked('selfIntroKeywords',''); $('editId').value=''; $('applyDate').value=today(); $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; updateScorePreview(); updateFormMode(); }
 function editApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ fillForm(a); setPage('form'); } }
 function duplicateApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ const copy={...a,id:'',name:a.name+' 복사',phone:'',email:'',createdAt:''}; fillForm(copy); setPage('form'); } }
 function deleteApplicant(id){ if(confirm('삭제할까요?')){ applicants=applicants.filter(a=>a.id!==id); save(); } }
@@ -228,7 +228,7 @@ function memoBlock(title, value){
   return `<div class="detail-memo"><h4>${title}</h4><p>${esc(v)}</p></div>`;
 }
 function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a); return `${a.name||'지원자'} / ${a.workplace||'근무지 미입력'} / ${a.phone||'연락처 없음'}
-상태: ${a.status||'-'} / 기타: ${a.extra||'-'} / 판정: ${finalDecisionOf(a)} / 검토점수: ${score}점
+상태: ${a.status||'-'} / 기숙사: ${a.dormUse||'-'} / 기타: ${a.extra||'-'} / 판정: ${finalDecisionOf(a)} / 검토점수: ${score}점
 직무적합: ${displayCategory(a)} / 경력구분: ${a.careerType||'-'}
 학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'} / 학점: ${a.gradePoint||'-'}
 최근근무처: ${a.lastCompany||'-'} / 담당업무: ${a.duties||'-'} / 퇴직사유: ${a.leaveReason||'-'}
@@ -248,7 +248,7 @@ function viewApplicant(id){
   const resumeRows = [
     detailRow('최종학교/전공',[a.school,a.major].filter(Boolean).join(' / ')), detailRow('학력/졸업상태',[a.education,a.finalEducation].filter(Boolean).join(' / ')),
     detailRow('학점',a.gradePoint), detailRow('자격증',a.certs), detailRow('외국어/기타',a.languageEtc), detailRow('최근근무처',a.lastCompany),
-    detailRow('담당업무',a.duties), detailRow('퇴직사유',a.leaveReason), detailRow('경력구분',a.careerType), detailRow('출퇴근',a.commute)
+    detailRow('담당업무',a.duties), detailRow('퇴직사유',a.leaveReason), detailRow('경력구분',a.careerType), detailRow('기숙사 사용',a.dormUse), detailRow('출퇴근',a.commute)
   ].join('');
   const manageRows = [
     detailRow('지원일',a.applyDate), detailRow('지원경로',a.source), detailRow('지역',a.region), detailRow('이메일',a.email),
@@ -272,6 +272,13 @@ function viewApplicant(id){
 function closeDetail(){ $('detailModal').classList.remove('show'); detailCurrentId=''; }
 window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant; window.viewApplicant=viewApplicant;
 
+function updateFormMode(){
+  const editing = !!($('editId') && $('editId').value);
+  if($('saveBarTitle')) $('saveBarTitle').textContent = editing ? '수정 내용 저장' : '입력 후 저장';
+  if($('saveBarSub')) $('saveBarSub').textContent = editing ? '기존 지원자 정보에 덮어쓰기 저장됩니다.' : '새 지원자로 등록됩니다.';
+  if($('submitBtn')) $('submitBtn').textContent = editing ? '수정 저장' : '저장';
+}
+
 function updateScorePreview(){
   if(!$('scorePreview')) return;
   if(!$('age').value && $('birthYear').value) $('age').value=calcAge($('birthYear').value);
@@ -279,6 +286,7 @@ function updateScorePreview(){
   $('scorePreview').innerHTML=`검토점수 미리보기: <b>${sc.total}점 · ${grade(sc.total)}</b><div class="score-line"><span class="score-pill">전공 ${sc.major}/25</span><span class="score-pill">경력 ${sc.career}/35</span><span class="score-pill">자격 ${sc.cert}/20</span><span class="score-pill">현장 ${sc.field}/20</span></div>`;
 }
 function checkDuplicate(){
+  if(!$('duplicateBox')) return;
   const f=getForm();
   const dups=applicants.filter(a=>a.id!==f.editId && ((f.phone&&a.phone===f.phone)||(f.email&&a.email===f.email)||(f.name&&a.name===f.name&&f.birthYear&&a.birthYear===f.birthYear)));
   if(dups.length){ $('duplicateBox').className='wide duplicate-box warn'; $('duplicateBox').textContent=`중복 가능성: ${dups.map(d=>d.name+'('+d.phone+')').join(', ')}`; }
@@ -304,8 +312,8 @@ function download(name, content, type='text/plain;charset=utf-8'){
   const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
 }
 function csv(){
-  const headers=['지원날짜','지원경로','기타','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일/연생','연령','거주지역','출퇴근여부','학력','졸업상태','최종학교','전공/학과','학점','외국어/기타','최근근무처','담당업무','퇴직사유','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜','면접시간','입사예정일','내최종판정','판정사유','상담내용','메모','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
-  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.extra,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.commute,a.education,a.finalEducation,a.school,a.major,a.gradePoint,a.languageEtc,a.lastCompany,a.duties,a.leaveReason,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.decisionReason,a.consult,a.memo,sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
+  const headers=['지원날짜','지원경로','기타','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일/연생','연령','거주지역','기숙사사용','출퇴근여부','학력','졸업상태','최종학교','전공/학과','학점','외국어/기타','최근근무처','담당업무','퇴직사유','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜','면접시간','입사예정일','내최종판정','판정사유','상담내용','메모','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
+  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.extra,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.dormUse,a.commute,a.education,a.finalEducation,a.school,a.major,a.gradePoint,a.languageEtc,a.lastCompany,a.duties,a.leaveReason,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.decisionReason,a.consult,a.memo,sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
   download(`지원자명단_${today()}.csv`,'\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');
 }
 function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resume_management_backup_${today()}.json`,JSON.stringify(applicants,null,2),'application/json'); renderAll(); }
@@ -329,9 +337,9 @@ document.querySelectorAll('#workplaceTabs .tab').forEach(b=>b.addEventListener('
 document.querySelectorAll('#quickFilters .chip').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#quickFilters .chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentFilter=b.dataset.filter; renderTable(); }));
 $('sortSelect').addEventListener('change',e=>{ currentSort=e.target.value; renderTable(); });
 $('hideFinished').addEventListener('change',e=>{ hideFinished=e.target.checked; renderTable(); });
-$('jobFitFilter').addEventListener('change',e=>{ currentJobFit=e.target.value; renderTable(); });
-$('careerTypeFilter').addEventListener('change',e=>{ currentCareerType=e.target.value; renderTable(); });
-$('needsFilter').addEventListener('change',e=>{ currentNeeds=e.target.value; renderTable(); });
+if($('jobFitFilter')) $('jobFitFilter').addEventListener('change',e=>{ currentJobFit=e.target.value; renderTable(); });
+if($('careerTypeFilter')) $('careerTypeFilter').addEventListener('change',e=>{ currentCareerType=e.target.value; renderTable(); });
+if($('needsFilter')) $('needsFilter').addEventListener('change',e=>{ currentNeeds=e.target.value; renderTable(); });
 $('btnMakeTemplate').addEventListener('click', makeTemplate);
 $('btnCopyTemplate').addEventListener('click', async()=>{ try{ await navigator.clipboard.writeText($('templateOutput').value); alert('복사됐습니다.'); }catch{ alert('복사가 막히면 직접 드래그해서 복사해주세요.'); } });
 $('btnCsv').addEventListener('click', csv);
