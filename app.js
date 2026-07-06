@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v10.1 Recruit ERP 2.0 입력 편의성 개선
+// 이력서 관리 시스템 v10.2 Recruit ERP 2.0 목록·상세 통합 리디자인
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -176,22 +176,29 @@ function filtered(){
 function renderTable(){
   const rows=filtered();
   const sortName=$('sortSelect').selectedOptions[0]?.textContent || '최근 등록순';
-  $('listSummary').textContent = `현재 ${rows.length}명 표시 · 정렬: ${sortName}${hideFinished ? ' · 종료/불합격 숨김 적용' : ''}`;
+  const contactCount=rows.filter(a=>['미연락','부재중','문자발송'].includes(a.status)).length;
+  const interviewCount=rows.filter(a=>a.status==='면접예정' || a.interviewDate).length;
+  const dormCount=rows.filter(a=>a.dormUse==='사용').length;
+  $('listSummary').innerHTML = `<span class="summary-strong">${rows.length}명</span> 표시 <span>정렬 ${esc(sortName)}</span><span>연락필요 ${contactCount}명</span><span>면접/예정 ${interviewCount}명</span><span>기숙사 ${dormCount}명</span>${hideFinished ? '<span>종료숨김 적용</span>' : ''}`;
   $('applicantTbody').innerHTML=rows.length?rows.map((a,idx)=>{
     const score=calcScore(a), decision=finalDecisionOf(a);
     const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ') || '-';
-    return `<tr>
-      <td>${idx+1}</td>
-      <td><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></td>
-      <td><strong>${esc(a.name||'')}</strong><span class="compact-sub">${esc(a.source||'지원경로 미입력')}</span></td>
-      <td>${esc(a.phone||'')}</td>
-      <td>${esc(a.workplace||'')}</td>
+    const dorm = a.dormUse || '미확인';
+    const typeLine = [a.careerType, a.education, a.source].filter(Boolean).join(' · ') || '기본정보 미입력';
+    const resumeLine = [a.school, a.major].filter(Boolean).join(' / ') || (a.career || a.certs || '이력서 정보 없음');
+    return `<tr class="applicant-row">
+      <td class="no-cell">${idx+1}</td>
+      <td><span class="badge status-badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></td>
+      <td class="applicant-profile-cell"><button class="profile-button" onclick="viewApplicant('${a.id}')"><span class="avatar-mini">${esc((a.name||'?').slice(0,1))}</span><span><strong>${esc(a.name||'이름없음')}</strong><small>${esc(typeLine)}</small><em>${esc(resumeLine)}</em></span></button></td>
+      <td class="contact-cell"><strong>${esc(a.phone||'-')}</strong><small>${esc(a.email||'')}</small></td>
+      <td><span class="workplace-pill">${esc(a.workplace||'-')}</span></td>
       <td>${esc(a.region||'-')}</td>
-      <td>${esc(interview)}</td>
-      <td><span class="compact-decision">${esc(decision)}</span><span class="compact-sub">${score}점 · ${esc(displayCategory(a))}</span></td>
-      <td class="row-actions"><button onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
+      <td class="schedule-cell"><strong>${esc(interview)}</strong><small>${esc(nextAction(a))}</small></td>
+      <td><span class="dorm-pill ${dorm==='사용'?'on':dorm==='미사용'?'off':'pending'}">${esc(dorm)}</span></td>
+      <td class="decision-cell"><strong>${esc(decision)}</strong><small>${score}점 · ${esc(displayCategory(a))}</small></td>
+      <td class="row-actions"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="9" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
+  }).join(''):`<tr><td colspan="10" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
 }
 function renderToday(){
   const t=today();
@@ -241,30 +248,32 @@ function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a)
 function viewApplicant(id){
   const a=applicants.find(x=>x.id===id); if(!a) return;
   detailCurrentId=id; const score=calcScore(a); const sc=deriveScores(a);
-  const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
-  const core = `
-    <div class="detail-core-card">
-      ${coreItem('성명',a.name)}${coreItem('연락처',a.phone)}${coreItem('지원근무지',a.workplace)}
-      ${coreItem('연락상태',a.status)}${coreItem('면접일정',interview)}${coreItem('최종판정',finalDecisionOf(a))}
-    </div>`;
+  const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ') || '-';
+  const initial=esc((a.name||'?').slice(0,1));
+  const profileSub=[a.careerType,a.education,a.workplace].filter(Boolean).join(' · ') || '지원자 기본정보';
+  const profile = `<div class="profile-hero-detail">
+    <div class="profile-identity"><div class="avatar-large">${initial}</div><div><h2>${esc(a.name||'이름없음')}</h2><p>${esc(profileSub)}</p><div class="profile-badges"><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span><span class="dorm-pill ${(a.dormUse==='사용')?'on':(a.dormUse==='미사용')?'off':'pending'}">기숙사 ${esc(a.dormUse||'미확인')}</span><span class="workplace-pill">${esc(a.workplace||'근무지 미입력')}</span></div></div></div>
+    <div class="profile-decision"><span>최종판정</span><strong>${esc(finalDecisionOf(a))}</strong><small>${esc(nextAction(a))}</small></div>
+  </div>`;
+  const core = `<div class="detail-core-card detail-core-v2">
+    ${coreItem('연락처',a.phone)}${coreItem('이메일',a.email)}${coreItem('지원경로',a.source)}${coreItem('지원일',a.applyDate)}
+    ${coreItem('면접일정',interview)}${coreItem('입사예정일',a.hireDate)}${coreItem('지역',a.region)}${coreItem('생년월일/연령',[a.birthYear,a.age&&a.age+'세'].filter(Boolean).join(' / '))}
+  </div>`;
   const resumeRows = [
-    detailRow('학력구분',a.education), detailRow('최종학교/전공',[a.school,a.major].filter(Boolean).join(' / ')), detailRow('경력',a.career),
-    detailRow('자격증',a.certs), detailRow('외국어/기타자격',a.languageEtc), detailRow('경력구분',a.careerType), detailRow('기숙사 사용',a.dormUse)
+    detailRow('학력구분',a.education), detailRow('학교/전공',[a.school,a.major].filter(Boolean).join(' / ')), detailRow('경력',a.career),
+    detailRow('자격증',a.certs), detailRow('외국어/기타자격',a.languageEtc), detailRow('성별',a.gender), detailRow('기타',a.extra)
   ].join('');
-  const manageRows = [
-    detailRow('지원일',a.applyDate), detailRow('지원경로',a.source), detailRow('지역',a.region), detailRow('이메일',a.email),
-    detailRow('성별',a.gender), detailRow('생년월일',a.birthYear), detailRow('연령',a.age), detailRow('입사예정일',a.hireDate),
-    detailRow('기타',a.extra), detailRow('직무적합',displayCategory(a))
+  const jobRows = [
+    detailRow('직무적합',displayCategory(a)), detailRow('확인필요사항',a.checkNeeds), detailRow('자소서/태도 키워드',a.selfIntroKeywords)
   ].join('');
-  $('detailTitle').textContent = `${a.name||'이름없음'} · ${a.workplace||'근무지 미입력'}`;
+  const memoValue=[a.consult,a.memo,a.decisionReason].filter(Boolean).join('\n\n');
+  $('detailTitle').textContent = `${a.name||'이름없음'} · 상세 프로필`;
   $('detailBody').innerHTML = `
+    ${profile}
     ${core}
-    ${resumeRows ? `<div class="summary-card"><h4>이력서 핵심요약</h4><div class="detail-grid">${resumeRows}</div></div>` : ''}
-    ${manageRows ? `<h4 class="detail-section-title">진행관리</h4><div class="detail-grid">${manageRows}</div>` : ''}
-    ${memoBlock('확인필요사항',a.checkNeeds)}
-    ${memoBlock('자소서/태도 키워드',a.selfIntroKeywords)}
-    ${memoBlock('상담내용',a.consult)}
-    ${memoBlock('판정사유/메모/다음액션',[a.memo,a.decisionReason].filter(Boolean).join(' / '))}
+    ${memoValue ? `<div class="detail-memo memo-primary"><h4>전화인터뷰·메모·다음액션</h4><p>${esc(memoValue)}</p></div>` : ''}
+    ${resumeRows ? `<div class="summary-card detail-section-card"><h4>이력서 정보</h4><div class="detail-grid">${resumeRows}</div></div>` : ''}
+    ${jobRows ? `<div class="summary-card detail-section-card"><h4>검토 참고정보</h4><div class="detail-grid">${jobRows}</div></div>` : ''}
     <div class="detail-score-section"><h4>검토점수</h4><div class="detail-score"><strong>${score}점</strong><span>${esc(finalDecisionOf(a))}</span><small>${esc(displayCategory(a))} · ${esc(nextAction(a))}</small></div>
     <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${sc.field}/20</strong></div></div></div>`;
   $('detailModal').classList.add('show');
