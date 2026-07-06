@@ -28,3 +28,20 @@
   .resume-result-wrap,.two-col{grid-template-columns:1fr!important}
   .resume-grid{grid-template-columns:1fr}
 }
+
+/* v8 이력서 양식 맞춤형 보완 */
+.checkbox-block{border:1px solid #dfe7f4;background:#f8fbff;border-radius:14px;padding:14px}
+.checkbox-block strong{display:block;margin-bottom:10px;color:#13213a;font-size:14px}
+.checkbox-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+.checkbox-grid label{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;background:#fff;border:1px solid #e6edf7;border-radius:10px;padding:8px 10px}
+.checkbox-grid input{width:auto;margin:0}
+.score-preview{line-height:1.7}
+.score-preview .score-line{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.score-preview .score-pill{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid #dbe6f5;border-radius:999px;padding:4px 8px;font-size:12px}
+.need-tags,.fit-tags{display:flex;gap:5px;flex-wrap:wrap}
+.need-tag{display:inline-flex;align-items:center;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:999px;padding:3px 7px;font-size:11px;white-space:nowrap}
+.fit-tag{display:inline-flex;align-items:center;background:#eef4ff;border:1px solid #c8d9ff;color:#274690;border-radius:999px;padding:3px 7px;font-size:11px;white-space:nowrap}
+.detail-score-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.detail-score-grid div{background:#f8fbff;border:1px solid #dfe7f4;border-radius:12px;padding:10px}
+.detail-score-grid span{display:block;color:#6b7280;font-size:12px}.detail-score-grid strong{font-size:18px;color:#13213a}
+@media (max-width: 900px){.checkbox-grid,.detail-score-grid{grid-template-columns:1fr}}

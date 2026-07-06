@@ -3,28 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v6</title>
+  <title>이력서 관리 시스템 v8</title>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://unpkg.com/mammoth@1.6.0/mammoth.browser.min.js"></script>
-</head>
+  </head>
 <body>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">이</div>
-        <div><h1>이력서 관리 시스템</h1><p>Resume Management v6</p></div>
+        <div><h1>이력서 관리 시스템</h1><p>Resume Management v8</p></div>
       </div>
       <nav class="nav">
         <button class="nav-btn active" data-page="home">홈</button>
         <button class="nav-btn" data-page="applicants">지원자 목록</button>
         <button class="nav-btn" data-page="form">지원자 입력</button>
-        <button class="nav-btn" data-page="resumeauto">자동분류 베타</button>
         <button class="nav-btn" data-page="today">오늘 할 일</button>
         <button class="nav-btn" data-page="templates">안내문구</button>
         <button class="nav-btn" data-page="backup">백업/내보내기</button>
       </nav>
-      <div class="security-note"><strong>서버 저장 없음</strong><span>지원자 데이터와 이력서 분석 결과는 현재 브라우저에만 저장됩니다.</span></div>
+      <div class="security-note"><strong>서버 저장 없음</strong><span>지원자 데이터는 현재 브라우저에만 저장됩니다.</span></div>
     </aside>
 
     <main class="main">
@@ -35,8 +32,8 @@
 
       <section id="home" class="page active">
         <div class="hero-card">
-          <div><p class="eyebrow">이력서 현황판</p><h3>목록 관리 효율과 자동분류를 함께 강화한 버전입니다.</h3><p>정렬/숨김/필터로 목록을 더 빨리 보고, PDF·DOCX·TXT 이력서를 브라우저 내부에서 자동분류할 수 있습니다.</p></div>
-          <div class="hero-actions"><button class="primary" data-go="form">새 지원자 입력</button><button class="ghost" data-go="resumeauto">이력서 자동분류</button></div>
+          <div><p class="eyebrow">이력서 현황판</p><h3>회사 이력서 양식에 맞춰 직무적합·확인필요·점수를 세분화한 버전입니다.</h3><p>이력서를 보고 1분 안에 핵심 정보를 정리할 수 있도록 경력구분, 직무적합 분류, 확인필요사항, 세부 점수를 추가했습니다.</p></div>
+          <div class="hero-actions"><button class="primary" data-go="form">새 지원자 입력</button><button class="ghost" data-go="applicants">지원자 목록 보기</button></div>
         </div>
         <div class="stats-grid" id="statsGrid"></div>
         <div class="backup-alert" id="backupAlert"></div>
@@ -61,7 +58,7 @@
               <option value="applyDesc">지원일 최신순</option>
               <option value="applyAsc">지원일 오래된순</option>
               <option value="interviewAsc">면접일 빠른순</option>
-              <option value="scoreDesc">PM점수 높은순</option>
+              <option value="scoreDesc">검토점수 높은순</option>
               <option value="nameAsc">이름순</option>
             </select>
             <label class="check-inline"><input type="checkbox" id="hideFinished" /> 종료/불합격 숨기기</label>
@@ -80,7 +77,7 @@
           <table>
             <thead>
               <tr>
-                <th>상태</th><th>성명</th><th>근무지</th><th>연락처</th><th>지원일</th><th>면접</th><th>학교/전공</th><th>판정</th><th>PM</th><th>다음액션</th><th>관리</th>
+                <th>상태</th><th>성명</th><th>근무지</th><th>연락처</th><th>거주지역</th><th>학교/전공</th><th>경력구분</th><th>직무적합</th><th>확인필요</th><th>판정</th><th>관리</th>
               </tr>
             </thead>
             <tbody id="applicantTbody"></tbody>
@@ -95,7 +92,7 @@
             <div>
               <p class="eyebrow">지원자 입력</p>
               <h3>핵심 정보부터 입력하고, 상세정보는 필요할 때 펼쳐 작성해요.</h3>
-              <p>이력서 자동분류 결과를 불러오면 대부분의 항목이 자동으로 채워집니다.</p>
+              <p>회사 이력서의 기본정보, 학력, 자격, 경력, 확인필요사항을 구역별로 정리합니다.</p>
             </div>
             <button type="button" class="ghost" id="btnResetForm">초기화</button>
           </div>
@@ -127,10 +124,12 @@
               <label>출퇴근여부<select id="commute"><option value="">선택</option><option>가능</option><option>확인필요</option><option>어려움</option><option>기숙사문의</option></select></label>
               <label>학력<input id="education" placeholder="고졸, 전문대, 대졸 등" /></label>
               <label>최종학력<input id="finalEducation" placeholder="졸업, 예정, 재학, 중퇴 등" /></label>
-              <label>학교<input id="school" placeholder="학교명" /></label>
-              <label>학과<input id="major" placeholder="전공/학과" /></label>
-              <label class="wide">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전 등" /></label>
-              <label class="wide">경력/키워드<input id="career" placeholder="반도체, PM, 설비, FE, FAB 등" /></label>
+              <label>최종학교<input id="school" placeholder="학교명" /></label>
+              <label>전공/학과<input id="major" placeholder="전공/학과" /></label>
+              <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option><option>재직중</option><option>재학중</option><option>PM경력</option><option>설비경력</option><option>확인필요</option></select></label>
+              <label>직무적합 분류<select id="jobFitCategory"><option value="">선택</option><option>PM 직접경력자</option><option>반도체 장비/FE 경험자</option><option>전기·설비 정비 경험자</option><option>기계·금형·차량정비 경험자</option><option>시설운영/설비이상대응 경험자</option><option>관련전공 신입</option><option>현장근무 적응형</option><option>직무연관 낮음</option><option>확인필요</option></select></label>
+              <label class="wide">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전, 지게차 등" /></label>
+              <label class="wide">경력/키워드<input id="career" placeholder="반도체, PM, 설비, FE, FAB, PLC, 정비 등" /></label>
             </div>
           </details>
 
@@ -140,8 +139,30 @@
               <label>입사예정일<input id="hireDate" type="date" /></label>
               <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
               <label class="wide">판정사유<input id="decisionReason" placeholder="전공 적합, 경력 우수, 거리 문제 등" /></label>
+              <div class="wide checkbox-block"><strong>확인필요사항</strong><div class="checkbox-grid" id="checkNeedsGroup">
+                <label><input type="checkbox" name="checkNeeds" value="생년월일 확인" /> 생년월일 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="연락처 확인" /> 연락처 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="졸업/재학 확인" /> 졸업/재학 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="입사가능일 확인" /> 입사가능일 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="교대근무 가능 여부" /> 교대근무 가능 여부</label>
+                <label><input type="checkbox" name="checkNeeds" value="출퇴근/기숙사 확인" /> 출퇴근/기숙사 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="근무지 전환 가능 여부" /> 근무지 전환 가능 여부</label>
+                <label><input type="checkbox" name="checkNeeds" value="PM社 6개월 이상 경력기술서" /> PM社 경력기술서</label>
+                <label><input type="checkbox" name="checkNeeds" value="반도체 직접경험 확인" /> 반도체 직접경험 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="장비명/공정명 확인" /> 장비명/공정명 확인</label>
+              </div></div>
+              <div class="wide checkbox-block"><strong>자소서/태도 키워드</strong><div class="checkbox-grid" id="selfIntroKeywordsGroup">
+                <label><input type="checkbox" name="selfIntroKeywords" value="책임감" /> 책임감</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="성실함" /> 성실함</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="교대근무 적응" /> 교대근무 적응</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="안전수칙 준수" /> 안전수칙 준수</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="문제해결" /> 문제해결</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="정비/점검" /> 정비/점검</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="소통/인수인계" /> 소통/인수인계</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="반도체 이해도" /> 반도체 이해도</label>
+              </div></div>
               <div class="wide duplicate-box" id="duplicateBox"></div>
-              <div class="wide score-preview" id="scorePreview">PM점수 미리보기: 0점</div>
+              <div class="wide score-preview" id="scorePreview">검토점수 미리보기: 0점</div>
             </div>
           </details>
 
@@ -150,40 +171,6 @@
             <button type="submit" class="primary">저장</button>
           </div>
         </form>
-      </section>
-
-      <section id="resumeauto" class="page">
-        <div class="panel">
-          <div class="panel-head"><h3>이력서 자동분류 베타</h3><span class="muted">PDF / DOCX / TXT 지원 · DOC는 미지원</span></div>
-          <div class="resume-help">
-            <p>이력서를 업로드하면 이름, 연락처, 학교, 전공, 자격증, 경력 키워드를 자동으로 추출해 지원자 입력폼에 반영합니다.</p>
-            <ul>
-              <li>PDF: 텍스트 선택이 가능한 PDF에서 가장 잘 작동합니다.</li>
-              <li>DOCX: 브라우저 내부 추출 방식으로 지원합니다.</li>
-              <li>TXT: 텍스트 파일은 가장 안정적으로 읽습니다.</li>
-            </ul>
-          </div>
-          <div class="resume-uploader">
-            <input type="file" id="resumeFile" accept=".pdf,.docx,.txt" />
-            <button class="primary" id="btnAnalyzeResume">분석 시작</button>
-            <div id="resumeStatus" class="muted"></div>
-          </div>
-          <div class="two-col resume-result-wrap">
-            <div class="panel inner-panel">
-              <div class="panel-head"><h3>자동 추출 결과</h3><span id="resumeScoreTag" class="score-tag">0점</span></div>
-              <div id="resumeResult" class="detail-grid resume-grid"></div>
-              <div class="detail-memo"><h4>판정 근거</h4><p id="resumeReason">아직 분석 결과가 없습니다.</p></div>
-              <div class="form-actions wrap">
-                <button class="primary" id="btnResumeToForm">입력폼으로 보내기</button>
-                <button class="ghost" id="btnResumeSave">지원자로 바로 저장</button>
-              </div>
-            </div>
-            <div class="panel inner-panel">
-              <div class="panel-head"><h3>원문 미리보기</h3><button class="mini" id="btnToggleRaw">접기/펼치기</button></div>
-              <textarea id="resumeRawText" class="template-box raw-box" rows="18" readonly placeholder="분석 후 이력서 원문이 여기에 표시됩니다."></textarea>
-            </div>
-          </div>
-        </div>
       </section>
 
       <section id="today" class="page">
