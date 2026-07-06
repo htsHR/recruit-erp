@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v9.3</title>
+  <title>이력서 관리 시스템 v9.4</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
         <div class="brand-mark">이</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Resume Management v9.3</p>
+          <p>Resume Management v9.4</p>
         </div>
       </div>
       <nav class="nav">
@@ -129,8 +129,8 @@
           <div class="form-guide compact-guide">
             <div>
               <p class="eyebrow">지원자 입력</p>
-              <h3>기본정보와 전화인터뷰 내용을 한 화면에서 작성합니다.</h3>
-              <p>이력서 세부사항과 직무검토는 필요할 때만 아래에서 열어 보완합니다.</p>
+              <h3>지원 기본정보와 이력서 핵심정보를 한 화면에서 작성합니다.</h3>
+              <p>전화인터뷰는 기숙사 여부만 간단히 확인하고, 추가 보완정보와 직무검토는 필요할 때만 열어 입력합니다.</p>
             </div>
             <button type="button" class="ghost" id="btnResetForm">초기화</button>
           </div>
@@ -138,34 +138,40 @@
           <div class="split-form-grid">
             <section class="form-card-main">
               <div class="section-title">
-                <span>1. 지원 기본정보</span>
-                <small>지원자 등록에 꼭 필요한 항목</small>
+                <span>1. 지원 기본정보·이력서 핵심</span>
+                <small>이력서 보고 바로 입력하는 핵심 항목</small>
               </div>
-              <div class="form-grid two-grid">
+              <div class="form-grid two-grid core-input-grid">
                 <label>지원날짜<input id="applyDate" type="date" /></label>
                 <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
                 <label>성명<input id="name" required placeholder="홍길동" /></label>
+                <label>성별<select id="gender"><option value="">선택</option><option>남</option><option>여</option><option>남자</option><option>여자</option><option>미기재</option></select></label>
+                <label>생년월일/연생<input id="birthYear" placeholder="1998 또는 1998.06.19" /></label>
+                <label>연령<input id="age" placeholder="자동/수동" /></label>
                 <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
                 <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
                 <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학 등" /></label>
                 <label>지역(시)<input id="region" placeholder="평택, 천안, 오산 등" /></label>
+                <label>최종학교<input id="school" placeholder="학교명" /></label>
+                <label>학과<input id="major" placeholder="전공/학과" /></label>
+                <label class="wide">경력<input id="career" placeholder="반도체, PM, 설비, FE, FAB, PLC, 정비, 교대 등" /></label>
+                <label class="wide">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전, 지게차, 운전면허 등" /></label>
                 <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>출근</option><option>보류</option><option>불합격</option><option>부적합</option><option>철회</option><option>취소</option><option>전형마감</option><option>연락두절</option></select></label>
               </div>
             </section>
 
             <section class="form-card-main interview-card">
               <div class="section-title">
-                <span>2. 전화인터뷰</span>
-                <small>통화하면서 바로 확인하는 항목</small>
+                <span>2. 전화인터뷰·진행관리</span>
+                <small>통화 때는 기숙사 여부만 간단히 확인</small>
               </div>
               <div class="form-grid two-grid">
-                <label>기숙사 사용<select id="dormUse"><option value="">선택</option><option>사용</option><option>미사용</option><option>확인필요</option><option>해당없음</option></select></label>
-                <label>출퇴근여부<select id="commute"><option value="">선택</option><option>출퇴근</option><option>가능</option><option>기숙사</option><option>확인필요</option><option>어려움</option><option>기숙사문의</option></select></label>
+                <label class="wide dorm-only">기숙사 사용<select id="dormUse"><option value="">선택</option><option>사용</option><option>미사용</option><option>확인필요</option><option>해당없음</option></select></label>
                 <label>면접날짜<input id="interviewDate" type="date" /></label>
                 <label>면접시간<input id="interviewTime" type="time" /></label>
                 <label>입사날짜<input id="hireDate" type="date" /></label>
                 <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
-                <label class="wide">상담내용<textarea id="consult" rows="4" placeholder="기숙사 사용 여부, 면접 가능일, 출퇴근 가능 여부, 특이사항"></textarea></label>
+                <label class="wide">상담내용<textarea id="consult" rows="4" placeholder="기숙사 사용 여부, 면접 가능일, 특이사항"></textarea></label>
                 <label class="wide">메모/다음액션<textarea id="memo" rows="3" placeholder="다음 연락, 내부 공유사항, 추가 확인사항"></textarea></label>
               </div>
             </section>
@@ -174,22 +180,13 @@
           <div class="wide duplicate-box" id="duplicateBox"></div>
 
           <details class="form-section compact-details">
-            <summary><span>이력서 보완정보</span><small>학교·전공·자격·경력은 필요할 때만 입력</small></summary>
-            <div class="form-grid detail-lite-grid">
-              <label>최종학교<input id="school" placeholder="학교명" /></label>
-              <label>학과<input id="major" placeholder="전공/학과" /></label>
+            <summary><span>추가 보완정보</span><small>학점·최근근무처·담당업무 등 필요한 정보만 보완</small></summary>
+            <div class="form-grid detail-lite-grid small-detail-grid">
               <label>학력<input id="education" placeholder="고졸, 전문대, 대졸 등" /></label>
-              <label>최종학력/졸업상태<input id="finalEducation" placeholder="졸업, 졸업예정, 재학, 중퇴 등" /></label>
               <label>학점<input id="gradePoint" placeholder="3.83/4.5" /></label>
               <label>외국어/기타자격<input id="languageEtc" placeholder="OPIC IM2, 토익스피킹 등" /></label>
               <label>최근근무처<input id="lastCompany" placeholder="최근 근무처" /></label>
               <label>담당업무<input id="duties" placeholder="전기정비, 설비유지보수, 장비셋업 등" /></label>
-              <label>퇴직사유<input id="leaveReason" placeholder="계약만료, 개인사정, 재직중 등" /></label>
-              <label>성별<select id="gender"><option value="">선택</option><option>남</option><option>여</option><option>남자</option><option>여자</option><option>미기재</option></select></label>
-              <label>연생/생년월일<input id="birthYear" placeholder="1998 또는 1998.06.19" /></label>
-              <label>연령<input id="age" placeholder="자동/수동" /></label>
-              <label class="wide">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전, 지게차, 운전면허 등" /></label>
-              <label class="wide">경력<input id="career" placeholder="반도체, PM, 설비, FE, FAB, PLC, 정비, 교대 등" /></label>
               <label class="wide">기타<input id="extra" placeholder="엑셀의 기타 칸. 특이사항, 내부 메모, 추가 확인사항 등" /></label>
             </div>
           </details>
@@ -208,7 +205,7 @@
                 <label><input type="checkbox" name="checkNeeds" value="입사가능일 확인" /> 입사가능일 확인</label>
                 <label><input type="checkbox" name="checkNeeds" value="퇴사 가능일 확인" /> 퇴사 가능일 확인</label>
                 <label><input type="checkbox" name="checkNeeds" value="교대근무 가능 여부" /> 교대근무 가능 여부</label>
-                <label><input type="checkbox" name="checkNeeds" value="출퇴근/기숙사 확인" /> 출퇴근/기숙사 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="기숙사 사용 확인" /> 기숙사 사용 확인</label>
                 <label><input type="checkbox" name="checkNeeds" value="근무지 전환 가능 여부" /> 근무지 전환 가능 여부</label>
                 <label><input type="checkbox" name="checkNeeds" value="PM社 6개월 이상 경력기술서" /> PM社 경력기술서</label>
                 <label><input type="checkbox" name="checkNeeds" value="반도체 직접경험 확인" /> 반도체 직접경험 확인</label>
@@ -226,7 +223,7 @@
                 <label><input type="checkbox" name="selfIntroKeywords" value="지원동기 구체성" /> 지원동기 구체성</label>
               </div></div>
               <div class="wide score-preview" id="scorePreview">검토점수 미리보기: 0점</div>
-              <div class="wide score-note">검토점수는 참고용이며, 최종 판단은 담당자가 직접 확인합니다. 성별·연령은 점수에 반영하지 않습니다.</div>
+              <div class="wide score-note">검토점수는 참고용이며, 최종 판단은 담당자가 직접 확인합니다. 성별·연령은 검토점수에 반영하지 않습니다.</div>
             </div>
           </details>
 

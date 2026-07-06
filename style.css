@@ -22,3 +22,13 @@ table{min-width:980px}
 .applicant-form-v5{display:flex;flex-direction:column;gap:14px}.compact-guide{margin-bottom:0}.split-form-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.form-card-main{background:#fbfdff;border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 8px 20px rgba(20,33,61,.04)}.form-card-main.interview-card{background:linear-gradient(180deg,#f8fbff,#eef6ff);border-color:#cfe0ff}.section-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}.section-title span{font-size:17px;font-weight:950;color:var(--navy)}.section-title small{font-size:12px;color:var(--muted);font-weight:750;line-height:1.35}.two-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.two-grid .wide{grid-column:1/-1}.detail-lite-grid{padding:16px;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.detail-lite-grid .wide{grid-column:1/-1}.compact-details summary{padding:14px 16px}.compact-details summary span{font-size:15px}.compact-checks{grid-template-columns:repeat(3,minmax(0,1fr))}.duplicate-box{margin:0}.sticky-save-bar{bottom:10px}.form-guide.compact-guide h3{font-size:21px}.form-guide.compact-guide p{font-size:13px}.form-grid.two-grid label,.detail-lite-grid label{font-size:12.5px}.form-grid.two-grid input,.form-grid.two-grid select,.form-grid.two-grid textarea,.detail-lite-grid input,.detail-lite-grid select,.detail-lite-grid textarea{padding:10px 11px}
 @media(max-width:1180px){.compact-list-controls{grid-template-columns:1fr 1fr}.compact-tabs{grid-column:1/-1}.split-form-grid{grid-template-columns:1fr}.detail-lite-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.compact-checks{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.list-top-head{flex-direction:column}.compact-list-controls{grid-template-columns:1fr}.compact-tabs{flex-wrap:wrap}.split-form-grid,.two-grid,.detail-lite-grid,.compact-checks{grid-template-columns:1fr}.two-grid .wide,.detail-lite-grid .wide{grid-column:1/-1}}
+
+/* v9.4 입력화면 재정리: 이력서 핵심정보를 기본정보로 이동, 전화인터뷰는 기숙사만 */
+.split-form-grid{grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr)}
+.core-input-grid .wide{grid-column:1/-1}
+.dorm-only select{font-weight:900}
+.small-detail-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.small-detail-grid .wide{grid-column:1/-1}
+.interview-card .section-title small{color:#31537d}
+@media(max-width:1180px){.split-form-grid{grid-template-columns:1fr}.small-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.small-detail-grid{grid-template-columns:1fr}.small-detail-grid .wide{grid-column:1/-1}}
