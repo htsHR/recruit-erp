@@ -1,319 +1,293 @@
-// 이력서 관리 시스템 v8 이력서 양식 맞춤형 버전
-const STORAGE_KEY = 'recruit_erp_applicants_stable';
-const LEGACY_KEYS = ['recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
-const BACKUP_KEY = 'recruit_erp_last_backup_date';
-let applicants = load();
-let currentWorkplace = 'all';
-let currentFilter = 'all';
+const STORAGE_KEY = 'resume_excel_like_v9_rows';
+const BACKUP_KEY = 'resume_excel_like_v9_last_saved';
+let rows = loadRows();
+let currentPage = 'home';
 let currentSearch = '';
-let currentSort = 'recent';
-let hideFinished = false;
-let detailCurrentId = '';
-let currentResumeDraft = null;
+let workplaceFilter = 'all';
+let statusFilter = 'all';
+let sortMode = 'noAsc';
+let detailId = '';
 const $ = id => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0,10);
-if (window.pdfjsLib) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-}
 
-function load(){
+const columns = [
+  {key:'no', label:'NO', readonly:true, cls:'col-no'},
+  {key:'applyDate', label:'지원날짜', type:'date', cls:'col-date'},
+  {key:'status', label:'연락상태', type:'select', cls:'col-status', options:['','미연락','연락완료','부재중','문자발송','면접예정','면접완료','출근','입사예정','불합격','부적합','철회','취소','전형마감','보류','연락두절']},
+  {key:'interviewDate', label:'면접날짜', type:'date', cls:'col-date'},
+  {key:'interviewTime', label:'시간', type:'time', cls:'col-time'},
+  {key:'hireDate', label:'입사날짜', type:'date', cls:'col-date'},
+  {key:'source', label:'지원\n경로', cls:'col-source'},
+  {key:'etc', label:'기타', cls:'col-etc'},
+  {key:'gender', label:'성별', type:'select', cls:'col-gender', options:['','남자','여자','미기재']},
+  {key:'workplace', label:'지원\n근무지', type:'select', cls:'col-workplace', options:['','천안','평택','기타']},
+  {key:'name', label:'성  명', cls:'col-name'},
+  {key:'email', label:'이메일', type:'email', cls:'col-email'},
+  {key:'education', label:'학력', cls:'col-edu'},
+  {key:'finalEducation', label:'최종학력', cls:'col-school'},
+  {key:'major', label:'학과', cls:'col-major'},
+  {key:'phone', label:'연락처', cls:'col-phone'},
+  {key:'age', label:'연령', type:'number', cls:'col-age'},
+  {key:'birthYear', label:'연생', type:'number', cls:'col-year'},
+  {key:'region', label:'지역(시)', cls:'col-region'},
+  {key:'career', label:'경     력', type:'textarea', cls:'col-career'},
+  {key:'certs', label:'자격증', type:'textarea', cls:'col-certs'},
+  {key:'consult', label:'상담내용', type:'textarea', cls:'col-consult'},
+  {key:'commute', label:'출퇴근여부', type:'select', cls:'col-commute', options:['','출퇴근','기숙사','확인필요','어려움']}
+];
+const dataKeys = columns.filter(c=>!c.readonly).map(c=>c.key);
+
+function blankRow(){
+  const r = { id: uid(), createdAt: new Date().toISOString(), updatedAt:'' };
+  dataKeys.forEach(k=>r[k]='');
+  r.status = '미연락';
+  r.applyDate = today();
+  return r;
+}
+function normalize(row){
+  const base = blankRow();
+  return { ...base, ...row, id: row.id || uid(), createdAt: row.createdAt || new Date().toISOString() };
+}
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function esc(s){ return String(s ?? '').replace(/[&<>\"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function loadRows(){
   try{
-    let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    if(!data.length){
-      for(const key of LEGACY_KEYS){
-        const legacy = JSON.parse(localStorage.getItem(key) || '[]');
-        if(Array.isArray(legacy) && legacy.length){
-          data = legacy.map(normalize);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-          break;
-        }
-      }
-    }
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     return Array.isArray(data) ? data.map(normalize) : [];
   }catch{ return []; }
 }
-function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
-function esc(s){ return String(s ?? '').replace(/[&<>\"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
-function normalize(a){ return {
-  id:a.id||uid(), createdAt:a.createdAt||new Date().toISOString(), updatedAt:a.updatedAt||'',
-  applyDate:a.applyDate||'', source:a.source||'', status:a.status||'미연락', workplace:a.workplace||'',
-  name:a.name||'', phone:a.phone||'', email:a.email||'', gender:a.gender||'', birthYear:a.birthYear||'', age:a.age||'', region:a.region||'', commute:a.commute||'',
-  education:a.education||'', finalEducation:a.finalEducation||'', school:a.school||'', major:a.major||'', certs:a.certs||'', career:a.career||'', careerType:a.careerType||'', jobFitCategory:a.jobFitCategory||'',
-  checkNeeds:a.checkNeeds||'', selfIntroKeywords:a.selfIntroKeywords||'',
-  interviewDate:a.interviewDate||'', interviewTime:a.interviewTime||'', hireDate:a.hireDate||'', finalDecision:a.finalDecision||'', decisionReason:a.decisionReason||'', consult:a.consult||'', memo:a.memo||''
-}; }
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants)); renderAll(); }
-
-function calcAge(v){
-  const n = String(v||'').replace(/\D/g,'');
-  if(!n) return '';
-  let y = '';
-  if(n.length >= 4) y = n.slice(0,4);
-  if(n.length === 6){ const yy = Number(n.slice(0,2)); y = yy > 30 ? '19'+n.slice(0,2) : '20'+n.slice(0,2); }
-  const year = Number(y);
-  if(!year || year < 1950 || year > new Date().getFullYear()) return '';
-  return String(new Date().getFullYear() - year);
-}
-function textOf(a){ return `${a.education||''} ${a.finalEducation||''} ${a.school||''} ${a.major||''} ${a.certs||''} ${a.career||''} ${a.consult||''} ${a.memo||''} ${a.decisionReason||''} ${a.selfIntroKeywords||''}`.toLowerCase(); }
-function deriveScores(a){
-  const text=textOf(a);
-  let major=0, career=0, cert=0, field=0;
-  if(/반도체|전기|전자|기계|자동화|메카|설비|정비|금형|항공정비|컴퓨터소프트웨어|융합소프트웨어/.test(text)) major += 15;
-  if(/반도체장비|전기에너지|전기전자|전기공학|기계자동차|반도체과학|전기전공|반도체장비설계/.test(text)) major += 10;
-  if(/pm|예방정비|설비|장비|maintenance|field|fe|셋업|set.?up|반도체|fab|클린룸|방진복|plc|drive|analyzer|bhs|정비|유지보수|기술지원|설비이상대응/.test(text)) career += 25;
-  if(/pm경력|pm 직접|반도체 장비|장비 셋업|전기정비|시설운영|포스코|에스원|에이치앤에스테크|현장|경력/.test(text)) career += 10;
-  if(/전기기능사|전기산업기사|전기기사|산업안전|기계|설비보전|반도체설비보전|항공기정비|지게차|굴착기|기능사|산업기사|기사|운전면허|소방안전|컴활|adsp/.test(text)) cert += 15;
-  if(/지게차|굴착기|운전면허|1종|기능사|기사|산업기사/.test(text)) cert += 5;
-  if(/교대|군|정비병|차량정비|안전|책임|성실|소통|인수인계|점검|현장|방진복|체력|보안|규정|매뉴얼|문제해결|트러블|개선/.test(text)) field += 15;
-  if(a.name && a.phone && a.workplace && a.applyDate) field += 5;
-  major=Math.min(major,25); career=Math.min(career,35); cert=Math.min(cert,20); field=Math.min(field,20);
-  return {major, career, cert, field, total:major+career+cert+field};
-}
-function calcScore(a){ return deriveScores(a).total; }
-function grade(score){ if(score>=80) return '우선검토'; if(score>=65) return '검토가능'; if(score>=45) return '추가확인'; return '조건미흡 가능성'; }
-function displayCategory(a){
-  if(a.jobFitCategory) return a.jobFitCategory;
-  const text=textOf(a);
-  if(/pm|예방정비/.test(text) && /반도체|설비|장비/.test(text)) return 'PM 직접경력자';
-  if(/반도체.*(장비|셋업|fe|field)|장비.*셋업|fe|field/.test(text)) return '반도체 장비/FE 경험자';
-  if(/전기정비|plc|drive|설비.*정비|유지보수|기술지원/.test(text)) return '전기·설비 정비 경험자';
-  if(/기계|금형|차량정비|항공정비|선반|밀링/.test(text)) return '기계·금형·차량정비 경험자';
-  if(/시설운영|설비이상대응|출입제어/.test(text)) return '시설운영/설비이상대응 경험자';
-  if(/전기|전자|기계|반도체|자동화|소프트웨어/.test(text)) return '관련전공 신입';
-  if(/교대|현장|군|보안|정비병|안전/.test(text)) return '현장근무 적응형';
-  return '확인필요';
-}
-function badgeClass(status){
-  if(['부재중','미연락','연락두절'].includes(status)) return 'missed';
-  if(['입사예정','면접완료','연락완료'].includes(status)) return 'good';
-  if(['면접예정','문자발송'].includes(status)) return 'info';
-  if(['불합격'].includes(status)) return 'bad';
-  return 'hold';
-}
-function nextAction(a){
-  if(!a.status || a.status==='미연락') return '첫 연락 필요';
-  if(a.status==='부재중') return '재연락';
-  if(a.status==='문자발송') return '답변 확인';
-  if(a.status==='면접예정') return '면접 준비';
-  if(a.status==='면접완료' && !a.finalDecision) return '판정 입력';
-  if(a.status==='입사예정') return '입사 안내';
-  if(a.status==='보류') return '재검토일 확인';
-  return a.finalDecision || '-';
-}
-function isFinished(a){ return ['불합격','연락두절','입사포기'].includes(a.status) || ['불합격','입사포기'].includes(a.finalDecision); }
-function isActive(a){ return !isFinished(a); }
-
-function setPage(page){
-  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'홈',applicants:'지원자 목록',form:'지원자 입력',today:'오늘 할 일',templates:'안내문구',backup:'백업/내보내기'};
-  $('page-title').textContent = titleMap[page] || '홈';
-  if(page==='form' && !$('applyDate').value) $('applyDate').value = today();
+function saveRows(showToast=false){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+  localStorage.setItem(BACKUP_KEY, new Date().toISOString());
+  if(showToast) alert('저장되었습니다.');
   renderAll();
 }
-
+function setPage(page){
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+  const titleMap = {home:'홈', sheet:'지원자명단', paste:'엑셀 붙여넣기', today:'오늘 할 일', backup:'백업/내보내기'};
+  $('page-title').textContent = titleMap[page] || '홈';
+  renderAll();
+}
+function statusBadge(status){
+  const s = status || '미입력';
+  let cls = 'hold';
+  if(['출근','입사예정','면접완료','연락완료'].includes(s)) cls='good';
+  if(['면접예정','문자발송'].includes(s)) cls='info';
+  if(['미연락','부재중','연락두절'].includes(s)) cls='missed';
+  if(['불합격','부적합','취소','전형마감','철회'].includes(s)) cls='bad';
+  return `<span class="badge ${cls}">${esc(s)}</span>`;
+}
+function isFinished(r){ return ['불합격','부적합','철회','취소','전형마감','연락두절'].includes(r.status); }
+function nextAction(r){
+  if(!r.status || r.status==='미연락') return '첫 연락 필요';
+  if(r.status==='부재중') return '재연락';
+  if(r.status==='문자발송') return '답변 확인';
+  if(r.status==='면접예정') return '면접 준비';
+  if(r.status==='출근') return '출근 완료';
+  if(r.status==='입사예정') return '입사 안내';
+  if(isFinished(r)) return '종료';
+  return r.consult || '-';
+}
+function visibleRows(){
+  let arr = rows.filter(r=>{
+    const searchText = columns.map(c=>r[c.key] || '').join(' ').toLowerCase();
+    const searchOk = !currentSearch || searchText.includes(currentSearch.toLowerCase());
+    const workOk = workplaceFilter==='all' || (workplaceFilter==='blank' ? !r.workplace : r.workplace===workplaceFilter);
+    const statusOk = statusFilter==='all' || r.status===statusFilter;
+    return searchOk && workOk && statusOk;
+  });
+  arr.sort((a,b)=>{
+    if(sortMode==='recent') return (b.createdAt||'').localeCompare(a.createdAt||'');
+    if(sortMode==='applyDesc') return (b.applyDate||'').localeCompare(a.applyDate||'');
+    if(sortMode==='interviewAsc') return (a.interviewDate||'9999-12-31').localeCompare(b.interviewDate||'9999-12-31');
+    if(sortMode==='nameAsc') return (a.name||'').localeCompare(b.name||'', 'ko');
+    return rows.indexOf(a)-rows.indexOf(b);
+  });
+  return arr;
+}
 function renderStats(){
-  const total=applicants.length, cheonan=applicants.filter(a=>a.workplace==='천안').length, pyeong=applicants.filter(a=>a.workplace==='평택').length;
-  const contact=applicants.filter(a=>['미연락','부재중','문자발송'].includes(a.status)).length;
-  const interview=applicants.filter(a=>a.status==='면접예정').length;
-  const decision=applicants.filter(a=>a.status==='면접완료' && !a.finalDecision).length;
-  const data=[['전체',total],['천안',cheonan],['평택',pyeong],['연락필요',contact],['면접예정',interview],['판정필요',decision]];
-  $('statsGrid').innerHTML=data.map(([k,v])=>`<div class="stat"><span>${k}</span><strong>${v}</strong></div>`).join('');
+  const total=rows.length;
+  const cheonan=rows.filter(r=>r.workplace==='천안').length;
+  const pyeong=rows.filter(r=>r.workplace==='평택').length;
+  const contact=rows.filter(r=>['미연락','부재중','문자발송'].includes(r.status)).length;
+  const interview=rows.filter(r=>r.status==='면접예정' || r.interviewDate===today()).length;
+  const finished=rows.filter(isFinished).length;
+  const data=[['전체',total],['천안',cheonan],['평택',pyeong],['연락필요',contact],['면접예정',interview],['종료',finished]];
+  $('statsGrid').innerHTML = data.map(([k,v])=>`<div class="stat"><span>${k}</span><strong>${v}</strong></div>`).join('');
 }
-function backupNotice(){
-  const last = localStorage.getItem(BACKUP_KEY);
-  const msg = last ? `마지막 JSON 백업: ${last}` : '아직 백업 기록이 없습니다. 필요 시 백업 탭에서 JSON 백업을 진행하세요.';
-  $('backupAlert').textContent = msg;
-  $('lastBackupText').textContent = msg;
+function card(r){
+  const idx = rows.indexOf(r)+1;
+  return `<div class="person-card"><div><strong>${esc(r.name||'이름없음')} ${statusBadge(r.status)}</strong><small>NO.${idx} · ${esc(r.workplace||'근무지 미입력')} · ${esc(r.phone||'연락처 없음')} · ${esc(nextAction(r))}</small></div><button class="mini" onclick="focusRow('${r.id}')">보기</button></div>`;
 }
-function shortNeeds(a){ return (a.checkNeeds||'').split(',').map(x=>x.trim()).filter(Boolean).slice(0,2); }
-function needsHtml(a){ const needs=shortNeeds(a); return needs.length?`<div class="need-tags">${needs.map(n=>`<span class="need-tag">${esc(n)}</span>`).join('')}</div>`:'-'; }
-function card(a){
-  const score=calcScore(a), decision=a.finalDecision || grade(score);
-  return `<div class="person-card"><div><strong>${esc(a.name||'이름없음')} <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong><small>${esc(a.workplace||'근무지 미입력')} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)} · ${esc(nextAction(a))}</small></div><button class="mini" onclick="editApplicant('${a.id}')">수정</button></div>`;
+function renderHome(){
+  const priority = rows.filter(r=>['미연락','부재중','문자발송'].includes(r.status)).slice(0,6);
+  const recent = [...rows].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,6);
+  $('priorityList').innerHTML = priority.length ? priority.map(card).join('') : '<div class="empty">우선 처리할 지원자가 없습니다.</div>';
+  $('recentList').innerHTML = recent.length ? recent.map(card).join('') : '<div class="empty">등록된 지원자가 없습니다.</div>';
 }
-function renderHomeLists(){
-  const priority = applicants.filter(a=>['미연락','부재중','문자발송'].includes(a.status) || (a.status==='면접완료'&&!a.finalDecision)).slice(0,6);
-  const recent=[...applicants].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,6);
-  $('priorityList').innerHTML=priority.length?priority.map(card).join(''):`<div class="empty">우선 처리할 지원자가 없습니다.</div>`;
-  $('recentList').innerHTML=recent.length?recent.map(card).join(''):`<div class="empty">등록된 지원자가 없습니다.</div>`;
+function renderHead(){
+  const headers = ['선택', ...columns.map(c=>c.label), '관리'];
+  const classes = ['col-select', ...columns.map(c=>c.cls || ''), 'col-actions'];
+  $('excelHead').innerHTML = `<tr>${headers.map((h,i)=>`<th class="${classes[i]||''}">${esc(h)}</th>`).join('')}</tr>`;
 }
-function filtered(){
-  let rows = applicants.filter(a=>{
-    const workplaceOk=currentWorkplace==='all'||(currentWorkplace==='기타'?!['천안','평택'].includes(a.workplace):a.workplace===currentWorkplace);
-    const text=Object.values(a).join(' ').toLowerCase();
-    const searchOk=!currentSearch||text.includes(currentSearch.toLowerCase());
-    let filterOk=true;
-    if(currentFilter==='contact') filterOk=['미연락','부재중','문자발송'].includes(a.status);
-    if(currentFilter==='interview') filterOk=a.status==='면접예정';
-    if(currentFilter==='decision') filterOk=a.status==='면접완료'&&!a.finalDecision;
-    if(currentFilter==='hold') filterOk=a.status==='보류'||a.finalDecision==='보류';
-    if(currentFilter==='active') filterOk=isActive(a);
-    return workplaceOk && searchOk && filterOk;
-  });
-  if(hideFinished) rows = rows.filter(isActive);
-  rows.sort((a,b)=>{
-    if(currentSort==='applyDesc') return (b.applyDate||'').localeCompare(a.applyDate||'');
-    if(currentSort==='applyAsc') return (a.applyDate||'').localeCompare(b.applyDate||'');
-    if(currentSort==='interviewAsc'){
-      const av=(a.interviewDate||'9999-12-31')+' '+(a.interviewTime||'23:59');
-      const bv=(b.interviewDate||'9999-12-31')+' '+(b.interviewTime||'23:59');
-      return av.localeCompare(bv);
-    }
-    if(currentSort==='scoreDesc') return calcScore(b)-calcScore(a);
-    if(currentSort==='nameAsc') return (a.name||'').localeCompare(b.name||'', 'ko');
-    return (b.createdAt||'').localeCompare(a.createdAt||'');
-  });
-  return rows;
+function cellInput(row, col, index){
+  if(col.readonly) return `<input value="${index+1}" readonly tabindex="-1" />`;
+  const v = row[col.key] ?? '';
+  const common = `data-id="${row.id}" data-key="${col.key}"`;
+  if(col.type==='select'){
+    return `<select ${common}>${col.options.map(o=>`<option value="${esc(o)}" ${String(v)===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  }
+  if(col.type==='textarea') return `<textarea ${common}>${esc(v)}</textarea>`;
+  return `<input ${common} type="${col.type||'text'}" value="${esc(v)}" />`;
 }
-function renderTable(){
-  const rows=filtered();
-  $('listSummary').textContent = `현재 ${rows.length}명 표시 · 정렬: ${$('sortSelect').selectedOptions[0]?.textContent || '최근 등록순'}${hideFinished ? ' · 종료/불합격 숨김 적용' : ''}`;
-  $('applicantTbody').innerHTML=rows.length?rows.map(a=>{
-    const score=calcScore(a); const decision=a.finalDecision || grade(score);
-    return `<tr>
-      <td><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></td>
-      <td><strong>${esc(a.name||'')}</strong></td>
-      <td>${esc(a.workplace||'')}</td>
-      <td>${esc(a.phone||'')}</td>
-      <td>${esc(a.region||'-')}</td>
-      <td>${esc([a.school,a.major].filter(Boolean).join(' / ')||'-')}</td>
-      <td>${esc(a.careerType||'-')}</td>
-      <td><span class="fit-tag">${esc(displayCategory(a))}</span></td>
-      <td>${needsHtml(a)}</td>
-      <td>${score} · ${esc(decision)}</td>
-      <td class="row-actions"><button onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
+function renderSheet(){
+  renderHead();
+  const arr = visibleRows();
+  $('listSummary').textContent = `현재 ${arr.length}명 표시 / 전체 ${rows.length}명 · 기존 엑셀 지원자명단 데이터는 포함되지 않은 새 명단입니다.`;
+  if(!arr.length){
+    $('excelBody').innerHTML = `<tr><td colspan="${columns.length+2}" class="empty">아직 입력된 지원자가 없습니다. 행 추가를 눌러 시작하세요.</td></tr>`;
+    return;
+  }
+  $('excelBody').innerHTML = arr.map(r=>{
+    const index = rows.indexOf(r);
+    return `<tr data-id="${r.id}">
+      <td class="col-select"><input type="checkbox" class="row-check" data-id="${r.id}" /></td>
+      ${columns.map(c=>`<td class="${c.cls||''}">${cellInput(r,c,index)}</td>`).join('')}
+      <td class="row-actions"><button onclick="viewDetail('${r.id}')">상세</button><button onclick="duplicateRow('${r.id}')">복제</button><button class="delete" onclick="deleteRow('${r.id}')">삭제</button></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="11" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
+  }).join('');
 }
 function renderToday(){
   const t=today();
-  const interviews=applicants.filter(a=>a.interviewDate===t || a.status==='면접예정');
-  const recalls=applicants.filter(a=>['부재중','문자발송','미연락'].includes(a.status));
-  const decisions=applicants.filter(a=>a.status==='면접완료'&&!a.finalDecision);
-  const waits=applicants.filter(a=>['입사예정','보류'].includes(a.status)||['입사예정','보류'].includes(a.finalDecision));
-  $('todayInterview').innerHTML=interviews.length?interviews.map(card).join(''):`<div class="empty">오늘 면접/면접예정자가 없습니다.</div>`;
-  $('recallList').innerHTML=recalls.length?recalls.map(card).join(''):`<div class="empty">연락 대상이 없습니다.</div>`;
-  $('decisionList').innerHTML=decisions.length?decisions.map(card).join(''):`<div class="empty">판정 필요자가 없습니다.</div>`;
-  $('waitingList').innerHTML=waits.length?waits.map(card).join(''):`<div class="empty">입사/보류 대기자가 없습니다.</div>`;
+  const todayInterview = rows.filter(r=>r.interviewDate===t || r.status==='면접예정').slice(0,20);
+  const contacts = rows.filter(r=>['미연락','부재중','문자발송'].includes(r.status)).slice(0,20);
+  const hire = rows.filter(r=>r.hireDate || r.status==='입사예정' || r.status==='출근').slice(0,20);
+  const consult = rows.filter(r=>r.consult).slice(-20).reverse();
+  $('todayInterview').innerHTML = todayInterview.length ? todayInterview.map(card).join('') : '<div class="empty">오늘 면접/면접예정자가 없습니다.</div>';
+  $('contactList').innerHTML = contacts.length ? contacts.map(card).join('') : '<div class="empty">연락 필요 대상이 없습니다.</div>';
+  $('hireList').innerHTML = hire.length ? hire.map(card).join('') : '<div class="empty">입사 예정/출근 대상이 없습니다.</div>';
+  $('consultList').innerHTML = consult.length ? consult.map(card).join('') : '<div class="empty">상담내용이 입력된 지원자가 없습니다.</div>';
 }
-function renderTemplateSelect(){ $('templateApplicant').innerHTML=applicants.map(a=>`<option value="${a.id}">${esc(a.name||'이름없음')} - ${esc(a.workplace||'')}</option>`).join('')||`<option value="">지원자 없음</option>`; }
-function renderAll(){ renderStats(); backupNotice(); renderHomeLists(); renderTable(); renderToday(); renderTemplateSelect(); updateScorePreview(); }
+function renderPasteOrder(){
+  $('pasteOrder').innerHTML = columns.map(c=>`<span>${esc(c.label.replace(/\n/g,''))}</span>`).join('');
+}
+function renderBackupText(){
+  const last = localStorage.getItem(BACKUP_KEY);
+  $('lastSavedText').textContent = last ? `마지막 저장: ${new Date(last).toLocaleString()}` : '아직 저장 기록이 없습니다.';
+}
+function renderAll(){ renderStats(); renderHome(); renderSheet(); renderToday(); renderPasteOrder(); renderBackupText(); }
 
-const fields=['editId','applyDate','source','status','workplace','name','phone','email','gender','birthYear','age','region','commute','education','finalEducation','school','major','careerType','jobFitCategory','certs','career','interviewDate','interviewTime','hireDate','finalDecision','decisionReason','consult','memo'];
-function getChecked(name){ return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(x=>x.value).join(', '); }
-function setChecked(name, value){ const values=String(value||'').split(',').map(x=>x.trim()).filter(Boolean); document.querySelectorAll(`input[name="${name}"]`).forEach(x=>x.checked=values.includes(x.value)); }
-function getForm(){ const o=fields.reduce((obj,id)=>{ obj[id]=$(id).value.trim(); return obj; },{}); o.checkNeeds=getChecked('checkNeeds'); o.selfIntroKeywords=getChecked('selfIntroKeywords'); return o; }
-function fillForm(a){ fields.forEach(id=>{ if($(id)) $(id).value=a[id]||''; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords', a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); }
-function resetForm(){ $('applicantForm').reset(); setChecked('checkNeeds',''); setChecked('selfIntroKeywords',''); $('editId').value=''; $('applyDate').value=today(); $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; updateScorePreview(); }
-function editApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ fillForm(a); setPage('form'); } }
-function duplicateApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ const copy={...a,id:'',name:a.name+' 복사',phone:'',email:'',createdAt:''}; fillForm(copy); setPage('form'); } }
-function deleteApplicant(id){ if(confirm('삭제할까요?')){ applicants=applicants.filter(a=>a.id!==id); save(); } }
-function detailRow(label, value){ return `<div class="detail-row"><span>${label}</span><strong>${esc(value||'-')}</strong></div>`; }
-function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a); return `${a.name||'지원자'} / ${a.workplace||'근무지 미입력'} / ${a.phone||'연락처 없음'}
-상태: ${a.status||'-'} / 판정: ${a.finalDecision||grade(score)} / 검토점수: ${score}점
-직무적합: ${displayCategory(a)} / 경력구분: ${a.careerType||'-'}
-학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'}
-세부점수: 전공 ${sc.major}/25, 경력 ${sc.career}/35, 자격 ${sc.cert}/20, 현장 ${sc.field}/20
-확인필요: ${a.checkNeeds||'-'}
-자격증: ${a.certs||'-'}
-경력·키워드: ${a.career||'-'}
-메모: ${a.memo||'-'}`; }
-function viewApplicant(id){
-  const a=applicants.find(x=>x.id===id); if(!a) return;
-  detailCurrentId=id; const score=calcScore(a); const sc=deriveScores(a);
-  $('detailTitle').textContent = `${a.name||'이름없음'} · ${a.workplace||'근무지 미입력'}`;
-  $('detailBody').innerHTML = `
-    <div class="detail-score"><strong>${score}점</strong><span>${esc(a.finalDecision||grade(score))}</span><small>${esc(displayCategory(a))} · ${esc(nextAction(a))}</small></div>
-    <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${sc.field}/20</strong></div></div>
-    <div class="detail-grid">
-      ${detailRow('지원일',a.applyDate)}${detailRow('지원경로',a.source)}${detailRow('연락상태',a.status)}${detailRow('연락처',a.phone)}
-      ${detailRow('거주지역',a.region)}${detailRow('출퇴근',a.commute)}${detailRow('경력구분',a.careerType)}${detailRow('직무적합',displayCategory(a))}
-      ${detailRow('면접일정',[a.interviewDate,a.interviewTime].filter(Boolean).join(' '))}${detailRow('입사예정일',a.hireDate)}
-      ${detailRow('학교',a.school)}${detailRow('학과',a.major)}${detailRow('학력',a.education)}${detailRow('최종학력',a.finalEducation)}
-    </div>
-    <div class="detail-memo"><h4>확인필요사항</h4><p>${esc(a.checkNeeds||'-')}</p></div>
-    <div class="detail-memo"><h4>자소서/태도 키워드</h4><p>${esc(a.selfIntroKeywords||'-')}</p></div>
-    <div class="detail-memo"><h4>자격증</h4><p>${esc(a.certs||'-')}</p></div>
-    <div class="detail-memo"><h4>경력/키워드</h4><p>${esc(a.career||'-')}</p></div>
-    <div class="detail-memo"><h4>상담내용</h4><p>${esc(a.consult||'-')}</p></div>
-    <div class="detail-memo"><h4>메모/판정사유</h4><p>${esc([a.memo,a.decisionReason].filter(Boolean).join(' / ')||'-')}</p></div>`;
+function addRow(){ rows.push(blankRow()); saveRows(); setPage('sheet'); setTimeout(()=>{ const last = document.querySelector('#excelBody tr:last-child input:not([readonly])'); if(last) last.focus(); },50); }
+function updateCell(id,key,value){
+  const row = rows.find(r=>r.id===id); if(!row) return;
+  row[key] = value;
+  row.updatedAt = new Date().toISOString();
+  if(key==='birthYear' && !row.age) row.age = calcAge(value);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
+  localStorage.setItem(BACKUP_KEY, new Date().toISOString());
+  renderStats(); renderHome(); renderToday(); renderBackupText();
+}
+function calcAge(v){
+  const n = String(v||'').replace(/\D/g,''); if(!n) return '';
+  let year = n.length>=4 ? Number(n.slice(0,4)) : 0;
+  if(n.length===6){ const yy=Number(n.slice(0,2)); year = yy>30 ? 1900+yy : 2000+yy; }
+  if(!year || year<1950 || year>new Date().getFullYear()) return '';
+  return String(new Date().getFullYear()-year);
+}
+function deleteRow(id){ if(confirm('이 행을 삭제할까요?')){ rows = rows.filter(r=>r.id!==id); saveRows(); } }
+function duplicateRow(id){ const r=rows.find(x=>x.id===id); if(!r) return; const copy=normalize({...r,id:uid(),name:(r.name||'')+' 복사',createdAt:new Date().toISOString()}); rows.push(copy); saveRows(); }
+function deleteSelected(){
+  const ids=[...document.querySelectorAll('.row-check:checked')].map(x=>x.dataset.id);
+  if(!ids.length){ alert('삭제할 행을 선택해주세요.'); return; }
+  if(confirm(`${ids.length}개 행을 삭제할까요?`)){ rows=rows.filter(r=>!ids.includes(r.id)); saveRows(); }
+}
+function focusRow(id){ setPage('sheet'); setTimeout(()=>{ const tr=document.querySelector(`tr[data-id="${id}"]`); if(tr){ tr.scrollIntoView({block:'center',inline:'start'}); tr.style.outline='3px solid #60a5fa'; setTimeout(()=>tr.style.outline='',1600); } },80); }
+function viewDetail(id){
+  const r=rows.find(x=>x.id===id); if(!r) return; detailId=id;
+  $('detailTitle').textContent = `${r.name||'이름없음'} · ${r.workplace||'근무지 미입력'}`;
+  const detailRows = columns.map(c=>`<div class="detail-row"><span>${esc(c.label.replace(/\n/g,''))}</span><strong>${esc(c.readonly ? rows.indexOf(r)+1 : r[c.key] || '-')}</strong></div>`).join('');
+  $('detailBody').innerHTML = `<div class="detail-grid">${detailRows}</div><div class="detail-memo"><h4>다음액션</h4><p>${esc(nextAction(r))}</p></div>`;
   $('detailModal').classList.add('show');
 }
-function closeDetail(){ $('detailModal').classList.remove('show'); detailCurrentId=''; }
-window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant; window.viewApplicant=viewApplicant;
-
-function updateScorePreview(){
-  if(!$('scorePreview')) return;
-  if(!$('age').value && $('birthYear').value) $('age').value=calcAge($('birthYear').value);
-  const data=getForm(), sc=deriveScores(data);
-  $('scorePreview').innerHTML=`검토점수 미리보기: <b>${sc.total}점 · ${grade(sc.total)}</b><div class="score-line"><span class="score-pill">전공 ${sc.major}/25</span><span class="score-pill">경력 ${sc.career}/35</span><span class="score-pill">자격 ${sc.cert}/20</span><span class="score-pill">현장 ${sc.field}/20</span></div>`;
+function closeDetail(){ $('detailModal').classList.remove('show'); detailId=''; }
+function summaryText(r){
+  return `NO.${rows.indexOf(r)+1} ${r.name||'이름없음'} / ${r.workplace||'근무지 미입력'} / ${r.phone||'연락처 없음'}\n상태: ${r.status||'-'} / 지원일: ${r.applyDate||'-'} / 면접: ${[r.interviewDate,r.interviewTime].filter(Boolean).join(' ')||'-'}\n학교·전공: ${[r.finalEducation,r.major].filter(Boolean).join(' / ')||'-'}\n경력: ${r.career||'-'}\n자격증: ${r.certs||'-'}\n상담내용: ${r.consult||'-'}\n출퇴근여부: ${r.commute||'-'}`;
 }
-function checkDuplicate(){
-  const f=getForm();
-  const dups=applicants.filter(a=>a.id!==f.editId && ((f.phone&&a.phone===f.phone)||(f.email&&a.email===f.email)||(f.name&&a.name===f.name&&f.birthYear&&a.birthYear===f.birthYear)));
-  if(dups.length){ $('duplicateBox').className='wide duplicate-box warn'; $('duplicateBox').textContent=`중복 가능성: ${dups.map(d=>d.name+'('+d.phone+')').join(', ')}`; }
-  else { $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; }
+function toCsv(){
+  const headers = columns.map(c=>c.label.replace(/\n/g,''));
+  const lines = [headers, ...rows.map((r,i)=>columns.map(c=>c.readonly ? i+1 : r[c.key]||''))]
+    .map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
+  download(`이력서관리시스템_지원자명단_${today()}.csv`, '\ufeff'+lines.join('\n'), 'text/csv;charset=utf-8');
 }
-
-function makeTemplate(){
-  const a=applicants.find(x=>x.id===$('templateApplicant').value)||{};
-  const name=a.name||'지원자'; const wp=a.workplace||'지원근무지'; const dt=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ')||'협의된 일정'; const type=$('templateType').value;
-  const map={
-    '면접 안내':`안녕하세요, ${name}님.\n에이치티솔루션 채용 담당자입니다.\n지원해주신 이력서 검토 후 면접 일정 안내드립니다.\n\n- 지원근무지: ${wp}\n- 면접일정: ${dt}\n\n확인 후 가능 여부 회신 부탁드립니다. 감사합니다.`,
-    '면접 일정 변경':`안녕하세요, ${name}님.\n기존에 안내드린 면접 일정 관련하여 일정 조율이 필요해 연락드립니다.\n가능하신 시간대를 회신해주시면 확인 후 다시 안내드리겠습니다.`,
-    '면접 취소/전형 안내':`안녕하세요, ${name}님.\n채용 일정 관련하여 안내드립니다.\n내부 검토 결과 현재 채용 진행 상황이 변동되어 예정된 면접 진행이 어려울 수 있어 안내드립니다.\n지원해주셔서 감사합니다.`,
-    '천안 → 평택 문의':`안녕하세요, ${name}님.\n지원해주신 이력서 확인 후 연락드립니다.\n현재 천안사업장은 내부 검토 중인 지원자가 있어, 혹시 평택사업장 근무도 검토 가능하실지 조심스럽게 문의드립니다.`,
-    '평택 → 천안 문의':`안녕하세요, ${name}님.\n지원해주신 이력서 확인 후 연락드립니다.\n혹시 평택 외 천안사업장 근무도 검토 가능하실지 확인차 문의드립니다.`,
-    '부재중 재연락':`안녕하세요, ${name}님.\n에이치티솔루션 채용 관련하여 연락드렸으나 부재중이셔서 문자 남깁니다.\n통화 가능하실 때 회신 부탁드립니다.`,
-    '서류 확인 요청':`안녕하세요, ${name}님.\n지원서류 확인 중 추가 확인이 필요한 사항이 있어 연락드립니다.\n확인 가능하실 때 회신 부탁드립니다.`,
-    '보류/검토 안내':`안녕하세요, ${name}님.\n지원해주신 서류는 현재 내부 검토 중입니다.\n검토 결과에 따라 추가 안내드리겠습니다. 감사합니다.`,
-    '입사 안내':`안녕하세요, ${name}님.\n입사 관련 안내드립니다.\n준비사항 및 세부 일정은 별도 안내드릴 예정입니다. 감사합니다.`
-  };
-  $('templateOutput').value=map[type]||'';
-}
+function jsonBackup(){ download(`이력서관리시스템_백업_${today()}.json`, JSON.stringify(rows,null,2), 'application/json'); }
 function download(name, content, type='text/plain;charset=utf-8'){
   const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
 }
-function csv(){
-  const headers=['지원날짜','지원경로','연락상태','지원근무지','성명','연락처','이메일','성별','연생','연령','지역','출퇴근여부','학력','최종학력','학교','학과','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력','면접날짜','면접시간','입사예정일','내최종판정','판정사유','상담내용','메모','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
-  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,a.source,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,a.commute,a.education,a.finalEducation,a.school,a.major,a.careerType,displayCategory(a),a.checkNeeds,a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.finalDecision,a.decisionReason,a.consult,a.memo,sc.major,sc.career,sc.cert,sc.field,sc.total,grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
-  download(`지원자명단_${today()}.csv`,'\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');
+function parsePasted(){
+  const raw=$('pasteBox').value.trim();
+  if(!raw){ alert('붙여넣은 내용이 없습니다.'); return; }
+  const lines=raw.split(/\r?\n/).filter(Boolean);
+  let added=0;
+  for(const line of lines){
+    const cells=line.split('\t');
+    const first=(cells[0]||'').trim();
+    if(first==='NO' || first==='지원날짜') continue;
+    const row=blankRow();
+    columns.forEach((c,idx)=>{ if(c.readonly) return; const val=(cells[idx]||'').trim(); if(val) row[c.key]=val; });
+    row.createdAt=new Date().toISOString();
+    rows.push(row); added++;
+  }
+  saveRows();
+  $('pasteBox').value='';
+  alert(`${added}개 행을 추가했습니다.`);
+  setPage('sheet');
 }
-function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resume_management_backup_${today()}.json`,JSON.stringify(applicants,null,2),'application/json'); renderAll(); }
+function importJson(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(!Array.isArray(data)) throw new Error('array required');
+      rows=data.map(normalize);
+      saveRows(true);
+    }catch{ alert('JSON 백업 파일 형식을 확인해주세요.'); }
+  };
+  reader.readAsText(file);
+}
+function clearAll(){ if(confirm('현재 브라우저의 모든 지원자 데이터를 삭제할까요?')){ rows=[]; saveRows(true); } }
 
 // events
 
-document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));
-document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.go)));
-$('btnQuickBackup').addEventListener('click', jsonBackup);
-$('applicantForm').addEventListener('input',()=>{ updateScorePreview(); checkDuplicate(); });
-$('applicantForm').addEventListener('submit',e=>{
-  e.preventDefault();
-  const f=getForm();
-  if(!f.name){ alert('성명을 입력해주세요.'); return; }
-  const dup=applicants.find(a=>a.id!==f.editId&&((f.phone&&a.phone===f.phone)||(f.email&&a.email===f.email)));
-  if(dup&&!confirm(`중복 가능성이 있습니다: ${dup.name}\n그래도 저장할까요?`)) return;
-  if(f.editId){ applicants=applicants.map(a=>a.id===f.editId?normalize({...a,...f,id:f.editId,updatedAt:new Date().toISOString()}):a); }
-  else { applicants.unshift(normalize({...f,id:uid(),createdAt:new Date().toISOString()})); }
-  resetForm(); save(); setPage('applicants');
-});
-$('btnResetForm').addEventListener('click', resetForm);
-$('searchInput').addEventListener('input',e=>{ currentSearch=e.target.value; renderTable(); });
-document.querySelectorAll('#workplaceTabs .tab').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#workplaceTabs .tab').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentWorkplace=b.dataset.workplace; renderTable(); }));
-document.querySelectorAll('#quickFilters .chip').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#quickFilters .chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentFilter=b.dataset.filter; renderTable(); }));
-$('sortSelect').addEventListener('change',e=>{ currentSort=e.target.value; renderTable(); });
-$('hideFinished').addEventListener('change',e=>{ hideFinished=e.target.checked; renderTable(); });
-$('btnMakeTemplate').addEventListener('click', makeTemplate);
-$('btnCopyTemplate').addEventListener('click', async()=>{ try{ await navigator.clipboard.writeText($('templateOutput').value); alert('복사됐습니다.'); }catch{ alert('복사가 막히면 직접 드래그해서 복사해주세요.'); } });
-$('btnCsv').addEventListener('click', csv);
-$('btnJson').addEventListener('click', jsonBackup);
-$('jsonImport').addEventListener('change',e=>{ const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result); if(Array.isArray(data)){ applicants=data.map(normalize); save(); alert('가져오기 완료'); } else alert('지원자 백업 JSON 형식이 아닙니다.'); }catch{ alert('JSON 파일을 확인해주세요.'); } }; r.readAsText(file); });
-$('btnClearAll').addEventListener('click',()=>{ if(confirm('현재 브라우저의 모든 지원자 데이터를 삭제할까요?')){ applicants=[]; save(); } });
-if($('btnCloseDetail')) $('btnCloseDetail').addEventListener('click', closeDetail);
-if($('detailBackdrop')) $('detailBackdrop').addEventListener('click', closeDetail);
-if($('btnDetailEdit')) $('btnDetailEdit').addEventListener('click',()=>{ const id=detailCurrentId; closeDetail(); if(id) editApplicant(id); });
-if($('btnCopySummary')) $('btnCopySummary').addEventListener('click',async()=>{ const a=applicants.find(x=>x.id===detailCurrentId); if(!a) return; try{ await navigator.clipboard.writeText(applicantSummary(a)); alert('지원자 요약이 복사됐습니다.'); }catch{ alert('복사가 막히면 상세 내용을 직접 드래그해서 복사해주세요.'); } });
+document.querySelectorAll('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>setPage(btn.dataset.page)));
+document.querySelectorAll('[data-go]').forEach(btn=>btn.addEventListener('click',()=>setPage(btn.dataset.go)));
+$('btnAddTop').addEventListener('click', addRow);
+$('btnAddRow').addEventListener('click', addRow);
+$('btnSaveTop').addEventListener('click',()=>saveRows(true));
+$('btnSaveRows').addEventListener('click',()=>saveRows(true));
+$('btnDeleteSelected').addEventListener('click', deleteSelected);
+$('btnCsvSheet').addEventListener('click', toCsv);
+$('btnCsvBackup').addEventListener('click', toCsv);
+$('btnJsonBackup').addEventListener('click', jsonBackup);
+$('btnClearAll').addEventListener('click', clearAll);
+$('btnImportPaste').addEventListener('click', parsePasted);
+$('btnClearPaste').addEventListener('click',()=>$('pasteBox').value='');
+$('searchInput').addEventListener('input',e=>{ currentSearch=e.target.value; renderSheet(); });
+$('workplaceFilter').addEventListener('change',e=>{ workplaceFilter=e.target.value; renderSheet(); });
+$('statusFilter').addEventListener('change',e=>{ statusFilter=e.target.value; renderSheet(); });
+$('sortSelect').addEventListener('change',e=>{ sortMode=e.target.value; renderSheet(); });
+$('excelBody').addEventListener('input',e=>{ const el=e.target; if(el.dataset.id && el.dataset.key) updateCell(el.dataset.id,el.dataset.key,el.value); });
+$('excelBody').addEventListener('change',e=>{ const el=e.target; if(el.dataset.id && el.dataset.key) updateCell(el.dataset.id,el.dataset.key,el.value); });
+$('jsonImport').addEventListener('change',e=>{ const file=e.target.files[0]; if(file) importJson(file); });
+$('detailBackdrop').addEventListener('click', closeDetail);
+$('btnCloseDetail').addEventListener('click', closeDetail);
+$('btnDetailEditFocus').addEventListener('click',()=>{ const id=detailId; closeDetail(); if(id) focusRow(id); });
+$('btnCopySummary').addEventListener('click',async()=>{ const r=rows.find(x=>x.id===detailId); if(!r) return; try{ await navigator.clipboard.writeText(summaryText(r)); alert('요약이 복사되었습니다.'); }catch{ alert('복사가 막히면 상세 내용을 직접 드래그해서 복사해주세요.'); } });
 
-resetForm();
+window.viewDetail=viewDetail;
+window.deleteRow=deleteRow;
+window.duplicateRow=duplicateRow;
+window.focusRow=focusRow;
+
 renderAll();
