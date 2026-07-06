@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>개인 채용 ERP v2</title>
+  <title>진쩌파트장 채용 ERP v3</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,10 +11,7 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">진</div>
-        <div>
-          <h1>진쩌파트장</h1>
-          <p>채용 ERP v2</p>
-        </div>
+        <div><h1>진쩌파트장</h1><p>채용 ERP v3</p></div>
       </div>
       <nav class="nav">
         <button class="nav-btn active" data-page="home">홈</button>
@@ -24,141 +21,91 @@
         <button class="nav-btn" data-page="templates">안내문구</button>
         <button class="nav-btn" data-page="backup">백업/내보내기</button>
       </nav>
-      <div class="security-note">
-        <strong>서버 저장 없음</strong>
-        <span>데이터는 현재 브라우저 localStorage에만 저장됩니다.</span>
-      </div>
+      <div class="security-note"><strong>서버 저장 없음</strong><span>지원자 데이터는 현재 브라우저에만 저장됩니다.</span></div>
     </aside>
 
     <main class="main">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">개인 채용관리 시스템</p>
-          <h2 id="page-title">홈</h2>
-        </div>
-        <div class="top-actions">
-          <button class="ghost" id="btnSample">샘플 넣기</button>
-          <button class="primary" data-go="form">+ 지원자 등록</button>
-        </div>
+        <div><p class="eyebrow">개인 채용관리 시스템</p><h2 id="page-title">홈</h2></div>
+        <div class="top-actions"><button class="ghost" id="btnQuickBackup">오늘 백업</button><button class="primary" data-go="form">+ 지원자 등록</button></div>
       </header>
 
       <section id="home" class="page active">
         <div class="hero-card">
-          <div>
-            <p class="eyebrow">오늘의 채용 상황</p>
-            <h3>지원자 흐름을 한 화면에서 관리해요.</h3>
-            <p>천안/평택 분리, 연락상태, 면접일, 다음액션까지 브라우저에만 안전하게 저장됩니다.</p>
-          </div>
+          <div><p class="eyebrow">진쩌파트장 채용상황판</p><h3>오늘 먼저 볼 지원자부터 잡아줘요.</h3><p>엑셀 컬럼 기반 입력, 천안/평택 분리, 안내문구, 백업까지 한 화면에서 관리합니다.</p></div>
           <button class="primary" data-go="form">새 지원자 입력</button>
         </div>
-
         <div class="stats-grid" id="statsGrid"></div>
-
+        <div class="backup-alert" id="backupAlert"></div>
         <div class="two-col">
-          <div class="panel">
-            <div class="panel-head">
-              <h3>먼저 볼 사람</h3>
-              <button class="mini" data-go="today">전체 보기</button>
-            </div>
-            <div id="priorityList" class="card-list empty-ready"></div>
-          </div>
-          <div class="panel">
-            <div class="panel-head">
-              <h3>최근 등록</h3>
-              <button class="mini" data-go="applicants">목록 보기</button>
-            </div>
-            <div id="recentList" class="card-list empty-ready"></div>
-          </div>
+          <div class="panel"><div class="panel-head"><h3>우선 처리</h3><button class="mini" data-go="today">전체 보기</button></div><div id="priorityList" class="card-list"></div></div>
+          <div class="panel"><div class="panel-head"><h3>최근 등록</h3><button class="mini" data-go="applicants">목록 보기</button></div><div id="recentList" class="card-list"></div></div>
         </div>
       </section>
 
       <section id="applicants" class="page">
         <div class="toolbar">
-          <div class="tabs" id="workplaceTabs">
-            <button class="tab active" data-workplace="all">전체</button>
-            <button class="tab" data-workplace="천안">천안</button>
-            <button class="tab" data-workplace="평택">평택</button>
-            <button class="tab" data-workplace="기타">기타/미입력</button>
-          </div>
+          <div class="tabs" id="workplaceTabs"><button class="tab active" data-workplace="all">전체</button><button class="tab" data-workplace="천안">천안</button><button class="tab" data-workplace="평택">평택</button><button class="tab" data-workplace="기타">기타/미입력</button></div>
           <input id="searchInput" class="search" placeholder="이름, 연락처, 학교, 경력, 메모 검색" />
         </div>
-        <div class="quick-filters" id="quickFilters">
-          <button class="chip active" data-filter="all">전체</button>
-          <button class="chip" data-filter="contact">연락 필요</button>
-          <button class="chip" data-filter="interview">면접 예정</button>
-          <button class="chip" data-filter="hold">보류</button>
-          <button class="chip" data-filter="active">종료 제외</button>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>상태</th><th>성명</th><th>근무지</th><th>연락처</th><th>지원일</th><th>면접일</th><th>학교/전공</th><th>PM점수</th><th>다음액션</th><th>관리</th>
-              </tr>
-            </thead>
-            <tbody id="applicantTbody"></tbody>
-          </table>
-        </div>
+        <div class="quick-filters" id="quickFilters"><button class="chip active" data-filter="all">전체</button><button class="chip" data-filter="contact">연락 필요</button><button class="chip" data-filter="interview">면접 예정</button><button class="chip" data-filter="decision">판정 필요</button><button class="chip" data-filter="hold">보류</button><button class="chip" data-filter="active">종료 제외</button></div>
+        <div class="table-wrap"><table><thead><tr><th>상태</th><th>성명</th><th>근무지</th><th>연락처</th><th>지원일</th><th>면접</th><th>학교/전공</th><th>판정</th><th>PM</th><th>다음액션</th><th>관리</th></tr></thead><tbody id="applicantTbody"></tbody></table></div>
       </section>
 
       <section id="form" class="page">
-        <form id="applicantForm" class="form-grid panel">
+        <form id="applicantForm" class="panel form-grid">
           <input type="hidden" id="editId" />
+          <h3 class="wide form-title">지원자 기본정보</h3>
+          <label>지원날짜<input id="applyDate" type="date" /></label>
+          <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학, 기타" /></label>
+          <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>보류</option><option>불합격</option><option>연락두절</option></select></label>
+          <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
           <label>성명<input id="name" required placeholder="홍길동" /></label>
           <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
           <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
-          <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
-          <label>지원일<input id="applyDate" type="date" /></label>
-          <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>보류</option><option>불합격</option><option>연락두절</option></select></label>
-          <label>면접일<input id="interviewDate" type="date" /></label>
-          <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학, 기타" /></label>
+          <label>성별<select id="gender"><option value="">선택</option><option>남</option><option>여</option><option>미기재</option></select></label>
+          <label>연생<input id="birthYear" placeholder="1998 또는 980619" /></label>
+          <label>연령<input id="age" placeholder="자동/수동" /></label>
+          <label>지역<input id="region" placeholder="평택, 천안, 오산 등" /></label>
+          <label>출퇴근여부<select id="commute"><option value="">선택</option><option>가능</option><option>확인필요</option><option>어려움</option><option>기숙사문의</option></select></label>
+          <h3 class="wide form-title">학력/경력/평가</h3>
+          <label>학력<input id="education" placeholder="고졸, 전문대, 대졸 등" /></label>
+          <label>최종학력<input id="finalEducation" placeholder="졸업, 예정, 재학, 중퇴 등" /></label>
           <label>학교<input id="school" placeholder="학교명" /></label>
-          <label>전공<input id="major" placeholder="전공" /></label>
+          <label>학과<input id="major" placeholder="전공/학과" /></label>
           <label>자격증<input id="certs" placeholder="산업안전, 전기, 설비보전 등" /></label>
           <label>경력/키워드<input id="career" placeholder="반도체, PM, 설비, FE, FAB 등" /></label>
-          <label class="wide">상담/메모<textarea id="memo" rows="4" placeholder="통화내용, 확인사항, 다음액션"></textarea></label>
+          <label>면접날짜<input id="interviewDate" type="date" /></label>
+          <label>면접시간<input id="interviewTime" type="time" /></label>
+          <label>입사예정일<input id="hireDate" type="date" /></label>
+          <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
+          <label>판정사유<input id="decisionReason" placeholder="전공 적합, 경력 우수, 거리 문제 등" /></label>
+          <label class="wide">상담내용<textarea id="consult" rows="3" placeholder="통화/상담 내용"></textarea></label>
+          <label class="wide">메모/다음액션<textarea id="memo" rows="4" placeholder="확인사항, 다음 연락, 특이사항"></textarea></label>
+          <div class="wide duplicate-box" id="duplicateBox"></div>
           <div class="wide score-preview" id="scorePreview">PM점수 미리보기: 0점</div>
-          <div class="wide form-actions">
-            <button type="submit" class="primary">저장</button>
-            <button type="button" class="ghost" id="btnResetForm">초기화</button>
-          </div>
+          <div class="wide form-actions"><button type="submit" class="primary">저장</button><button type="button" class="ghost" id="btnResetForm">초기화</button></div>
         </form>
       </section>
 
       <section id="today" class="page">
-        <div class="two-col">
-          <div class="panel"><h3>오늘 면접</h3><div id="todayInterview" class="card-list empty-ready"></div></div>
-          <div class="panel"><h3>재연락 대상</h3><div id="recallList" class="card-list empty-ready"></div></div>
-        </div>
-        <div class="panel"><h3>입사/검토 대기</h3><div id="waitingList" class="card-list empty-ready"></div></div>
+        <div class="two-col"><div class="panel"><h3>오늘 면접</h3><div id="todayInterview" class="card-list"></div></div><div class="panel"><h3>연락 필요</h3><div id="recallList" class="card-list"></div></div></div>
+        <div class="two-col"><div class="panel"><h3>판정 필요</h3><div id="decisionList" class="card-list"></div></div><div class="panel"><h3>입사/보류 대기</h3><div id="waitingList" class="card-list"></div></div></div>
       </section>
 
       <section id="templates" class="page">
         <div class="panel">
-          <div class="form-grid">
-            <label>지원자 선택<select id="templateApplicant"></select></label>
-            <label>문구 종류<select id="templateType"><option>면접 안내</option><option>부재중 재연락</option><option>근무지 변경 문의</option><option>보류/검토 안내</option><option>입사 안내</option></select></label>
-          </div>
-          <textarea id="templateOutput" rows="10" class="template-box"></textarea>
+          <div class="form-grid compact"><label>지원자 선택<select id="templateApplicant"></select></label><label>문구 종류<select id="templateType"><option>면접 안내</option><option>면접 일정 변경</option><option>면접 취소/전형 안내</option><option>천안 → 평택 문의</option><option>평택 → 천안 문의</option><option>부재중 재연락</option><option>서류 확인 요청</option><option>보류/검토 안내</option><option>입사 안내</option></select></label></div>
+          <textarea id="templateOutput" rows="11" class="template-box"></textarea>
           <div class="form-actions"><button class="primary" id="btnMakeTemplate">문구 생성</button><button class="ghost" id="btnCopyTemplate">복사</button></div>
         </div>
       </section>
 
       <section id="backup" class="page">
-        <div class="panel backup-panel">
-          <h3>백업/내보내기</h3>
-          <p>데이터는 현재 브라우저에만 저장됩니다. 주기적으로 JSON 백업을 받아두세요.</p>
-          <div class="form-actions wrap">
-            <button class="primary" id="btnCsv">CSV 다운로드</button>
-            <button class="ghost" id="btnJson">JSON 백업 다운로드</button>
-            <label class="file-label">JSON 가져오기<input type="file" id="jsonImport" accept=".json" /></label>
-            <button class="danger" id="btnClearAll">전체 삭제</button>
-          </div>
-        </div>
+        <div class="panel backup-panel"><h3>백업/내보내기</h3><p>localStorage 저장 방식이라 브라우저 초기화 전 JSON 백업이 중요합니다.</p><p id="lastBackupText" class="muted"></p><div class="form-actions wrap"><button class="primary" id="btnCsv">CSV 다운로드</button><button class="ghost" id="btnJson">JSON 백업 다운로드</button><label class="file-label">JSON 가져오기<input type="file" id="jsonImport" accept=".json" /></label><button class="danger" id="btnClearAll">전체 삭제</button></div></div>
       </section>
     </main>
   </div>
-
   <script src="app.js"></script>
 </body>
 </html>
