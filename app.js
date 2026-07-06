@@ -1,4 +1,9 @@
 const STORAGE_KEY = 'recruit_erp_vercel_v2_applicants';
+const OLD_STORAGE_KEYS = [
+  'recruit_erp_vercel_v1_applicants',
+  'recruit_erp_vercel_applicants',
+  'recruit_erp_applicants'
+];
 let applicants = load();
 let currentWorkplace = 'all';
 let currentFilter = 'all';
@@ -7,8 +12,22 @@ let currentSearch = '';
 const $ = (id) => document.getElementById(id);
 const today = () => new Date().toISOString().slice(0,10);
 
+function safeParse(raw){
+  try { return raw ? JSON.parse(raw) : []; } catch { return []; }
+}
 function load(){
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+  const current = safeParse(localStorage.getItem(STORAGE_KEY));
+  if(Array.isArray(current) && current.length) return current;
+
+  for(const key of OLD_STORAGE_KEYS){
+    const oldData = safeParse(localStorage.getItem(key));
+    if(Array.isArray(oldData) && oldData.length){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(oldData));
+      console.log(`기존 데이터 복구 완료: ${key} → ${STORAGE_KEY}`, oldData.length);
+      return oldData;
+    }
+  }
+  return Array.isArray(current) ? current : [];
 }
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants)); renderAll(); }
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
