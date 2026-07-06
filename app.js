@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v10.3-10.4 Recruit ERP 2.0 홈·오늘할일 통합 개선
+// 이력서 관리 시스템 v10.6 Recruit ERP 2.0 홈 현황판·오늘 할 일 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -126,6 +126,7 @@ function isHireSoon(a){
   return d !== null && d >= 0 && d <= 7 && isActive(a);
 }
 function countText(n){ return `${n}명`; }
+function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 
 function setPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
@@ -137,19 +138,41 @@ function setPage(page){
   if(topActions) topActions.style.display = page==='form' ? 'none' : 'flex';
   renderAll();
 }
+function taskGroups(){
+  const t=today();
+  const tomorrow=datePlus(1);
+  const todayInterviews=applicants.filter(a=>isActive(a) && (a.interviewDate===t || (a.status==='면접예정' && !a.interviewDate))); // 면접예정인데 날짜가 비어 있으면 누락 방지를 위해 오늘 할 일에 노출
+  const tomorrowInterviews=applicants.filter(a=>isActive(a) && a.interviewDate===tomorrow);
+  const recalls=applicants.filter(a=>isActive(a) && ['부재중','문자발송','미연락'].includes(a.status));
+  const dorms=applicants.filter(isDormPending);
+  const hireD7=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===7);
+  const hireD3=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===3);
+  const hireToday=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===0);
+  const hireSoon=applicants.filter(isHireSoon);
+  const decisions=applicants.filter(a=>isActive(a) && ((a.status==='면접완료'&&!a.finalDecision) || (!a.finalDecision && finalDecisionOf(a)==='우선검토')));
+  const waits=applicants.filter(a=>isActive(a) && (['입사예정','보류'].includes(a.status)||['입사예정','보류'].includes(a.finalDecision)));
+  return {todayInterviews,tomorrowInterviews,recalls,dorms,hireD7,hireD3,hireToday,hireSoon,decisions,waits};
+}
 function renderStats(){
   const total=applicants.length;
   const active=applicants.filter(isActive).length;
-  const contact=applicants.filter(a=>['미연락','부재중','문자발송'].includes(a.status)).length;
-  const interviews=applicants.filter(a=>a.interviewDate || a.status==='면접예정').length;
-  const hireSoon=applicants.filter(isHireSoon).length;
-  const dorm=applicants.filter(a=>a.dormUse==='사용').length;
-  const data=[['전체 지원자',total],['진행중',active],['연락 필요',contact],['면접 예정',interviews],['입사 D-7',hireSoon],['기숙사 사용',dorm]];
+  const g=taskGroups();
+  const dormUse=applicants.filter(a=>a.dormUse==='사용').length;
+  const data=[
+    ['전체 지원자',total],
+    ['진행중',active],
+    ['오늘 면접',g.todayInterviews.length],
+    ['연락 필요',g.recalls.length],
+    ['기숙사 확인',g.dorms.length],
+    ['입사 임박',g.hireSoon.length]
+  ];
   $('statsGrid').innerHTML=data.map(([k,v])=>`<div class="stat"><span>${k}</span><strong>${v}</strong></div>`).join('');
-  if($('homeTodayInterviewCount')) $('homeTodayInterviewCount').textContent=countText(applicants.filter(a=>a.interviewDate===today() || (a.status==='면접예정' && a.interviewDate===today())).length).replace('명','');
-  if($('homeContactCount')) $('homeContactCount').textContent=contact;
-  if($('homeDormCheckCount')) $('homeDormCheckCount').textContent=applicants.filter(isDormPending).length;
-  if($('homeHireSoonCount')) $('homeHireSoonCount').textContent=hireSoon;
+  setText('homeTodayInterviewCount',g.todayInterviews.length);
+  setText('homeTomorrowInterviewCount',g.tomorrowInterviews.length);
+  setText('homeContactCount',g.recalls.length);
+  setText('homeDormCheckCount',g.dorms.length);
+  setText('homeHireSoonCount',g.hireSoon.length);
+  setText('homeDecisionCount',g.decisions.length);
 }
 function backupNotice(){
   const last = localStorage.getItem(BACKUP_KEY);
@@ -240,27 +263,32 @@ function renderTable(){
   }).join(''):`<tr><td colspan="10" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
 }
 function renderToday(){
-  const t=today();
-  const tomorrow=datePlus(1);
-  const interviews=applicants.filter(a=>a.interviewDate===t || (a.status==='면접예정' && !a.interviewDate));
-  const tomorrowInterviews=applicants.filter(a=>a.interviewDate===tomorrow);
-  const recalls=applicants.filter(a=>['부재중','문자발송','미연락'].includes(a.status));
-  const dorms=applicants.filter(isDormPending);
-  const hireD7=applicants.filter(a=>daysUntil(a.hireDate)===7);
-  const hireD3=applicants.filter(a=>daysUntil(a.hireDate)===3);
-  const hireToday=applicants.filter(a=>daysUntil(a.hireDate)===0);
-  const decisions=applicants.filter(a=>(a.status==='면접완료'&&!a.finalDecision) || finalDecisionOf(a)==='우선검토');
-  const waits=applicants.filter(a=>['입사예정','보류'].includes(a.status)||['입사예정','보류'].includes(a.finalDecision));
-  if($('todayOverview')) $('todayOverview').innerHTML = `<span>오늘 면접 <b>${interviews.length}</b></span><span>연락 <b>${recalls.length}</b></span><span>기숙사 <b>${dorms.length}</b></span><span>입사당일 <b>${hireToday.length}</b></span>`;
-  $('todayInterview').innerHTML=interviews.length?interviews.map(card).join(''):`<div class="empty">오늘 면접자가 없습니다.</div>`;
-  if($('tomorrowInterview')) $('tomorrowInterview').innerHTML=tomorrowInterviews.length?tomorrowInterviews.map(card).join(''):`<div class="empty">내일 면접자가 없습니다.</div>`;
-  $('recallList').innerHTML=recalls.length?recalls.map(card).join(''):`<div class="empty">연락 대상이 없습니다.</div>`;
-  if($('dormCheckList')) $('dormCheckList').innerHTML=dorms.length?dorms.map(card).join(''):`<div class="empty">기숙사 확인 대상이 없습니다.</div>`;
-  if($('hireD7List')) $('hireD7List').innerHTML=hireD7.length?hireD7.map(card).join(''):`<div class="empty">입사 D-7 대상이 없습니다.</div>`;
-  if($('hireD3List')) $('hireD3List').innerHTML=hireD3.length?hireD3.map(card).join(''):`<div class="empty">입사 D-3 대상이 없습니다.</div>`;
-  if($('hireTodayList')) $('hireTodayList').innerHTML=hireToday.length?hireToday.map(card).join(''):`<div class="empty">오늘 입사 대상이 없습니다.</div>`;
-  $('decisionList').innerHTML=decisions.length?decisions.map(card).join(''):`<div class="empty">판정 필요자가 없습니다.</div>`;
-  $('waitingList').innerHTML=waits.length?waits.map(card).join(''):`<div class="empty">입사/보류 대기자가 없습니다.</div>`;
+  const g=taskGroups();
+  if($('todayOverview')) $('todayOverview').innerHTML = `<span>오늘 면접 <b>${g.todayInterviews.length}</b></span><span>내일 면접 <b>${g.tomorrowInterviews.length}</b></span><span>연락 <b>${g.recalls.length}</b></span><span>기숙사 <b>${g.dorms.length}</b></span><span>입사당일 <b>${g.hireToday.length}</b></span><span>판정 <b>${g.decisions.length}</b></span>`;
+  setText('flowTodayInterview',countText(g.todayInterviews.length));
+  setText('flowTomorrowInterview',countText(g.tomorrowInterviews.length));
+  setText('flowRecall',countText(g.recalls.length));
+  setText('flowDorm',countText(g.dorms.length));
+  setText('flowHire',countText(g.hireD7.length+g.hireD3.length+g.hireToday.length));
+  setText('flowDecisionWait',countText(g.decisions.length+g.waits.length));
+  setText('todayInterviewCount',g.todayInterviews.length);
+  setText('tomorrowInterviewCount',g.tomorrowInterviews.length);
+  setText('recallCount',g.recalls.length);
+  setText('dormCheckCount',g.dorms.length);
+  setText('hireD7Count',g.hireD7.length);
+  setText('hireD3Count',g.hireD3.length);
+  setText('hireTodayCount',g.hireToday.length);
+  setText('decisionCount',g.decisions.length);
+  setText('waitingCount',g.waits.length);
+  $('todayInterview').innerHTML=g.todayInterviews.length?g.todayInterviews.map(card).join(''):`<div class="empty">오늘 면접자가 없습니다.</div>`;
+  if($('tomorrowInterview')) $('tomorrowInterview').innerHTML=g.tomorrowInterviews.length?g.tomorrowInterviews.map(card).join(''):`<div class="empty">내일 면접자가 없습니다.</div>`;
+  $('recallList').innerHTML=g.recalls.length?g.recalls.map(card).join(''):`<div class="empty">연락 대상이 없습니다.</div>`;
+  if($('dormCheckList')) $('dormCheckList').innerHTML=g.dorms.length?g.dorms.map(card).join(''):`<div class="empty">기숙사 확인 대상이 없습니다.</div>`;
+  if($('hireD7List')) $('hireD7List').innerHTML=g.hireD7.length?g.hireD7.map(card).join(''):`<div class="empty">입사 D-7 대상이 없습니다.</div>`;
+  if($('hireD3List')) $('hireD3List').innerHTML=g.hireD3.length?g.hireD3.map(card).join(''):`<div class="empty">입사 D-3 대상이 없습니다.</div>`;
+  if($('hireTodayList')) $('hireTodayList').innerHTML=g.hireToday.length?g.hireToday.map(card).join(''):`<div class="empty">오늘 입사 대상이 없습니다.</div>`;
+  $('decisionList').innerHTML=g.decisions.length?g.decisions.map(card).join(''):`<div class="empty">판정 필요자가 없습니다.</div>`;
+  $('waitingList').innerHTML=g.waits.length?g.waits.map(card).join(''):`<div class="empty">입사/보류 대기자가 없습니다.</div>`;
 }
 function renderTemplateSelect(){ $('templateApplicant').innerHTML=applicants.map(a=>`<option value="${a.id}">${esc(a.name||'이름없음')} - ${esc(a.workplace||'')}</option>`).join('')||`<option value="">지원자 없음</option>`; }
 function renderAll(){ renderStats(); backupNotice(); renderHomeLists(); renderTable(); renderToday(); renderTemplateSelect(); updateScorePreview(); }
