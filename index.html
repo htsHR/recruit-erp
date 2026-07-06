@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.5</title>
+  <title>이력서 관리 시스템 v10.6</title>
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.5: CSS 분할 구조 안정화 버전 -->
+  <!-- v10.6: 홈 현황판 + 오늘 할 일 동시 개선 버전 -->
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +17,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.5</p>
+          <p>Recruit ERP 2.0 · v10.6</p>
         </div>
       </div>
       <nav class="nav">
@@ -61,11 +61,13 @@
         <div class="stats-grid dashboard-stats" id="statsGrid"></div>
         <div class="backup-alert subtle" id="backupAlert"></div>
 
-        <div class="home-today-grid" id="homeTodayGrid">
-          <button class="today-tile" data-go="today"><span>오늘 면접</span><strong id="homeTodayInterviewCount">0</strong><small>면접 당일 또는 예정</small></button>
+        <div class="home-today-grid home-today-grid-v106" id="homeTodayGrid">
+          <button class="today-tile today-tile-primary" data-go="today"><span>오늘 면접</span><strong id="homeTodayInterviewCount">0</strong><small>오늘 또는 일정 미입력</small></button>
+          <button class="today-tile" data-go="today"><span>내일 면접</span><strong id="homeTomorrowInterviewCount">0</strong><small>내일 미리 준비</small></button>
           <button class="today-tile" data-go="today"><span>연락 필요</span><strong id="homeContactCount">0</strong><small>미연락·부재중·문자발송</small></button>
           <button class="today-tile" data-go="today"><span>기숙사 확인</span><strong id="homeDormCheckCount">0</strong><small>미확인 또는 확인필요</small></button>
           <button class="today-tile" data-go="today"><span>입사 임박</span><strong id="homeHireSoonCount">0</strong><small>D-7 이내 입사 예정</small></button>
+          <button class="today-tile" data-go="today"><span>판정 필요</span><strong id="homeDecisionCount">0</strong><small>면접완료·우선검토</small></button>
         </div>
 
         <div class="two-col dashboard-panels">
@@ -249,16 +251,24 @@
           </div>
           <div class="task-summary" id="todayOverview"></div>
         </div>
-        <div class="task-board">
-          <div class="panel task-panel task-primary"><div class="panel-head"><h3>오늘 면접</h3><span class="task-label">Today</span></div><div id="todayInterview" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>내일 면접</h3><span class="task-label">Tomorrow</span></div><div id="tomorrowInterview" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>연락 필요</h3><span class="task-label">Call</span></div><div id="recallList" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>기숙사 확인</h3><span class="task-label">Dorm</span></div><div id="dormCheckList" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>입사 D-7</h3><span class="task-label">D-7</span></div><div id="hireD7List" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>입사 D-3</h3><span class="task-label">D-3</span></div><div id="hireD3List" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>입사 당일</h3><span class="task-label">D-Day</span></div><div id="hireTodayList" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>판정 필요</h3><span class="task-label">Decision</span></div><div id="decisionList" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>입사/보류 대기</h3><span class="task-label">Waiting</span></div><div id="waitingList" class="card-list"></div></div>
+        <div class="task-flow" id="taskFlow">
+          <div class="task-flow-item"><span>1</span><strong>오늘 면접</strong><em id="flowTodayInterview">0명</em></div>
+          <div class="task-flow-item"><span>2</span><strong>내일 면접</strong><em id="flowTomorrowInterview">0명</em></div>
+          <div class="task-flow-item"><span>3</span><strong>연락 필요</strong><em id="flowRecall">0명</em></div>
+          <div class="task-flow-item"><span>4</span><strong>기숙사 확인</strong><em id="flowDorm">0명</em></div>
+          <div class="task-flow-item"><span>5</span><strong>입사 일정</strong><em id="flowHire">0명</em></div>
+          <div class="task-flow-item"><span>6</span><strong>판정/대기</strong><em id="flowDecisionWait">0명</em></div>
+        </div>
+        <div class="task-board task-board-v106">
+          <div class="panel task-panel task-primary"><div class="panel-head"><h3>오늘 면접 <b id="todayInterviewCount" class="panel-count">0</b></h3><span class="task-label">Today</span></div><div id="todayInterview" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>내일 면접 <b id="tomorrowInterviewCount" class="panel-count">0</b></h3><span class="task-label">Tomorrow</span></div><div id="tomorrowInterview" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>연락 필요 <b id="recallCount" class="panel-count">0</b></h3><span class="task-label">Call</span></div><div id="recallList" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>기숙사 확인 <b id="dormCheckCount" class="panel-count">0</b></h3><span class="task-label">Dorm</span></div><div id="dormCheckList" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>입사 D-7 <b id="hireD7Count" class="panel-count">0</b></h3><span class="task-label">D-7</span></div><div id="hireD7List" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>입사 D-3 <b id="hireD3Count" class="panel-count">0</b></h3><span class="task-label">D-3</span></div><div id="hireD3List" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>입사 당일 <b id="hireTodayCount" class="panel-count">0</b></h3><span class="task-label">D-Day</span></div><div id="hireTodayList" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>판정 필요 <b id="decisionCount" class="panel-count">0</b></h3><span class="task-label">Decision</span></div><div id="decisionList" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>입사/보류 대기 <b id="waitingCount" class="panel-count">0</b></h3><span class="task-label">Waiting</span></div><div id="waitingList" class="card-list"></div></div>
         </div>
       </section>
 
