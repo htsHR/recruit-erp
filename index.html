@@ -1,262 +1,129 @@
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.2</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">HT</div>
-        <div>
-          <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.2</p>
-        </div>
-      </div>
-      <nav class="nav">
-        <button class="nav-btn active" data-page="home"><span class="nav-ico">⌂</span><span>홈</span></button>
-        <button class="nav-btn" data-page="applicants"><span class="nav-ico">☷</span><span>지원자 목록</span></button>
-        <button class="nav-btn" data-page="form"><span class="nav-ico">＋</span><span>지원자 입력</span></button>
-        <button class="nav-btn" data-page="today"><span class="nav-ico">✓</span><span>오늘 할 일</span></button>
-        <button class="nav-btn" data-page="templates"><span class="nav-ico">✎</span><span>안내문구</span></button>
-        <button class="nav-btn nav-sub" data-page="backup"><span class="nav-ico">⇩</span><span>백업/내보내기</span></button>
-      </nav>
-      <div class="security-note">
-        <strong>서버 저장 없음</strong>
-        <span>지원자 데이터는 현재 브라우저에만 저장됩니다.</span>
-      </div>
-    </aside>
+  box-shadow:0 12px 28px rgba(20,33,61,.06);
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.today-tile:hover{
+  transform:translateY(-2px);
+  box-shadow:0 18px 38px rgba(20,33,61,.10);
+  border-color:#adc8f5;
+}
+.today-tile span{
+  color:#334155;
+  font-size:13px;
+  font-weight:950;
+}
+.today-tile strong{
+  font-size:34px;
+  line-height:1;
+  color:#1d4ed8;
+  letter-spacing:-.06em;
+}
+.today-tile small{
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+}
+.dashboard-stats .stat{
+  border-radius:20px;
+}
+.dashboard-panels .panel,
+.focus-panel{
+  border-radius:24px;
+}
 
-    <main class="main">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">RECRUIT ERP 2.0</p>
-          <h2 id="page-title">홈</h2>
-        </div>
-        <div class="top-actions">
-          <button class="primary" data-go="form">+ 지원자 등록</button>
-        </div>
-      </header>
+/* 오늘 할 일 페이지 */
+.task-hero{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:18px;
+  padding:22px 24px;
+  border-radius:26px;
+  background:linear-gradient(135deg,#ffffff,#edf5ff 62%,#ecfeff);
+  border:1px solid #d8e6f7;
+  box-shadow:0 16px 36px rgba(20,33,61,.07);
+  margin-bottom:16px;
+}
+.task-hero h3{
+  margin:4px 0 6px;
+  font-size:28px;
+  letter-spacing:-.05em;
+  color:#0f172a;
+}
+.task-hero p{
+  margin:0;
+  color:#64748b;
+  font-weight:700;
+}
+.task-summary{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.task-summary span{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border:1px solid #dbe7f6;
+  background:#fff;
+  color:#334155;
+  border-radius:999px;
+  padding:8px 11px;
+  font-size:12px;
+  font-weight:900;
+}
+.task-summary b{
+  color:#1d4ed8;
+}
+.task-board{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+.task-panel{
+  min-height:220px;
+  padding:18px;
+  border-radius:22px;
+}
+.task-primary{
+  border-color:#b7d0ff;
+  background:linear-gradient(180deg,#ffffff,#f5f9ff);
+}
+.task-label{
+  display:inline-flex;
+  align-items:center;
+  height:24px;
+  padding:0 9px;
+  border-radius:999px;
+  background:#eef4ff;
+  color:#1d4ed8;
+  font-size:11px;
+  font-weight:1000;
+}
+.task-panel .panel-head h3{
+  font-size:16px;
+  letter-spacing:-.03em;
+}
+.task-panel .person-card{
+  align-items:flex-start;
+  border-color:#e1eaf7;
+}
+.task-panel .person-card .mini{
+  flex:0 0 auto;
+}
 
-      <section id="home" class="page active">
-        <div class="hero-card">
-          <div>
-            <p class="eyebrow">RECRUIT CONTROL ROOM</p>
-            <h3>지원자 흐름을 한눈에 보고, 필요한 업무만 빠르게 처리합니다.</h3>
-            <p>지원자 등록 · 전화인터뷰 · 면접일정 · 입사예정을 한 곳에서 관리하는 실무형 채용 보드입니다.</p>
-          </div>
-          <div class="hero-actions">
-            <button class="primary" data-go="form">새 지원자 입력</button>
-            <button class="ghost" data-go="applicants">지원자 목록</button>
-          </div>
-        </div>
-        <div class="stats-grid" id="statsGrid"></div>
-        <div class="backup-alert subtle" id="backupAlert"></div>
-        <div class="two-col">
-          <div class="panel">
-            <div class="panel-head"><h3>우선 처리</h3><button class="mini" data-go="today">전체 보기</button></div>
-            <div id="priorityList" class="card-list"></div>
-          </div>
-          <div class="panel">
-            <div class="panel-head"><h3>최근 등록</h3><button class="mini" data-go="applicants">목록 보기</button></div>
-            <div id="recentList" class="card-list"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="applicants" class="page">
-        <div class="list-top-card">
-          <div class="list-top-head">
-            <div>
-              <p class="eyebrow">지원자 목록</p>
-              <h3>지원자 흐름을 한눈에 파악하고 바로 처리합니다.</h3>
-            </div>
-            <button class="primary" data-go="form">+ 지원자 등록</button>
-          </div>
-          <div class="compact-list-controls">
-            <div class="tabs compact-tabs" id="workplaceTabs">
-              <button class="tab active" data-workplace="all">전체</button>
-              <button class="tab" data-workplace="천안">천안</button>
-              <button class="tab" data-workplace="평택">평택</button>
-              <button class="tab" data-workplace="기타">기타</button>
-            </div>
-            <input id="searchInput" class="search" placeholder="이름, 연락처, 지역, 메모 검색" />
-            <select id="sortSelect" class="sort-select">
-              <option value="recent">최근 등록순</option>
-              <option value="applyDesc">지원일 최신순</option>
-              <option value="applyAsc">지원일 오래된순</option>
-              <option value="interviewAsc">면접일 빠른순</option>
-              <option value="scoreDesc">검토점수 높은순</option>
-              <option value="nameAsc">이름순</option>
-            </select>
-            <label class="check-inline"><input type="checkbox" id="hideFinished" /> 종료/불합격 숨김</label>
-          </div>
-          <div class="quick-filters slim" id="quickFilters">
-            <button class="chip active" data-filter="all">전체</button>
-            <button class="chip" data-filter="contact">연락 필요</button>
-            <button class="chip" data-filter="interview">면접 예정</button>
-            <button class="chip" data-filter="decision">판정 필요</button>
-            <button class="chip" data-filter="active">진행중</button>
-          </div>
-        </div>
-        <div class="list-summary" id="listSummary"></div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>NO</th>
-                <th>상태</th>
-                <th>성명</th>
-                <th>연락처</th>
-                <th>근무지</th>
-                <th>지역</th>
-                <th>면접일정</th>
-                <th>기숙사</th>
-                <th>판정</th>
-                <th>관리</th>
-              </tr>
-            </thead>
-            <tbody id="applicantTbody"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <section id="form" class="page">
-        <form id="applicantForm" class="applicant-form-v6">
-
-<input type="hidden" id="editId" />
-
-<div class="form-hero designer-hero">
-  <div class="form-hero-copy">
-    <p class="form-kicker">APPLICANT ENTRY</p>
-    <h3>지원자 등록</h3>
-    <p>이력서에서 확인한 기본정보와 전화인터뷰 내용을 좌우로 나누어 빠르게 정리합니다.</p>
-    <div class="form-hero-tags">
-      <span>① 기본정보</span>
-      <span>② 전화인터뷰</span>
-      <span>③ 직무검토</span>
-      <span>Enter = 다음 칸 이동</span>
-    </div>
-  </div>
-  <div class="form-hero-actions">
-    <button type="submit" class="primary hero-submit" id="submitBtn">지원자 등록</button>
-    <button type="button" class="ghost hero-reset" id="btnResetForm">초기화</button>
-  </div>
-</div>
-
-<div class="split-form-grid refined-grid">
-  <section class="form-card-main core-card">
-    <div class="section-title compact-title">
-      <span>지원 기본정보</span>
-    </div>
-    <div class="form-grid two-grid core-input-grid">
-      <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option></select></label>
-      <label>지원날짜<input id="applyDate" type="date" /></label>
-      <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
-      <label>성명<input id="name" required placeholder="홍길동" /></label>
-      <label>성별<select id="gender"><option value="">선택</option><option>남자</option><option>여자</option></select></label>
-      <label>생년월일<input id="birthYear" placeholder="1998.06.19" /></label>
-      <label>연령<input id="age" placeholder="자동/수동" /></label>
-      <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
-      <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
-      <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학 등" /></label>
-      <label>지역(시)<input id="region" placeholder="평택, 천안, 오산 등" /></label>
-      <label class="education-level">학력구분<select id="education"><option value="">선택</option><option>고졸</option><option>전졸</option><option>대졸</option><option>대학원</option><option>기타</option></select></label>
-      <label>학교<input id="school" placeholder="학교명" /></label>
-      <label>학과<input id="major" placeholder="전공/학과" /></label>
-      <label class="wide">경력<input id="career" placeholder="반도체, PM, 설비, FE, FAB, PLC, 정비, 교대 등" /></label>
-      <label class="wide cert-field">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전, 지게차, 운전면허 등" /></label>
-      <label class="wide sub-field">외국어/기타자격<input id="languageEtc" placeholder="OPIC, 토익스피킹, 기타 자격 등" /></label>
-      <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>출근</option><option>보류</option><option>불합격</option><option>부적합</option><option>철회</option><option>취소</option><option>전형마감</option><option>연락두절</option></select></label>
-    </div>
-  </section>
-
-  <section class="form-card-main interview-card">
-    <div class="section-title compact-title">
-      <span>전화인터뷰·진행관리</span>
-    </div>
-    <div class="form-grid two-grid">
-      <label class="wide dorm-only">기숙사 사용<select id="dormUse"><option value="">선택</option><option>사용</option><option>미사용</option><option>확인필요</option><option>해당없음</option></select></label>
-      <label>면접날짜<input id="interviewDate" type="date" /></label>
-      <label>면접시간<select id="interviewTime"><option value="">선택</option><option>08:00</option><option>08:30</option><option>09:00</option><option>09:30</option><option>10:00</option><option>10:30</option><option>11:00</option><option>11:30</option><option>12:00</option><option>12:30</option><option>13:00</option><option>13:30</option><option>14:00</option><option>14:30</option><option>15:00</option><option>15:30</option><option>16:00</option><option>16:30</option><option>17:00</option><option>17:30</option><option>18:00</option><option>18:30</option><option>19:00</option><option>19:30</option><option>20:00</option></select></label>
-      <label>입사날짜<input id="hireDate" type="date" /></label>
-      <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
-      <label class="wide">상담내용<textarea id="consult" rows="4" placeholder="기숙사 사용 여부, 면접 가능일, 특이사항"></textarea></label>
-      <label class="wide">판정사유/메모/다음액션<textarea id="memo" rows="4" placeholder="판정사유, 다음 연락, 내부 공유사항, 추가 확인사항"></textarea></label>
-    </div>
-  </section>
-</div>
-
-<div class="wide duplicate-box" id="duplicateBox"></div>
-
-<details class="form-section compact-details review-only">
-  <summary><span>직무검토</span><small>확인필요사항과 검토점수는 필요할 때만 사용</small></summary>
-  <div class="form-grid detail-lite-grid">
-    <div class="wide checkbox-block"><strong>확인필요사항</strong><div class="checkbox-grid compact-checks" id="checkNeedsGroup">
-      <label><input type="checkbox" name="checkNeeds" value="생년월일 확인" /> 생년월일 확인</label>
-      <label><input type="checkbox" name="checkNeeds" value="연락처 확인" /> 연락처 확인</label>
-      <label><input type="checkbox" name="checkNeeds" value="이메일 확인" /> 이메일 확인</label>
-      <label><input type="checkbox" name="checkNeeds" value="졸업/재학 확인" /> 졸업/재학 확인</label>
-      <label><input type="checkbox" name="checkNeeds" value="입사가능일 확인" /> 입사가능일 확인</label>
-      <label><input type="checkbox" name="checkNeeds" value="퇴사 가능일 확인" /> 퇴사 가능일 확인</label>
-      <label><input type="checkbox" name="checkNeeds" value="교대근무 가능 여부" /> 교대근무 가능 여부</label>
-      <label><input type="checkbox" name="checkNeeds" value="기숙사 사용 확인" /> 기숙사 사용 확인</label>
-      <label><input type="checkbox" name="checkNeeds" value="근무지 전환 가능 여부" /> 근무지 전환 가능 여부</label>
-      <label><input type="checkbox" name="checkNeeds" value="PM社 6개월 이상 경력기술서" /> PM社 경력기술서</label>
-      <label><input type="checkbox" name="checkNeeds" value="반도체 직접경험 확인" /> 반도체 직접경험 확인</label>
-      <label><input type="checkbox" name="checkNeeds" value="장비명/공정명 확인" /> 장비명/공정명 확인</label>
-    </div></div>
-    <div class="wide checkbox-block"><strong>자소서/태도 키워드</strong><div class="checkbox-grid compact-checks" id="selfIntroKeywordsGroup">
-      <label><input type="checkbox" name="selfIntroKeywords" value="책임감" /> 책임감</label>
-      <label><input type="checkbox" name="selfIntroKeywords" value="성실함" /> 성실함</label>
-      <label><input type="checkbox" name="selfIntroKeywords" value="교대근무 적응" /> 교대근무 적응</label>
-      <label><input type="checkbox" name="selfIntroKeywords" value="안전수칙 준수" /> 안전수칙 준수</label>
-      <label><input type="checkbox" name="selfIntroKeywords" value="문제해결" /> 문제해결</label>
-      <label><input type="checkbox" name="selfIntroKeywords" value="정비/점검" /> 정비/점검</label>
-      <label><input type="checkbox" name="selfIntroKeywords" value="소통/인수인계" /> 소통/인수인계</label>
-      <label><input type="checkbox" name="selfIntroKeywords" value="반도체 이해도" /> 반도체 이해도</label>
-      <label><input type="checkbox" name="selfIntroKeywords" value="지원동기 구체성" /> 지원동기 구체성</label>
-    </div></div>
-    <div class="wide score-preview" id="scorePreview">검토점수 미리보기: 0점</div>
-    <div class="wide score-note">검토점수는 참고용이며, 최종 판단은 담당자가 직접 확인합니다. 성별·연령은 검토점수에 반영하지 않습니다.</div>
-  </div>
-</details>
-        </form>
-      </section>
-
-      <section id="today" class="page">
-        <div class="two-col"><div class="panel"><h3>오늘 면접</h3><div id="todayInterview" class="card-list"></div></div><div class="panel"><h3>연락 필요</h3><div id="recallList" class="card-list"></div></div></div>
-        <div class="two-col"><div class="panel"><h3>판정 필요</h3><div id="decisionList" class="card-list"></div></div><div class="panel"><h3>입사/보류 대기</h3><div id="waitingList" class="card-list"></div></div></div>
-      </section>
-
-      <section id="templates" class="page">
-        <div class="panel">
-          <div class="form-grid compact"><label>지원자 선택<select id="templateApplicant"></select></label><label>문구 종류<select id="templateType"><option>면접 안내</option><option>면접 일정 변경</option><option>면접 취소/전형 안내</option><option>천안 → 평택 문의</option><option>평택 → 천안 문의</option><option>부재중 재연락</option><option>서류 확인 요청</option><option>보류/검토 안내</option><option>입사 안내</option></select></label></div>
-          <textarea id="templateOutput" rows="11" class="template-box"></textarea>
-          <div class="form-actions"><button class="primary" id="btnMakeTemplate">문구 생성</button><button class="ghost" id="btnCopyTemplate">복사</button></div>
-        </div>
-      </section>
-
-      <section id="backup" class="page">
-        <div class="panel backup-panel"><h3>백업/내보내기</h3><p>localStorage 저장 방식이라 브라우저 초기화 전 JSON 백업이 필요할 수 있습니다.</p><p id="lastBackupText" class="muted"></p><div class="form-actions wrap"><button class="primary" id="btnCsv">CSV 다운로드</button><button class="ghost" id="btnJson">JSON 백업 다운로드</button><label class="file-label">JSON 가져오기<input type="file" id="jsonImport" accept=".json" /></label><button class="danger" id="btnClearAll">전체 삭제</button></div></div>
-      </section>
-
-      <div id="detailModal" class="modal" aria-hidden="true">
-        <div class="modal-backdrop" id="detailBackdrop"></div>
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
-          <div class="modal-head">
-            <div><p class="eyebrow">APPLICANT PROFILE</p><h3 id="detailTitle">지원자 정보</h3></div>
-            <button class="ghost" id="btnCloseDetail">닫기</button>
-          </div>
-          <div id="detailBody" class="detail-body"></div>
-          <div class="form-actions"><button class="primary" id="btnDetailEdit">수정하기</button><button class="ghost" id="btnCopySummary">요약 복사</button></div>
-        </div>
-      </div>
-    </main>
-  </div>
-  <script src="app.js"></script>
-</body>
-</html>
+@media(max-width:1180px){
+  .home-today-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .task-board{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .home-today-grid,.task-board{grid-template-columns:1fr}
+  .task-hero{align-items:flex-start;flex-direction:column}
+  .task-summary{justify-content:flex-start}
+  .modal.show{padding:8px}
+  .modal-card{max-height:calc(100vh - 16px)!important;width:calc(100vw - 16px)!important;border-radius:22px!important}
+}

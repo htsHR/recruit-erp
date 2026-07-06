@@ -1,0 +1,129 @@
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.9),transparent 62%);
+}
+.app-shell{grid-template-columns:272px minmax(0,1fr)}
+.sidebar{
+  background:linear-gradient(180deg,#061743 0%,#09245f 52%,#0b1b3f 100%);
+  box-shadow:inset -1px 0 rgba(255,255,255,.09), 18px 0 45px rgba(7,23,67,.15);
+  padding:24px 20px;
+}
+.brand{padding:6px 4px 20px;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,.12)}
+.brand-mark{
+  width:46px;height:46px;border-radius:16px;
+  background:linear-gradient(135deg,#41d7ff 0%,#2563eb 45%,#14368e 100%);
+  color:#fff;box-shadow:0 14px 28px rgba(37,99,235,.32);font-size:13px;letter-spacing:-.04em;
+}
+.brand h1{font-size:18px;letter-spacing:-.04em}.brand p{color:#b9c9e7;font-weight:750;letter-spacing:.02em}
+.nav{gap:9px;margin-top:18px}.nav-btn{
+  display:flex;align-items:center;gap:11px;
+  background:transparent;color:#dce8ff;border:1px solid transparent;
+  border-radius:16px;padding:13px 14px;font-weight:950;letter-spacing:-.02em;
+  transition:.16s ease;
+}
+.nav-btn .nav-ico{width:26px;height:26px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.10);font-weight:1000;color:#dbeafe}
+.nav-btn.active,.nav-btn:hover{background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.14);transform:translateX(2px)}
+.nav-btn.active .nav-ico{background:#fff;color:#1554d1}
+.security-note{background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.06));border-color:rgba(255,255,255,.16);box-shadow:0 18px 35px rgba(0,0,0,.14)}
+.main{padding:26px 30px 36px}.topbar{
+  position:sticky;top:0;z-index:20;
+  margin:-26px -30px 24px;padding:18px 30px 16px;
+  background:rgba(248,251,255,.78);backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(201,213,229,.7);
+}
+.topbar h2{font-size:30px;letter-spacing:-.045em;color:var(--ink-900)}.eyebrow{color:#1554d1;font-weight:1000;letter-spacing:.13em}
+.primary,.ghost,.mini,.danger,.file-label{border-radius:14px;transition:.16s ease;font-weight:1000}.primary{background:linear-gradient(135deg,#1b66f1,#0f4fc9);box-shadow:0 13px 25px rgba(37,99,235,.23)}.primary:hover,.ghost:hover,.mini:hover{transform:translateY(-1px)}.ghost{border:1.5px solid var(--stroke);background:rgba(255,255,255,.88)}
+.hero-card,.list-top-card,.panel,.table-wrap,.form-card-main,.review-only,.modal-card{box-shadow:var(--soft-shadow);border-color:var(--stroke)}
+.hero-card{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(135deg,#fff 0%,#eef5ff 55%,#e6f9ff 100%)}
+.hero-card:after{content:"";position:absolute;right:-80px;top:-120px;width:260px;height:260px;border-radius:80px;background:linear-gradient(135deg,rgba(37,99,235,.14),rgba(19,184,200,.11));transform:rotate(24deg)}
+.hero-card>*{position:relative}.hero-card h3{font-size:26px;letter-spacing:-.04em;color:var(--ink-900)}
+.stat{border-radius:22px;background:rgba(255,255,255,.86);box-shadow:0 12px 32px rgba(15,23,42,.075)}.stat span{color:var(--ink-600);font-weight:950}.stat strong{color:#0b2470;letter-spacing:-.05em}
+/* 지원자 입력 화면 */
+.applicant-form-v6{gap:18px}.form-hero{
+  min-height:164px;border-radius:30px;padding:28px 30px;
+  background:
+    radial-gradient(circle at 84% 22%,rgba(65,215,255,.40),transparent 24%),
+    radial-gradient(circle at 58% 100%,rgba(16,185,129,.22),transparent 26%),
+    linear-gradient(135deg,#071b4d 0%,#0e3c9f 54%,#2563eb 100%);
+  box-shadow:var(--hard-shadow);
+}
+.form-hero:before{background-size:28px 28px;opacity:.24}.form-hero:after{content:"";position:absolute;right:28px;bottom:-34px;width:180px;height:180px;border:1px solid rgba(255,255,255,.20);border-radius:44px;transform:rotate(18deg);background:rgba(255,255,255,.05)}
+.form-kicker{color:#bfe8ff;font-size:12px;letter-spacing:.20em}.form-hero h3{font-size:34px;letter-spacing:-.06em}.form-hero p{max-width:620px;color:#e8f1ff;font-size:15px}.form-hero-tags span{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.26);backdrop-filter:blur(8px)}
+.form-hero-actions .hero-submit{background:#fff;color:#071b4d}.form-hero-actions .hero-reset{background:rgba(255,255,255,.10);color:#fff;border:1.5px solid rgba(255,255,255,.34)}
+.refined-grid{gap:20px;align-items:start}.form-card-main{
+  position:relative;border:1.5px solid var(--stroke);border-top:0;border-radius:26px;padding:22px;background:rgba(255,255,255,.92);
+  overflow:hidden;
+}
+.form-card-main:before{content:"";position:absolute;left:0;top:0;right:0;height:7px;background:linear-gradient(90deg,#1b66f1,#42d7ff)}
+.form-card-main.interview-card:before{background:linear-gradient(90deg,#10b981,#2dd4bf)}
+.form-card-main.interview-card{background:linear-gradient(180deg,rgba(255,255,255,.96),#f4fffd)}
+.section-title{margin:2px 0 18px;padding:0 0 14px;border-bottom:1.5px solid #e4ebf5}.section-title span{font-size:19px;color:var(--ink-900);letter-spacing:-.04em}.section-title span:before{width:10px;height:24px;box-shadow:none;background:linear-gradient(180deg,#2563eb,#42d7ff)}
+.interview-card .section-title span:before{background:linear-gradient(180deg,#10b981,#0f766e);box-shadow:none}
+label{gap:8px;color:#182235;font-size:13.5px;font-weight:1000}.core-input-grid label:nth-child(1),.core-input-grid label:nth-child(4){color:#0d2f7a}
+input,select,textarea{border:1.7px solid var(--stroke-strong);border-radius:15px;background:#fff;min-height:46px;color:#0b1220;font-weight:760;transition:.15s ease;box-shadow:0 1px 0 rgba(255,255,255,.7)}
+input:hover,select:hover,textarea:hover{border-color:#8fa5c0}input:focus,select:focus,textarea:focus{outline:4px solid rgba(37,99,235,.14);border-color:#1b66f1;box-shadow:0 0 0 1px rgba(37,99,235,.10)}
+input::placeholder,textarea::placeholder{color:#8b98aa;font-weight:600}.sub-field input{background:#f8fbff;border-style:dashed}.dorm-only select{background:#effffd;border-color:#69cfc4;color:#075e54}
+.review-only{border-radius:24px;background:rgba(255,255,255,.92);overflow:hidden}.review-only summary{padding:16px 18px;background:#fff}.review-only summary span:before{background:#eaf1ff;color:#1554d1}.checkbox-grid label{font-weight:900;border-radius:13px}.score-preview{background:#f7fbff}.score-note{background:#fff}
+/* 목록 화면 가독성 */
+.list-top-card{border-radius:26px;background:rgba(255,255,255,.92);padding:22px}.compact-list-controls{align-items:center}.tab,.chip{border:1.5px solid var(--stroke);font-weight:1000}.tab.active,.chip.active{background:#0f2e74;border-color:#0f2e74}.table-wrap{border-radius:22px}table{min-width:1080px}th{background:#edf4ff;color:#1a2740;font-weight:1000;letter-spacing:-.02em}td{font-weight:700}.row-actions button{border-radius:11px;font-weight:1000}.badge{letter-spacing:-.02em}
+/* 상세보기 */
+.modal-card{border-radius:28px}.modal-head{background:linear-gradient(135deg,#fff,#f2f7ff);border-bottom:1px solid #e0e8f4}.detail-row,.summary-card,.detail-memo,.detail-core-card,.detail-score{border-radius:16px}.detail-score-section{background:#f8fbff;border:1px solid #dce7f5;border-radius:20px;padding:16px;margin-top:18px}
+@media(max-width:1180px){.app-shell{grid-template-columns:232px 1fr}.main{padding:22px}.topbar{margin:-22px -22px 22px;padding:16px 22px}.form-hero h3{font-size:30px}}
+@media(max-width:900px){.app-shell{display:block}.sidebar{position:relative;height:auto}.security-note{position:static;margin-top:16px}.main{padding:18px}.topbar{position:relative;margin:-18px -18px 18px}.stats-grid{grid-template-columns:repeat(2,1fr)}.two-col{grid-template-columns:1fr}}
+@media(max-width:700px){.form-hero{border-radius:24px}.form-hero h3{font-size:26px}.form-card-main{border-radius:22px;padding:17px}table{min-width:900px}}
+
+
+/* v10.1 입력 편의성·디테일 튜닝 */
+.form-hero-tags span:last-child{
+  background:rgba(20,184,166,.22);
+  border-color:rgba(153,246,228,.45);
+  color:#ecfeff;
+}
+.education-level select{
+  border-color:#93c5fd;
+  background:linear-gradient(180deg,#ffffff,#f5f9ff);
+  font-weight:900;
+}
+.education-level:before{
+  content:'🎓';
+  position:absolute;
+  transform:translateY(-2px);
+  opacity:.9;
+}
+.education-level{
+  position:relative;
+}
+.education-level span{display:none}
+.core-card .core-input-grid label{
+  position:relative;
+}
+.core-card .core-input-grid label:nth-child(12),
+.core-card .core-input-grid label:nth-child(13),
+.core-card .core-input-grid label:nth-child(14){
+  padding:12px;
+  border-radius:17px;
+  background:linear-gradient(180deg,#fbfdff,#f3f7ff);
+  border:1px solid #d9e5f7;
+}
+.core-card .core-input-grid label:nth-child(12)::after,
+.core-card .core-input-grid label:nth-child(13)::after,
+.core-card .core-input-grid label:nth-child(14)::after{
+  content:'이력서';
+  position:absolute;
+  right:12px;
+  top:11px;
+  font-size:10px;
+  font-weight:1000;
+  color:#2563eb;
+  background:#eaf2ff;
+  border:1px solid #cfe0ff;
+  border-radius:999px;
+  padding:2px 7px;
+}
+input:focus,select:focus,textarea:focus{
+  transform:translateY(-1px);
+}
+.form-card-main{
+  transition:box-shadow .18s ease, transform .18s ease;
+}
+.form-card-main:hover{
+  box-shadow:0 20px 44px rgba(15,23,42,.105);
+}
