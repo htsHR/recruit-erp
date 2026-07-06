@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v9</title>
+  <title>이력서 관리 시스템 v9.1</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,19 +13,20 @@
         <div class="brand-mark">이</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Excel-like Register v9</p>
+          <p>Resume Management v9.1</p>
         </div>
       </div>
       <nav class="nav">
         <button class="nav-btn active" data-page="home">홈</button>
-        <button class="nav-btn" data-page="sheet">지원자명단</button>
-        <button class="nav-btn" data-page="paste">엑셀 붙여넣기</button>
+        <button class="nav-btn" data-page="applicants">지원자 목록</button>
+        <button class="nav-btn" data-page="form">지원자 입력</button>
         <button class="nav-btn" data-page="today">오늘 할 일</button>
+        <button class="nav-btn" data-page="templates">안내문구</button>
         <button class="nav-btn nav-sub" data-page="backup">백업/내보내기</button>
       </nav>
       <div class="security-note">
-        <strong>초기 데이터 없음</strong>
-        <span>엑셀의 기존 지원자명단은 포함하지 않았습니다. 새 저장소에서 처음부터 입력합니다.</span>
+        <strong>서버 저장 없음</strong>
+        <span>지원자 데이터는 현재 브라우저에만 저장됩니다.</span>
       </div>
     </aside>
 
@@ -36,141 +37,242 @@
           <h2 id="page-title">홈</h2>
         </div>
         <div class="top-actions">
-          <button class="ghost" id="btnSaveTop">저장</button>
-          <button class="primary" id="btnAddTop">+ 행 추가</button>
+          <button class="primary" data-go="form">+ 지원자 등록</button>
         </div>
       </header>
 
       <section id="home" class="page active">
         <div class="hero-card">
           <div>
-            <p class="eyebrow">구직지원자명단 웹버전</p>
-            <h3>기존 엑셀과 같은 순서로 입력하고, 웹에서 검색·필터·저장합니다.</h3>
-            <p>NO, 지원날짜, 연락상태, 면접날짜, 시간, 입사날짜, 지원경로, 기타, 성별, 지원근무지, 성명 등 기존 엑셀 컬럼 순서를 그대로 반영했습니다.</p>
+            <p class="eyebrow">이력서 검토 현황판</p>
+            <h3>기존 지원자 관리 기능은 유지하고, 입력 순서만 엑셀 흐름에 맞췄습니다.</h3>
+            <p>엑셀은 참고 양식으로만 반영했고, 실제 작성·검토·진행관리는 기존 웹 시스템에서 계속 진행합니다.</p>
           </div>
           <div class="hero-actions">
-            <button class="primary" data-go="sheet">지원자명단 열기</button>
-            <button class="ghost" data-go="paste">엑셀 붙여넣기</button>
+            <button class="primary" data-go="form">새 지원자 입력</button>
+            <button class="ghost" data-go="applicants">지원자 목록</button>
           </div>
         </div>
         <div class="stats-grid" id="statsGrid"></div>
+        <div class="backup-alert subtle" id="backupAlert"></div>
         <div class="two-col">
           <div class="panel">
             <div class="panel-head"><h3>우선 처리</h3><button class="mini" data-go="today">전체 보기</button></div>
             <div id="priorityList" class="card-list"></div>
           </div>
           <div class="panel">
-            <div class="panel-head"><h3>최근 등록</h3><button class="mini" data-go="sheet">명단 보기</button></div>
+            <div class="panel-head"><h3>최근 등록</h3><button class="mini" data-go="applicants">목록 보기</button></div>
             <div id="recentList" class="card-list"></div>
           </div>
         </div>
       </section>
 
-      <section id="sheet" class="page">
-        <div class="sheet-toolbar panel">
-          <div class="toolbar-row">
-            <button class="primary" id="btnAddRow">+ 행 추가</button>
-            <button class="ghost" id="btnSaveRows">저장</button>
-            <button class="ghost" id="btnCsvSheet">CSV 다운로드</button>
-            <button class="danger soft" id="btnDeleteSelected">선택 삭제</button>
+      <section id="applicants" class="page">
+        <div class="toolbar toolbar-stack">
+          <div class="tabs" id="workplaceTabs">
+            <button class="tab active" data-workplace="all">전체</button>
+            <button class="tab" data-workplace="천안">천안</button>
+            <button class="tab" data-workplace="평택">평택</button>
+            <button class="tab" data-workplace="기타">기타/미입력</button>
           </div>
-          <div class="toolbar-row filters">
-            <input id="searchInput" class="search" placeholder="성명, 연락처, 학교, 경력, 자격증, 상담내용 검색" />
-            <select id="workplaceFilter" class="sort-select">
-              <option value="all">근무지 전체</option>
-              <option>천안</option>
-              <option>평택</option>
-              <option>기타</option>
-              <option value="blank">미입력</option>
-            </select>
-            <select id="statusFilter" class="sort-select">
-              <option value="all">연락상태 전체</option>
-              <option>미연락</option>
-              <option>연락완료</option>
-              <option>부재중</option>
-              <option>문자발송</option>
-              <option>면접예정</option>
-              <option>면접완료</option>
-              <option>출근</option>
-              <option>입사예정</option>
-              <option>불합격</option>
-              <option>부적합</option>
-              <option>철회</option>
-              <option>취소</option>
-              <option>전형마감</option>
-              <option>보류</option>
-              <option>연락두절</option>
-            </select>
+          <div class="toolbar-row right-tools">
+            <input id="searchInput" class="search" placeholder="이름, 연락처, 학교, 전공, 경력, 메모 검색" />
             <select id="sortSelect" class="sort-select">
-              <option value="noAsc">NO 오름차순</option>
-              <option value="recent">최근 입력순</option>
-              <option value="applyDesc">지원날짜 최신순</option>
-              <option value="interviewAsc">면접날짜 빠른순</option>
-              <option value="nameAsc">성명순</option>
+              <option value="recent">최근 등록순</option>
+              <option value="applyDesc">지원일 최신순</option>
+              <option value="applyAsc">지원일 오래된순</option>
+              <option value="interviewAsc">면접일 빠른순</option>
+              <option value="scoreDesc">검토점수 높은순</option>
+              <option value="nameAsc">이름순</option>
+            </select>
+            <label class="check-inline"><input type="checkbox" id="hideFinished" /> 종료/불합격 숨기기</label>
+          </div>
+          <div class="toolbar-row filter-tools">
+            <select id="jobFitFilter" class="sort-select wide-select">
+              <option value="all">직무적합 전체</option>
+              <option>PM 직접경력자</option>
+              <option>반도체 장비/FE 경험자</option>
+              <option>전기·설비 정비 경험자</option>
+              <option>기계·금형·차량정비 경험자</option>
+              <option>시설운영/설비이상대응 경험자</option>
+              <option>관련전공 신입</option>
+              <option>현장근무 적응형</option>
+              <option>직무연관 낮음</option>
+              <option>확인필요</option>
+            </select>
+            <select id="careerTypeFilter" class="sort-select">
+              <option value="all">경력구분 전체</option>
+              <option>신입</option>
+              <option>경력</option>
+              <option>재직중</option>
+              <option>재학중</option>
+              <option>PM경력</option>
+              <option>설비경력</option>
+              <option>확인필요</option>
+            </select>
+            <select id="needsFilter" class="sort-select">
+              <option value="all">확인필요 전체</option>
+              <option value="has">확인필요 있음</option>
+              <option value="none">확인필요 없음</option>
             </select>
           </div>
-          <div class="list-summary" id="listSummary"></div>
         </div>
 
-        <div class="excel-wrap">
-          <table class="excel-table" id="excelTable">
-            <thead id="excelHead"></thead>
-            <tbody id="excelBody"></tbody>
+        <div class="quick-filters" id="quickFilters">
+          <button class="chip active" data-filter="all">전체</button>
+          <button class="chip" data-filter="priority">우선검토</button>
+          <button class="chip" data-filter="contact">연락 필요</button>
+          <button class="chip" data-filter="interview">면접 예정</button>
+          <button class="chip" data-filter="decision">판정 필요</button>
+          <button class="chip" data-filter="hold">보류</button>
+          <button class="chip" data-filter="active">진행중만</button>
+        </div>
+        <div class="list-summary" id="listSummary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>NO</th>
+                <th>상태</th>
+                <th>성명</th>
+                <th>근무지</th>
+                <th>연락처</th>
+                <th>거주지역</th>
+                <th>학교/전공</th>
+                <th>최근근무/업무</th>
+                <th>경력구분</th>
+                <th>직무적합</th>
+                <th>확인필요</th>
+                <th>판정</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="applicantTbody"></tbody>
           </table>
         </div>
-        <div class="hint-box">입력 후 자동저장되지만, 안정적으로 사용하려면 중간중간 <strong>저장</strong>을 눌러주세요. 긴 내용은 셀 안에서 입력 후 상세 버튼으로 확인할 수 있습니다.</div>
       </section>
 
-      <section id="paste" class="page">
-        <div class="panel">
-          <div class="panel-head"><h3>엑셀 붙여넣기</h3><span class="muted">기존 엑셀과 같은 컬럼 순서</span></div>
-          <p class="muted">엑셀에서 지원자 행을 복사한 뒤 아래 칸에 붙여넣으면 웹 지원자명단에 추가됩니다. 헤더가 포함돼도 자동으로 제외합니다.</p>
-          <div class="paste-order" id="pasteOrder"></div>
-          <textarea id="pasteBox" class="paste-box" rows="12" placeholder="엑셀에서 복사한 행을 여기에 붙여넣기"></textarea>
-          <div class="form-actions wrap">
-            <button class="primary" id="btnImportPaste">붙여넣기 데이터 추가</button>
-            <button class="ghost" id="btnClearPaste">비우기</button>
+      <section id="form" class="page">
+        <form id="applicantForm" class="panel applicant-form-v4">
+          <input type="hidden" id="editId" />
+          <div class="form-guide">
+            <div>
+              <p class="eyebrow">지원자 입력</p>
+              <h3>엑셀 작성 순서를 살리되, 웹 관리 기능은 그대로 유지합니다.</h3>
+              <p>엑셀 컬럼 순서로 기본 작성 후, 아래에서 직무검토 항목만 추가로 보완합니다.</p>
+            </div>
+            <button type="button" class="ghost" id="btnResetForm">초기화</button>
           </div>
-        </div>
+
+          <details class="form-section" open>
+            <summary><span>1. 엑셀 순서 입력</span><small>지원날짜부터 출퇴근여부까지 기존 엑셀 흐름</small></summary>
+            <div class="excel-order-note wide">
+              엑셀 양식의 작성 순서를 웹 입력폼에 반영했습니다. 단, 기존 지원자 목록·상세보기·오늘 할 일·안내문구·백업 기능은 그대로 유지됩니다.
+            </div>
+            <div class="form-grid simple-grid">
+              <label>지원날짜<input id="applyDate" type="date" /></label>
+              <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>출근</option><option>보류</option><option>불합격</option><option>부적합</option><option>철회</option><option>취소</option><option>전형마감</option><option>연락두절</option></select></label>
+              <label>면접날짜<input id="interviewDate" type="date" /></label>
+              <label>시간<input id="interviewTime" type="time" /></label>
+              <label>입사날짜<input id="hireDate" type="date" /></label>
+              <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학, 기타" /></label>
+              <label class="wide">기타<input id="extra" placeholder="엑셀의 기타 칸. 특이사항, 내부 메모, 추가 확인사항 등" /></label>
+              <label>성별<select id="gender"><option value="">선택</option><option>남</option><option>여</option><option>남자</option><option>여자</option><option>미기재</option></select></label>
+              <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
+              <label>성명<input id="name" required placeholder="홍길동" /></label>
+              <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
+              <label>학력<input id="education" placeholder="고졸, 전문대, 대졸 등" /></label>
+              <label>최종학력/졸업상태<input id="finalEducation" placeholder="졸업, 졸업예정, 재학, 중퇴 등" /></label>
+              <label>최종학교<input id="school" placeholder="학교명" /></label>
+              <label>학과<input id="major" placeholder="전공/학과" /></label>
+              <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
+              <label>연령<input id="age" placeholder="자동/수동" /></label>
+              <label>연생/생년월일<input id="birthYear" placeholder="1998 또는 1998.06.19" /></label>
+              <label>지역(시)<input id="region" placeholder="평택, 천안, 오산 등" /></label>
+              <label class="wide">경력<input id="career" placeholder="반도체, PM, 설비, FE, FAB, PLC, 정비, 교대 등" /></label>
+              <label class="wide">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전, 지게차, 운전면허 등" /></label>
+              <label class="wide">상담내용<textarea id="consult" rows="3" placeholder="통화/상담 내용"></textarea></label>
+              <label>출퇴근여부<select id="commute"><option value="">선택</option><option>출퇴근</option><option>가능</option><option>기숙사</option><option>확인필요</option><option>어려움</option><option>기숙사문의</option></select></label>
+            </div>
+          </details>
+
+          <details class="form-section" open>
+            <summary><span>2. 이력서 검토 보완</span><small>엑셀에 없지만 웹 관리에 필요한 검토 항목</small></summary>
+            <div class="form-grid simple-grid">
+              <label>학점<input id="gradePoint" placeholder="3.83/4.5" /></label>
+              <label>외국어/기타자격<input id="languageEtc" placeholder="OPIC IM2, 토익스피킹, G-TELP 등" /></label>
+              <label>최근근무처<input id="lastCompany" placeholder="최근 근무처" /></label>
+              <label>담당업무<input id="duties" placeholder="전기정비, 설비유지보수, 장비셋업 등" /></label>
+              <label>퇴직사유<input id="leaveReason" placeholder="계약만료, 개인사정, 재직중 등" /></label>
+              <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option><option>재직중</option><option>재학중</option><option>PM경력</option><option>설비경력</option><option>확인필요</option></select></label>
+              <label>직무적합 분류<select id="jobFitCategory"><option value="">선택</option><option>PM 직접경력자</option><option>반도체 장비/FE 경험자</option><option>전기·설비 정비 경험자</option><option>기계·금형·차량정비 경험자</option><option>시설운영/설비이상대응 경험자</option><option>관련전공 신입</option><option>현장근무 적응형</option><option>직무연관 낮음</option><option>확인필요</option></select></label>
+              <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
+              <label class="wide">판정사유<input id="decisionReason" placeholder="전공 적합, 경력 우수, 반도체 직접경험 확인 필요 등" /></label>
+              <label class="wide">메모/다음액션<textarea id="memo" rows="3" placeholder="확인사항, 다음 연락, 특이사항"></textarea></label>
+              <div class="wide checkbox-block"><strong>확인필요사항</strong><div class="checkbox-grid" id="checkNeedsGroup">
+                <label><input type="checkbox" name="checkNeeds" value="생년월일 확인" /> 생년월일 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="연락처 확인" /> 연락처 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="이메일 확인" /> 이메일 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="졸업/재학 확인" /> 졸업/재학 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="입사가능일 확인" /> 입사가능일 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="퇴사 가능일 확인" /> 퇴사 가능일 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="교대근무 가능 여부" /> 교대근무 가능 여부</label>
+                <label><input type="checkbox" name="checkNeeds" value="출퇴근/기숙사 확인" /> 출퇴근/기숙사 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="근무지 전환 가능 여부" /> 근무지 전환 가능 여부</label>
+                <label><input type="checkbox" name="checkNeeds" value="PM社 6개월 이상 경력기술서" /> PM社 경력기술서</label>
+                <label><input type="checkbox" name="checkNeeds" value="반도체 직접경험 확인" /> 반도체 직접경험 확인</label>
+                <label><input type="checkbox" name="checkNeeds" value="장비명/공정명 확인" /> 장비명/공정명 확인</label>
+              </div></div>
+              <div class="wide checkbox-block"><strong>자소서/태도 키워드</strong><div class="checkbox-grid" id="selfIntroKeywordsGroup">
+                <label><input type="checkbox" name="selfIntroKeywords" value="책임감" /> 책임감</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="성실함" /> 성실함</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="교대근무 적응" /> 교대근무 적응</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="안전수칙 준수" /> 안전수칙 준수</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="문제해결" /> 문제해결</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="정비/점검" /> 정비/점검</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="소통/인수인계" /> 소통/인수인계</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="반도체 이해도" /> 반도체 이해도</label>
+                <label><input type="checkbox" name="selfIntroKeywords" value="지원동기 구체성" /> 지원동기 구체성</label>
+              </div></div>
+              <div class="wide score-preview" id="scorePreview">검토점수 미리보기: 0점</div>
+              <div class="wide score-note">검토점수는 참고용이며, 최종 판단은 담당자가 직접 확인합니다. 성별·연령은 점수에 반영하지 않습니다.</div>
+              <div class="wide duplicate-box" id="duplicateBox"></div>
+            </div>
+          </details>
+
+          <div class="sticky-save-bar">
+            <div><strong>입력 후 저장</strong><span>수정 중이면 같은 버튼으로 반영됩니다.</span></div>
+            <button type="submit" class="primary">저장</button>
+          </div>
+        </form>
       </section>
 
       <section id="today" class="page">
-        <div class="two-col">
-          <div class="panel"><h3>오늘 면접</h3><div id="todayInterview" class="card-list"></div></div>
-          <div class="panel"><h3>연락 필요</h3><div id="contactList" class="card-list"></div></div>
-        </div>
-        <div class="two-col">
-          <div class="panel"><h3>입사 예정</h3><div id="hireList" class="card-list"></div></div>
-          <div class="panel"><h3>최근 상담내용</h3><div id="consultList" class="card-list"></div></div>
+        <div class="two-col"><div class="panel"><h3>오늘 면접</h3><div id="todayInterview" class="card-list"></div></div><div class="panel"><h3>연락 필요</h3><div id="recallList" class="card-list"></div></div></div>
+        <div class="two-col"><div class="panel"><h3>판정 필요</h3><div id="decisionList" class="card-list"></div></div><div class="panel"><h3>입사/보류 대기</h3><div id="waitingList" class="card-list"></div></div></div>
+      </section>
+
+      <section id="templates" class="page">
+        <div class="panel">
+          <div class="form-grid compact"><label>지원자 선택<select id="templateApplicant"></select></label><label>문구 종류<select id="templateType"><option>면접 안내</option><option>면접 일정 변경</option><option>면접 취소/전형 안내</option><option>천안 → 평택 문의</option><option>평택 → 천안 문의</option><option>부재중 재연락</option><option>서류 확인 요청</option><option>보류/검토 안내</option><option>입사 안내</option></select></label></div>
+          <textarea id="templateOutput" rows="11" class="template-box"></textarea>
+          <div class="form-actions"><button class="primary" id="btnMakeTemplate">문구 생성</button><button class="ghost" id="btnCopyTemplate">복사</button></div>
         </div>
       </section>
 
       <section id="backup" class="page">
-        <div class="panel backup-panel">
-          <h3>백업/내보내기</h3>
-          <p>현재 데이터는 서버가 아니라 이 브라우저에 저장됩니다. 필요할 때 JSON 백업을 받아두면 다른 브라우저에서 다시 가져올 수 있습니다.</p>
-          <p id="lastSavedText" class="muted"></p>
-          <div class="form-actions wrap">
-            <button class="primary" id="btnCsvBackup">CSV 다운로드</button>
-            <button class="ghost" id="btnJsonBackup">JSON 백업 다운로드</button>
-            <label class="file-label">JSON 가져오기<input type="file" id="jsonImport" accept=".json" /></label>
-            <button class="danger" id="btnClearAll">전체 삭제</button>
-          </div>
-        </div>
+        <div class="panel backup-panel"><h3>백업/내보내기</h3><p>localStorage 저장 방식이라 브라우저 초기화 전 JSON 백업이 필요할 수 있습니다.</p><p id="lastBackupText" class="muted"></p><div class="form-actions wrap"><button class="primary" id="btnCsv">CSV 다운로드</button><button class="ghost" id="btnJson">JSON 백업 다운로드</button><label class="file-label">JSON 가져오기<input type="file" id="jsonImport" accept=".json" /></label><button class="danger" id="btnClearAll">전체 삭제</button></div></div>
       </section>
 
       <div id="detailModal" class="modal" aria-hidden="true">
         <div class="modal-backdrop" id="detailBackdrop"></div>
-        <div class="modal-card wide-modal" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
           <div class="modal-head">
             <div><p class="eyebrow">지원자 상세보기</p><h3 id="detailTitle">지원자 정보</h3></div>
             <button class="ghost" id="btnCloseDetail">닫기</button>
           </div>
           <div id="detailBody" class="detail-body"></div>
-          <div class="form-actions">
-            <button class="primary" id="btnDetailEditFocus">명단에서 보기</button>
-            <button class="ghost" id="btnCopySummary">요약 복사</button>
-          </div>
+          <div class="form-actions"><button class="primary" id="btnDetailEdit">수정하기</button><button class="ghost" id="btnCopySummary">요약 복사</button></div>
         </div>
       </div>
     </main>
