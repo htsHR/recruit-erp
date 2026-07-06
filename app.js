@@ -122,7 +122,7 @@ function filtered(){ return applicants.filter(a=>{
 function renderTable(){
   const rows=filtered();
   $('applicantTbody').innerHTML=rows.length?rows.map(a=>{ const score=calcScore(a); const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' '); return `<tr>
-    <td><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></td><td><strong>${esc(a.name||'')}</strong></td><td>${esc(a.workplace||'')}</td><td>${esc(a.phone||'')}</td><td>${esc(a.applyDate||'')}</td><td>${esc(interview)}</td><td>${esc([a.school,a.major].filter(Boolean).join(' / '))}</td><td><span class="decision">${esc(a.finalDecision||'-')}</span></td><td>${score} · ${grade(score)}</td><td>${esc(nextAction(a))}</td><td class="row-actions"><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
+    <td><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></td><td><strong>${esc(a.name||'')}</strong></td><td>${esc(a.workplace||'')}</td><td>${esc(a.phone||'')}</td><td>${esc(a.applyDate||'')}</td><td>${esc(interview)}</td><td>${esc([a.school,a.major].filter(Boolean).join(' / '))}</td><td><span class="decision">${esc(a.finalDecision||'-')}</span></td><td>${score} · ${grade(score)}</td><td>${esc(nextAction(a))}</td><td class="row-actions"><button onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
   </tr>`; }).join(''):`<tr><td colspan="11" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
 }
 function renderToday(){
@@ -146,7 +146,29 @@ function resetForm(){ $('applicantForm').reset(); $('editId').value=''; $('apply
 function editApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ fillForm(a); setPage('form'); } }
 function duplicateApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ const copy={...a,id:'',name:a.name+' 복사',phone:'',email:'',createdAt:''}; fillForm(copy); setPage('form'); } }
 function deleteApplicant(id){ if(confirm('삭제할까요?')){ applicants=applicants.filter(a=>a.id!==id); save(); } }
-window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant;
+let detailCurrentId = '';
+function detailRow(label, value){ return `<div class="detail-row"><span>${label}</span><strong>${esc(value||'-')}</strong></div>`; }
+function applicantSummary(a){ const score=calcScore(a); return `${a.name||'지원자'} / ${a.workplace||'근무지 미입력'} / ${a.phone||'연락처 없음'}\n상태: ${a.status||'-'} / 판정: ${a.finalDecision||grade(score)} / PM점수: ${score}점\n학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'}\n경력·키워드: ${a.career||'-'}\n자격증: ${a.certs||'-'}\n다음액션: ${nextAction(a)}\n메모: ${a.memo||'-'}`; }
+function viewApplicant(id){
+  const a=applicants.find(x=>x.id===id); if(!a) return;
+  detailCurrentId=id; const score=calcScore(a);
+  $('detailTitle').textContent = `${a.name||'이름없음'} · ${a.workplace||'근무지 미입력'}`;
+  $('detailBody').innerHTML = `
+    <div class="detail-score"><strong>${score}점</strong><span>${esc(a.finalDecision||grade(score))}</span><small>${esc(nextAction(a))}</small></div>
+    <div class="detail-grid">
+      ${detailRow('지원일',a.applyDate)}${detailRow('지원경로',a.source)}${detailRow('연락상태',a.status)}${detailRow('연락처',a.phone)}
+      ${detailRow('면접일정',[a.interviewDate,a.interviewTime].filter(Boolean).join(' '))}${detailRow('입사예정일',a.hireDate)}
+      ${detailRow('지역',a.region)}${detailRow('출퇴근',a.commute)}${detailRow('학교',a.school)}${detailRow('학과',a.major)}
+      ${detailRow('학력',a.education)}${detailRow('최종학력',a.finalEducation)}
+    </div>
+    <div class="detail-memo"><h4>자격증</h4><p>${esc(a.certs||'-')}</p></div>
+    <div class="detail-memo"><h4>경력/키워드</h4><p>${esc(a.career||'-')}</p></div>
+    <div class="detail-memo"><h4>상담내용</h4><p>${esc(a.consult||'-')}</p></div>
+    <div class="detail-memo"><h4>메모/판정사유</h4><p>${esc([a.memo,a.decisionReason].filter(Boolean).join(' / ')||'-')}</p></div>`;
+  $('detailModal').classList.add('show');
+}
+function closeDetail(){ $('detailModal').classList.remove('show'); detailCurrentId=''; }
+window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant; window.viewApplicant=viewApplicant;
 function updateScorePreview(){
   if(!$('scorePreview')) return;
   if(!$('age').value && $('birthYear').value) $('age').value=calcAge($('birthYear').value);
@@ -201,4 +223,8 @@ $('btnCsv').addEventListener('click', csv);
 $('btnJson').addEventListener('click', jsonBackup);
 $('jsonImport').addEventListener('change',e=>{ const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result); if(Array.isArray(data)){ applicants=data.map(normalize); save(); alert('가져오기 완료'); } else alert('지원자 백업 JSON 형식이 아닙니다.'); }catch{ alert('JSON 파일을 확인해주세요.'); } }; r.readAsText(file); });
 $('btnClearAll').addEventListener('click',()=>{ if(confirm('현재 브라우저의 모든 지원자 데이터를 삭제할까요?')){ applicants=[]; save(); } });
+if($('btnCloseDetail')) $('btnCloseDetail').addEventListener('click', closeDetail);
+if($('detailBackdrop')) $('detailBackdrop').addEventListener('click', closeDetail);
+if($('btnDetailEdit')) $('btnDetailEdit').addEventListener('click',()=>{ const id=detailCurrentId; closeDetail(); if(id) editApplicant(id); });
+if($('btnCopySummary')) $('btnCopySummary').addEventListener('click',async()=>{ const a=applicants.find(x=>x.id===detailCurrentId); if(!a) return; try{ await navigator.clipboard.writeText(applicantSummary(a)); alert('지원자 요약이 복사됐습니다.'); }catch{ alert('복사가 막히면 상세 내용을 직접 드래그해서 복사해주세요.'); } });
 resetForm(); renderAll();
