@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.1</title>
+  <title>이력서 관리 시스템 v10.2</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.1</p>
+          <p>Recruit ERP 2.0 · v10.2</p>
         </div>
       </div>
       <nav class="nav">
@@ -72,7 +72,7 @@
           <div class="list-top-head">
             <div>
               <p class="eyebrow">지원자 목록</p>
-              <h3>필요한 사람을 빠르게 찾고 바로 수정합니다.</h3>
+              <h3>지원자 흐름을 한눈에 파악하고 바로 처리합니다.</h3>
             </div>
             <button class="primary" data-go="form">+ 지원자 등록</button>
           </div>
@@ -114,6 +114,7 @@
                 <th>근무지</th>
                 <th>지역</th>
                 <th>면접일정</th>
+                <th>기숙사</th>
                 <th>판정</th>
                 <th>관리</th>
               </tr>
@@ -247,7 +248,7 @@
         <div class="modal-backdrop" id="detailBackdrop"></div>
         <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
           <div class="modal-head">
-            <div><p class="eyebrow">지원자 상세보기</p><h3 id="detailTitle">지원자 정보</h3></div>
+            <div><p class="eyebrow">APPLICANT PROFILE</p><h3 id="detailTitle">지원자 정보</h3></div>
             <button class="ghost" id="btnCloseDetail">닫기</button>
           </div>
           <div id="detailBody" class="detail-body"></div>
