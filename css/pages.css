@@ -601,3 +601,250 @@ tbody td{
   .detail-core-v2{grid-template-columns:1fr;}
   .detail-grid-balanced .wide-row{grid-column:1 / -1;}
 }
+
+/* =========================================================
+   v10.6.5 compact form + unified today summary patch
+   - base.css는 건드리지 않고 pages.css에서만 덮어쓰기
+========================================================= */
+
+/* 지원자 입력: 1번 좌측, 2·3·4번 우측, 5번 하단 배치 */
+.applicant-form-v6{
+  max-width:1440px;
+  margin:0 auto;
+}
+.applicant-form-v6 .designer-hero{
+  margin-bottom:12px!important;
+  padding:16px 18px!important;
+  border-radius:22px!important;
+}
+.applicant-form-v6 .designer-hero h3{
+  font-size:22px!important;
+  margin:2px 0 4px!important;
+}
+.applicant-form-v6 .designer-hero p{
+  font-size:12.5px!important;
+  margin:0!important;
+}
+.applicant-form-v6 .form-hero-tags{
+  margin-top:9px!important;
+  gap:5px!important;
+}
+.applicant-form-v6 .form-hero-tags span{
+  padding:5px 8px!important;
+  font-size:10.8px!important;
+}
+.applicant-form-v6 .hero-submit,
+.applicant-form-v6 .hero-reset{
+  min-height:34px!important;
+  padding:8px 12px!important;
+  border-radius:11px!important;
+  font-size:12px!important;
+}
+.compact-resume-flow{
+  display:block!important;
+}
+.resume-top-layout{
+  display:grid;
+  grid-template-columns:minmax(560px,1.16fr) minmax(420px,.84fr);
+  gap:12px;
+  align-items:start;
+}
+.resume-side-stack{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+}
+.resume-section-card.form-block-primary,
+.resume-section-card.form-block-side,
+.resume-section-card.process-wide-card{
+  padding:14px!important;
+  border-radius:20px!important;
+  box-shadow:0 12px 30px rgba(15,23,42,.055)!important;
+}
+.resume-section-card .compact-title{
+  margin-bottom:10px!important;
+  padding-bottom:8px!important;
+}
+.resume-section-card .compact-title span{
+  font-size:14px!important;
+  font-weight:1000!important;
+  letter-spacing:-.035em!important;
+}
+.resume-section-card .compact-title small{
+  font-size:10.8px!important;
+}
+.resume-input-grid{
+  gap:8px!important;
+}
+.compact-four-grid{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+}
+.compact-two-grid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+.compact-process-grid{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+}
+.resume-input-grid label,
+.detail-lite-grid label{
+  gap:4px!important;
+  font-size:11.2px!important;
+  font-weight:900!important;
+  letter-spacing:-.015em!important;
+}
+.resume-input-grid input,
+.resume-input-grid select,
+.resume-input-grid textarea{
+  min-height:34px!important;
+  height:auto!important;
+  padding:7px 9px!important;
+  border-radius:10px!important;
+  font-size:12px!important;
+  line-height:1.32!important;
+  border-color:#c8d4e6!important;
+  background:#fff!important;
+}
+.resume-input-grid textarea{
+  min-height:70px!important;
+  resize:vertical;
+}
+.resume-input-grid .wide,
+.detail-lite-grid .wide{grid-column:1 / -1!important;}
+.resume-input-grid .wide-2{grid-column:span 2!important;}
+.process-wide-card{
+  margin-top:12px!important;
+}
+.process-wide-card textarea{
+  min-height:72px!important;
+}
+.compact-details.review-only{
+  margin-top:10px!important;
+  border-radius:18px!important;
+}
+.compact-details.review-only summary{
+  padding:12px 14px!important;
+}
+.detail-lite-grid{
+  padding:12px 14px 14px!important;
+  gap:10px!important;
+}
+.compact-checks{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:6px!important;
+}
+.compact-checks label{
+  min-height:28px!important;
+  padding:5px 8px!important;
+  border-radius:9px!important;
+  font-size:10.8px!important;
+}
+.duplicate-box{
+  margin-top:8px!important;
+  min-height:0!important;
+}
+
+/* 오늘 할 일: 상단 요약 1개만 사용, 크기/톤 통일 */
+.task-hero-clean{
+  padding:18px 20px!important;
+  margin-bottom:12px!important;
+  border-radius:22px!important;
+  display:block!important;
+}
+.task-hero-clean h3{
+  font-size:22px!important;
+  margin:2px 0 4px!important;
+}
+.task-hero-clean p{
+  font-size:12.5px!important;
+  margin:0!important;
+}
+.unified-today-summary{
+  display:grid!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:10px!important;
+  margin:0 0 14px!important;
+}
+.unified-today-summary .focus-metric{
+  min-height:74px!important;
+  padding:12px 13px!important;
+  border-radius:18px!important;
+  border:1px solid #dbe5f2!important;
+  background:#fff!important;
+  box-shadow:0 12px 24px rgba(15,23,42,.045)!important;
+}
+.unified-today-summary .focus-metric span{
+  font-size:11.5px!important;
+  font-weight:950!important;
+  color:#64748b!important;
+}
+.unified-today-summary .focus-metric strong{
+  font-size:24px!important;
+  line-height:1!important;
+  margin-top:5px!important;
+  color:#0f2e74!important;
+}
+.unified-today-summary .focus-metric small{
+  display:block;
+  margin-top:6px;
+  font-size:10.8px!important;
+  line-height:1.25;
+  color:#64748b;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.unified-today-summary .focus-metric.primary{
+  background:linear-gradient(135deg,#0f2e74,#1656b8)!important;
+  border-color:#0f2e74!important;
+}
+.unified-today-summary .focus-metric.primary span,
+.unified-today-summary .focus-metric.primary strong,
+.unified-today-summary .focus-metric.primary small{
+  color:#fff!important;
+}
+.nearest-interview-metric small{
+  max-width:100%;
+}
+.task-board-clean{
+  gap:12px!important;
+}
+.task-board-clean .task-panel{
+  max-height:350px!important;
+  border-radius:20px!important;
+}
+.task-board-clean .panel-head{
+  padding-bottom:8px!important;
+  margin-bottom:8px!important;
+}
+.task-board-clean .panel-head h3{
+  font-size:15px!important;
+}
+.task-board-clean .card-list{
+  max-height:258px!important;
+}
+
+@media(max-width:1280px){
+  .resume-top-layout{grid-template-columns:1fr;}
+  .compact-four-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+  .resume-side-stack{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;}
+  .compact-two-grid{grid-template-columns:1fr!important;}
+  .compact-process-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+  .unified-today-summary{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+}
+@media(max-width:900px){
+  .compact-four-grid,
+  .compact-process-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  .resume-side-stack{grid-template-columns:1fr;}
+  .unified-today-summary{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+}
+@media(max-width:640px){
+  .compact-four-grid,
+  .compact-two-grid,
+  .compact-process-grid,
+  .unified-today-summary{grid-template-columns:1fr!important;}
+  .resume-input-grid .wide-2{grid-column:1 / -1!important;}
+  .compact-checks{grid-template-columns:1fr!important;}
+}
