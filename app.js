@@ -171,6 +171,7 @@ function renderStats(){
   setText('homeTomorrowInterviewCount',g.tomorrowInterviews.length);
   setText('homeContactCount',g.recalls.length);
   setText('homeDormCheckCount',g.dorms.length);
+  setText('homeCheckCount',g.dorms.length + g.decisions.length);
   setText('homeHireSoonCount',g.hireSoon.length);
   setText('homeDecisionCount',g.decisions.length);
 }
@@ -251,8 +252,9 @@ function renderTable(){
     return `<tr class="applicant-row">
       <td class="no-cell">${idx+1}</td>
       <td><span class="badge status-badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></td>
-      <td class="applicant-profile-cell"><button class="profile-button" onclick="viewApplicant('${a.id}')"><span class="avatar-mini">${esc((a.name||'?').slice(0,1))}</span><span><strong>${esc(a.name||'이름없음')}</strong><small>${esc(typeLine)}</small><em>${esc(resumeLine)}</em></span></button></td>
-      <td class="contact-cell"><strong>${esc(a.phone||'-')}</strong><small>${esc(a.email||'')}</small></td>
+      <td class="applicant-name-cell"><button class="name-button" onclick="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button><small>${esc(typeLine)}</small></td>
+      <td class="phone-cell"><strong>${esc(a.phone||'-')}</strong></td>
+      <td class="email-cell">${a.email ? `<span>${esc(a.email)}</span>` : '-'}</td>
       <td><span class="workplace-pill">${esc(a.workplace||'-')}</span></td>
       <td>${esc(a.region||'-')}</td>
       <td class="schedule-cell"><strong>${esc(interview)}</strong><small>${esc(nextAction(a))}</small></td>
@@ -260,35 +262,38 @@ function renderTable(){
       <td class="decision-cell"><strong>${esc(decision)}</strong><small>${score}점 · ${esc(displayCategory(a))}</small></td>
       <td class="row-actions"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="10" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
+  }).join(''):`<tr><td colspan="11" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
 }
 function renderToday(){
   const g=taskGroups();
-  if($('todayOverview')) $('todayOverview').innerHTML = `<span>오늘 면접 <b>${g.todayInterviews.length}</b></span><span>내일 면접 <b>${g.tomorrowInterviews.length}</b></span><span>연락 <b>${g.recalls.length}</b></span><span>기숙사 <b>${g.dorms.length}</b></span><span>입사당일 <b>${g.hireToday.length}</b></span><span>판정 <b>${g.decisions.length}</b></span>`;
-  setText('flowTodayInterview',countText(g.todayInterviews.length));
-  setText('flowTomorrowInterview',countText(g.tomorrowInterviews.length));
-  setText('flowRecall',countText(g.recalls.length));
-  setText('flowDorm',countText(g.dorms.length));
-  setText('flowHire',countText(g.hireD7.length+g.hireD3.length+g.hireToday.length));
-  setText('flowDecisionWait',countText(g.decisions.length+g.waits.length));
+  const hireSchedule=[...g.hireToday,...g.hireD3,...g.hireD7]
+    .filter((a,idx,arr)=>arr.findIndex(x=>x.id===a.id)===idx)
+    .sort((a,b)=>daysUntil(a.hireDate)-daysUntil(b.hireDate));
+  const decisionWait=[...g.decisions,...g.waits]
+    .filter((a,idx,arr)=>arr.findIndex(x=>x.id===a.id)===idx);
+  const checkCount=g.dorms.length + decisionWait.length;
+
+  if($('todayOverview')) $('todayOverview').innerHTML = `<span>면접 <b>${g.todayInterviews.length + g.tomorrowInterviews.length}</b></span><span>연락 <b>${g.recalls.length}</b></span><span>확인 <b>${checkCount}</b></span><span>입사 <b>${hireSchedule.length}</b></span>`;
   setText('todayInterviewCount',g.todayInterviews.length);
   setText('tomorrowInterviewCount',g.tomorrowInterviews.length);
   setText('recallCount',g.recalls.length);
+  setText('todayCheckCount',checkCount);
+  setText('hireScheduleCount',hireSchedule.length);
   setText('dormCheckCount',g.dorms.length);
-  setText('hireD7Count',g.hireD7.length);
-  setText('hireD3Count',g.hireD3.length);
-  setText('hireTodayCount',g.hireToday.length);
   setText('decisionCount',g.decisions.length);
   setText('waitingCount',g.waits.length);
+
   $('todayInterview').innerHTML=g.todayInterviews.length?g.todayInterviews.map(card).join(''):`<div class="empty">오늘 면접자가 없습니다.</div>`;
   if($('tomorrowInterview')) $('tomorrowInterview').innerHTML=g.tomorrowInterviews.length?g.tomorrowInterviews.map(card).join(''):`<div class="empty">내일 면접자가 없습니다.</div>`;
   $('recallList').innerHTML=g.recalls.length?g.recalls.map(card).join(''):`<div class="empty">연락 대상이 없습니다.</div>`;
   if($('dormCheckList')) $('dormCheckList').innerHTML=g.dorms.length?g.dorms.map(card).join(''):`<div class="empty">기숙사 확인 대상이 없습니다.</div>`;
+  if($('hireScheduleList')) $('hireScheduleList').innerHTML=hireSchedule.length?hireSchedule.map(card).join(''):`<div class="empty">입사 일정 대상이 없습니다.</div>`;
+  if($('decisionWaitList')) $('decisionWaitList').innerHTML=decisionWait.length?decisionWait.map(card).join(''):`<div class="empty">판정/대기 대상이 없습니다.</div>`;
   if($('hireD7List')) $('hireD7List').innerHTML=g.hireD7.length?g.hireD7.map(card).join(''):`<div class="empty">입사 D-7 대상이 없습니다.</div>`;
   if($('hireD3List')) $('hireD3List').innerHTML=g.hireD3.length?g.hireD3.map(card).join(''):`<div class="empty">입사 D-3 대상이 없습니다.</div>`;
   if($('hireTodayList')) $('hireTodayList').innerHTML=g.hireToday.length?g.hireToday.map(card).join(''):`<div class="empty">오늘 입사 대상이 없습니다.</div>`;
-  $('decisionList').innerHTML=g.decisions.length?g.decisions.map(card).join(''):`<div class="empty">판정 필요자가 없습니다.</div>`;
-  $('waitingList').innerHTML=g.waits.length?g.waits.map(card).join(''):`<div class="empty">입사/보류 대기자가 없습니다.</div>`;
+  if($('decisionList')) $('decisionList').innerHTML=g.decisions.length?g.decisions.map(card).join(''):`<div class="empty">판정 필요자가 없습니다.</div>`;
+  if($('waitingList')) $('waitingList').innerHTML=g.waits.length?g.waits.map(card).join(''):`<div class="empty">입사/보류 대기자가 없습니다.</div>`;
 }
 function renderTemplateSelect(){ $('templateApplicant').innerHTML=applicants.map(a=>`<option value="${a.id}">${esc(a.name||'이름없음')} - ${esc(a.workplace||'')}</option>`).join('')||`<option value="">지원자 없음</option>`; }
 function renderAll(){ renderStats(); backupNotice(); renderHomeLists(); renderTable(); renderToday(); renderTemplateSelect(); updateScorePreview(); }
