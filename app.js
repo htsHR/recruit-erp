@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v10.6.3 Recruit ERP 2.0 근무형태·상세프로필·오늘 할 일 가시성 개선
+// 이력서 관리 시스템 v10.6.4 Recruit ERP 2.0 입력순서·상태간소화·목록/상세/오늘할일 가시성 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -12,12 +12,24 @@ let currentJobFit = 'all';
 let currentCareerType = 'all';
 let currentNeeds = 'all';
 let detailCurrentId = '';
+const STATUS_OPTIONS = ['미연락','부재중','면접예정','입사예정','출근','불합격','서류탈락','철회','다음면접','연락두절'];
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
 function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 function esc(s){ return String(s ?? '').replace(/[&<>\"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 function normalizeGender(v){ const s=String(v||'').trim(); if(s==='남') return '남자'; if(s==='여') return '여자'; if(s==='남자'||s==='여자') return s; return ''; }
+function genderClass(a){ const g=normalizeGender(a?.gender); if(g==='남자') return 'gender-male'; if(g==='여자') return 'gender-female'; return 'gender-unknown'; }
+function normalizeStatus(v){
+  const s=String(v||'').trim();
+  const map={
+    '문자발송':'미연락','연락완료':'면접예정','면접완료':'다음면접','보류':'다음면접',
+    '부적합':'서류탈락','전형마감':'서류탈락','취소':'철회','입사포기':'철회'
+  };
+  const out=map[s] || s || '미연락';
+  return STATUS_OPTIONS.includes(out) ? out : '미연락';
+}
+function statusOptionsHtml(current){ const cur=normalizeStatus(current); return STATUS_OPTIONS.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join(''); }
 function normalizeDorm(v){
   const s=String(v||'').trim();
   if(['사용','기숙사 사용','기숙사'].includes(s)) return '기숙사';
@@ -29,7 +41,7 @@ function dormLabel(a){ return normalizeDorm(a?.dormUse) || '미확인'; }
 function dormClass(v){ const d=normalizeDorm(v); if(d==='기숙사') return 'on'; if(d==='출퇴근') return 'off'; return 'pending'; }
 function normalize(a){ return {
   id:a.id||uid(), createdAt:a.createdAt||new Date().toISOString(), updatedAt:a.updatedAt||'',
-  applyDate:a.applyDate||'', source:a.source||'', extra:a.extra||a.etc||'', status:a.status||'미연락', workplace:a.workplace||'',
+  applyDate:a.applyDate||'', source:a.source||'', extra:a.extra||a.etc||'', status:normalizeStatus(a.status), workplace:a.workplace||'',
   name:a.name||'', phone:a.phone||'', email:a.email||'', gender:normalizeGender(a.gender), birthYear:a.birthYear||'', age:a.age||'', region:a.region||'', commute:a.commute||'', dormUse:normalizeDorm(a.dormUse),
   education:a.education||'', finalEducation:a.finalEducation||'', school:a.school||'', major:a.major||'', gradePoint:a.gradePoint||'', languageEtc:a.languageEtc||'',
   certs:a.certs||'', career:a.career||'', lastCompany:a.lastCompany||'', duties:a.duties||'', leaveReason:a.leaveReason||'',
@@ -94,23 +106,22 @@ function displayCategory(a){
 }
 function badgeClass(status){
   if(['부재중','미연락','연락두절'].includes(status)) return 'missed';
-  if(['입사예정','출근','면접완료','연락완료'].includes(status)) return 'good';
-  if(['면접예정','문자발송'].includes(status)) return 'info';
-  if(['불합격','부적합','철회','취소','전형마감'].includes(status)) return 'bad';
+  if(['입사예정','출근'].includes(status)) return 'good';
+  if(['면접예정','다음면접'].includes(status)) return 'info';
+  if(['불합격','서류탈락','철회'].includes(status)) return 'bad';
   return 'hold';
 }
 function nextAction(a){
   if(!a.status || a.status==='미연락') return '첫 연락 필요';
   if(a.status==='부재중') return '재연락';
-  if(a.status==='문자발송') return '답변 확인';
-  if(a.status==='면접예정') return '면접 준비';
-  if(a.status==='면접완료' && !a.finalDecision) return '판정 입력';
+  if(a.status==='면접예정') return '면접 일정 확인';
+  if(a.status==='다음면접') return '다음 면접 조율';
   if(a.status==='출근') return '출근 완료';
   if(a.status==='입사예정') return '입사 안내';
-  if(a.status==='보류') return '재검토일 확인';
+  
   return a.finalDecision || '-';
 }
-function isFinished(a){ return ['불합격','부적합','철회','취소','전형마감','연락두절','입사포기'].includes(a.status) || ['불합격','입사포기'].includes(a.finalDecision); }
+function isFinished(a){ return ['불합격','서류탈락','철회','연락두절'].includes(a.status) || ['불합격','입사포기'].includes(a.finalDecision); }
 function isActive(a){ return !isFinished(a); }
 function finalDecisionOf(a){ return a.finalDecision || grade(calcScore(a)); }
 
@@ -154,20 +165,20 @@ function taskGroups(){
   const upcomingInterviews=applicants.filter(a=>{
     if(!isActive(a)) return false;
     if(a.interviewDate && a.interviewDate!==t && daysUntil(a.interviewDate) >= 0) return true;
-    return a.status==='면접예정' && !a.interviewDate;
+    return ['면접예정','다음면접'].includes(a.status) && !a.interviewDate;
   }).sort((a,b)=>{
     const av=a.interviewDate || '9999-12-31';
     const bv=b.interviewDate || '9999-12-31';
     return (av+' '+(a.interviewTime||'23:59')).localeCompare(bv+' '+(b.interviewTime||'23:59'));
   });
-  const recalls=applicants.filter(a=>isActive(a) && ['부재중','문자발송','미연락'].includes(a.status));
+  const recalls=applicants.filter(a=>isActive(a) && ['부재중','미연락'].includes(a.status));
   const dorms=applicants.filter(isDormPending);
   const hireD7=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===7);
   const hireD3=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===3);
   const hireToday=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===0);
   const hireSoon=applicants.filter(isHireSoon);
-  const decisions=applicants.filter(a=>isActive(a) && ((a.status==='면접완료'&&!a.finalDecision) || (!a.finalDecision && finalDecisionOf(a)==='우선검토')));
-  const waits=applicants.filter(a=>isActive(a) && (['입사예정','보류'].includes(a.status)||['입사예정','보류'].includes(a.finalDecision)));
+  const decisions=applicants.filter(a=>isActive(a) && ((!a.finalDecision && finalDecisionOf(a)==='우선검토') || a.status==='다음면접'));
+  const waits=applicants.filter(a=>isActive(a) && (['입사예정'].includes(a.status)||['입사예정','보류'].includes(a.finalDecision))); 
   return {todayInterviews,upcomingInterviews,tomorrowInterviews:upcomingInterviews,recalls,dorms,hireD7,hireD3,hireToday,hireSoon,decisions,waits};
 }
 function renderStats(){
@@ -203,19 +214,19 @@ function shortNeeds(a){ return (a.checkNeeds||'').split(',').map(x=>x.trim()).fi
 function needsHtml(a){ const needs=shortNeeds(a); return needs.length?`<div class="need-tags">${needs.map(n=>`<span class="need-tag">${esc(n)}</span>`).join('')}</div>`:'-'; }
 function card(a){
   const score=calcScore(a), decision=finalDecisionOf(a), dorm=dormLabel(a);
-  return `<div class="person-card"><div><strong>${esc(a.name||'이름없음')} <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong><small>${esc(a.workplace||'근무지 미입력')} · ${esc(dorm)} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)} · ${esc(nextAction(a))}</small></div><button class="mini" onclick="editApplicant('${a.id}')">수정</button></div>`;
+  return `<div class="person-card compact-person-card"><div><strong><span class="person-name ${genderClass(a)}">${esc(a.name||'이름없음')}</span> <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong><small>${esc(a.workplace||'근무지 미입력')} · ${esc(dorm)} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)}</small></div><button class="mini" onclick="editApplicant('${a.id}')">수정</button></div>`;
 }
 function renderHomeLists(){
   const todayStr=today();
   const priority = applicants.filter(a=>
     (a.interviewDate===todayStr) ||
-    ['미연락','부재중','문자발송'].includes(a.status) ||
+    ['미연락','부재중'].includes(a.status) ||
     isDormPending(a) ||
     isHireSoon(a) ||
     (a.status==='면접완료' && !a.finalDecision)
   ).sort((a,b)=>{
-    const ap = a.interviewDate===todayStr ? 0 : isHireSoon(a) ? 1 : ['미연락','부재중','문자발송'].includes(a.status) ? 2 : isDormPending(a) ? 3 : 4;
-    const bp = b.interviewDate===todayStr ? 0 : isHireSoon(b) ? 1 : ['미연락','부재중','문자발송'].includes(b.status) ? 2 : isDormPending(b) ? 3 : 4;
+    const ap = a.interviewDate===todayStr ? 0 : isHireSoon(a) ? 1 : ['미연락','부재중'].includes(a.status) ? 2 : isDormPending(a) ? 3 : 4;
+    const bp = b.interviewDate===todayStr ? 0 : isHireSoon(b) ? 1 : ['미연락','부재중'].includes(b.status) ? 2 : isDormPending(b) ? 3 : 4;
     return ap-bp;
   }).slice(0,6);
   const recent=[...applicants].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,6);
@@ -232,10 +243,10 @@ function filtered(){
     const needsOk=currentNeeds==='all'||(currentNeeds==='has' ? !!(a.checkNeeds||'').trim() : !(a.checkNeeds||'').trim());
     let filterOk=true;
     if(currentFilter==='priority') filterOk=finalDecisionOf(a)==='우선검토';
-    if(currentFilter==='contact') filterOk=['미연락','부재중','문자발송'].includes(a.status);
-    if(currentFilter==='interview') filterOk=a.status==='면접예정';
-    if(currentFilter==='decision') filterOk=a.status==='면접완료'&&!a.finalDecision;
-    if(currentFilter==='hold') filterOk=a.status==='보류'||a.finalDecision==='보류';
+    if(currentFilter==='contact') filterOk=['미연락','부재중'].includes(a.status);
+    if(currentFilter==='interview') filterOk=['면접예정','다음면접'].includes(a.status);
+    if(currentFilter==='decision') filterOk=a.status==='다음면접'||(!a.finalDecision&&finalDecisionOf(a)==='우선검토');
+    if(currentFilter==='hold') filterOk=a.finalDecision==='보류';
     if(currentFilter==='active') filterOk=isActive(a);
     return workplaceOk && searchOk && jobOk && careerOk && needsOk && filterOk;
   });
@@ -257,30 +268,31 @@ function filtered(){
 function renderTable(){
   const rows=filtered();
   const sortName=$('sortSelect').selectedOptions[0]?.textContent || '최근 등록순';
-  const contactCount=rows.filter(a=>['미연락','부재중','문자발송'].includes(a.status)).length;
-  const interviewCount=rows.filter(a=>a.status==='면접예정' || a.interviewDate).length;
+  const contactCount=rows.filter(a=>['미연락','부재중'].includes(a.status)).length;
+  const interviewCount=rows.filter(a=>['면접예정','다음면접'].includes(a.status) || a.interviewDate).length;
   const dormCount=rows.filter(a=>dormLabel(a)==='기숙사').length;
   const commuteCount=rows.filter(a=>dormLabel(a)==='출퇴근').length;
   const dormPendingCount=rows.filter(isDormPending).length;
   $('listSummary').innerHTML = `<span class="summary-strong">${rows.length}명</span> 표시 <span>정렬 ${esc(sortName)}</span><span>연락필요 ${contactCount}명</span><span>면접/예정 ${interviewCount}명</span><span>기숙사 ${dormCount}명</span><span>출퇴근 ${commuteCount}명</span><span>근무형태 확인 ${dormPendingCount}명</span>${hideFinished ? '<span>종료숨김 적용</span>' : ''}`;
   $('applicantTbody').innerHTML=rows.length?rows.map((a,idx)=>{
     const score=calcScore(a), decision=finalDecisionOf(a);
-    const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ') || '-';
+    const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
+    const scheduleStrong = interview || '일정 미정';
+    const scheduleNote = interview ? '' : (['면접예정','다음면접'].includes(a.status) ? '<small>일정 확인</small>' : '');
     const dorm = dormLabel(a);
-    const typeLine = [a.careerType, a.education, a.source].filter(Boolean).join(' · ') || '기본정보 미입력';
-    const resumeLine = [a.school, a.major].filter(Boolean).join(' / ') || (a.career || a.certs || '이력서 정보 없음');
-    return `<tr class="applicant-row">
+    const typeLine = [a.careerType, a.education].filter(Boolean).join(' · ') || '기본정보 미입력';
+    return `<tr class="applicant-row compact-row">
       <td class="no-cell">${idx+1}</td>
-      <td><span class="badge status-badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></td>
-      <td class="applicant-name-cell"><button class="name-button" onclick="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button><small>${esc(typeLine)}</small></td>
-      <td class="phone-cell"><strong>${esc(a.phone||'-')}</strong></td>
-      <td class="email-cell">${a.email ? `<span>${esc(a.email)}</span>` : '-'}</td>
-      <td><span class="workplace-pill">${esc(a.workplace||'-')}</span></td>
-      <td>${esc(a.region||'-')}</td>
-      <td class="schedule-cell"><strong>${esc(interview)}</strong><small>${esc(nextAction(a))}</small></td>
+      <td class="status-cell"><select class="status-inline ${badgeClass(a.status)}" onchange="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></td>
+      <td class="applicant-name-cell"><button class="name-button ${genderClass(a)}" onclick="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button><small>${esc(typeLine)}</small></td>
+      <td class="phone-cell"><strong>${esc(a.phone||'')}</strong></td>
+      <td class="email-cell">${a.email ? `<span>${esc(a.email)}</span>` : ''}</td>
+      <td><span class="workplace-pill">${esc(a.workplace||'')}</span></td>
+      <td>${esc(a.region||'')}</td>
+      <td class="schedule-cell"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
       <td><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
-      <td class="decision-cell"><strong>${esc(decision)}</strong><small>${score}점 · ${esc(displayCategory(a))}</small></td>
-      <td class="row-actions"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
+      <td class="decision-cell"><strong>${esc(decision)}</strong><small>${score}점</small></td>
+      <td class="row-actions compact-actions"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
   }).join(''):`<tr><td colspan="11" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
 }
@@ -322,9 +334,10 @@ const fields=['editId','applyDate','source','extra','status','workplace','name',
 function getChecked(name){ return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(x=>x.value).join(', '); }
 function setChecked(name, value){ const values=String(value||'').split(',').map(x=>x.trim()).filter(Boolean); document.querySelectorAll(`input[name="${name}"]`).forEach(x=>x.checked=values.includes(x.value)); }
 function getForm(){ const o=fields.reduce((obj,id)=>{ if($(id)) obj[id]=$(id).value.trim(); return obj; },{}); o.checkNeeds=getChecked('checkNeeds'); o.selfIntroKeywords=getChecked('selfIntroKeywords'); return o; }
-function fillForm(a){ fields.forEach(id=>{ const el=$(id); if(!el) return; const value = id==='editId' ? (a.id||a.editId||'') : (a[id]||''); if(id==='interviewTime' && value && ![...el.options].some(o=>o.value===value)){ el.add(new Option(value, value)); } el.value = value; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords', a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); updateFormMode(); }
-function resetForm(){ $('applicantForm').reset(); setChecked('checkNeeds',''); setChecked('selfIntroKeywords',''); $('editId').value=''; $('applyDate').value=today(); $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; updateScorePreview(); updateFormMode(); }
+function fillForm(a){ fields.forEach(id=>{ const el=$(id); if(!el) return; const value = id==='editId' ? (a.id||a.editId||'') : (id==='status' ? normalizeStatus(a.status) : (id==='dormUse' ? normalizeDorm(a.dormUse) : (a[id]||''))); if(id==='interviewTime' && value && ![...el.options].some(o=>o.value===value)){ el.add(new Option(value, value)); } el.value = value; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords', a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); updateFormMode(); }
+function resetForm(){ $('applicantForm').reset(); setChecked('checkNeeds',''); setChecked('selfIntroKeywords',''); $('editId').value=''; $('applyDate').value=today(); if($('status')) $('status').value='미연락'; $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; updateScorePreview(); updateFormMode(); }
 function editApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ fillForm(a); setPage('form'); } }
+function updateApplicantStatus(id, status){ const next=normalizeStatus(status); applicants=applicants.map(a=>a.id===id?normalize({...a,status:next,updatedAt:new Date().toISOString()}):a); save(); }
 function duplicateApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ const copy={...a,id:'',name:a.name+' 복사',phone:'',email:'',createdAt:''}; fillForm(copy); setPage('form'); } }
 function deleteApplicant(id){ if(confirm('삭제할까요?')){ applicants=applicants.filter(a=>a.id!==id); save(); } }
 function detailRow(label, value, cls=''){
@@ -352,12 +365,12 @@ function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a)
 function viewApplicant(id){
   const a=applicants.find(x=>x.id===id); if(!a) return;
   detailCurrentId=id; const score=calcScore(a); const sc=deriveScores(a);
-  const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ') || '-';
+  const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ') || '일정 미정';
   const dorm=dormLabel(a);
   const profileSub=[a.careerType,a.education,a.workplace].filter(Boolean).join(' · ') || '지원자 기본정보';
-  const profile = `<div class="profile-hero-detail profile-hero-clean">
-    <div class="profile-identity no-avatar"><div><h2>${esc(a.name||'이름없음')}</h2><p>${esc(profileSub)}</p><div class="profile-badges"><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span><span class="workplace-pill">${esc(a.workplace||'근무지 미입력')}</span></div></div></div>
-    <div class="profile-decision"><span>최종판정</span><strong>${esc(finalDecisionOf(a))}</strong><small>${esc(nextAction(a))}</small></div>
+  const profile = `<div class="profile-hero-detail profile-hero-clean profile-hero-spacious">
+    <div class="profile-main-block"><h2 class="detail-name ${genderClass(a)}">${esc(a.name||'이름없음')}</h2><p>${esc(profileSub)}</p><div class="profile-badges"><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span><span class="workplace-pill">${esc(a.workplace||'근무지 미입력')}</span></div></div>
+    <div class="profile-side-cards"><div><span>최종판정</span><strong>${esc(finalDecisionOf(a))}</strong></div><div><span>다음액션</span><strong>${esc(nextAction(a))}</strong></div></div>
   </div>`;
   const core = `<div class="detail-core-card detail-core-v2 detail-core-clean">
     ${coreItem('연락처',a.phone)}${coreItem('이메일',a.email)}${coreItem('근무형태',dorm)}${coreItem('지원경로',a.source)}
@@ -383,7 +396,7 @@ function viewApplicant(id){
   $('detailModal').classList.add('show');
 }
 function closeDetail(){ $('detailModal').classList.remove('show'); detailCurrentId=''; }
-window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant; window.viewApplicant=viewApplicant;
+window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant; window.viewApplicant=viewApplicant; window.updateApplicantStatus=updateApplicantStatus;
 
 function updateFormMode(){
   const editing = !!($('editId') && $('editId').value);
