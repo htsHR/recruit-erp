@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v10.6.8 Recruit ERP 2.0 상세프로필 정리
+// 이력서 관리 시스템 v10.6.9 Recruit ERP 2.0 홈·입력·상세 정리
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -13,7 +13,7 @@ let currentJobFit = 'all';
 let currentCareerType = 'all';
 let currentNeeds = 'all';
 let detailCurrentId = '';
-console.info('Recruit ERP v10.6.8 loaded applicants:', applicants.length);
+console.info('Recruit ERP v10.6.9 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -140,9 +140,11 @@ function badgeClass(status){
   if(['부재중','미연락','연락두절'].includes(status)) return 'missed';
   if(['입사예정','출근'].includes(status)) return 'good';
   if(['면접예정','다음면접'].includes(status)) return 'info';
-  if(['불합격','서류탈락','철회'].includes(status)) return 'bad';
+  if(status==='서류탈락') return 'neutral';
+  if(['불합격','철회'].includes(status)) return 'bad';
   return 'hold';
 }
+function statusToneClass(a){ return normalizeStatus(a?.status)==='서류탈락' ? 'is-paper-rejected' : ''; }
 function nextAction(a){
   if(!a.status || a.status==='미연락') return '첫 연락 필요';
   if(a.status==='부재중') return '재연락';
@@ -253,7 +255,7 @@ function card(a){
   const score=calcScore(a), decision=finalDecisionOf(a), dorm=dormLabel(a);
   const schedule=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
   const scheduleText=schedule ? `면접 ${schedule} · ` : '';
-  return `<div class="person-card compact-person-card"><div><strong><span class="person-name ${genderClass(a)}">${esc(a.name||'이름없음')}</span> <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong><small>${esc(scheduleText)}${esc(a.workplace||'근무지 미입력')} · ${esc(dorm)} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)}</small></div><button class="mini" onclick="editApplicant('${a.id}')">수정</button></div>`;
+  return `<div class="person-card compact-person-card ${statusToneClass(a)}"><div><strong><span class="person-name ${genderClass(a)}">${esc(a.name||'이름없음')}</span> <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong><small>${esc(scheduleText)}${esc(a.workplace||'근무지 미입력')} · ${esc(dorm)} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)}</small></div><button class="mini" onclick="editApplicant('${a.id}')">수정</button></div>`;
 }
 function renderHomeLists(){
   const todayStr=today();
@@ -331,7 +333,7 @@ function renderTable(){
     const scheduleNote = interview ? '' : (['면접예정','다음면접'].includes(a.status) ? '<small>일정 확인</small>' : '');
     const dorm = dormLabel(a);
     const typeLine = [a.careerType, a.education].filter(Boolean).join(' · ') || '기본정보 미입력';
-    return `<tr class="applicant-row compact-row">
+    return `<tr class="applicant-row compact-row ${statusToneClass(a)}">
       <td class="no-cell">${idx+1}</td>
       <td class="status-cell"><select class="status-inline ${badgeClass(a.status)}" onchange="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></td>
       <td class="applicant-name-cell"><button class="name-button ${genderClass(a)}" onclick="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button><small>${esc(typeLine)}</small></td>
@@ -427,6 +429,7 @@ function viewApplicant(id){
   const action=nextAction(a);
   const profileSub=[a.careerType,a.education,a.workplace].filter(Boolean).join(' · ') || '지원자 기본정보';
   const status=normalizeStatus(a.status);
+  const rejectedCls=statusToneClass(a);
   const detailSection=(title, rows, cls='')=>rows ? `<section class="detail-section-card detail-section-v108 ${cls}"><div class="detail-section-title"><h4>${title}</h4></div><div class="detail-grid detail-grid-v108">${rows}</div></section>` : '';
   const longBlock=(title, value, cls='')=>{
     const v=String(value ?? '').trim();
@@ -434,14 +437,14 @@ function viewApplicant(id){
     return `<section class="detail-section-card detail-section-v108 detail-long-section ${cls}"><div class="detail-section-title"><h4>${title}</h4></div><p>${esc(v)}</p></section>`;
   };
 
-  const profile = `<div class="profile-hero-detail detail-hero-v108">
-    <div class="detail-identity-v108">
+  const profile = `<div class="profile-hero-detail detail-hero-v109 ${rejectedCls}">
+    <div class="detail-hero-main-v109">
       <p class="eyebrow">APPLICANT PROFILE</p>
       <h2 class="detail-name ${genderClass(a)}">${esc(a.name||'이름없음')}</h2>
       <p class="detail-subline">${esc(profileSub)}</p>
       <div class="profile-badges"><span class="badge ${badgeClass(status)}">${esc(status||'미입력')}</span><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span><span class="workplace-pill">${esc(a.workplace||'근무지 미입력')}</span></div>
     </div>
-    <div class="detail-summary-v108">
+    <div class="detail-summary-v109">
       <div><span>판정</span><strong>${esc(decision)}</strong></div>
       <div><span>다음액션</span><strong>${esc(action)}</strong></div>
     </div>
@@ -465,24 +468,21 @@ function viewApplicant(id){
     longBlock('상담내용', a.consult, 'memo-primary'),
     longBlock('메모·다음액션', a.memo),
     longBlock('판정사유·참고', a.decisionReason)
-  ].join('');
+  ].filter(Boolean).join('');
+  const careerBlock = longBlock('경력사항', a.career, 'career-long detail-career-v109');
 
   $('detailTitle').textContent = `${a.name||'이름없음'} · 상세 프로필`;
   $('detailBody').innerHTML = `
     ${profile}
     ${core}
-    <div class="detail-main-v108">
-      <div class="detail-main-left-v108">
-        ${memoRows || `<section class="detail-section-card detail-section-v108"><div class="empty">전화인터뷰·메모가 없습니다.</div></section>`}
-        ${longBlock('경력사항', a.career, 'career-long')}
-      </div>
-      <div class="detail-main-right-v108">
-        ${detailSection('인적사항', personalRows)}
-        ${detailSection('학력·자격 정보', educationRows)}
-        ${detailSection('검토 참고정보', jobRows)}
-      </div>
+    ${memoRows ? `<div class="detail-memo-stack-v109">${memoRows}</div>` : ''}
+    <div class="detail-info-board-v109">
+      ${detailSection('인적사항', personalRows)}
+      ${detailSection('학력·자격 정보', educationRows)}
+      ${detailSection('검토 참고정보', jobRows)}
     </div>
-    <section class="detail-score-section detail-score-v108"><div class="detail-section-title"><h4>검토점수</h4><span>참고용 자동 점수</span></div><div class="detail-score"><strong>${score}점</strong><span>${esc(decision)}</span><small>${esc(displayCategory(a))} · ${esc(action)}</small></div>
+    ${careerBlock}
+    <section class="detail-score-section detail-score-v108 detail-score-v109"><div class="detail-section-title"><h4>검토점수</h4><span>참고용 자동 점수</span></div><div class="detail-score"><strong>${score}점</strong><span>${esc(decision)}</span><small>${esc(displayCategory(a))} · ${esc(action)}</small></div>
     <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${sc.field}/20</strong></div></div></section>`;
   $('detailModal').classList.add('show');
 }
