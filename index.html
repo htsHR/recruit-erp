@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.6.5.3</title>
+  <title>이력서 관리 시스템 v10.6.5.4</title>
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.6.5.3: CSS 역할 분리 + 전체 레이아웃 기준 고정 패치 -->
+  <!-- v10.6.5.4: 지원자 입력 카드 배치 안정화 패치 -->
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +17,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.6.5.3</p>
+          <p>Recruit ERP 2.0 · v10.6.5.4</p>
         </div>
       </div>
       <nav class="nav">
@@ -184,65 +184,63 @@
   </div>
 </div>
 
-<div class="resume-entry-flow compact-resume-flow">
-  <div class="resume-top-layout">
-    <section class="form-card-main resume-section-card identity-section form-block-primary">
+<div class="resume-entry-flow stable-resume-flow">
+  <section class="form-card-main resume-section-card identity-section input-card-full">
+    <div class="section-title compact-title">
+      <span>1. 인적사항·지원정보</span>
+      <small>이력서 상단 기본정보와 접수 정보를 먼저 입력</small>
+    </div>
+    <div class="form-grid identity-grid resume-input-grid">
+      <label>성명<input id="name" required placeholder="홍길동" /></label>
+      <label>성별<select id="gender"><option value="">선택</option><option>남자</option><option>여자</option></select></label>
+      <label>생년월일<input id="birthYear" placeholder="1998.06.19 또는 980619" /></label>
+      <label>연령<input id="age" placeholder="자동/수동" /></label>
+      <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
+      <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
+      <label>지역(시)<input id="region" placeholder="평택, 천안, 오산 등" /></label>
+      <label>지원날짜<input id="applyDate" type="date" /></label>
+      <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
+      <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option></select></label>
+      <label class="wide-2">지원경로<input id="source" placeholder="사람인, 잡코리아, 대학, 추천 등" /></label>
+    </div>
+  </section>
+
+  <div class="resume-paired-layout">
+    <section class="form-card-main resume-section-card education-section input-card-half">
       <div class="section-title compact-title">
-        <span>1. 인적사항·지원정보</span>
-        <small>이력서 상단 기본정보와 접수 정보를 먼저 입력</small>
+        <span>2. 학력사항</span>
+        <small>학교, 전공, 학력구분</small>
       </div>
-      <div class="form-grid compact-four-grid resume-input-grid">
-        <label>성명<input id="name" required placeholder="홍길동" /></label>
-        <label>성별<select id="gender"><option value="">선택</option><option>남자</option><option>여자</option></select></label>
-        <label>생년월일<input id="birthYear" placeholder="1998.06.19 또는 980619" /></label>
-        <label>연령<input id="age" placeholder="자동/수동" /></label>
-        <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
-        <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
-        <label>지역(시)<input id="region" placeholder="평택, 천안, 오산 등" /></label>
-        <label>지원날짜<input id="applyDate" type="date" /></label>
-        <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
-        <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option></select></label>
-        <label class="wide-2">지원경로<input id="source" placeholder="사람인, 잡코리아, 대학, 추천 등" /></label>
+      <div class="form-grid education-grid resume-input-grid">
+        <label>학력구분<select id="education"><option value="">선택</option><option>고졸</option><option>전졸</option><option>대졸</option><option>대학원</option><option>기타</option></select></label>
+        <label>학교<input id="school" placeholder="학교명" /></label>
+        <label class="wide-2">학과<input id="major" placeholder="전공/학과" /></label>
       </div>
     </section>
 
-    <div class="resume-side-stack">
-      <section class="form-card-main resume-section-card education-section form-block-side">
-        <div class="section-title compact-title">
-          <span>2. 학력사항</span>
-          <small>학교, 전공, 학력구분</small>
-        </div>
-        <div class="form-grid compact-two-grid resume-input-grid">
-          <label>학력구분<select id="education"><option value="">선택</option><option>고졸</option><option>전졸</option><option>대졸</option><option>대학원</option><option>기타</option></select></label>
-          <label>학교<input id="school" placeholder="학교명" /></label>
-          <label class="wide-2">학과<input id="major" placeholder="전공/학과" /></label>
-        </div>
-      </section>
-
-      <section class="form-card-main resume-section-card license-section form-block-side">
-        <div class="section-title compact-title">
-          <span>3. 자격/면허·외국어</span>
-          <small>자격증과 어학/기타자격</small>
-        </div>
-        <div class="form-grid compact-two-grid resume-input-grid">
-          <label>자격증<input id="certs" placeholder="전기기능사, 운전면허 등" /></label>
-          <label>외국어/기타자격<input id="languageEtc" placeholder="OPIC, ADsP, 6시그마 등" /></label>
-        </div>
-      </section>
-
-      <section class="form-card-main resume-section-card career-section form-block-side">
-        <div class="section-title compact-title">
-          <span>4. 경력사항</span>
-          <small>근무처, 기간, 담당업무, 퇴직사유</small>
-        </div>
-        <div class="form-grid resume-input-grid">
-          <label class="wide"><span>경력</span><textarea id="career" rows="3" placeholder="예: 에이치앤에스테크 / 2025.04~2026.05 / 반도체 장비 셋업 / 개인사정"></textarea></label>
-        </div>
-      </section>
-    </div>
+    <section class="form-card-main resume-section-card license-section input-card-half">
+      <div class="section-title compact-title">
+        <span>3. 자격/면허·외국어</span>
+        <small>자격증과 어학/기타자격</small>
+      </div>
+      <div class="form-grid license-grid resume-input-grid">
+        <label>자격증<input id="certs" placeholder="전기기능사, 운전면허 등" /></label>
+        <label>외국어/기타자격<input id="languageEtc" placeholder="OPIC, ADsP, 6시그마 등" /></label>
+      </div>
+    </section>
   </div>
 
-  <section class="form-card-main resume-section-card process-section process-wide-card">
+  <section class="form-card-main resume-section-card career-section input-card-full">
+    <div class="section-title compact-title">
+      <span>4. 경력사항</span>
+      <small>근무처, 기간, 담당업무, 퇴직사유</small>
+    </div>
+    <div class="form-grid resume-input-grid career-grid">
+      <label class="wide"><span>경력</span><textarea id="career" rows="4" placeholder="예: 에이치앤에스테크 / 2025.04~2026.05 / 반도체 장비 셋업 / 개인사정"></textarea></label>
+    </div>
+  </section>
+
+  <section class="form-card-main resume-section-card process-section process-wide-card input-card-full">
     <div class="section-title compact-title">
       <span>5. 전화인터뷰·진행관리</span>
       <small>연락상태는 미연락 기본값, 이후 진행 상태만 간단히 선택</small>
