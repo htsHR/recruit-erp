@@ -308,3 +308,56 @@
   .detail-core-v108,.detail-summary-v108{grid-template-columns:1fr;}
   .detail-section-v108 .detail-row{grid-template-columns:1fr;gap:5px;}
 }
+
+/* =========================================================
+   v10.6.9 PAGE 보정
+   - 홈/목록 서류탈락 회색톤
+   - 입력폼 이력서 정보 통합 카드
+   - 상세프로필 균형형 재정렬
+   ========================================================= */
+.form-hero-tags span{font-size:11.5px;}
+.identity-section .resume-input-grid{gap:11px 12px;}
+.resume-info-section .resume-input-grid{gap:12px;}
+.resume-info-section textarea{min-height:96px;}
+.resume-info-section .section-title small{max-width:58%;}
+.process-section .resume-input-grid textarea{min-height:82px;}
+
+/* 상세프로필 v10.6.9 */
+.detail-hero-v109{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(280px,400px);
+  gap:16px;
+  align-items:stretch;
+  padding:22px;
+  border-radius:24px;
+  background:linear-gradient(135deg,#ffffff 0%,#f3f7ff 100%);
+  border:1.5px solid #d8e3f3;
+  box-shadow:0 14px 34px rgba(15,23,42,.065);
+}
+.detail-hero-main-v109{min-width:0;display:flex;flex-direction:column;justify-content:center;}
+.detail-hero-main-v109 .eyebrow{margin-bottom:7px;}
+.detail-hero-main-v109 .detail-name{font-size:30px;line-height:1.08;margin:0;}
+.detail-summary-v109{display:grid;grid-template-columns:1fr;gap:10px;}
+.detail-summary-v109 div{background:#fff;border:1px solid #dbe5f2;border-radius:18px;padding:14px 15px;box-shadow:0 8px 20px rgba(15,23,42,.045);}
+.detail-summary-v109 span{display:block;color:#64748b;font-size:12px;font-weight:1000;margin-bottom:6px;}
+.detail-summary-v109 strong{display:block;color:#0f172a;font-size:17px;font-weight:1000;line-height:1.28;word-break:keep-all;}
+.detail-memo-stack-v109{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px;}
+.detail-memo-stack-v109 .detail-section-v108{margin:0;}
+.detail-memo-stack-v109 .memo-primary{grid-column:1/-1;}
+.detail-info-board-v109{margin-top:14px;}
+.detail-info-board-v109 .detail-grid-v108{gap:8px;}
+.detail-info-board-v109 .detail-row{grid-template-columns:112px minmax(0,1fr);}
+.detail-career-v109{margin-top:14px;}
+.detail-career-v109 p{min-height:68px;}
+.detail-score-v109{margin-top:14px;}
+.detail-section-v108 .empty{min-height:0;padding:14px;border:1px dashed #cbd5e1;border-radius:14px;background:#f8fafc;color:#64748b;font-weight:850;text-align:center;}
+
+@media(max-width:1080px){
+  .detail-hero-v109{grid-template-columns:1fr;}
+  .detail-summary-v109{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:780px){
+  .detail-memo-stack-v109{grid-template-columns:1fr;}
+  .detail-summary-v109{grid-template-columns:1fr;}
+  .detail-hero-v109{padding:18px;}
+}

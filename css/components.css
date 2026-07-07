@@ -407,3 +407,49 @@ tbody td{
 .modal-card{width:min(1180px,95vw);max-height:90vh;}
 .detail-body{max-height:calc(90vh - 150px);padding:22px 24px 2px;}
 @media(max-width:760px){.detail-body{padding:16px 16px 2px;}}
+
+/* =========================================================
+   v10.6.9 COMPONENT 보정
+   - 서류탈락 회색톤
+   - 종료/탈락 카드·행의 시각 강도 약화
+   ========================================================= */
+.badge.neutral{
+  background:#eef1f5;
+  color:#64748b;
+  border:1px solid #d7dee8;
+}
+.status-inline.neutral{
+  background:#f1f5f9;
+  color:#64748b;
+  border-color:#cbd5e1;
+}
+.person-card.is-paper-rejected{
+  background:#f8fafc;
+  border-color:#dbe3ee;
+  box-shadow:none;
+  opacity:.86;
+}
+.person-card.is-paper-rejected .person-name,
+.applicant-row.is-paper-rejected .name-button{
+  color:#64748b !important;
+}
+.applicant-row.is-paper-rejected{
+  background:#fafbfc;
+}
+.applicant-row.is-paper-rejected td{
+  color:#64748b;
+}
+.applicant-row.is-paper-rejected .decision-cell strong,
+.applicant-row.is-paper-rejected .phone-cell strong{
+  color:#475569;
+}
+.applicant-row.is-paper-rejected .workplace-pill,
+.applicant-row.is-paper-rejected .dorm-pill{
+  filter:grayscale(.65);
+  opacity:.82;
+}
+.detail-hero-v109.is-paper-rejected,
+.detail-section-v108.is-paper-rejected{
+  background:linear-gradient(135deg,#ffffff,#f5f7fa);
+  border-color:#d7dee8;
+}
