@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.6.10</title>
+  <title>이력서 관리 시스템 v10.7.2</title>
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.6.10: 입력칸 균등화 + 지원일 컬럼 + 출근방법 용어 통일 -->
+  <!-- v10.7.2: 목록 줄무늬, 상태 컬러바, 배지 점, 사이드바 강조 -->
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +17,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.6.9</p>
+          <p>Recruit ERP 2.0 · v10.7.2</p>
         </div>
       </div>
       <nav class="nav">
@@ -25,6 +25,7 @@
         <button class="nav-btn" data-page="applicants"><span class="nav-ico">☷</span><span>지원자 목록</span></button>
         <button class="nav-btn" data-page="form"><span class="nav-ico">＋</span><span>지원자 입력</span></button>
         <button class="nav-btn" data-page="today"><span class="nav-ico">✓</span><span>오늘 할 일</span></button>
+        <button class="nav-btn" data-page="stats"><span class="nav-ico">▤</span><span>입사 통계</span></button>
         <button class="nav-btn" data-page="templates"><span class="nav-ico">✎</span><span>안내문구</span></button>
         <button class="nav-btn nav-sub" data-page="backup"><span class="nav-ico">⇩</span><span>백업/내보내기</span></button>
       </nav>
@@ -143,7 +144,7 @@
             <thead>
               <tr>
                 <th>NO</th>
-                <th>지원일</th>
+                <th class="apply-date-head">지원일</th>
                 <th>상태</th>
                 <th>성명</th>
                 <th>연락처</th>
@@ -299,6 +300,56 @@
           <div class="panel task-panel"><div class="panel-head"><h3>출근방법 확인</h3><span class="task-label">기숙사/출퇴근</span></div><div id="dormCheckList" class="card-list"></div></div>
           <div class="panel task-panel"><div class="panel-head"><h3>입사 일정</h3><span class="task-label">D-Day</span></div><div id="hireScheduleList" class="card-list"></div></div>
           <div class="panel task-panel"><div class="panel-head"><h3>판정/대기</h3><span class="task-label">검토</span></div><div id="decisionWaitList" class="card-list"></div></div>
+        </div>
+      </section>
+
+      <section id="stats" class="page">
+        <div class="hero-card stats-hero-card">
+          <div>
+            <p class="eyebrow">HIRING STATS</p>
+            <h3>입사 통계를 한눈에 확인합니다.</h3>
+            <p>연도별·월별·근무지별 입사 현황과 전체 지원자 상태 분포를 확인하세요.</p>
+          </div>
+        </div>
+
+        <div class="stats-summary-grid" id="statsSummaryGrid"></div>
+
+        <div class="two-col stats-panels">
+          <div class="panel">
+            <div class="panel-head"><h3>연도별 입사인원</h3><span class="task-label">출근 기준</span></div>
+            <div id="statsYearList" class="bar-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>월별 입사인원</h3><select id="statsYearSelect" class="sort-select"></select></div>
+            <div id="statsMonthList" class="bar-list"></div>
+          </div>
+        </div>
+
+        <div class="two-col stats-panels">
+          <div class="panel">
+            <div class="panel-head"><h3>근무지별 입사인원</h3><span class="task-label">출근 기준</span></div>
+            <div id="statsWorkplaceList" class="bar-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h3>출근방법별 인원</h3><span class="task-label">진행중 기준</span></div>
+            <div id="statsDormList" class="bar-list"></div>
+          </div>
+        </div>
+
+        <div class="panel stats-status-panel">
+          <div class="panel-head"><h3>상태별 지원자 수</h3><span class="task-label">전체 기준</span></div>
+          <div id="statsStatusList" class="bar-list"></div>
+        </div>
+
+        <div class="panel stats-funnel-panel">
+          <div class="panel-head"><h3>월별 지원·면접·합격 현황</h3><span class="task-label">지원일 기준</span></div>
+          <p class="muted stats-funnel-note">면접진행 = 면접일이 지난 지원자 · 합격 = 입사예정 또는 출근 상태 기준</p>
+          <div class="table-wrap">
+            <table class="funnel-table">
+              <thead><tr><th>지원월</th><th>지원자</th><th>면접진행</th><th>합격</th><th>합격률</th></tr></thead>
+              <tbody id="statsFunnelBody"></tbody>
+            </table>
+          </div>
         </div>
       </section>
 
