@@ -1,7 +1,8 @@
-// 이력서 관리 시스템 v10.6.4.1 Recruit ERP 2.0 지원자 목록 표시 복구 핫픽스
+// 이력서 관리 시스템 v10.6.4.2 Recruit ERP 2.0 지원자 목록 로딩 순서 복구 핫픽스
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
+const STATUS_OPTIONS = ['미연락','부재중','면접예정','입사예정','출근','불합격','서류탈락','철회','다음면접','연락두절'];
 let applicants = load();
 let currentWorkplace = 'all';
 let currentFilter = 'all';
@@ -12,7 +13,7 @@ let currentJobFit = 'all';
 let currentCareerType = 'all';
 let currentNeeds = 'all';
 let detailCurrentId = '';
-const STATUS_OPTIONS = ['미연락','부재중','면접예정','입사예정','출근','불합격','서류탈락','철회','다음면접','연락두절'];
+console.info('Recruit ERP v10.6.4.2 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
