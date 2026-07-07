@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v10.6.4 Recruit ERP 2.0 입력순서·상태간소화·목록/상세/오늘할일 가시성 개선
+// 이력서 관리 시스템 v10.6.4.1 Recruit ERP 2.0 지원자 목록 표시 복구 핫픽스
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -48,21 +48,52 @@ function normalize(a){ return {
   careerType:a.careerType||'', jobFitCategory:a.jobFitCategory||'', checkNeeds:a.checkNeeds||'', selfIntroKeywords:a.selfIntroKeywords||'',
   interviewDate:a.interviewDate||'', interviewTime:a.interviewTime||'', hireDate:a.hireDate||'', finalDecision:a.finalDecision||'', decisionReason:a.decisionReason||'', consult:a.consult||'', memo:a.memo||''
 }; }
+function looksLikeApplicantRow(x){
+  return x && typeof x === 'object' && (x.name || x.phone || x.email || x.applyDate || x.workplace || x.interviewDate);
+}
+function readArrayFromStorageKey(key){
+  try{
+    const raw = localStorage.getItem(key);
+    if(!raw) return [];
+    const parsed = JSON.parse(raw);
+    if(Array.isArray(parsed)) return parsed;
+    if(parsed && Array.isArray(parsed.applicants)) return parsed.applicants;
+    if(parsed && Array.isArray(parsed.rows)) return parsed.rows;
+    return [];
+  }catch{ return []; }
+}
 function load(){
   try{
-    let data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    let data = readArrayFromStorageKey(STORAGE_KEY);
     if(!data.length){
       for(const key of LEGACY_KEYS){
-        const legacy = JSON.parse(localStorage.getItem(key) || '[]');
-        if(Array.isArray(legacy) && legacy.length){
-          data = legacy.map(normalize);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        const legacy = readArrayFromStorageKey(key);
+        if(Array.isArray(legacy) && legacy.some(looksLikeApplicantRow)){
+          data = legacy;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data.map(normalize)));
           break;
         }
       }
     }
+    if(!data.length){
+      const candidates = [];
+      for(let i=0;i<localStorage.length;i++){
+        const key = localStorage.key(i);
+        if(!key || key === STORAGE_KEY || key === BACKUP_KEY) continue;
+        const arr = readArrayFromStorageKey(key);
+        if(Array.isArray(arr) && arr.some(looksLikeApplicantRow)) candidates.push(arr);
+      }
+      if(candidates.length){
+        candidates.sort((a,b)=>b.length-a.length);
+        data = candidates[0];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.map(normalize)));
+      }
+    }
     return Array.isArray(data) ? data.map(normalize) : [];
-  }catch{ return []; }
+  }catch(e){
+    console.error('Recruit ERP load error', e);
+    return [];
+  }
 }
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants)); renderAll(); }
 function calcAge(v){
@@ -265,9 +296,20 @@ function filtered(){
   });
   return rows;
 }
+function resetListFiltersToAll(){
+  currentWorkplace='all'; currentFilter='all'; currentSearch=''; hideFinished=false; currentJobFit='all'; currentCareerType='all'; currentNeeds='all';
+  if($('searchInput')) $('searchInput').value='';
+  if($('hideFinished')) $('hideFinished').checked=false;
+  document.querySelectorAll('#workplaceTabs .tab').forEach(x=>x.classList.toggle('active', x.dataset.workplace==='all'));
+  document.querySelectorAll('#quickFilters .chip').forEach(x=>x.classList.toggle('active', x.dataset.filter==='all'));
+}
 function renderTable(){
-  const rows=filtered();
-  const sortName=$('sortSelect').selectedOptions[0]?.textContent || '최근 등록순';
+  let rows=filtered();
+  if(!rows.length && applicants.length){
+    resetListFiltersToAll();
+    rows=filtered();
+  }
+  const sortName=$('sortSelect')?.selectedOptions?.[0]?.textContent || '최근 등록순';
   const contactCount=rows.filter(a=>['미연락','부재중'].includes(a.status)).length;
   const interviewCount=rows.filter(a=>['면접예정','다음면접'].includes(a.status) || a.interviewDate).length;
   const dormCount=rows.filter(a=>dormLabel(a)==='기숙사').length;
@@ -444,10 +486,12 @@ function csv(){
 }
 function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resume_management_backup_${today()}.json`,JSON.stringify(applicants,null,2),'application/json'); renderAll(); }
 
+function bind(id, event, handler){ const el=$(id); if(el) el.addEventListener(event, handler); }
+
 document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.go)));
-$('applicantForm').addEventListener('input',()=>{ updateScorePreview(); checkDuplicate(); });
-$('applicantForm').addEventListener('keydown', e=>{
+bind('applicantForm','input',()=>{ updateScorePreview(); checkDuplicate(); });
+bind('applicantForm','keydown', e=>{
   if(e.key !== 'Enter') return;
   const tag = e.target.tagName;
   const type = (e.target.getAttribute('type') || '').toLowerCase();
@@ -458,7 +502,7 @@ $('applicantForm').addEventListener('keydown', e=>{
   const idx = controls.indexOf(e.target);
   if(idx >= 0 && controls[idx+1]) controls[idx+1].focus();
 });
-$('applicantForm').addEventListener('submit',e=>{
+bind('applicantForm','submit',e=>{
   e.preventDefault();
   const f=getForm();
   if(!f.name){ alert('성명을 입력해주세요.'); return; }
@@ -468,25 +512,24 @@ $('applicantForm').addEventListener('submit',e=>{
   else { applicants.unshift(normalize({...f,id:uid(),createdAt:new Date().toISOString()})); }
   resetForm(); save(); setPage('applicants');
 });
-$('btnResetForm').addEventListener('click', resetForm);
-$('searchInput').addEventListener('input',e=>{ currentSearch=e.target.value; renderTable(); });
+bind('btnResetForm','click', resetForm);
+bind('searchInput','input',e=>{ currentSearch=e.target.value; renderTable(); });
 document.querySelectorAll('#workplaceTabs .tab').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#workplaceTabs .tab').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentWorkplace=b.dataset.workplace; renderTable(); }));
 document.querySelectorAll('#quickFilters .chip').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#quickFilters .chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentFilter=b.dataset.filter; renderTable(); }));
-$('sortSelect').addEventListener('change',e=>{ currentSort=e.target.value; renderTable(); });
-$('hideFinished').addEventListener('change',e=>{ hideFinished=e.target.checked; renderTable(); });
-if($('jobFitFilter')) $('jobFitFilter').addEventListener('change',e=>{ currentJobFit=e.target.value; renderTable(); });
-if($('careerTypeFilter')) $('careerTypeFilter').addEventListener('change',e=>{ currentCareerType=e.target.value; renderTable(); });
-if($('needsFilter')) $('needsFilter').addEventListener('change',e=>{ currentNeeds=e.target.value; renderTable(); });
-$('btnMakeTemplate').addEventListener('click', makeTemplate);
-$('btnCopyTemplate').addEventListener('click', async()=>{ try{ await navigator.clipboard.writeText($('templateOutput').value); alert('복사됐습니다.'); }catch{ alert('복사가 막히면 직접 드래그해서 복사해주세요.'); } });
-$('btnCsv').addEventListener('click', csv);
-$('btnJson').addEventListener('click', jsonBackup);
-$('jsonImport').addEventListener('change',e=>{ const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result); if(Array.isArray(data)){ applicants=data.map(normalize); save(); alert('가져오기 완료'); } else alert('지원자 백업 JSON 형식이 아닙니다.'); }catch{ alert('JSON 파일을 확인해주세요.'); } }; r.readAsText(file); });
-$('btnClearAll').addEventListener('click',()=>{ if(confirm('현재 브라우저의 모든 지원자 데이터를 삭제할까요?')){ applicants=[]; save(); } });
-if($('btnCloseDetail')) $('btnCloseDetail').addEventListener('click', closeDetail);
-if($('detailBackdrop')) $('detailBackdrop').addEventListener('click', closeDetail);
-if($('btnDetailEdit')) $('btnDetailEdit').addEventListener('click',()=>{ const id=detailCurrentId; closeDetail(); if(id) editApplicant(id); });
-if($('btnCopySummary')) $('btnCopySummary').addEventListener('click',async()=>{ const a=applicants.find(x=>x.id===detailCurrentId); if(!a) return; try{ await navigator.clipboard.writeText(applicantSummary(a)); alert('지원자 요약이 복사됐습니다.'); }catch{ alert('복사가 막히면 상세 내용을 직접 드래그해서 복사해주세요.'); } });
+bind('sortSelect','change',e=>{ currentSort=e.target.value; renderTable(); });
+bind('hideFinished','change',e=>{ hideFinished=e.target.checked; renderTable(); });
+bind('jobFitFilter','change',e=>{ currentJobFit=e.target.value; renderTable(); });
+bind('careerTypeFilter','change',e=>{ currentCareerType=e.target.value; renderTable(); });
+bind('needsFilter','change',e=>{ currentNeeds=e.target.value; renderTable(); });
+bind('btnMakeTemplate','click', makeTemplate);
+bind('btnCopyTemplate','click', async()=>{ try{ await navigator.clipboard.writeText($('templateOutput').value); alert('복사됐습니다.'); }catch{ alert('복사가 막히면 직접 드래그해서 복사해주세요.'); } });
+bind('btnCsv','click', csv);
+bind('btnJson','click', jsonBackup);
+bind('jsonImport','change',e=>{ const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result); if(Array.isArray(data)){ applicants=data.map(normalize); save(); alert('가져오기 완료'); } else alert('지원자 백업 JSON 형식이 아닙니다.'); }catch{ alert('JSON 파일을 확인해주세요.'); } }; r.readAsText(file); });
+bind('btnClearAll','click',()=>{ if(confirm('현재 브라우저의 모든 지원자 데이터를 삭제할까요?')){ applicants=[]; save(); } });
+bind('btnCloseDetail','click', closeDetail);
+bind('detailBackdrop','click', closeDetail);
+bind('btnDetailEdit','click',()=>{ const id=detailCurrentId; closeDetail(); if(id) editApplicant(id); });
+bind('btnCopySummary','click',async()=>{ const a=applicants.find(x=>x.id===detailCurrentId); if(!a) return; try{ await navigator.clipboard.writeText(applicantSummary(a)); alert('지원자 요약이 복사됐습니다.'); }catch{ alert('복사가 막히면 상세 내용을 직접 드래그해서 복사해주세요.'); } });
 
-resetForm();
-renderAll();
+try{ resetForm(); renderAll(); }catch(e){ console.error('Recruit ERP render error', e); alert('화면 표시 중 오류가 발생했습니다. app.js 교체 상태를 확인해주세요.'); }
