@@ -1,8 +1,8 @@
-// 이력서 관리 시스템 v10.6.6 Recruit ERP 2.0 안정화 점검
+// 이력서 관리 시스템 v10.6.8 Recruit ERP 2.0 상세프로필 정리
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
-const STATUS_OPTIONS = ['미연락','부재중','면접예정','입사예정','출근','불합격','서류탈락','철회','다음면접','연락두절'];
+const STATUS_OPTIONS = ['미연락','부재중','면접예정','면접완료','다음면접','입사예정','출근','불합격','서류탈락','철회','연락두절'];
 let applicants = load();
 let currentWorkplace = 'all';
 let currentFilter = 'all';
@@ -13,7 +13,7 @@ let currentJobFit = 'all';
 let currentCareerType = 'all';
 let currentNeeds = 'all';
 let detailCurrentId = '';
-console.info('Recruit ERP v10.6.6 loaded applicants:', applicants.length);
+console.info('Recruit ERP v10.6.8 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -24,7 +24,7 @@ function genderClass(a){ const g=normalizeGender(a?.gender); if(g==='남자') re
 function normalizeStatus(v){
   const s=String(v||'').trim();
   const map={
-    '문자발송':'미연락','연락완료':'면접예정','면접완료':'다음면접','보류':'다음면접',
+    '문자발송':'미연락','연락완료':'면접예정','보류':'다음면접',
     '부적합':'서류탈락','전형마감':'서류탈락','취소':'철회','입사포기':'철회'
   };
   const out=map[s] || s || '미연락';
@@ -147,6 +147,7 @@ function nextAction(a){
   if(!a.status || a.status==='미연락') return '첫 연락 필요';
   if(a.status==='부재중') return '재연락';
   if(a.status==='면접예정') return '면접 일정 확인';
+  if(a.status==='면접완료') return a.finalDecision ? a.finalDecision : '판정 입력';
   if(a.status==='다음면접') return '다음 면접 조율';
   if(a.status==='출근') return '출근 완료';
   if(a.status==='입사예정') return '입사 안내';
@@ -155,6 +156,8 @@ function nextAction(a){
 }
 function isFinished(a){ return ['불합격','서류탈락','철회','연락두절'].includes(a.status) || ['불합격','입사포기'].includes(a.finalDecision); }
 function isActive(a){ return !isFinished(a); }
+function hasFinalDecision(a){ return !!String(a?.finalDecision || '').trim(); }
+function isDecisionNeeded(a){ return isActive(a) && a.status === '면접완료' && !hasFinalDecision(a); }
 function finalDecisionOf(a){ return a.finalDecision || grade(calcScore(a)); }
 
 function datePlus(days){
@@ -209,7 +212,7 @@ function taskGroups(){
   const hireD3=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===3);
   const hireToday=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===0);
   const hireSoon=applicants.filter(isHireSoon);
-  const decisions=applicants.filter(a=>isActive(a) && ((!a.finalDecision && finalDecisionOf(a)==='우선검토') || a.status==='다음면접'));
+  const decisions=applicants.filter(isDecisionNeeded);
   const waits=applicants.filter(a=>isActive(a) && (['입사예정'].includes(a.status)||['입사예정','보류'].includes(a.finalDecision))); 
   return {todayInterviews,upcomingInterviews,tomorrowInterviews:upcomingInterviews,recalls,dorms,hireD7,hireD3,hireToday,hireSoon,decisions,waits};
 }
@@ -281,7 +284,7 @@ function filtered(){
     if(currentFilter==='priority') filterOk=finalDecisionOf(a)==='우선검토';
     if(currentFilter==='contact') filterOk=['미연락','부재중'].includes(a.status);
     if(currentFilter==='interview') filterOk=['면접예정','다음면접'].includes(a.status);
-    if(currentFilter==='decision') filterOk=a.status==='다음면접'||(!a.finalDecision&&finalDecisionOf(a)==='우선검토');
+    if(currentFilter==='decision') filterOk=isDecisionNeeded(a);
     if(currentFilter==='hold') filterOk=a.finalDecision==='보류';
     if(currentFilter==='active') filterOk=isActive(a);
     return workplaceOk && searchOk && jobOk && careerOk && needsOk && filterOk;
@@ -420,32 +423,67 @@ function viewApplicant(id){
   detailCurrentId=id; const score=calcScore(a); const sc=deriveScores(a);
   const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ') || '일정 미정';
   const dorm=dormLabel(a);
+  const decision=finalDecisionOf(a);
+  const action=nextAction(a);
   const profileSub=[a.careerType,a.education,a.workplace].filter(Boolean).join(' · ') || '지원자 기본정보';
-  const profile = `<div class="profile-hero-detail profile-hero-clean profile-hero-spacious">
-    <div class="profile-main-block"><h2 class="detail-name ${genderClass(a)}">${esc(a.name||'이름없음')}</h2><p>${esc(profileSub)}</p><div class="profile-badges"><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span><span class="workplace-pill">${esc(a.workplace||'근무지 미입력')}</span></div></div>
-    <div class="profile-side-cards"><div><span>최종판정</span><strong>${esc(finalDecisionOf(a))}</strong></div><div><span>다음액션</span><strong>${esc(nextAction(a))}</strong></div></div>
+  const status=normalizeStatus(a.status);
+  const detailSection=(title, rows, cls='')=>rows ? `<section class="detail-section-card detail-section-v108 ${cls}"><div class="detail-section-title"><h4>${title}</h4></div><div class="detail-grid detail-grid-v108">${rows}</div></section>` : '';
+  const longBlock=(title, value, cls='')=>{
+    const v=String(value ?? '').trim();
+    if(!v) return '';
+    return `<section class="detail-section-card detail-section-v108 detail-long-section ${cls}"><div class="detail-section-title"><h4>${title}</h4></div><p>${esc(v)}</p></section>`;
+  };
+
+  const profile = `<div class="profile-hero-detail detail-hero-v108">
+    <div class="detail-identity-v108">
+      <p class="eyebrow">APPLICANT PROFILE</p>
+      <h2 class="detail-name ${genderClass(a)}">${esc(a.name||'이름없음')}</h2>
+      <p class="detail-subline">${esc(profileSub)}</p>
+      <div class="profile-badges"><span class="badge ${badgeClass(status)}">${esc(status||'미입력')}</span><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span><span class="workplace-pill">${esc(a.workplace||'근무지 미입력')}</span></div>
+    </div>
+    <div class="detail-summary-v108">
+      <div><span>판정</span><strong>${esc(decision)}</strong></div>
+      <div><span>다음액션</span><strong>${esc(action)}</strong></div>
+    </div>
   </div>`;
-  const core = `<div class="detail-core-card detail-core-v2 detail-core-clean">
-    ${coreItem('연락처',a.phone)}${coreItem('이메일',a.email)}${coreItem('근무형태',dorm)}${coreItem('지원경로',a.source)}
-    ${coreItem('지원일',a.applyDate)}${coreItem('면접일정',interview)}${coreItem('입사예정일',a.hireDate)}${coreItem('생년월일/연령',[a.birthYear,a.age&&a.age+'세'].filter(Boolean).join(' / '))}
+
+  const core = `<div class="detail-core-card detail-core-v108">
+    ${coreItem('연락처',a.phone)}${coreItem('이메일',a.email)}${coreItem('지원일',a.applyDate)}${coreItem('지원경로',a.source)}
+    ${coreItem('근무지',a.workplace)}${coreItem('근무형태',dorm)}${coreItem('면접일정',interview)}${coreItem('입사예정일',a.hireDate)}
   </div>`;
-  const resumeRows = [
-    detailRow('학력구분',a.education), detailRow('학교/전공',[a.school,a.major].filter(Boolean).join(' / ')), detailRow('경력',a.career,'wide-row text-row'),
-    detailRow('자격증',a.certs,'wide-row'), detailRow('외국어/기타자격',a.languageEtc,'wide-row'), detailRow('성별',a.gender), detailRow('지역',a.region), detailRow('기타',a.extra,'wide-row')
+
+  const personalRows = [
+    detailRow('성별',a.gender), detailRow('생년월일/연령',[a.birthYear,a.age&&a.age+'세'].filter(Boolean).join(' / ')), detailRow('거주지역',a.region), detailRow('경력구분',a.careerType)
+  ].join('');
+  const educationRows = [
+    detailRow('학력구분',a.education), detailRow('학교/전공',[a.school,a.major].filter(Boolean).join(' / ')), detailRow('자격증',a.certs,'wide-row'), detailRow('외국어/기타자격',a.languageEtc,'wide-row'), detailRow('기타',a.extra,'wide-row')
   ].join('');
   const jobRows = [
     detailRow('직무적합',displayCategory(a)), detailRow('확인필요사항',a.checkNeeds,'wide-row'), detailRow('자소서/태도 키워드',a.selfIntroKeywords,'wide-row')
   ].join('');
-  const memoValue=[a.consult,a.memo,a.decisionReason].filter(Boolean).join('\n\n');
+  const memoRows = [
+    longBlock('상담내용', a.consult, 'memo-primary'),
+    longBlock('메모·다음액션', a.memo),
+    longBlock('판정사유·참고', a.decisionReason)
+  ].join('');
+
   $('detailTitle').textContent = `${a.name||'이름없음'} · 상세 프로필`;
   $('detailBody').innerHTML = `
     ${profile}
     ${core}
-    ${memoValue ? `<div class="detail-memo memo-primary"><h4>전화인터뷰·메모·다음액션</h4><p>${esc(memoValue)}</p></div>` : ''}
-    ${resumeRows ? `<div class="summary-card detail-section-card resume-detail-card"><h4>이력서 정보</h4><div class="detail-grid detail-grid-balanced">${resumeRows}</div></div>` : ''}
-    ${jobRows ? `<div class="summary-card detail-section-card"><h4>검토 참고정보</h4><div class="detail-grid detail-grid-balanced">${jobRows}</div></div>` : ''}
-    <div class="detail-score-section"><h4>검토점수</h4><div class="detail-score"><strong>${score}점</strong><span>${esc(finalDecisionOf(a))}</span><small>${esc(displayCategory(a))} · ${esc(nextAction(a))}</small></div>
-    <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${sc.field}/20</strong></div></div></div>`;
+    <div class="detail-main-v108">
+      <div class="detail-main-left-v108">
+        ${memoRows || `<section class="detail-section-card detail-section-v108"><div class="empty">전화인터뷰·메모가 없습니다.</div></section>`}
+        ${longBlock('경력사항', a.career, 'career-long')}
+      </div>
+      <div class="detail-main-right-v108">
+        ${detailSection('인적사항', personalRows)}
+        ${detailSection('학력·자격 정보', educationRows)}
+        ${detailSection('검토 참고정보', jobRows)}
+      </div>
+    </div>
+    <section class="detail-score-section detail-score-v108"><div class="detail-section-title"><h4>검토점수</h4><span>참고용 자동 점수</span></div><div class="detail-score"><strong>${score}점</strong><span>${esc(decision)}</span><small>${esc(displayCategory(a))} · ${esc(action)}</small></div>
+    <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${sc.field}/20</strong></div></div></section>`;
   $('detailModal').classList.add('show');
 }
 function closeDetail(){ $('detailModal').classList.remove('show'); detailCurrentId=''; }
