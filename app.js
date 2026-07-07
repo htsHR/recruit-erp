@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v10.6.5.4 Recruit ERP 2.0 지원자 입력 카드 배치 안정화
+// 이력서 관리 시스템 v10.6.6 Recruit ERP 2.0 안정화 점검
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -13,7 +13,7 @@ let currentJobFit = 'all';
 let currentCareerType = 'all';
 let currentNeeds = 'all';
 let detailCurrentId = '';
-console.info('Recruit ERP v10.6.5.4 loaded applicants:', applicants.length);
+console.info('Recruit ERP v10.6.6 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -239,8 +239,10 @@ function renderStats(){
 function backupNotice(){
   const last = localStorage.getItem(BACKUP_KEY);
   const msg = last ? `마지막 JSON 백업: ${last}` : '백업은 백업/내보내기 메뉴에서 필요할 때 진행할 수 있습니다.';
-  $('backupAlert').textContent = msg;
-  $('lastBackupText').textContent = msg;
+  setText('backupAlert', msg);
+  setText('lastBackupText', last || '기록 없음');
+  setText('backupApplicantCount', countText(applicants.length));
+  setText('backupStorageKey', STORAGE_KEY);
 }
 function shortNeeds(a){ return (a.checkNeeds||'').split(',').map(x=>x.trim()).filter(Boolean).slice(0,2); }
 function needsHtml(a){ const needs=shortNeeds(a); return needs.length?`<div class="need-tags">${needs.map(n=>`<span class="need-tag">${esc(n)}</span>`).join('')}</div>`:'-'; }
@@ -300,18 +302,18 @@ function filtered(){
   return rows;
 }
 function resetListFiltersToAll(){
-  currentWorkplace='all'; currentFilter='all'; currentSearch=''; hideFinished=false; currentJobFit='all'; currentCareerType='all'; currentNeeds='all';
+  currentWorkplace='all'; currentFilter='all'; currentSearch=''; currentSort='recent'; hideFinished=false; currentJobFit='all'; currentCareerType='all'; currentNeeds='all';
   if($('searchInput')) $('searchInput').value='';
+  if($('sortSelect')) $('sortSelect').value='recent';
   if($('hideFinished')) $('hideFinished').checked=false;
+  if($('jobFitFilter')) $('jobFitFilter').value='all';
+  if($('careerTypeFilter')) $('careerTypeFilter').value='all';
+  if($('needsFilter')) $('needsFilter').value='all';
   document.querySelectorAll('#workplaceTabs .tab').forEach(x=>x.classList.toggle('active', x.dataset.workplace==='all'));
   document.querySelectorAll('#quickFilters .chip').forEach(x=>x.classList.toggle('active', x.dataset.filter==='all'));
 }
 function renderTable(){
-  let rows=filtered();
-  if(!rows.length && applicants.length){
-    resetListFiltersToAll();
-    rows=filtered();
-  }
+  const rows=filtered();
   const sortName=$('sortSelect')?.selectedOptions?.[0]?.textContent || '최근 등록순';
   const contactCount=rows.filter(a=>['미연락','부재중'].includes(a.status)).length;
   const interviewCount=rows.filter(a=>['면접예정','다음면접'].includes(a.status) || a.interviewDate).length;
@@ -339,8 +341,9 @@ function renderTable(){
       <td class="decision-cell"><strong>${esc(decision)}</strong><small>${score}점</small></td>
       <td class="row-actions compact-actions"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="11" class="empty">조건에 맞는 지원자가 없습니다.</td></tr>`;
+  }).join(''):`<tr><td colspan="11" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" onclick="resetAndRenderList()">필터 초기화</button></td></tr>`;
 }
+function resetAndRenderList(){ resetListFiltersToAll(); renderTable(); }
 function renderToday(){
   const g=taskGroups();
   const hireSchedule=[...g.hireToday,...g.hireD3,...g.hireD7]
@@ -446,7 +449,7 @@ function viewApplicant(id){
   $('detailModal').classList.add('show');
 }
 function closeDetail(){ $('detailModal').classList.remove('show'); detailCurrentId=''; }
-window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant; window.viewApplicant=viewApplicant; window.updateApplicantStatus=updateApplicantStatus;
+window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant; window.viewApplicant=viewApplicant; window.updateApplicantStatus=updateApplicantStatus; window.resetAndRenderList=resetAndRenderList;
 
 function updateFormMode(){
   const editing = !!($('editId') && $('editId').value);
@@ -524,6 +527,7 @@ bind('btnResetForm','click', resetForm);
 bind('searchInput','input',e=>{ currentSearch=e.target.value; renderTable(); });
 document.querySelectorAll('#workplaceTabs .tab').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#workplaceTabs .tab').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentWorkplace=b.dataset.workplace; renderTable(); }));
 document.querySelectorAll('#quickFilters .chip').forEach(b=>b.addEventListener('click',()=>{ document.querySelectorAll('#quickFilters .chip').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentFilter=b.dataset.filter; renderTable(); }));
+bind('btnResetFilters','click',()=>{ resetListFiltersToAll(); renderTable(); });
 bind('sortSelect','change',e=>{ currentSort=e.target.value; renderTable(); });
 bind('hideFinished','change',e=>{ hideFinished=e.target.checked; renderTable(); });
 bind('jobFitFilter','change',e=>{ currentJobFit=e.target.value; renderTable(); });
@@ -533,8 +537,33 @@ bind('btnMakeTemplate','click', makeTemplate);
 bind('btnCopyTemplate','click', async()=>{ try{ await navigator.clipboard.writeText($('templateOutput').value); alert('복사됐습니다.'); }catch{ alert('복사가 막히면 직접 드래그해서 복사해주세요.'); } });
 bind('btnCsv','click', csv);
 bind('btnJson','click', jsonBackup);
-bind('jsonImport','change',e=>{ const file=e.target.files[0]; if(!file) return; const r=new FileReader(); r.onload=()=>{ try{ const data=JSON.parse(r.result); if(Array.isArray(data)){ applicants=data.map(normalize); save(); alert('가져오기 완료'); } else alert('지원자 백업 JSON 형식이 아닙니다.'); }catch{ alert('JSON 파일을 확인해주세요.'); } }; r.readAsText(file); });
-bind('btnClearAll','click',()=>{ if(confirm('현재 브라우저의 모든 지원자 데이터를 삭제할까요?')){ applicants=[]; save(); } });
+bind('jsonImport','change',e=>{
+  const file=e.target.files[0];
+  if(!file) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const parsed=JSON.parse(r.result);
+      const data=Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.applicants) ? parsed.applicants : []);
+      if(!Array.isArray(data) || !data.length){ alert('지원자 백업 JSON 형식이 아니거나 데이터가 비어 있습니다.'); return; }
+      const ok=confirm(`JSON 가져오기 전 확인\n\n현재 저장된 지원자: ${applicants.length}명\n가져올 지원자: ${data.length}명\n\n가져오면 현재 브라우저의 지원자 목록이 가져온 파일 기준으로 교체됩니다. 진행할까요?`);
+      if(!ok) return;
+      applicants=data.map(normalize);
+      save();
+      alert(`가져오기 완료: ${applicants.length}명`);
+    }catch{ alert('JSON 파일을 확인해주세요.'); }
+    finally{ e.target.value=''; }
+  };
+  r.readAsText(file);
+});
+bind('btnClearAll','click',()=>{
+  if(!confirm(`현재 브라우저의 지원자 ${applicants.length}명을 모두 삭제할까요?\n\n이 작업 전에는 JSON 백업을 먼저 다운로드하는 것을 권장합니다.`)) return;
+  const phrase=prompt('정말 삭제하려면 아래 문구를 그대로 입력하세요.\n\n전체삭제');
+  if(phrase !== '전체삭제'){ alert('삭제가 취소되었습니다.'); return; }
+  applicants=[];
+  save();
+  alert('전체 삭제 완료');
+});
 bind('btnCloseDetail','click', closeDetail);
 bind('detailBackdrop','click', closeDetail);
 bind('btnDetailEdit','click',()=>{ const id=detailCurrentId; closeDetail(); if(id) editApplicant(id); });
