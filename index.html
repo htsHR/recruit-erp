@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.6.8</title>
+  <title>이력서 관리 시스템 v10.6.9</title>
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.6.8: 상세프로필 정리 패치 -->
+  <!-- v10.6.9: 홈 상태톤 보정 + 입력폼 이력서 정보 통합 + 상세프로필 재정렬 -->
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +17,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.6.8</p>
+          <p>Recruit ERP 2.0 · v10.6.9</p>
         </div>
       </div>
       <nav class="nav">
@@ -172,10 +172,8 @@
     <p>회사 이력서 흐름에 맞춰 인적사항, 학력, 자격, 경력, 진행관리를 순서대로 입력합니다.</p>
     <div class="form-hero-tags">
       <span>① 인적사항</span>
-      <span>② 학력사항</span>
-      <span>③ 자격/외국어</span>
-      <span>④ 경력사항</span>
-      <span>⑤ 진행관리</span>
+      <span>② 이력서 정보</span>
+      <span>③ 진행관리</span>
       <span>Enter = 다음 칸 이동</span>
     </div>
   </div>
@@ -206,44 +204,24 @@
     </div>
   </section>
 
-  <div class="resume-paired-layout">
-    <section class="form-card-main resume-section-card education-section input-card-half">
-      <div class="section-title compact-title">
-        <span>2. 학력사항</span>
-        <small>학교, 전공, 학력구분</small>
-      </div>
-      <div class="form-grid education-grid resume-input-grid">
-        <label>학력구분<select id="education"><option value="">선택</option><option>고졸</option><option>전졸</option><option>대졸</option><option>대학원</option><option>기타</option></select></label>
-        <label>학교<input id="school" placeholder="학교명" /></label>
-        <label class="wide-2">학과<input id="major" placeholder="전공/학과" /></label>
-      </div>
-    </section>
-
-    <section class="form-card-main resume-section-card license-section input-card-half">
-      <div class="section-title compact-title">
-        <span>3. 자격/면허·외국어</span>
-        <small>자격증과 어학/기타자격</small>
-      </div>
-      <div class="form-grid license-grid resume-input-grid">
-        <label>자격증<input id="certs" placeholder="전기기능사, 운전면허 등" /></label>
-        <label>외국어/기타자격<input id="languageEtc" placeholder="OPIC, ADsP, 6시그마 등" /></label>
-      </div>
-    </section>
-  </div>
-
-  <section class="form-card-main resume-section-card career-section input-card-full">
+  <section class="form-card-main resume-section-card resume-info-section input-card-full">
     <div class="section-title compact-title">
-      <span>4. 경력사항</span>
-      <small>근무처, 기간, 담당업무, 퇴직사유</small>
+      <span>2. 이력서 정보</span>
+      <small>학력, 자격/면허, 외국어, 경력사항을 한 번에 입력</small>
     </div>
-    <div class="form-grid resume-input-grid career-grid">
-      <label class="wide"><span>경력</span><textarea id="career" rows="4" placeholder="예: 에이치앤에스테크 / 2025.04~2026.05 / 반도체 장비 셋업 / 개인사정"></textarea></label>
+    <div class="form-grid resume-info-grid resume-input-grid">
+      <label>학력구분<select id="education"><option value="">선택</option><option>고졸</option><option>전졸</option><option>대졸</option><option>대학원</option><option>기타</option></select></label>
+      <label>학교<input id="school" placeholder="학교명" /></label>
+      <label>학과<input id="major" placeholder="전공/학과" /></label>
+      <label>자격증<input id="certs" placeholder="전기기능사, 운전면허 등" /></label>
+      <label>외국어/기타자격<input id="languageEtc" placeholder="OPIC, ADsP, 6시그마 등" /></label>
+      <label class="wide"><span>경력사항</span><textarea id="career" rows="4" placeholder="예: 에이치앤에스테크 / 2025.04~2026.05 / 반도체 장비 셋업 / 개인사정"></textarea></label>
     </div>
   </section>
 
   <section class="form-card-main resume-section-card process-section process-wide-card input-card-full">
     <div class="section-title compact-title">
-      <span>5. 전화인터뷰·진행관리</span>
+      <span>3. 전화인터뷰·진행관리</span>
       <small>연락상태는 미연락 기본값, 이후 진행 상태만 간단히 선택</small>
     </div>
     <div class="form-grid compact-process-grid resume-input-grid">
