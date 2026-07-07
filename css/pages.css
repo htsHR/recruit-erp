@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.6.5.3 — PAGES
+   Recruit ERP v10.6.5.4 — PAGES
    역할: 홈 / 지원자 입력 / 지원자 목록 / 오늘 할 일 / 상세 프로필의 화면별 배치만 관리
    공통 폭·입력칸·버튼·카드 기준은 layout.css/components.css에 분리
    ========================================================= */
@@ -64,8 +64,8 @@
 .form-kicker{margin:0 0 8px;color:#bfdbfe;font-size:12px;font-weight:1000;letter-spacing:.08em;}
 .form-hero.designer-hero h3{margin:0;font-size:25px;line-height:1.15;letter-spacing:-.05em;}
 .form-hero.designer-hero p{margin:8px 0 0;color:#dbeafe;font-size:13.5px;line-height:1.45;font-weight:750;}
-.form-hero-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;}
-.form-hero-tags span{display:inline-flex;align-items:center;min-height:25px;padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);font-size:11.5px;font-weight:900;color:#eff6ff;}
+.form-hero-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px;}
+.form-hero-tags span{display:inline-flex;align-items:center;min-height:27px;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.20);font-size:12px;font-weight:900;color:#eff6ff;}
 .form-hero-actions{display:flex;gap:9px;flex:0 0 auto;}
 .form-hero-actions .ghost{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.28);color:#fff;}
 
@@ -84,22 +84,55 @@
 .resume-section-card .section-title span,
 .resume-section-card .compact-title span{font-size:var(--erp-section-title-size);font-weight:1000;color:#0f172a;letter-spacing:-.035em;}
 .resume-section-card .section-title small,
-.resume-section-card .compact-title small{font-size:var(--erp-help-size);font-weight:850;color:#64748b;}
-.identity-section{min-height:0;}
-.career-section textarea{min-height:96px;}
-.process-wide-card textarea{min-height:90px;}
+.resume-section-card .compact-title small{font-size:var(--erp-help-size);font-weight:850;color:#64748b;text-align:right;}
+.identity-section,
+.education-section,
+.license-section,
+.career-section,
+.process-section{min-height:0;}
+.resume-paired-layout .resume-section-card{height:100%;}
+.license-section .resume-input-grid{align-content:start;}
+.career-section textarea,
+.career-grid textarea{
+  width:100%;
+  max-width:100%;
+  min-height:108px;
+  box-sizing:border-box;
+  resize:vertical;
+}
+.process-wide-card textarea{
+  width:100%;
+  max-width:100%;
+  min-height:92px;
+  box-sizing:border-box;
+}
 .process-wide-card{margin-top:0;}
 .duplicate-box{margin:0;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid var(--erp-line);font-weight:900;}
 .duplicate-box:empty{display:none;}
 .duplicate-box.warn{background:#fff7ed;border-color:#f59e0b;color:#92400e;}
-.review-only{overflow:hidden;}
-.review-only summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;margin:calc(var(--erp-card-pad) * -1);margin-bottom:0;padding:16px 18px;background:linear-gradient(90deg,#f7fbff,#eef5ff);font-weight:950;}
+
+.review-only{
+  overflow:hidden;
+  padding:0;
+}
+.review-only summary{
+  cursor:pointer;
+  list-style:none;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  margin:0;
+  padding:18px 20px;
+  background:linear-gradient(90deg,#ffffff,#f1f7ff);
+  font-weight:950;
+}
 .review-only summary::-webkit-details-marker{display:none;}
 .review-only summary span{font-size:16px;color:#0f172a;}
-.review-only summary small{font-size:12px;color:#64748b;font-weight:800;}
-.review-only summary:after{content:'펼치기';font-size:12px;color:#2563eb;border:1px solid #cfe0ff;background:#fff;border-radius:999px;padding:5px 9px;white-space:nowrap;}
+.review-only summary small{display:block;margin-top:4px;font-size:12px;color:#64748b;font-weight:800;}
+.review-only summary:after{content:'펼치기';font-size:12px;color:#2563eb;border:1px solid #cfe0ff;background:#fff;border-radius:999px;padding:6px 11px;white-space:nowrap;}
 .review-only[open] summary:after{content:'접기';}
-.review-only .detail-lite-grid{padding-top:18px;}
+.review-only .detail-lite-grid{padding:18px 20px 20px;}
 .checkbox-block{border:1.4px solid #c7d2e2;border-radius:16px;background:#f8fbff;padding:14px;}
 .checkbox-block strong{display:block;margin-bottom:10px;font-size:14px;color:#0f172a;}
 .compact-checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}

@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.6.5.3 — LAYOUT
+   Recruit ERP v10.6.5.4 — LAYOUT
    역할: 전체 폭, 좌우 여백, 페이지 기준선, 반응형 그리드만 관리
    base.css는 기존 호환을 위해 유지하고, 화면별 패치는 pages.css로 분리
    ========================================================= */
@@ -103,19 +103,26 @@
   gap:10px;
 }
 
-.resume-top-layout{
-  display:grid;
-  grid-template-columns:minmax(0,1.35fr) minmax(360px,.85fr);
-  gap:var(--erp-section-gap);
-  align-items:start;
-}
-
-.resume-side-stack,
+.resume-entry-flow,
 .compact-resume-flow,
-.resume-entry-flow{
+.stable-resume-flow{
   display:flex;
   flex-direction:column;
   gap:var(--erp-section-gap);
+}
+
+.resume-paired-layout{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:var(--erp-section-gap);
+  align-items:stretch;
+}
+
+.input-card-full,
+.input-card-half{
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
 }
 
 .form-grid,
@@ -124,10 +131,14 @@
   gap:13px;
 }
 
-.compact-four-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
-.compact-two-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+.compact-four-grid,
+.identity-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
+.compact-two-grid,
+.education-grid,
+.license-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
 .compact-process-grid{grid-template-columns:repeat(5,minmax(0,1fr));}
 .form-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr));}
+.career-grid{grid-template-columns:1fr;}
 
 .wide,.wide-2{grid-column:1/-1;}
 .process-wide-card .wide-2{grid-column:span 2;}
@@ -143,8 +154,8 @@ table{min-width:var(--erp-table-min);}
   }
   .home-work-queue,
   .today-focus-row{grid-template-columns:repeat(3,minmax(0,1fr));}
-  .resume-top-layout{grid-template-columns:1fr;}
   .compact-four-grid,
+  .identity-grid,
   .compact-process-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
   .compact-list-controls{grid-template-columns:auto minmax(280px,1fr) 160px;}
   .compact-list-controls .check-inline{
@@ -174,8 +185,12 @@ table{min-width:var(--erp-table-min);}
   .task-board-clean{grid-template-columns:1fr;}
   .home-work-queue,
   .today-focus-row,
+  .resume-paired-layout,
   .compact-four-grid,
+  .identity-grid,
   .compact-two-grid,
+  .education-grid,
+  .license-grid,
   .compact-process-grid,
   .detail-lite-grid,
   .form-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -194,8 +209,12 @@ table{min-width:var(--erp-table-min);}
   }
   .home-work-queue,
   .today-focus-row,
+  .resume-paired-layout,
   .compact-four-grid,
+  .identity-grid,
   .compact-two-grid,
+  .education-grid,
+  .license-grid,
   .compact-process-grid,
   .detail-lite-grid,
   .form-grid.compact{grid-template-columns:1fr;}
