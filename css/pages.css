@@ -1,4 +1,4 @@
-/* Recruit ERP v10.6.2 디자인 정리 패치
+/* Recruit ERP v10.6.3 디자인 정리 패치
    - base.css는 기존 v10.5.1 그대로 유지
    - 홈/목록/오늘 할 일의 시각 톤을 v10.5 계열로 복구·정리
 */
@@ -226,4 +226,102 @@ table{min-width:1280px}
   .today-focus-row,
   .task-board-clean{grid-template-columns:1fr}
   .clean-summary{justify-content:flex-start}
+}
+
+/* v10.6.3 디자인 통일 보정: 근무형태/상세프로필/오늘할일 */
+.applicant-name-cell small{
+  color:#64748b;
+  font-weight:850;
+}
+.dorm-pill.on{background:#ecfdf5;color:#047857;border-color:#bbf7d0}
+.dorm-pill.off{background:#f8fafc;color:#334155;border-color:#cbd5e1}
+.dorm-pill.pending{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
+
+.profile-hero-clean{
+  border:1.5px solid #d8e3f3;
+  background:linear-gradient(180deg,#ffffff,#f7faff);
+  border-radius:24px;
+  padding:22px 24px;
+  box-shadow:0 16px 40px rgba(15,23,42,.075);
+}
+.profile-identity.no-avatar{
+  display:flex;
+  align-items:center;
+  min-width:0;
+}
+.profile-identity.no-avatar h2{
+  margin:0;
+  color:#0f172a;
+  font-size:26px;
+  font-weight:1000;
+  letter-spacing:-.045em;
+}
+.profile-identity.no-avatar p{
+  margin:7px 0 12px;
+  color:#64748b;
+  font-size:13px;
+  font-weight:850;
+}
+.detail-core-clean{
+  border:1px solid #dbe5f2;
+  background:#fff;
+  box-shadow:0 10px 26px rgba(15,23,42,.045);
+}
+.detail-grid-balanced{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.detail-grid-balanced .detail-row{
+  min-height:64px;
+  padding:13px 14px;
+  border:1px solid #e2e8f0;
+  border-radius:16px;
+  background:#fbfdff;
+}
+.detail-grid-balanced .detail-row span{
+  color:#64748b;
+  font-size:11.5px;
+  font-weight:950;
+}
+.detail-grid-balanced .detail-row strong{
+  display:block;
+  margin-top:7px;
+  color:#0f172a;
+  font-size:13.5px;
+  font-weight:950;
+  line-height:1.45;
+  white-space:pre-wrap;
+  word-break:keep-all;
+  overflow-wrap:anywhere;
+}
+.detail-grid-balanced .wide-row{
+  grid-column:1 / -1;
+}
+.detail-grid-balanced .text-row{
+  min-height:92px;
+}
+.resume-detail-card{
+  border-color:#d8e3f3;
+}
+.resume-detail-card h4,
+.detail-section-card h4{
+  color:#0f172a;
+  font-weight:1000;
+  letter-spacing:-.035em;
+}
+.task-board-clean .person-card small,
+.card-list .person-card small{
+  line-height:1.45;
+}
+.today-focus-row .focus-metric span{
+  white-space:nowrap;
+}
+.task-board-clean .task-label{
+  white-space:nowrap;
+}
+@media(max-width:760px){
+  .detail-grid-balanced{grid-template-columns:1fr}
+  .profile-hero-clean{padding:18px}
+  .profile-identity.no-avatar h2{font-size:22px}
 }
