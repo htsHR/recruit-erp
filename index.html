@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.6.3</title>
+  <title>이력서 관리 시스템 v10.6.4</title>
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.6.3: 근무형태 분류·상세프로필·오늘할일 가시성 정리 -->
+  <!-- v10.6.4: 이력서 순서 입력폼·상태 간소화·목록/상세/오늘할일 가시성 보정 -->
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +17,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.6.3</p>
+          <p>Recruit ERP 2.0 · v10.6.4</p>
         </div>
       </div>
       <nav class="nav">
@@ -168,11 +168,13 @@
   <div class="form-hero-copy">
     <p class="form-kicker">APPLICANT ENTRY</p>
     <h3>지원자 등록</h3>
-    <p>이력서에서 확인한 기본정보와 전화인터뷰 내용을 좌우로 나누어 빠르게 정리합니다.</p>
+    <p>회사 이력서 흐름에 맞춰 인적사항, 학력, 자격, 경력, 진행관리를 순서대로 입력합니다.</p>
     <div class="form-hero-tags">
-      <span>① 기본정보</span>
-      <span>② 전화인터뷰</span>
-      <span>③ 직무검토</span>
+      <span>① 인적사항</span>
+      <span>② 학력사항</span>
+      <span>③ 자격/외국어</span>
+      <span>④ 경력사항</span>
+      <span>⑤ 진행관리</span>
       <span>Enter = 다음 칸 이동</span>
     </div>
   </div>
@@ -182,44 +184,73 @@
   </div>
 </div>
 
-<div class="split-form-grid refined-grid">
-  <section class="form-card-main core-card">
+<div class="resume-entry-flow">
+  <section class="form-card-main resume-section-card identity-section">
     <div class="section-title compact-title">
-      <span>지원 기본정보</span>
+      <span>1. 인적사항·지원정보</span>
+      <small>이력서 상단 기본정보와 접수 정보를 먼저 입력</small>
     </div>
-    <div class="form-grid two-grid core-input-grid">
-      <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option></select></label>
-      <label>지원날짜<input id="applyDate" type="date" /></label>
-      <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
+    <div class="form-grid three-grid resume-input-grid">
       <label>성명<input id="name" required placeholder="홍길동" /></label>
       <label>성별<select id="gender"><option value="">선택</option><option>남자</option><option>여자</option></select></label>
-      <label>생년월일<input id="birthYear" placeholder="1998.06.19" /></label>
+      <label>생년월일<input id="birthYear" placeholder="1998.06.19 또는 980619" /></label>
       <label>연령<input id="age" placeholder="자동/수동" /></label>
       <label>연락처<input id="phone" placeholder="010-0000-0000" /></label>
       <label>이메일<input id="email" type="email" placeholder="email@example.com" /></label>
-      <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학 등" /></label>
       <label>지역(시)<input id="region" placeholder="평택, 천안, 오산 등" /></label>
-      <label class="education-level">학력구분<select id="education"><option value="">선택</option><option>고졸</option><option>전졸</option><option>대졸</option><option>대학원</option><option>기타</option></select></label>
-      <label>학교<input id="school" placeholder="학교명" /></label>
-      <label>학과<input id="major" placeholder="전공/학과" /></label>
-      <label class="wide">경력<input id="career" placeholder="반도체, PM, 설비, FE, FAB, PLC, 정비, 교대 등" /></label>
-      <label class="wide cert-field">자격증<input id="certs" placeholder="산업안전, 전기, 설비보전, 지게차, 운전면허 등" /></label>
-      <label class="wide sub-field">외국어/기타자격<input id="languageEtc" placeholder="OPIC, 토익스피킹, 기타 자격 등" /></label>
-      <label>연락상태<select id="status"><option>미연락</option><option>연락완료</option><option>부재중</option><option>문자발송</option><option>면접예정</option><option>면접완료</option><option>입사예정</option><option>출근</option><option>보류</option><option>불합격</option><option>부적합</option><option>철회</option><option>취소</option><option>전형마감</option><option>연락두절</option></select></label>
+      <label>지원날짜<input id="applyDate" type="date" /></label>
+      <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
+      <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option></select></label>
+      <label class="wide-2">지원경로<input id="source" placeholder="사람인, 잡코리아, 대학, 추천 등" /></label>
     </div>
   </section>
 
-  <section class="form-card-main interview-card">
+  <section class="form-card-main resume-section-card education-section">
     <div class="section-title compact-title">
-      <span>전화인터뷰·진행관리</span>
+      <span>2. 학력사항</span>
+      <small>학교, 전공, 학력구분</small>
     </div>
-    <div class="form-grid two-grid">
-      <label class="wide dorm-only">근무형태<select id="dormUse"><option value="">선택</option><option>기숙사</option><option>출퇴근</option><option>확인필요</option></select></label>
+    <div class="form-grid three-grid resume-input-grid">
+      <label>학력구분<select id="education"><option value="">선택</option><option>고졸</option><option>전졸</option><option>대졸</option><option>대학원</option><option>기타</option></select></label>
+      <label>학교<input id="school" placeholder="학교명" /></label>
+      <label>학과<input id="major" placeholder="전공/학과" /></label>
+    </div>
+  </section>
+
+  <section class="form-card-main resume-section-card license-section">
+    <div class="section-title compact-title">
+      <span>3. 자격/면허·외국어</span>
+      <small>자격증과 어학/기타자격</small>
+    </div>
+    <div class="form-grid two-grid resume-input-grid">
+      <label class="wide">자격증<input id="certs" placeholder="전기기능사, 산업안전산업기사, 운전면허 등" /></label>
+      <label class="wide">외국어/기타자격<input id="languageEtc" placeholder="OPIC, 토익스피킹, ADsP, 6시그마 등" /></label>
+    </div>
+  </section>
+
+  <section class="form-card-main resume-section-card career-section">
+    <div class="section-title compact-title">
+      <span>4. 경력사항</span>
+      <small>근무처, 기간, 담당업무, 퇴직사유를 핵심 위주로 입력</small>
+    </div>
+    <div class="form-grid two-grid resume-input-grid">
+      <label class="wide"><span>경력</span><textarea id="career" rows="4" placeholder="예: 에이치앤에스테크 / 2025.04~2026.05 / 반도체 장비 셋업 / 개인사정"></textarea></label>
+    </div>
+  </section>
+
+  <section class="form-card-main resume-section-card process-section">
+    <div class="section-title compact-title">
+      <span>5. 전화인터뷰·진행관리</span>
+      <small>연락상태는 미연락 기본값, 이후 진행 상태만 간단히 선택</small>
+    </div>
+    <div class="form-grid three-grid resume-input-grid">
+      <label>연락상태<select id="status"><option selected>미연락</option><option>부재중</option><option>면접예정</option><option>입사예정</option><option>출근</option><option>불합격</option><option>서류탈락</option><option>철회</option><option>다음면접</option><option>연락두절</option></select></label>
+      <label>근무형태<select id="dormUse"><option value="">선택</option><option>기숙사</option><option>출퇴근</option><option>확인필요</option></select></label>
       <label>면접날짜<input id="interviewDate" type="date" /></label>
       <label>면접시간<select id="interviewTime"><option value="">선택</option><option>08:00</option><option>08:30</option><option>09:00</option><option>09:30</option><option>10:00</option><option>10:30</option><option>11:00</option><option>11:30</option><option>12:00</option><option>12:30</option><option>13:00</option><option>13:30</option><option>14:00</option><option>14:30</option><option>15:00</option><option>15:30</option><option>16:00</option><option>16:30</option><option>17:00</option><option>17:30</option><option>18:00</option><option>18:30</option><option>19:00</option><option>19:30</option><option>20:00</option></select></label>
       <label>입사날짜<input id="hireDate" type="date" /></label>
       <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
-      <label class="wide">상담내용<textarea id="consult" rows="4" placeholder="기숙사/출퇴근 분류, 면접 가능일, 특이사항"></textarea></label>
+      <label class="wide">상담내용<textarea id="consult" rows="4" placeholder="근무형태, 면접 가능일, 통화 내용, 특이사항"></textarea></label>
       <label class="wide">판정사유/메모/다음액션<textarea id="memo" rows="4" placeholder="판정사유, 다음 연락, 내부 공유사항, 추가 확인사항"></textarea></label>
     </div>
   </section>
