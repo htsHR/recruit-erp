@@ -310,10 +310,10 @@
 }
 
 /* =========================================================
-   v10.6.9 PAGE 보정
-   - 홈/목록 서류탈락 회색톤
-   - 입력폼 이력서 정보 통합 카드
-   - 상세프로필 균형형 재정렬
+   v10.6.10 PAGE 보정
+   - 입력폼 동일폭 보정
+   - 목록 지원일 컬럼 추가
+   - 서류탈락 톤 완화
    ========================================================= */
 .form-hero-tags span{font-size:11.5px;}
 .identity-section .resume-input-grid{gap:11px 12px;}
@@ -321,6 +321,14 @@
 .resume-info-section textarea{min-height:96px;}
 .resume-info-section .section-title small{max-width:58%;}
 .process-section .resume-input-grid textarea{min-height:82px;}
+
+.identity-section .resume-input-grid > label,
+.resume-info-section .resume-input-grid > label,
+.process-section .resume-input-grid > label{min-width:0;}
+.identity-section .resume-input-grid input,
+.identity-section .resume-input-grid select,
+.resume-info-section .resume-input-grid input,
+.resume-info-section .resume-input-grid select{min-width:0;}
 
 /* 상세프로필 v10.6.9 */
 .detail-hero-v109{

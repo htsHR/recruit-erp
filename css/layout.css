@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.6.8 — LAYOUT
+   Recruit ERP v10.6.10 — LAYOUT
    역할: 전체 폭, 좌우 여백, 페이지 기준선, 반응형 그리드만 관리
    base.css는 기존 호환을 위해 유지하고, 화면별 패치는 pages.css로 분리
    ========================================================= */
@@ -10,7 +10,7 @@
   --erp-page-pad-y: 18px;
   --erp-section-gap: 16px;
   --erp-sidebar-w: 280px;
-  --erp-table-min: 1360px;
+  --erp-table-min: 1460px;
 }
 
 .app-shell{
@@ -223,33 +223,24 @@ table{min-width:var(--erp-table-min);}
 }
 
 /* =========================================================
-   v10.6.9 LAYOUT 보정
-   - 지원자 입력 2/3/4 통합 구조
-   - 인적사항 일부 짧은 칸 폭 보정
-   - 상세프로필 균형형 단일 흐름 구조
+   v10.6.10 LAYOUT 보정
+   - 지원자 입력칸 동일폭 기준 고정
+   - 이력서 정보 상단 5개 항목 균등화
+   - 지원자 목록 지원일 컬럼 추가 대응
    ========================================================= */
-.resume-info-grid{
-  grid-template-columns:1.05fr 1.05fr .9fr 1.15fr 1.15fr;
+.identity-section .identity-grid{
+  grid-template-columns:repeat(6,minmax(0,1fr));
   align-items:start;
 }
-.resume-profile-grid{
-  grid-template-columns:1fr 1fr 1fr 1fr;
-}
-.identity-section .identity-grid{
-  grid-template-columns:1.05fr .72fr 1fr .78fr 1.05fr 1.15fr .82fr .95fr .82fr .82fr 1.72fr;
-}
-.identity-section .identity-grid label:nth-child(1){grid-column:span 2;}
-.identity-section .identity-grid label:nth-child(2){grid-column:span 1;}
-.identity-section .identity-grid label:nth-child(3){grid-column:span 2;}
-.identity-section .identity-grid label:nth-child(4){grid-column:span 1;}
-.identity-section .identity-grid label:nth-child(5){grid-column:span 2;}
-.identity-section .identity-grid label:nth-child(6){grid-column:span 3;}
-.identity-section .identity-grid label:nth-child(7){grid-column:span 2;}
-.identity-section .identity-grid label:nth-child(8){grid-column:span 2;}
-.identity-section .identity-grid label:nth-child(9){grid-column:span 2;}
-.identity-section .identity-grid label:nth-child(10){grid-column:span 2;}
-.identity-section .identity-grid label:nth-child(11){grid-column:span 7;}
+.identity-section .identity-grid label:nth-child(n){grid-column:span 1;}
 
+.resume-info-grid{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  align-items:start;
+}
+.resume-info-grid .wide{grid-column:1/-1;}
+
+.resume-profile-grid{grid-template-columns:1fr 1fr 1fr 1fr;}
 .detail-info-board-v109{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
@@ -262,10 +253,7 @@ table{min-width:var(--erp-table-min);}
 .detail-score-v109{width:100%;}
 
 @media(max-width:1360px){
-  .identity-section .identity-grid{grid-template-columns:repeat(6,minmax(0,1fr));}
-  .identity-section .identity-grid label:nth-child(n){grid-column:span 2;}
-  .identity-section .identity-grid label:nth-child(6){grid-column:span 3;}
-  .identity-section .identity-grid label:nth-child(11){grid-column:span 3;}
+  .identity-section .identity-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
   .resume-info-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
   .resume-info-grid .wide{grid-column:1/-1;}
 }
@@ -277,7 +265,6 @@ table{min-width:var(--erp-table-min);}
 @media(max-width:920px){
   .identity-section .identity-grid,
   .resume-info-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-  .identity-section .identity-grid label:nth-child(n),
   .resume-info-grid .wide{grid-column:1/-1;}
 }
 

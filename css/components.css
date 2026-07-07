@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.6.8 — COMPONENTS
+   Recruit ERP v10.6.10 — COMPONENTS
    역할: 카드, 버튼, 입력칸, 배지, 테이블, 모달 등 공통 부품 기준 고정
    ========================================================= */
 
@@ -409,47 +409,52 @@ tbody td{
 @media(max-width:760px){.detail-body{padding:16px 16px 2px;}}
 
 /* =========================================================
-   v10.6.9 COMPONENT 보정
-   - 서류탈락 회색톤
-   - 종료/탈락 카드·행의 시각 강도 약화
+   v10.6.10 COMPONENT 보정
+   - 서류탈락 회색톤을 부드럽게 조정
+   - 지원일 컬럼 가독성 추가
    ========================================================= */
 .badge.neutral{
-  background:#eef1f5;
-  color:#64748b;
-  border:1px solid #d7dee8;
+  background:#f3f5f8;
+  color:#7a8797;
+  border:1px solid #dfe5ee;
 }
 .status-inline.neutral{
-  background:#f1f5f9;
-  color:#64748b;
-  border-color:#cbd5e1;
+  background:#f8fafc;
+  color:#718096;
+  border-color:#d7dee8;
 }
 .person-card.is-paper-rejected{
-  background:#f8fafc;
-  border-color:#dbe3ee;
+  background:#fbfcfe;
+  border-color:#e1e7f0;
   box-shadow:none;
-  opacity:.86;
 }
 .person-card.is-paper-rejected .person-name,
 .applicant-row.is-paper-rejected .name-button{
-  color:#64748b !important;
+  color:#6b7280 !important;
 }
 .applicant-row.is-paper-rejected{
-  background:#fafbfc;
+  background:#fff;
 }
 .applicant-row.is-paper-rejected td{
-  color:#64748b;
+  color:#475569;
 }
 .applicant-row.is-paper-rejected .decision-cell strong,
 .applicant-row.is-paper-rejected .phone-cell strong{
-  color:#475569;
+  color:#334155;
 }
 .applicant-row.is-paper-rejected .workplace-pill,
 .applicant-row.is-paper-rejected .dorm-pill{
-  filter:grayscale(.65);
-  opacity:.82;
+  filter:none;
+  opacity:1;
+}
+.apply-date-cell{
+  color:#475569;
+  font-size:12px;
+  font-weight:900;
+  white-space:nowrap;
 }
 .detail-hero-v109.is-paper-rejected,
 .detail-section-v108.is-paper-rejected{
-  background:linear-gradient(135deg,#ffffff,#f5f7fa);
-  border-color:#d7dee8;
+  background:linear-gradient(135deg,#ffffff,#f8fafc);
+  border-color:#dfe5ee;
 }
