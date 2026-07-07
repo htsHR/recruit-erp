@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.6.5.4 — COMPONENTS
+   Recruit ERP v10.6.6 — COMPONENTS
    역할: 카드, 버튼, 입력칸, 배지, 테이블, 모달 등 공통 부품 기준 고정
    ========================================================= */
 
@@ -348,4 +348,57 @@ tbody td{
   .detail-body{padding:16px;}
   .modal-head{padding:16px;}
   .modal-card>.form-actions{padding:0 16px 16px;}
+}
+
+/* =========================================================
+   v10.6.6 안정화: 백업 상태/필터 초기화 UI
+   ========================================================= */
+.backup-status-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:16px 0 12px;
+}
+.backup-status-card{
+  border:1.5px solid var(--erp-line-soft);
+  border-radius:16px;
+  background:#f8fbff;
+  padding:14px 15px;
+}
+.backup-status-card span{
+  display:block;
+  color:#64748b;
+  font-size:12px;
+  font-weight:1000;
+  margin-bottom:6px;
+}
+.backup-status-card strong{
+  display:block;
+  color:#0f172a;
+  font-size:15px;
+  font-weight:1000;
+  word-break:break-word;
+}
+.backup-safety-note{
+  margin:10px 0 16px;
+  padding:11px 13px;
+  border:1px solid #bfdbfe;
+  background:#eff6ff;
+  border-radius:14px;
+  color:#24426e;
+  font-size:13px;
+  font-weight:850;
+}
+.reset-filter-btn{
+  background:#fff;
+  border-color:#cbd8ea;
+  color:#24426e;
+}
+.list-empty-cell > div{
+  margin-bottom:10px;
+  color:#64748b;
+  font-weight:900;
+}
+@media(max-width:920px){
+  .backup-status-grid{grid-template-columns:1fr;}
 }
