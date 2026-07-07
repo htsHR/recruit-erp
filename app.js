@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v10.6.5.3 Recruit ERP 2.0 CSS 역할 분리·레이아웃 안정화
+// 이력서 관리 시스템 v10.6.5.4 Recruit ERP 2.0 지원자 입력 카드 배치 안정화
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -13,7 +13,7 @@ let currentJobFit = 'all';
 let currentCareerType = 'all';
 let currentNeeds = 'all';
 let detailCurrentId = '';
-console.info('Recruit ERP v10.6.5.3 loaded applicants:', applicants.length);
+console.info('Recruit ERP v10.6.5.4 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
