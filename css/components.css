@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.6.10 — COMPONENTS
+   Recruit ERP v10.7.2 — COMPONENTS
    역할: 카드, 버튼, 입력칸, 배지, 테이블, 모달 등 공통 부품 기준 고정
    ========================================================= */
 
@@ -409,7 +409,7 @@ tbody td{
 @media(max-width:760px){.detail-body{padding:16px 16px 2px;}}
 
 /* =========================================================
-   v10.6.10 COMPONENT 보정
+   v10.6.10.1 COMPONENT 보정
    - 서류탈락 회색톤을 부드럽게 조정
    - 지원일 컬럼 가독성 추가
    ========================================================= */
@@ -447,14 +447,87 @@ tbody td{
   filter:none;
   opacity:1;
 }
+.table-wrap th.apply-date-head,
+.table-wrap td.apply-date-cell{
+  min-width:96px;
+  width:96px;
+  text-align:center;
+  white-space:nowrap;
+}
 .apply-date-cell{
   color:#475569;
   font-size:12px;
   font-weight:900;
-  white-space:nowrap;
 }
 .detail-hero-v109.is-paper-rejected,
 .detail-section-v108.is-paper-rejected{
   background:linear-gradient(135deg,#ffffff,#f8fafc);
   border-color:#dfe5ee;
+}
+
+
+.table-wrap th:first-child,
+.table-wrap td.no-cell{
+  min-width:52px;
+  width:52px;
+  text-align:center;
+}
+
+/* =========================================================
+   v10.6.10.2 COMPONENT 보정
+   - 목록 요약의 출근방법 종합 문구가 알약형 뱃지 안에서
+     너무 길게 늘어나 보이지 않도록 별도 모양 지정
+   ========================================================= */
+.list-summary .summary-commute{
+  border-radius:14px;
+  white-space:normal;
+  line-height:1.4;
+}
+
+/* =========================================================
+   v10.7.2 가시성 개선
+   - 지원자 목록 표: 줄무늬 배경으로 행 구분 강화
+   - 상태 선택칸: 왼쪽 컬러바로 상태를 색으로 먼저 인지
+   - 배지(badge): 앞에 작은 컬러 점 추가 (카드 목록에서 상태 스캔 속도 향상)
+   - 사이드바: 현재 메뉴 왼쪽에 파란 강조바 추가
+   기존 색상/구조는 그대로 두고 위에 덧붙이는 방식이라 다른 화면에 영향 없음
+   ========================================================= */
+tbody tr.applicant-row:not(.is-paper-rejected):nth-child(even) td{
+  background:#f8fbff;
+}
+.status-inline{
+  border-left-width:4px;
+  border-left-style:solid;
+}
+.status-inline.good{border-left-color:#0f8057;}
+.status-inline.info{border-left-color:#1d5fc9;}
+.status-inline.missed{border-left-color:#986514;}
+.status-inline.bad{border-left-color:#c83838;}
+.status-inline.hold{border-left-color:#614fd0;}
+.status-inline.neutral{border-left-color:#9aa5b1;}
+.badge{position:relative;padding-left:19px;}
+.badge:before{
+  content:'';
+  position:absolute;
+  left:8px;
+  top:50%;
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:currentColor;
+  transform:translateY(-50%);
+  opacity:.85;
+}
+.nav-btn{position:relative;}
+.nav-btn.active:before{
+  content:'';
+  position:absolute;
+  left:-22px;
+  top:50%;
+  transform:translateY(-50%);
+  width:4px;
+  height:22px;
+  border-radius:4px;
+  background:#42d7ff;
+  box-shadow:0 0 10px rgba(66,215,255,.7);
 }

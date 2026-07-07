@@ -1,6 +1,6 @@
 /* =========================================================
-   Recruit ERP v10.6.8 — PAGES
-   역할: 홈 / 지원자 입력 / 지원자 목록 / 오늘 할 일 / 상세 프로필의 화면별 배치만 관리
+   Recruit ERP v10.7.2 — PAGES
+   역할: 홈 / 지원자 입력 / 지원자 목록 / 오늘 할 일 / 입사 통계 / 상세 프로필의 화면별 배치만 관리
    공통 폭·입력칸·버튼·카드 기준은 layout.css/components.css에 분리
    ========================================================= */
 
@@ -38,6 +38,14 @@
 .queue-label{color:#334155;font-size:13px;font-weight:1000;letter-spacing:-.03em;}
 .queue-card strong{display:block;margin-top:8px;color:#0f2e74;font-size:32px;line-height:1;font-weight:1000;letter-spacing:-.045em;}
 .queue-card small{display:block;margin-top:8px;color:#64748b;font-size:12px;font-weight:850;letter-spacing:-.025em;}
+
+/* v10.7.2: 업무 카드 왼쪽에 카테고리별 컬러바 - 한눈에 종류 구분 */
+.home-work-queue .queue-card{border-left-width:4px;border-left-style:solid;border-left-color:#cbd5e1;}
+.home-work-queue .queue-card:nth-child(1){border-left-color:#2563eb;}
+.home-work-queue .queue-card:nth-child(2){border-left-color:#6366f1;}
+.home-work-queue .queue-card:nth-child(3){border-left-color:#b45309;}
+.home-work-queue .queue-card:nth-child(4){border-left-color:#0f766e;}
+.home-work-queue .queue-card:nth-child(5){border-left-color:#15803d;}
 
 /* APPLICANT FORM */
 .applicant-form-v6{
@@ -310,10 +318,19 @@
 }
 
 /* =========================================================
-   v10.6.10 PAGE 보정
+   v10.6.10.1 PAGE 보정
    - 입력폼 동일폭 보정
    - 목록 지원일 컬럼 추가
    - 서류탈락 톤 완화
+
+   v10.6.10.2 PAGE 보정
+   - 상세프로필 메모 영역 세로 쌓기로 변경(빈 여백 방지)
+
+   v10.7 PAGE 보정
+   - 입사 통계 화면 신규 섹션 추가 (파일 끝부분 참고)
+
+   v10.7.1 PAGE 보정
+   - 월별 지원·면접·합격 현황(퍼널) 테이블 추가
    ========================================================= */
 .form-hero-tags span{font-size:11.5px;}
 .identity-section .resume-input-grid{gap:11px 12px;}
@@ -330,7 +347,7 @@
 .resume-info-section .resume-input-grid input,
 .resume-info-section .resume-input-grid select{min-width:0;}
 
-/* 상세프로필 v10.6.9 */
+/* 상세프로필 v10.6.10.2 */
 .detail-hero-v109{
   display:grid;
   grid-template-columns:minmax(0,1fr) minmax(280px,400px);
@@ -349,7 +366,7 @@
 .detail-summary-v109 div{background:#fff;border:1px solid #dbe5f2;border-radius:18px;padding:14px 15px;box-shadow:0 8px 20px rgba(15,23,42,.045);}
 .detail-summary-v109 span{display:block;color:#64748b;font-size:12px;font-weight:1000;margin-bottom:6px;}
 .detail-summary-v109 strong{display:block;color:#0f172a;font-size:17px;font-weight:1000;line-height:1.28;word-break:keep-all;}
-.detail-memo-stack-v109{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px;}
+.detail-memo-stack-v109{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px;}
 .detail-memo-stack-v109 .detail-section-v108{margin:0;}
 .detail-memo-stack-v109 .memo-primary{grid-column:1/-1;}
 .detail-info-board-v109{margin-top:14px;}
@@ -368,4 +385,65 @@
   .detail-memo-stack-v109{grid-template-columns:1fr;}
   .detail-summary-v109{grid-template-columns:1fr;}
   .detail-hero-v109{padding:18px;}
+}
+
+/* =========================================================
+   v10.7 입사 통계 (STATS)
+   - 홈/오늘 할 일과 같은 폭·카드 기준을 그대로 사용
+   - 막대그래프는 별도 라이브러리 없이 순수 CSS로 구현
+   ========================================================= */
+.stats-hero-card{margin-bottom:16px;}
+.stats-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:16px;
+}
+.stats-panels{margin-bottom:16px;}
+.stats-status-panel{margin-bottom:16px;}
+.stats-panels .panel-head select{
+  width:auto;
+  min-width:96px;
+  height:32px;
+  min-height:32px;
+  padding:0 10px;
+  font-size:12px;
+}
+.bar-list{display:flex;flex-direction:column;gap:10px;}
+.bar-row{
+  display:grid;
+  grid-template-columns:64px minmax(0,1fr) 52px;
+  align-items:center;
+  gap:10px;
+}
+.bar-label{font-size:12.5px;font-weight:950;color:#334155;white-space:nowrap;}
+.bar-track{height:14px;border-radius:999px;background:#eef2f8;overflow:hidden;}
+.bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#2563eb,#42d7ff);}
+.bar-count{font-size:12.5px;font-weight:1000;color:#0f172a;text-align:right;white-space:nowrap;}
+
+@media(max-width:1360px){
+  .stats-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media(max-width:920px){
+  .stats-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:640px){
+  .stats-summary-grid{grid-template-columns:1fr;}
+  .bar-row{grid-template-columns:56px minmax(0,1fr) 46px;}
+}
+
+/* =========================================================
+   v10.7.1 PAGE 보정
+   - 월별 지원·면접·합격 현황(퍼널) 테이블 추가
+   - table 기본 min-width(1460px)를 이 표에는 적용하지 않음
+   ========================================================= */
+.stats-funnel-panel{margin-bottom:16px;}
+.stats-funnel-note{margin:0 0 12px;font-size:12px;}
+.funnel-table{min-width:520px;}
+.funnel-table th:not(:first-child),
+.funnel-table td:not(:first-child){text-align:center;}
+.funnel-total-row td{
+  background:#eef4ff;
+  font-weight:1000;
+  color:#0f2e74;
 }
