@@ -1,4 +1,4 @@
-// 이력서 관리 시스템 v10.6.10 Recruit ERP 2.0 입력·목록·출근방법 정리
+// 이력서 관리 시스템 v10.6.10 Recruit ERP 2.0 입력·목록·출근방법 d정리
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
