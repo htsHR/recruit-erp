@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.6.2</title>
+  <title>이력서 관리 시스템 v10.6.3</title>
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.6.2: 디자인 정리 패치 버전 -->
+  <!-- v10.6.3: 근무형태 분류·상세프로필·오늘할일 가시성 정리 -->
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +17,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.6.2</p>
+          <p>Recruit ERP 2.0 · v10.6.3</p>
         </div>
       </div>
       <nav class="nav">
@@ -50,7 +50,7 @@
           <div>
             <p class="eyebrow">TODAY RECRUIT DESK</p>
             <h3>오늘 처리할 지원자 업무를 먼저 보여드립니다.</h3>
-            <p>면접 일정, 연락 필요, 기숙사 확인, 입사 예정자를 한 화면에서 확인하고 바로 처리하세요.</p>
+            <p>오늘 면접, 면접 예정, 연락 필요, 근무형태 확인, 입사 일정을 한 화면에서 확인하고 바로 처리하세요.</p>
           </div>
           <div class="hero-actions home-hero-actions">
             <button class="primary" data-go="form">새 지원자 입력</button>
@@ -68,9 +68,9 @@
             <small>오늘 바로 확인</small>
           </button>
           <button class="queue-card" data-go="today">
-            <span class="queue-label">내일 면접</span>
+            <span class="queue-label">면접 예정</span>
             <strong id="homeTomorrowInterviewCount">0</strong>
-            <small>내일 일정 준비</small>
+            <small>오늘 제외 일정</small>
           </button>
           <button class="queue-card" data-go="today">
             <span class="queue-label">연락 필요</span>
@@ -78,9 +78,9 @@
             <small>미연락·부재중</small>
           </button>
           <button class="queue-card" data-go="today">
-            <span class="queue-label">확인 필요</span>
+            <span class="queue-label">근무형태 확인</span>
             <strong id="homeCheckCount">0</strong>
-            <small>기숙사·판정</small>
+            <small>기숙사·출퇴근</small>
           </button>
           <button class="queue-card" data-go="today">
             <span class="queue-label">입사 임박</span>
@@ -149,7 +149,7 @@
                 <th>근무지</th>
                 <th>지역</th>
                 <th>면접일정</th>
-                <th>기숙사</th>
+                <th>근무형태</th>
                 <th>판정</th>
                 <th>관리</th>
               </tr>
@@ -214,12 +214,12 @@
       <span>전화인터뷰·진행관리</span>
     </div>
     <div class="form-grid two-grid">
-      <label class="wide dorm-only">기숙사 사용<select id="dormUse"><option value="">선택</option><option>사용</option><option>미사용</option><option>확인필요</option><option>해당없음</option></select></label>
+      <label class="wide dorm-only">근무형태<select id="dormUse"><option value="">선택</option><option>기숙사</option><option>출퇴근</option><option>확인필요</option></select></label>
       <label>면접날짜<input id="interviewDate" type="date" /></label>
       <label>면접시간<select id="interviewTime"><option value="">선택</option><option>08:00</option><option>08:30</option><option>09:00</option><option>09:30</option><option>10:00</option><option>10:30</option><option>11:00</option><option>11:30</option><option>12:00</option><option>12:30</option><option>13:00</option><option>13:30</option><option>14:00</option><option>14:30</option><option>15:00</option><option>15:30</option><option>16:00</option><option>16:30</option><option>17:00</option><option>17:30</option><option>18:00</option><option>18:30</option><option>19:00</option><option>19:30</option><option>20:00</option></select></label>
       <label>입사날짜<input id="hireDate" type="date" /></label>
       <label>내 최종판정<select id="finalDecision"><option value="">미정</option><option>우선검토</option><option>검토가능</option><option>추가확인</option><option>보류</option><option>면접진행</option><option>불합격</option><option>입사예정</option><option>입사포기</option></select></label>
-      <label class="wide">상담내용<textarea id="consult" rows="4" placeholder="기숙사 사용 여부, 면접 가능일, 특이사항"></textarea></label>
+      <label class="wide">상담내용<textarea id="consult" rows="4" placeholder="기숙사/출퇴근 분류, 면접 가능일, 특이사항"></textarea></label>
       <label class="wide">판정사유/메모/다음액션<textarea id="memo" rows="4" placeholder="판정사유, 다음 연락, 내부 공유사항, 추가 확인사항"></textarea></label>
     </div>
   </section>
@@ -238,7 +238,7 @@
       <label><input type="checkbox" name="checkNeeds" value="입사가능일 확인" /> 입사가능일 확인</label>
       <label><input type="checkbox" name="checkNeeds" value="퇴사 가능일 확인" /> 퇴사 가능일 확인</label>
       <label><input type="checkbox" name="checkNeeds" value="교대근무 가능 여부" /> 교대근무 가능 여부</label>
-      <label><input type="checkbox" name="checkNeeds" value="기숙사 사용 확인" /> 기숙사 사용 확인</label>
+      <label><input type="checkbox" name="checkNeeds" value="근무형태 확인" /> 근무형태 확인</label>
       <label><input type="checkbox" name="checkNeeds" value="근무지 전환 가능 여부" /> 근무지 전환 가능 여부</label>
       <label><input type="checkbox" name="checkNeeds" value="PM社 6개월 이상 경력기술서" /> PM社 경력기술서</label>
       <label><input type="checkbox" name="checkNeeds" value="반도체 직접경험 확인" /> 반도체 직접경험 확인</label>
@@ -267,24 +267,24 @@
           <div>
             <p class="eyebrow">TODAY ACTION</p>
             <h3>오늘 할 일</h3>
-            <p>오늘 바로 처리할 항목만 간단하게 정리했습니다.</p>
+            <p>오늘 면접과 앞으로 예정된 면접을 분리하고, 확인이 필요한 항목만 간단하게 정리했습니다.</p>
           </div>
           <div class="task-summary clean-summary" id="todayOverview"></div>
         </div>
 
         <div class="today-focus-row">
           <div class="focus-metric primary"><span>오늘 면접</span><strong id="todayInterviewCount">0</strong></div>
-          <div class="focus-metric"><span>내일 면접</span><strong id="tomorrowInterviewCount">0</strong></div>
+          <div class="focus-metric"><span>면접 예정</span><strong id="tomorrowInterviewCount">0</strong></div>
           <div class="focus-metric"><span>연락 필요</span><strong id="recallCount">0</strong></div>
-          <div class="focus-metric"><span>확인 필요</span><strong id="todayCheckCount">0</strong></div>
+          <div class="focus-metric"><span>근무형태 확인</span><strong id="todayCheckCount">0</strong></div>
           <div class="focus-metric"><span>입사 일정</span><strong id="hireScheduleCount">0</strong></div>
         </div>
 
         <div class="task-board task-board-clean">
           <div class="panel task-panel task-primary"><div class="panel-head"><h3>오늘 면접</h3><span class="task-label">오늘</span></div><div id="todayInterview" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>내일 면접</h3><span class="task-label">내일</span></div><div id="tomorrowInterview" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>면접 예정/일정 확인</h3><span class="task-label">예정</span></div><div id="tomorrowInterview" class="card-list"></div></div>
           <div class="panel task-panel"><div class="panel-head"><h3>연락 필요</h3><span class="task-label">연락</span></div><div id="recallList" class="card-list"></div></div>
-          <div class="panel task-panel"><div class="panel-head"><h3>기숙사 확인</h3><span class="task-label">확인</span></div><div id="dormCheckList" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>근무형태 확인</h3><span class="task-label">기숙사/출퇴근</span></div><div id="dormCheckList" class="card-list"></div></div>
           <div class="panel task-panel"><div class="panel-head"><h3>입사 일정</h3><span class="task-label">D-Day</span></div><div id="hireScheduleList" class="card-list"></div></div>
           <div class="panel task-panel"><div class="panel-head"><h3>판정/대기</h3><span class="task-label">검토</span></div><div id="decisionWaitList" class="card-list"></div></div>
         </div>
