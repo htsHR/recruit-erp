@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.6.5.4</title>
+  <title>이력서 관리 시스템 v10.6.6</title>
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.6.5.4: 지원자 입력 카드 배치 안정화 패치 -->
+  <!-- v10.6.6: 안정화 점검 패치 -->
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +17,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.6.5.4</p>
+          <p>Recruit ERP 2.0 · v10.6.6</p>
         </div>
       </div>
       <nav class="nav">
@@ -134,6 +134,7 @@
             <button class="chip" data-filter="interview">면접 예정</button>
             <button class="chip" data-filter="decision">판정 필요</button>
             <button class="chip" data-filter="active">진행중</button>
+            <button class="mini reset-filter-btn" type="button" id="btnResetFilters">필터 초기화</button>
           </div>
         </div>
         <div class="list-summary" id="listSummary"></div>
@@ -331,7 +332,17 @@
       </section>
 
       <section id="backup" class="page">
-        <div class="panel backup-panel"><h3>백업/내보내기</h3><p>localStorage 저장 방식이라 브라우저 초기화 전 JSON 백업이 필요할 수 있습니다.</p><p id="lastBackupText" class="muted"></p><div class="form-actions wrap"><button class="primary" id="btnCsv">CSV 다운로드</button><button class="ghost" id="btnJson">JSON 백업 다운로드</button><label class="file-label">JSON 가져오기<input type="file" id="jsonImport" accept=".json" /></label><button class="danger" id="btnClearAll">전체 삭제</button></div></div>
+        <div class="panel backup-panel stable-backup-panel">
+          <h3>백업/내보내기</h3>
+          <p>localStorage 저장 방식이라 브라우저 초기화 전 JSON 백업이 필요할 수 있습니다.</p>
+          <div class="backup-status-grid">
+            <div class="backup-status-card"><span>저장된 지원자</span><strong id="backupApplicantCount">0명</strong></div>
+            <div class="backup-status-card"><span>마지막 JSON 백업</span><strong id="lastBackupText">기록 없음</strong></div>
+            <div class="backup-status-card"><span>저장키</span><strong id="backupStorageKey">recruit_erp_applicants_stable</strong></div>
+          </div>
+          <p class="backup-safety-note">JSON 가져오기 전에는 현재 데이터 개수와 가져올 데이터 개수를 확인한 뒤 진행합니다.</p>
+          <div class="form-actions wrap"><button class="primary" id="btnCsv">CSV 다운로드</button><button class="ghost" id="btnJson">JSON 백업 다운로드</button><label class="file-label">JSON 가져오기<input type="file" id="jsonImport" accept=".json" /></label><button class="danger" id="btnClearAll">전체 삭제</button></div>
+        </div>
       </section>
 
       <div id="detailModal" class="modal" aria-hidden="true">
