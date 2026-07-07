@@ -390,10 +390,13 @@
   </div>
   <script>
   (function(){
-    fetch('app_data.txt', {cache:'no-store'})
-      .then(function(r){ return r.text(); })
-      .then(function(b64){
-        var bin = atob(b64.replace(/\s+/g,''));
+    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt'];
+    Promise.all(parts.map(function(p){
+      return fetch(p, {cache:'no-store'}).then(function(r){ return r.text(); });
+    }))
+      .then(function(chunks){
+        var b64 = chunks.join('').replace(/\s+/g,'');
+        var bin = atob(b64);
         var bytes = new Uint8Array(bin.length);
         for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
         var code = new TextDecoder('utf-8').decode(bytes);
@@ -403,7 +406,7 @@
       })
       .catch(function(e){
         document.body.insertAdjacentHTML('beforeend',
-          '<div style="padding:24px;color:#c83838;font-weight:800">앱 로드 실패: app_data.txt를 확인해주세요. (' + e + ')</div>');
+          '<div style="padding:24px;color:#c83838;font-weight:800">앱 로드 실패: app_data_1~7.txt 파일이 모두 있는지 확인해주세요. (' + e + ')</div>');
       });
   })();
   </script>
