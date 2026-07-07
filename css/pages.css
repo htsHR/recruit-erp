@@ -1,1 +1,115 @@
-/* v10.5.1: styles consolidated in base.css to prevent split-boundary CSS errors. Keep this file for index.html compatibility. */
+/* Recruit ERP v10.6.1: base.css 편집 불가 환경용 패치
+   - base.css는 기존 v10.5.1 그대로 유지
+   - v10.6 홈 현황판 + 오늘 할 일 스타일만 pages.css에서 덮어쓰기
+*/
+
+.home-today-grid-v106{
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:12px;
+}
+.home-today-grid-v106 .today-tile{
+  min-height:132px;
+  position:relative;
+  overflow:hidden;
+}
+.home-today-grid-v106 .today-tile::after{
+  content:"";
+  position:absolute;
+  width:96px;
+  height:96px;
+  right:-44px;
+  bottom:-44px;
+  border-radius:50%;
+  background:rgba(37,99,235,.07);
+  pointer-events:none;
+}
+.home-today-grid-v106 .today-tile-primary{
+  border-color:#a9c6ff;
+  background:linear-gradient(180deg,#ffffff,#eef5ff);
+}
+.task-flow{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:10px;
+  margin:0 0 14px;
+}
+.task-flow-item{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:58px;
+  border:1px solid #dbe7f6;
+  background:#fff;
+  border-radius:18px;
+  padding:10px 12px;
+  box-shadow:0 10px 24px rgba(20,33,61,.05);
+}
+.task-flow-item span{
+  display:grid;
+  place-items:center;
+  width:26px;
+  height:26px;
+  border-radius:999px;
+  background:#eef4ff;
+  color:#1d4ed8;
+  font-size:12px;
+  font-weight:1000;
+  flex:0 0 auto;
+}
+.task-flow-item strong{
+  color:#0f172a;
+  font-size:13px;
+  font-weight:950;
+  letter-spacing:-.03em;
+}
+.task-flow-item em{
+  margin-left:auto;
+  color:#1d4ed8;
+  font-style:normal;
+  font-size:12px;
+  font-weight:1000;
+  white-space:nowrap;
+}
+.task-board-v106 .panel-head{
+  align-items:flex-start;
+}
+.panel-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:25px;
+  height:25px;
+  margin-left:5px;
+  padding:0 8px;
+  border-radius:999px;
+  background:#eff6ff;
+  color:#1d4ed8;
+  font-size:12px;
+  font-weight:1000;
+  vertical-align:middle;
+}
+.task-primary .panel-count{
+  background:#dbeafe;
+  color:#1e40af;
+}
+.task-board-v106 .task-panel{
+  min-height:240px;
+}
+.task-board-v106 .card-list{
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+@media(max-width:1360px){
+  .home-today-grid-v106,
+  .task-flow{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:1180px){
+  .home-today-grid-v106,
+  .task-flow{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:760px){
+  .home-today-grid-v106,
+  .task-flow{grid-template-columns:1fr}
+  .task-flow-item{min-height:52px}
+}
