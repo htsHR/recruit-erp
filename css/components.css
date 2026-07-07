@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.6.6 — COMPONENTS
+   Recruit ERP v10.6.8 — COMPONENTS
    역할: 카드, 버튼, 입력칸, 배지, 테이블, 모달 등 공통 부품 기준 고정
    ========================================================= */
 
@@ -351,7 +351,7 @@ tbody td{
 }
 
 /* =========================================================
-   v10.6.6 안정화: 백업 상태/필터 초기화 UI
+   v10.6.8 안정화: 백업 상태/필터 초기화 UI
    ========================================================= */
 .backup-status-grid{
   display:grid;
@@ -402,3 +402,8 @@ tbody td{
 @media(max-width:920px){
   .backup-status-grid{grid-template-columns:1fr;}
 }
+
+/* v10.6.8 상세프로필 모달 공통 보정 */
+.modal-card{width:min(1180px,95vw);max-height:90vh;}
+.detail-body{max-height:calc(90vh - 150px);padding:22px 24px 2px;}
+@media(max-width:760px){.detail-body{padding:16px 16px 2px;}}

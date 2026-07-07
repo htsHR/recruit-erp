@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.6.6 — PAGES
+   Recruit ERP v10.6.8 — PAGES
    역할: 홈 / 지원자 입력 / 지원자 목록 / 오늘 할 일 / 상세 프로필의 화면별 배치만 관리
    공통 폭·입력칸·버튼·카드 기준은 layout.css/components.css에 분리
    ========================================================= */
@@ -250,4 +250,61 @@
   .detail-grid-balanced,
   .detail-score-grid{grid-template-columns:1fr;}
   .detail-row{grid-template-columns:1fr;gap:5px;}
+}
+
+/* =========================================================
+   v10.6.8 상세프로필 정리
+   - 상세 모달 상단/핵심정보/메모/이력서 정보의 위계 정리
+   - 긴 경력/메모는 좌측 넓은 영역으로 분리
+   ========================================================= */
+.detail-hero-v108{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(300px,420px);
+  align-items:stretch;
+  gap:16px;
+  padding:24px;
+  border-radius:24px;
+  background:linear-gradient(135deg,#ffffff 0%,#f3f7ff 100%);
+  border:1.5px solid #d8e3f3;
+  box-shadow:0 14px 34px rgba(15,23,42,.065);
+}
+.detail-identity-v108{min-width:0;display:flex;flex-direction:column;justify-content:center;}
+.detail-identity-v108 .eyebrow{margin-bottom:7px;}
+.detail-subline{margin:8px 0 14px;color:#64748b;font-size:14px;font-weight:850;line-height:1.45;}
+.detail-summary-v108{display:grid;grid-template-columns:1fr;gap:10px;}
+.detail-summary-v108 div{background:#fff;border:1px solid #dbe5f2;border-radius:18px;padding:15px 16px;box-shadow:0 8px 20px rgba(15,23,42,.045);}
+.detail-summary-v108 span{display:block;color:#64748b;font-size:12px;font-weight:1000;margin-bottom:6px;}
+.detail-summary-v108 strong{display:block;color:#0f172a;font-size:18px;font-weight:1000;line-height:1.25;word-break:keep-all;}
+.detail-core-v108{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;background:transparent;border:0;padding:0;margin:16px 0;box-shadow:none;}
+.detail-core-v108 .core-item{background:#fff;border:1px solid #dbe5f2;border-radius:16px;padding:14px 15px;box-shadow:0 8px 20px rgba(15,23,42,.045);min-width:0;}
+.detail-core-v108 .core-item span{display:block;color:#64748b;font-size:12px;font-weight:1000;margin-bottom:6px;}
+.detail-core-v108 .core-item strong{display:block;color:#0f172a;font-size:14px;font-weight:1000;line-height:1.35;white-space:normal;word-break:break-word;}
+.detail-main-v108{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(380px,.82fr);gap:16px;align-items:start;}
+.detail-main-left-v108,.detail-main-right-v108{min-width:0;display:flex;flex-direction:column;gap:14px;}
+.detail-section-v108{background:#fff;border:1px solid #dbe5f2;border-radius:20px;padding:18px;margin:0;box-shadow:0 10px 24px rgba(15,23,42,.045);}
+.detail-section-title{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px;}
+.detail-section-title h4{margin:0;color:#0f172a;font-size:16px;font-weight:1000;letter-spacing:-.035em;}
+.detail-section-title span{color:#64748b;font-size:12px;font-weight:900;}
+.detail-grid-v108{display:grid;grid-template-columns:1fr;gap:9px;}
+.detail-section-v108 .detail-row{display:grid;grid-template-columns:120px minmax(0,1fr);gap:11px;align-items:start;background:#f8fbff;border:1px solid #dbe5f2;border-radius:14px;padding:11px 12px;min-width:0;}
+.detail-section-v108 .detail-row span{color:#475569;font-size:12px;font-weight:1000;line-height:1.35;}
+.detail-section-v108 .detail-row strong{color:#0f172a;font-size:13px;font-weight:900;line-height:1.45;white-space:normal;word-break:break-word;}
+.detail-section-v108 .detail-row.wide-row{grid-column:1/-1;}
+.detail-long-section p{margin:0;white-space:pre-wrap;color:#0f172a;font-size:14px;font-weight:750;line-height:1.62;word-break:break-word;}
+.detail-long-section.memo-primary{border:1.5px solid #99f6e4;background:linear-gradient(180deg,#f0fdfa,#ffffff);box-shadow:0 12px 28px rgba(15,118,110,.08);}
+.detail-long-section.career-long{border-color:#bfdbfe;background:linear-gradient(180deg,#eff6ff,#ffffff);}
+.detail-score-v108{margin-top:16px;background:#fff;border:1px solid #dbe5f2;border-radius:20px;padding:18px;box-shadow:0 10px 24px rgba(15,23,42,.045);}
+.detail-score-v108 .detail-score{margin-bottom:10px;}
+@media(max-width:1180px){
+  .detail-main-v108{grid-template-columns:1fr;}
+  .detail-core-v108{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:820px){
+  .detail-hero-v108{grid-template-columns:1fr;padding:18px;}
+  .detail-summary-v108{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .detail-name{font-size:26px;}
+}
+@media(max-width:640px){
+  .detail-core-v108,.detail-summary-v108{grid-template-columns:1fr;}
+  .detail-section-v108 .detail-row{grid-template-columns:1fr;gap:5px;}
 }
