@@ -388,6 +388,24 @@
       </div>
     </main>
   </div>
-  <script src="app.js"></script>
+  <script>
+  (function(){
+    fetch('app_data.txt', {cache:'no-store'})
+      .then(function(r){ return r.text(); })
+      .then(function(b64){
+        var bin = atob(b64.replace(/\s+/g,''));
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        var code = new TextDecoder('utf-8').decode(bytes);
+        var s = document.createElement('script');
+        s.textContent = code;
+        document.body.appendChild(s);
+      })
+      .catch(function(e){
+        document.body.insertAdjacentHTML('beforeend',
+          '<div style="padding:24px;color:#c83838;font-weight:800">앱 로드 실패: app_data.txt를 확인해주세요. (' + e + ')</div>');
+      });
+  })();
+  </script>
 </body>
 </html>
