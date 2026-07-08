@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.7.5</title>
+  <title>이력서 관리 시스템 v10.7.6</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.7.5';
+    var v = '10.7.6';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.7.5: 상단 배너 7페이지 전면 통일 + 상태칸 중앙정렬 축소 + 캐시무효화 -->
+  <!-- v10.7.6: 배너 완전 통합(탑바 하나로), 진한 남색 테마, 버튼 정리, 표선 제거 -->
 </head>
 <body>
   <div class="app-shell">
@@ -41,7 +41,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.7.5</p>
+          <p>Recruit ERP 2.0 · v10.7.6</p>
         </div>
       </div>
       <nav class="nav">
@@ -71,18 +71,6 @@
       </header>
 
       <section id="home" class="page active">
-        <div class="hero-card home-command-card">
-          <div>
-            <p class="eyebrow">TODAY RECRUIT DESK</p>
-            <h3>오늘 처리할 지원자 업무를 먼저 보여드립니다.</h3>
-            <p>오늘 면접, 면접 예정, 연락 필요, 출근방법 확인, 입사 일정을 한 화면에서 확인하고 바로 처리하세요.</p>
-          </div>
-          <div class="hero-actions home-hero-actions">
-            <button class="primary" data-go="form">새 지원자 입력</button>
-            <button class="ghost" data-go="applicants">지원자 목록</button>
-          </div>
-        </div>
-
         <div class="stats-grid dashboard-stats" id="statsGrid"></div>
         <div class="backup-alert subtle" id="backupAlert"></div>
 
@@ -128,13 +116,6 @@
 
       <section id="applicants" class="page">
         <div class="list-top-card">
-          <div class="list-top-head">
-            <div>
-              <p class="eyebrow">지원자 목록</p>
-              <h3>지원자 흐름을 한눈에 파악하고 바로 처리합니다.</h3>
-            </div>
-            <button class="primary" data-go="form">+ 지원자 등록</button>
-          </div>
           <div class="compact-list-controls">
             <div class="tabs compact-tabs" id="workplaceTabs">
               <button class="tab active" data-workplace="all">전체</button>
@@ -192,17 +173,12 @@
 
 <input type="hidden" id="editId" />
 
-<div class="form-hero designer-hero">
-  <div class="form-hero-copy">
-    <p class="form-kicker">APPLICANT ENTRY</p>
-    <h3>지원자 등록</h3>
-    <p>회사 이력서 흐름에 맞춰 인적사항, 학력, 자격, 경력, 진행관리를 순서대로 입력합니다.</p>
-    <div class="form-hero-tags">
+<div class="form-hero designer-hero slim-hero">
+  <div class="form-hero-tags">
       <span>① 인적사항</span>
       <span>② 이력서 정보</span>
       <span>③ 진행관리</span>
       <span>Enter = 다음 칸 이동</span>
-    </div>
   </div>
   <div class="form-hero-actions">
     <button type="submit" class="primary hero-submit" id="submitBtn">지원자 등록</button>
@@ -301,15 +277,6 @@
       </section>
 
       <section id="today" class="page">
-        <div class="task-hero task-hero-clean">
-          <div>
-            <p class="eyebrow">TODAY ACTION</p>
-            <h3>업무 요약</h3>
-            <p>오늘 면접, 예정 면접, 연락 필요 업무를 한 줄 요약으로 정리했습니다.</p>
-          </div>
-          
-        </div>
-
         <div class="today-focus-row unified-today-summary">
           <div class="focus-metric metric-highlight"><span>오늘 면접</span><strong id="todayInterviewCount">0</strong><small>오늘 진행</small></div>
           <div class="focus-metric nearest-interview-metric"><span>면접 예정</span><strong id="tomorrowInterviewCount">0</strong><small id="nearestInterviewText">예정 없음</small></div>
@@ -329,14 +296,6 @@
       </section>
 
       <section id="stats" class="page">
-        <div class="hero-card stats-hero-card">
-          <div>
-            <p class="eyebrow">HIRING STATS</p>
-            <h3>입사 통계를 한눈에 확인합니다.</h3>
-            <p>연도별·월별·근무지별 입사 현황과 전체 지원자 상태 분포를 확인하세요.</p>
-          </div>
-        </div>
-
         <div class="panel stats-filter-panel">
           <div class="stats-filter-row">
             <span class="stats-filter-title">근무지 기준</span>
@@ -387,14 +346,7 @@
       </section>
 
       <section id="templates" class="page">
-        <div class="hero-card">
-          <div>
-            <p class="eyebrow">MESSAGE TEMPLATES</p>
-            <h3>상황별 안내문구를 빠르게 생성합니다.</h3>
-            <p>문구 종류만 고르면 이름·근무지 등은 자동으로 범용 문구로 채워집니다.</p>
-          </div>
-        </div>
-        <div class="panel">
+        <div class="panel slim-page-panel">
           <div class="form-grid compact"><label class="wide">문구 종류<select id="templateType"><option>면접 안내</option><option>면접 일정 변경</option><option>면접 취소/전형 안내</option><option>천안 → 평택 문의</option><option>평택 → 천안 문의</option><option>부재중 재연락</option><option>서류 확인 요청</option><option>보류/검토 안내</option><option>입사 안내</option></select></label></div>
           <textarea id="templateOutput" rows="11" class="template-box"></textarea>
           <div class="form-actions"><button class="primary" id="btnMakeTemplate">문구 생성</button><button class="ghost" id="btnCopyTemplate">복사</button></div>
@@ -402,14 +354,8 @@
       </section>
 
       <section id="backup" class="page">
-        <div class="hero-card">
-          <div>
-            <p class="eyebrow">DATA BACKUP</p>
-            <h3>백업/내보내기</h3>
-            <p>localStorage 저장 방식이라 브라우저 초기화 전 JSON 백업이 필요할 수 있습니다.</p>
-          </div>
-        </div>
         <div class="panel backup-panel stable-backup-panel">
+          <p class="muted panel-intro">localStorage 저장 방식이라 브라우저 초기화 전 JSON 백업이 필요할 수 있습니다.</p>
           <div class="backup-status-grid">
             <div class="backup-status-card"><span>저장된 지원자</span><strong id="backupApplicantCount">0명</strong></div>
             <div class="backup-status-card"><span>마지막 JSON 백업</span><strong id="lastBackupText">기록 없음</strong></div>
@@ -436,7 +382,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt'];
-    var v = '10.7.5';
+    var v = '10.7.6';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
