@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.7.5 — PAGES
+   Recruit ERP v10.7.6 — PAGES
    역할: 홈 / 지원자 입력 / 지원자 목록 / 오늘 할 일 / 입사 통계 / 상세 프로필의 화면별 배치만 관리
    공통 폭·입력칸·버튼·카드 기준은 layout.css/components.css에 분리
    ========================================================= */
@@ -69,6 +69,7 @@
   box-shadow:var(--erp-shadow);
 }
 .form-hero-copy{min-width:0;}
+.form-hero.designer-hero.slim-hero{padding:16px 22px;}
 .form-kicker{margin:0 0 8px;color:#4970b8;font-size:12px;font-weight:1000;letter-spacing:.05em;}
 .form-hero.designer-hero h3{margin:0;font-size:25px;line-height:1.15;letter-spacing:-.05em;color:#0f172a;}
 .form-hero.designer-hero p{margin:8px 0 0;color:#64748b;font-size:13.5px;line-height:1.45;font-weight:750;}
@@ -466,3 +467,8 @@
 @media(max-width:640px){
   .stats-filter-row{flex-direction:column;align-items:flex-start;gap:8px;}
 }
+
+/* v10.7.6: 안내문구 페이지는 자주 쓰는 기능이 아니라서 폭/높이를 줄여 가볍게 */
+.slim-page-panel{max-width:640px;}
+.slim-page-panel .template-box{min-height:170px;}
+.panel-intro{margin:0 0 14px;font-size:13px;}
