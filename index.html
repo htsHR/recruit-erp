@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.7.2</title>
+  <title>이력서 관리 시스템 v10.7.3</title>
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.7.2: 목록 줄무늬, 상태 컬러바, 배지 점, 사이드바 강조 -->
+  <!-- v10.7.3: 입사통계에 근무지 필터 추가(확장 가능한 근무지 대응) -->
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +17,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.7.2</p>
+          <p>Recruit ERP 2.0 · v10.7.3</p>
         </div>
       </div>
       <nav class="nav">
@@ -312,6 +312,14 @@
           </div>
         </div>
 
+        <div class="panel stats-filter-panel">
+          <div class="stats-filter-row">
+            <span class="stats-filter-title">근무지 기준</span>
+            <select id="statsWorkplaceFilter" class="sort-select"></select>
+            <span class="muted stats-filter-note">아래 모든 통계가 선택한 근무지 기준으로 다시 계산됩니다. 근무지가 늘어나도 자동으로 목록에 추가돼요.</span>
+          </div>
+        </div>
+
         <div class="stats-summary-grid" id="statsSummaryGrid"></div>
 
         <div class="two-col stats-panels">
@@ -390,7 +398,7 @@
   </div>
   <script>
   (function(){
-    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt'];
+    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt'];
     Promise.all(parts.map(function(p){
       return fetch(p, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
