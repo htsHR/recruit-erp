@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.7.4 — PAGES
+   Recruit ERP v10.7.5 — PAGES
    역할: 홈 / 지원자 입력 / 지원자 목록 / 오늘 할 일 / 입사 통계 / 상세 프로필의 화면별 배치만 관리
    공통 폭·입력칸·버튼·카드 기준은 layout.css/components.css에 분리
    ========================================================= */
@@ -63,19 +63,19 @@
   align-items:center;
   justify-content:space-between;
   gap:24px;
-  color:#fff;
+  color:#0f172a;
   overflow:hidden;
-  background:radial-gradient(circle at 86% 20%,rgba(20,184,166,.32),transparent 30%),linear-gradient(135deg,#0f172a 0%,#1e3a8a 54%,#2563eb 100%);
-  box-shadow:0 20px 46px rgba(15,23,42,.18);
+  background:linear-gradient(135deg,#fff,#eef5ff);
+  box-shadow:var(--erp-shadow);
 }
 .form-hero-copy{min-width:0;}
-.form-kicker{margin:0 0 8px;color:#bfdbfe;font-size:12px;font-weight:1000;letter-spacing:.08em;}
-.form-hero.designer-hero h3{margin:0;font-size:25px;line-height:1.15;letter-spacing:-.05em;}
-.form-hero.designer-hero p{margin:8px 0 0;color:#dbeafe;font-size:13.5px;line-height:1.45;font-weight:750;}
+.form-kicker{margin:0 0 8px;color:#4970b8;font-size:12px;font-weight:1000;letter-spacing:.05em;}
+.form-hero.designer-hero h3{margin:0;font-size:25px;line-height:1.15;letter-spacing:-.05em;color:#0f172a;}
+.form-hero.designer-hero p{margin:8px 0 0;color:#64748b;font-size:13.5px;line-height:1.45;font-weight:750;}
 .form-hero-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px;}
-.form-hero-tags span{display:inline-flex;align-items:center;min-height:27px;padding:5px 11px;border-radius:999px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.20);font-size:12px;font-weight:900;color:#eff6ff;}
+.form-hero-tags span{display:inline-flex;align-items:center;min-height:27px;padding:5px 11px;border-radius:999px;background:#eef4ff;border:1px solid #d5e3ff;font-size:12px;font-weight:900;color:#24426e;}
 .form-hero-actions{display:flex;gap:9px;flex:0 0 auto;}
-.form-hero-actions .ghost{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.28);color:#fff;}
+.form-hero-actions .ghost{background:#fff;border:1px solid var(--erp-line);color:var(--erp-navy);}
 
 .resume-section-card{background:#fff;}
 .resume-section-card .section-title,
@@ -152,7 +152,7 @@
 .score-pill{display:inline-flex;align-items:center;background:#fff;border:1px solid #dbe6f5;border-radius:999px;padding:4px 8px;font-size:12px;}
 
 /* APPLICANT LIST */
-.list-top-card{margin-bottom:12px;}
+.list-top-card{margin-bottom:12px;background:linear-gradient(135deg,#fff,#eef5ff);}
 .list-top-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;}
 .list-top-head h3{margin:4px 0 0;font-size:20px;line-height:1.25;letter-spacing:-.035em;color:#0f172a;}
 .compact-list-controls{margin-bottom:10px;}
@@ -392,7 +392,7 @@
    - 홈/오늘 할 일과 같은 폭·카드 기준을 그대로 사용
    - 막대그래프는 별도 라이브러리 없이 순수 CSS로 구현
    ========================================================= */
-.stats-hero-card{margin-bottom:16px;}
+.stats-hero-card{margin-bottom:16px;background:linear-gradient(135deg,#fff,#eef5ff);}
 .stats-summary-grid{
   display:grid;
   grid-template-columns:repeat(5,minmax(0,1fr));

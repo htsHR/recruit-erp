@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.7.4 — COMPONENTS
+   Recruit ERP v10.7.5 — COMPONENTS
    역할: 카드, 버튼, 입력칸, 배지, 테이블, 모달 등 공통 부품 기준 고정
    ========================================================= */
 
@@ -279,9 +279,11 @@ tbody td{
   appearance:none;
   height:var(--erp-small-input-h);
   min-height:var(--erp-small-input-h);
-  min-width:88px;
-  width:88px;
-  padding:0 20px 0 10px;
+  min-width:76px;
+  width:76px;
+  padding:0 8px;
+  text-align:center;
+  text-align-last:center;
   border-radius:999px;
   border:1px solid #d8e2ef;
   font-size:12px;
@@ -538,4 +540,9 @@ tbody tr.applicant-row td:last-child{
   border-radius:4px;
   background:#42d7ff;
   box-shadow:0 0 10px rgba(66,215,255,.7);
+}
+
+/* v10.7.5: 상단 배너(hero-card) 전 페이지 공통 배경 - 개별 수정자 클래스 유무와 상관없이 항상 적용 */
+.hero-card{
+  background:linear-gradient(135deg,#fff,#eef5ff);
 }
