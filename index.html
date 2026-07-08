@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.7.3</title>
+  <title>이력서 관리 시스템 v10.7.4</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
@@ -31,7 +31,7 @@
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.7.3: 입사통계에 근무지 필터 추가(확장 가능한 근무지 대응) -->
+  <!-- v10.7.4: 디자인 검토 8건 수정(상태칸/표선/필터/점수설명/폼여백/타일버그/문구/배너통일) -->
 </head>
 <body>
   <div class="app-shell">
@@ -40,7 +40,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.7.3</p>
+          <p>Recruit ERP 2.0 · v10.7.4</p>
         </div>
       </div>
       <nav class="nav">
@@ -158,6 +158,7 @@
             <button class="chip" data-filter="interview">면접 예정</button>
             <button class="chip" data-filter="decision">판정 필요</button>
             <button class="chip" data-filter="active">진행중</button>
+            <button class="chip" data-filter="rejected">서류탈락</button>
             <button class="mini reset-filter-btn" type="button" id="btnResetFilters">필터 초기화</button>
           </div>
         </div>
@@ -264,7 +265,7 @@
 <div class="wide duplicate-box" id="duplicateBox"></div>
 
 <details class="form-section compact-details review-only">
-  <summary><span>직무검토</span><small>확인필요사항과 검토점수는 필요할 때만 사용</small></summary>
+  <summary><span>직무검토</span><small>점수는 직접 입력하지 않아도 자동 계산돼요</small></summary>
   <div class="form-grid detail-lite-grid">
     <div class="wide checkbox-block"><strong>확인필요사항</strong><div class="checkbox-grid compact-checks" id="checkNeedsGroup">
       <label><input type="checkbox" name="checkNeeds" value="생년월일 확인" /> 생년월일 확인</label>
@@ -292,7 +293,7 @@
       <label><input type="checkbox" name="selfIntroKeywords" value="지원동기 구체성" /> 지원동기 구체성</label>
     </div></div>
     <div class="wide score-preview" id="scorePreview">검토점수 미리보기: 0점</div>
-    <div class="wide score-note">검토점수는 참고용이며, 최종 판단은 담당자가 직접 확인합니다. 성별·연령은 검토점수에 반영하지 않습니다.</div>
+    <div class="wide score-note">전공(경력사항·학력)·경력(경력사항)·자격(자격증)·현장(자소서 키워드) 4개 항목을 입력하신 내용에서 키워드로 자동 인식해 채점합니다. 참고용이며 최종 판단은 담당자가 직접 확인합니다. 성별·연령은 반영하지 않습니다.</div>
   </div>
 </details>
         </form>
@@ -309,7 +310,7 @@
         </div>
 
         <div class="today-focus-row unified-today-summary">
-          <div class="focus-metric primary"><span>오늘 면접</span><strong id="todayInterviewCount">0</strong><small>오늘 진행</small></div>
+          <div class="focus-metric metric-highlight"><span>오늘 면접</span><strong id="todayInterviewCount">0</strong><small>오늘 진행</small></div>
           <div class="focus-metric nearest-interview-metric"><span>면접 예정</span><strong id="tomorrowInterviewCount">0</strong><small id="nearestInterviewText">예정 없음</small></div>
           <div class="focus-metric"><span>연락 필요</span><strong id="recallCount">0</strong><small>미연락·부재중</small></div>
           <div class="focus-metric"><span>출근방법 확인</span><strong id="todayCheckCount">0</strong><small>기숙사/출퇴근</small></div>
@@ -386,7 +387,7 @@
 
       <section id="templates" class="page">
         <div class="panel">
-          <div class="form-grid compact"><label>지원자 선택<select id="templateApplicant"></select></label><label>문구 종류<select id="templateType"><option>면접 안내</option><option>면접 일정 변경</option><option>면접 취소/전형 안내</option><option>천안 → 평택 문의</option><option>평택 → 천안 문의</option><option>부재중 재연락</option><option>서류 확인 요청</option><option>보류/검토 안내</option><option>입사 안내</option></select></label></div>
+          <div class="form-grid compact"><label class="wide">문구 종류<select id="templateType"><option>면접 안내</option><option>면접 일정 변경</option><option>면접 취소/전형 안내</option><option>천안 → 평택 문의</option><option>평택 → 천안 문의</option><option>부재중 재연락</option><option>서류 확인 요청</option><option>보류/검토 안내</option><option>입사 안내</option></select></label></div>
           <textarea id="templateOutput" rows="11" class="template-box"></textarea>
           <div class="form-actions"><button class="primary" id="btnMakeTemplate">문구 생성</button><button class="ghost" id="btnCopyTemplate">복사</button></div>
         </div>
