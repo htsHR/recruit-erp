@@ -1,15 +1,15 @@
 /* =========================================================
-   Recruit ERP v10.7.3 — COMPONENTS
+   Recruit ERP v10.7.4 — COMPONENTS
    역할: 카드, 버튼, 입력칸, 배지, 테이블, 모달 등 공통 부품 기준 고정
    ========================================================= */
 
 :root{
   --erp-card-radius:20px;
-  --erp-card-pad:20px;
+  --erp-card-pad:17px;
   --erp-card-gap:16px;
   --erp-line:#cbd8ea;
   --erp-line-soft:#dfe8f5;
-  --erp-input-h:40px;
+  --erp-input-h:37px;
   --erp-small-input-h:34px;
   --erp-button-h:38px;
   --erp-section-title-size:16px;
@@ -279,9 +279,9 @@ tbody td{
   appearance:none;
   height:var(--erp-small-input-h);
   min-height:var(--erp-small-input-h);
-  min-width:112px;
-  width:112px;
-  padding:0 24px 0 12px;
+  min-width:88px;
+  width:88px;
+  padding:0 20px 0 10px;
   border-radius:999px;
   border:1px solid #d8e2ef;
   font-size:12px;
@@ -495,8 +495,16 @@ tbody td{
 tbody tr.applicant-row:not(.is-paper-rejected):nth-child(even) td{
   background:#f8fbff;
 }
+
+/* v10.7.4: base.css 복원 과정에서 딸려온 표 좌우 테두리/모서리 제거 (현재 플랫 테이블 디자인과 안 맞음) */
+tbody tr.applicant-row td:first-child,
+tbody tr.applicant-row td:last-child{
+  border-left:0;
+  border-right:0;
+  border-radius:0;
+}
 .status-inline{
-  border-left-width:4px;
+  border-left-width:3px;
   border-left-style:solid;
 }
 .status-inline.good{border-left-color:#0f8057;}
