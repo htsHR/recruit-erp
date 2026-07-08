@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.7.6</title>
+  <title>이력서 관리 시스템 v10.7.7</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.7.6';
+    var v = '10.7.7';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -32,7 +32,7 @@
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
-  <!-- v10.7.6: 배너 완전 통합(탑바 하나로), 진한 남색 테마, 버튼 정리, 표선 제거 -->
+  <!-- v10.7.7: 지원자입력 버튼 탑바로 통합, 그라데이션 이음새 다듬기 -->
 </head>
 <body>
   <div class="app-shell">
@@ -41,7 +41,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.7.6</p>
+          <p>Recruit ERP 2.0 · v10.7.7</p>
         </div>
       </div>
       <nav class="nav">
@@ -67,6 +67,10 @@
         </div>
         <div class="top-actions">
           <button class="primary" data-go="form">+ 지원자 등록</button>
+        </div>
+        <div class="top-actions form-top-actions" style="display:none;">
+          <button type="submit" form="applicantForm" class="primary" id="submitBtn">지원자 등록</button>
+          <button type="button" class="ghost" id="btnResetForm">초기화</button>
         </div>
       </header>
 
@@ -172,19 +176,6 @@
         <form id="applicantForm" class="applicant-form-v6">
 
 <input type="hidden" id="editId" />
-
-<div class="form-hero designer-hero slim-hero">
-  <div class="form-hero-tags">
-      <span>① 인적사항</span>
-      <span>② 이력서 정보</span>
-      <span>③ 진행관리</span>
-      <span>Enter = 다음 칸 이동</span>
-  </div>
-  <div class="form-hero-actions">
-    <button type="submit" class="primary hero-submit" id="submitBtn">지원자 등록</button>
-    <button type="button" class="ghost hero-reset" id="btnResetForm">초기화</button>
-  </div>
-</div>
 
 <div class="resume-entry-flow stable-resume-flow">
   <section class="form-card-main resume-section-card identity-section input-card-full">
@@ -382,7 +373,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt'];
-    var v = '10.7.6';
+    var v = '10.7.7';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
