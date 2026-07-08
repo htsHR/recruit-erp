@@ -4,7 +4,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>이력서 관리 시스템 v10.7.3</title>
-  <link rel="stylesheet" href="css/base.css" />
+  <script>
+  (function(){
+    var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
+    try {
+      var b64 = '';
+      for (var i = 0; i < parts.length; i++) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', parts[i], false);
+        xhr.send(null);
+        b64 += xhr.responseText;
+      }
+      b64 = b64.replace(/\s+/g,'');
+      var bin = atob(b64);
+      var bytes = new Uint8Array(bin.length);
+      for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+      var css = new TextDecoder('utf-8').decode(bytes);
+      var style = document.createElement('style');
+      style.textContent = css;
+      document.head.appendChild(style);
+    } catch(e) {
+      document.write('<p style="padding:20px;color:#c83838;font-weight:800">기본 스타일 로드 실패: css/base_data_1~7.txt 파일을 확인해주세요.</p>');
+    }
+  })();
+  </script>
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/components.css" />
   <link rel="stylesheet" href="css/pages.css" />
