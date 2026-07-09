@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.12.3</title>
+  <title>이력서 관리 시스템 v10.12.4</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.12.3';
+    var v = '10.12.4';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,9 +29,9 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.12.3" />
-  <link rel="stylesheet" href="css/components.css?v=10.12.3" />
-  <link rel="stylesheet" href="css/pages.css?v=10.12.3" />
+  <link rel="stylesheet" href="css/layout.css?v=10.12.4" />
+  <link rel="stylesheet" href="css/components.css?v=10.12.4" />
+  <link rel="stylesheet" href="css/pages.css?v=10.12.4" />
 
   <style id="calendar-v10-12-1-critical">
     /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.12.3</p>
+          <p>Recruit ERP 2.0 · v10.12.4</p>
         </div>
       </div>
       <nav class="nav">
@@ -533,8 +533,8 @@
             <div class="backup-status-card"><span>마지막 JSON 백업</span><strong id="lastBackupText">기록 없음</strong></div>
             <div class="backup-status-card"><span>저장키</span><strong id="backupStorageKey">recruit_erp_applicants_stable</strong></div>
           </div>
-          <p class="backup-safety-note">JSON 가져오기 전에는 현재 데이터 개수와 가져올 데이터 개수를 확인한 뒤 진행합니다.</p>
-          <div class="form-actions wrap"><button class="primary" id="btnCsv">CSV 다운로드</button><button class="ghost" id="btnJson">JSON 백업 다운로드</button><label class="file-label">JSON 가져오기<input type="file" id="jsonImport" accept=".json" /></label><button class="danger" id="btnClearAll">전체 삭제</button></div>
+          <p class="backup-safety-note">병합 가져오기는 기존 지원자를 지우지 않고 id가 같으면 최근 수정본을 채택, 새 지원자는 추가합니다(평소엔 이걸 권장). 전체교체는 현재 목록을 파일 내용으로 완전히 바꾸니 꼭 필요할 때만 사용해주세요.</p>
+          <div class="form-actions wrap"><button class="primary" id="btnCsv">CSV 다운로드</button><button class="ghost" id="btnJson">JSON 백업 다운로드</button><label class="file-label">JSON 병합 가져오기(추천)<input type="file" id="jsonImportMerge" accept=".json" /></label><label class="file-label">JSON 전체교체 가져오기<input type="file" id="jsonImport" accept=".json" /></label><button class="danger" id="btnClearAll">전체 삭제</button></div>
         </div>
 
         <div class="panel snapshot-panel">
@@ -560,8 +560,8 @@
   <div id="rosterPrintArea"></div>
   <script>
   (function(){
-    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt'];
-    var v = '10.12.3';
+    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt','app_data_11.txt'];
+    var v = '10.12.4';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
@@ -577,7 +577,7 @@
       })
       .catch(function(e){
         document.body.insertAdjacentHTML('beforeend',
-          '<div style="padding:24px;color:#c83838;font-weight:800">앱 로드 실패: app_data_1~10.txt 파일이 모두 있는지 확인해주세요. (' + e + ')</div>');
+          '<div style="padding:24px;color:#c83838;font-weight:800">앱 로드 실패: app_data_1~11.txt 파일이 모두 있는지 확인해주세요. (' + e + ')</div>');
       });
   })();
   </script>
