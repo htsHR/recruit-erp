@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.10.0</title>
+  <title>이력서 관리 시스템 v10.11.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.10.0';
+    var v = '10.11.0';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -34,7 +34,7 @@
   <link rel="stylesheet" href="css/pages.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase_config.js"></script>
-  <!-- v10.10.0: 로그인(Supabase Auth) + 기수/배치 그룹핑 + 목표인원 진행률 -->
+  <!-- v10.11.0: 면접 명단표 인쇄(회사 양식) 추가 -->
 </head>
 <body>
   <div id="loginOverlay" class="login-overlay" style="display:none;">
@@ -56,7 +56,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.10.0</p>
+          <p>Recruit ERP 2.0 · v10.11.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -305,6 +305,15 @@
           <div class="panel task-panel"><div class="panel-head"><h3>입사 일정</h3><span class="task-label">D-Day</span></div><div id="hireScheduleList" class="card-list"></div></div>
           <div class="panel task-panel"><div class="panel-head"><h3>판정/대기</h3><span class="task-label">검토</span></div><div id="decisionWaitList" class="card-list"></div></div>
         </div>
+
+        <div class="panel roster-tool-panel">
+          <div class="panel-head"><h3>면접 명단표 인쇄</h3><span class="task-label">회사 양식 그대로</span></div>
+          <div class="roster-tool-row">
+            <input type="date" id="rosterDate" />
+            <button class="primary" id="btnRosterPrint" type="button">명단표 보기/인쇄</button>
+          </div>
+          <p class="muted roster-tool-note">선택한 날짜에 면접이 잡힌 지원자를 회사 양식(5명씩 페이지 구분) 그대로 뽑아드려요. 이름·성별·생년월일(나이)만 채워지고, 평가 항목은 면접 때 직접 손으로 기입하시면 됩니다.</p>
+        </div>
       </section>
 
       <section id="stats" class="page">
@@ -419,10 +428,11 @@
       </div>
     </main>
   </div>
+  <div id="rosterPrintArea"></div>
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt'];
-    var v = '10.10.0';
+    var v = '10.11.0';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
