@@ -223,6 +223,19 @@ textarea:focus,
 .badge.bad{background:#ffecec;color:#c83838;}
 .badge.hold{background:#f0eefc;color:#614fd0;}
 .workplace-pill{padding:5px 9px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+.school-similar-hint{
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:6px;
+  padding:8px 10px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  border-radius:10px;
+  font-size:12.5px;
+  color:#1d4ed8;
+}
+.school-similar-hint strong{color:#0f2e74;}
 .school-filter-pill{display:inline-flex;align-items:center;gap:6px;}
 .school-filter-pill button{
   border:0;

@@ -453,8 +453,11 @@
 #schoolsSummaryGrid{grid-template-columns:repeat(4,minmax(0,1fr));}
 .school-rank-table td:nth-child(2){text-align:left;}
 .school-rank-num{color:var(--blue);font-weight:1000;font-size:14px;}
-.school-tier-top10 td{background:#fff7ed;}
-.school-tier-top20 td{background:#fefbf3;}
+.school-tier-top10 td{background:#eaf2ff;}
+.school-tier-top20 td{background:#f5f9ff;}
+.school-tier-chip{padding:5px 9px;}
+.school-tier-chip-top10{background:var(--blue);border-color:var(--blue);color:#fff;}
+.school-tier-chip-top20{background:#eaf2ff;border-color:#bfdbfe;color:#1d5fc9;}
 @media(max-width:920px){
   #schoolsSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
