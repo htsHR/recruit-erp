@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.9.0</title>
+  <title>이력서 관리 시스템 v10.10.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.9.0';
+    var v = '10.10.0';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -34,16 +34,29 @@
   <link rel="stylesheet" href="css/pages.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase_config.js"></script>
-  <!-- v10.9.0: 자동 백업 스냅샷/복원 + 지원경로별 통계 + 미연락 방치 강조 -->
+  <!-- v10.10.0: 로그인(Supabase Auth) + 기수/배치 그룹핑 + 목표인원 진행률 -->
 </head>
 <body>
+  <div id="loginOverlay" class="login-overlay" style="display:none;">
+    <div class="login-card">
+      <p class="eyebrow">RECRUIT ERP 2.0</p>
+      <h3>로그인</h3>
+      <p class="muted">클라우드에 저장된 지원자 데이터를 보려면 로그인이 필요합니다.</p>
+      <label>이메일<input type="email" id="loginEmail" autocomplete="username" /></label>
+      <label>비밀번호<input type="password" id="loginPassword" autocomplete="current-password" /></label>
+      <div id="loginError" class="login-error"></div>
+      <button class="primary" id="btnLogin" type="button">로그인</button>
+      <p class="muted login-hint">로그인 없이도 이 컴퓨터/브라우저에 저장된 데이터는 계속 볼 수 있어요. 다만 클라우드 동기화는 로그인 후에만 동작합니다.</p>
+      <button class="ghost" id="btnLoginSkip" type="button">로그인 없이 계속(로컬만 사용)</button>
+    </div>
+  </div>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.9.0</p>
+          <p>Recruit ERP 2.0 · v10.10.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -58,6 +71,10 @@
       <div class="security-note" id="storageNote">
         <strong>서버 저장 없음</strong>
         <span>지원자 데이터는 현재 브라우저에만 저장됩니다.</span>
+      </div>
+      <div class="auth-note" id="authNote" style="display:none;">
+        <span id="authEmailText"></span>
+        <button class="mini" id="btnLogout" type="button">로그아웃</button>
       </div>
     </aside>
 
@@ -147,6 +164,7 @@
             <button class="chip" data-filter="decision">판정 필요</button>
             <button class="chip" data-filter="active">진행중</button>
             <button class="chip" data-filter="rejected">서류탈락</button>
+            <button class="chip" data-filter="duplicate" id="duplicateFilterChip">중복의심</button>
             <button class="mini reset-filter-btn" type="button" id="btnResetFilters">필터 초기화</button>
           </div>
         </div>
@@ -197,6 +215,7 @@
       <label>지원근무지<select id="workplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label>
       <label>경력구분<select id="careerType"><option value="">선택</option><option>신입</option><option>경력</option></select></label>
       <label>지원경로<input id="source" placeholder="사람인, 잡코리아, 대학, 추천 등" /></label>
+      <label>기수/배치<input id="batch" list="batchOptions" placeholder="예: 2026-07 평택" /><datalist id="batchOptions"></datalist></label>
     </div>
   </section>
 
@@ -347,6 +366,17 @@
             </table>
           </div>
         </div>
+
+        <div class="panel stats-funnel-panel">
+          <div class="panel-head"><h3>기수/배치별 현황</h3><span class="task-label">지원자 입력 시 "기수/배치" 칸 기준</span></div>
+          <p class="muted stats-funnel-note">목표 인원을 설정하면 합격 인원 기준으로 진행률이 표시됩니다.</p>
+          <div class="table-wrap">
+            <table class="funnel-table batch-table">
+              <thead><tr><th>기수/배치</th><th>지원자</th><th>면접진행</th><th>합격</th><th>합격률</th><th>목표 진행률</th></tr></thead>
+              <tbody id="statsBatchBody"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section id="templates" class="page">
@@ -391,8 +421,8 @@
   </div>
   <script>
   (function(){
-    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt'];
-    var v = '10.9.0';
+    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt'];
+    var v = '10.10.0';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
