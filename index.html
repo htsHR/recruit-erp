@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.12.1</title>
+  <title>이력서 관리 시스템 v10.12.2</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.12.1';
+    var v = '10.12.2';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,12 +29,12 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.12.1" />
-  <link rel="stylesheet" href="css/components.css?v=10.12.1" />
-  <link rel="stylesheet" href="css/pages.css?v=10.12.1" />
+  <link rel="stylesheet" href="css/layout.css?v=10.12.2" />
+  <link rel="stylesheet" href="css/components.css?v=10.12.2" />
+  <link rel="stylesheet" href="css/pages.css?v=10.12.2" />
 
   <style id="calendar-v10-12-1-critical">
-    /* v10.12.1 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
+    /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
     #calendar .calendar-control-panel{margin-bottom:16px;}
     #calendar .calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
     #calendar .calendar-toolbar h3{margin:0;font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-.03em;}
@@ -62,7 +62,9 @@
     #calendar .calendar-day.other-month .calendar-date-num{color:#94a3b8;}
     #calendar .calendar-today-dot{font-size:10px;color:#2563eb;font-weight:900;background:#dbeafe;border-radius:999px;padding:2px 6px;}
     #calendar .calendar-day-lines{display:flex;flex-direction:column;gap:4px;min-width:0;}
-    #calendar .calendar-day-line{display:block;width:100%;border-radius:6px;padding:4px 7px;font-size:11px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box;}
+    #calendar .calendar-day-line{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;border-radius:6px;padding:4px 7px;font-size:11px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box;}
+    #calendar .calendar-line-main{display:inline-block;flex:0 0 auto;min-width:0;}
+    #calendar .calendar-line-side{display:inline-block;flex:1 1 auto;min-width:0;text-align:right;font-size:10px;opacity:.95;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     #calendar .calendar-type-interview{background:#dbeafe;color:#1d4ed8;}
     #calendar .calendar-type-hire{background:#dcfce7;color:#15803d;}
     #calendar .calendar-type-custom{background:#fef3c7;color:#b45309;}
@@ -99,7 +101,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase_config.js"></script>
-  <!-- v10.12.1: 일정관리 월간 캘린더 1차 추가(면접/입사 자동 일정 + 직접 중요일정 등록) -->
+  <!-- v10.12.2: 일정관리 월간 캘린더 1차 추가(면접/입사 자동 일정 + 직접 중요일정 등록) -->
 </head>
 <body>
   <div id="loginOverlay" class="login-overlay" style="display:none;">
@@ -121,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.12.1</p>
+          <p>Recruit ERP 2.0 · v10.12.2</p>
         </div>
       </div>
       <nav class="nav">
@@ -559,7 +561,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt'];
-    var v = '10.12.1';
+    var v = '10.12.2';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
