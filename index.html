@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.15.0</title>
+  <title>이력서 관리 시스템 v10.15.1</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.15.0';
+    var v = '10.15.1';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,9 +29,9 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.15.0" />
-  <link rel="stylesheet" href="css/components.css?v=10.15.0" />
-  <link rel="stylesheet" href="css/pages.css?v=10.15.0" />
+  <link rel="stylesheet" href="css/layout.css?v=10.15.1" />
+  <link rel="stylesheet" href="css/components.css?v=10.15.1" />
+  <link rel="stylesheet" href="css/pages.css?v=10.15.1" />
 
   <style id="calendar-v10-12-1-critical">
     /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.15.0</p>
+          <p>Recruit ERP 2.0 · v10.15.1</p>
         </div>
       </div>
       <nav class="nav">
@@ -133,7 +133,7 @@
         <button class="nav-btn" data-page="today"><span class="nav-ico">✓</span><span>오늘 할 일</span></button>
         <button class="nav-btn" data-page="calendar"><span class="nav-ico">◷</span><span>일정관리</span></button>
         <button class="nav-btn" data-page="stats"><span class="nav-ico">▤</span><span>입사 통계</span></button>
-        <button class="nav-btn" data-page="schools"><span class="nav-ico">🎓</span><span>협력학교</span></button>
+        <button class="nav-btn" data-page="schools"><span class="nav-ico">❂</span><span>협력학교</span></button>
         <button class="nav-btn" data-page="templates"><span class="nav-ico">✎</span><span>안내문구</span></button>
         <button class="nav-btn nav-sub" data-page="backup"><span class="nav-ico">⇩</span><span>백업/내보내기</span></button>
       </nav>
@@ -625,7 +625,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt','app_data_11.txt','app_data_12.txt'];
-    var v = '10.15.0';
+    var v = '10.15.1';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
