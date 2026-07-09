@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.11.1</title>
+  <title>이력서 관리 시스템 v10.11.3</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.11.1';
+    var v = '10.11.3';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,12 +29,12 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.11.1" />
-  <link rel="stylesheet" href="css/components.css?v=10.11.1" />
-  <link rel="stylesheet" href="css/pages.css?v=10.11.1" />
+  <link rel="stylesheet" href="css/layout.css?v=10.11.3" />
+  <link rel="stylesheet" href="css/components.css?v=10.11.3" />
+  <link rel="stylesheet" href="css/pages.css?v=10.11.3" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase_config.js"></script>
-  <!-- v10.11.1: 인쇄 타이밍 버그 수정 + CSS 캐시 방지 추가 -->
+  <!-- v10.11.3: 명단표 스타일 완전 격리(배경/최소너비 상속 문제 수정) + 가로방향 전환 -->
 </head>
 <body>
   <div id="loginOverlay" class="login-overlay" style="display:none;">
@@ -56,7 +56,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.11.1</p>
+          <p>Recruit ERP 2.0 · v10.11.3</p>
         </div>
       </div>
       <nav class="nav">
@@ -432,7 +432,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt'];
-    var v = '10.11.1';
+    var v = '10.11.3';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
