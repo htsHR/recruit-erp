@@ -501,3 +501,9 @@
 .batch-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#0f8057,#34d399);}
 .batch-progress span{font-size:11.5px;font-weight:900;color:#334155;white-space:nowrap;}
 .batch-progress .mini{height:24px;min-height:24px;padding:0 8px;font-size:11px;}
+
+/* v10.11.0: 면접 명단표 인쇄 도구 (화면표시용, 인쇄 전용 스타일은 components.css) */
+.roster-tool-panel{margin-top:16px;}
+.roster-tool-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.roster-tool-row input[type="date"]{width:auto;max-width:170px;}
+.roster-tool-note{margin:10px 0 0;font-size:12px;}
