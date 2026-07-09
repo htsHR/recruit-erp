@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.11.13</title>
+  <title>이력서 관리 시스템 v10.12.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.11.13';
+    var v = '10.12.0';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,12 +29,12 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.11.11" />
-  <link rel="stylesheet" href="css/components.css?v=10.11.11" />
-  <link rel="stylesheet" href="css/pages.css?v=10.11.11" />
+  <link rel="stylesheet" href="css/layout.css?v=10.12.0" />
+  <link rel="stylesheet" href="css/components.css?v=10.12.0" />
+  <link rel="stylesheet" href="css/pages.css?v=10.12.0" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase_config.js"></script>
-  <!-- v10.11.13: 면접 명단표 상단 서약 박스 1.3배 확대 + 면접일/면접관 우측 여백 축소 -->
+  <!-- v10.12.0: 일정관리 월간 캘린더 1차 추가(면접/입사 자동 일정 + 직접 중요일정 등록) -->
 </head>
 <body>
   <div id="loginOverlay" class="login-overlay" style="display:none;">
@@ -56,7 +56,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.11.13</p>
+          <p>Recruit ERP 2.0 · v10.12.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -64,6 +64,7 @@
         <button class="nav-btn" data-page="applicants"><span class="nav-ico">☷</span><span>지원자 목록</span></button>
         <button class="nav-btn" data-page="form"><span class="nav-ico">＋</span><span>지원자 입력</span></button>
         <button class="nav-btn" data-page="today"><span class="nav-ico">✓</span><span>오늘 할 일</span></button>
+        <button class="nav-btn" data-page="calendar"><span class="nav-ico">◷</span><span>일정관리</span></button>
         <button class="nav-btn" data-page="stats"><span class="nav-ico">▤</span><span>입사 통계</span></button>
         <button class="nav-btn" data-page="templates"><span class="nav-ico">✎</span><span>안내문구</span></button>
         <button class="nav-btn nav-sub" data-page="backup"><span class="nav-ico">⇩</span><span>백업/내보내기</span></button>
@@ -316,6 +317,67 @@
         </div>
       </section>
 
+
+      <section id="calendar" class="page">
+        <div class="panel calendar-control-panel">
+          <div class="calendar-toolbar">
+            <div class="calendar-nav-group">
+              <button class="ghost" id="btnCalendarPrev" type="button">‹ 이전달</button>
+              <button class="mini" id="btnCalendarToday" type="button">오늘</button>
+              <button class="ghost" id="btnCalendarNext" type="button">다음달 ›</button>
+            </div>
+            <h3 id="calendarMonthTitle">일정관리</h3>
+            <div class="calendar-filter-group">
+              <select id="calendarWorkplaceFilter" class="sort-select"></select>
+              <button class="primary" id="btnCalendarAdd" type="button">+ 일정 추가</button>
+            </div>
+          </div>
+          <div class="calendar-summary-grid">
+            <div class="calendar-summary-card"><span>오늘 일정</span><strong id="calendarTodayCount">0</strong><small>자동+직접</small></div>
+            <div class="calendar-summary-card"><span>이번 달 면접</span><strong id="calendarMonthInterviewCount">0</strong><small>지원자 면접일 기준</small></div>
+            <div class="calendar-summary-card"><span>이번 달 입사</span><strong id="calendarMonthHireCount">0</strong><small>입사예정일 기준</small></div>
+            <div class="calendar-summary-card"><span>직접 일정</span><strong id="calendarMonthCustomCount">0</strong><small>회의·마감·메모</small></div>
+          </div>
+        </div>
+
+        <div class="calendar-layout-grid">
+          <div class="panel calendar-month-panel">
+            <div class="calendar-weekdays"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+            <div id="calendarGrid" class="calendar-grid"></div>
+          </div>
+
+          <div class="calendar-side-stack">
+            <div class="panel calendar-day-panel">
+              <div class="panel-head"><h3 id="calendarSelectedTitle">선택 날짜 일정</h3><button class="mini" id="btnCalendarPrintRoster" type="button">이 날짜 명단표</button></div>
+              <div id="calendarTimeline" class="calendar-timeline"></div>
+            </div>
+
+            <div class="panel calendar-event-panel">
+              <div class="panel-head"><h3>직접 일정 등록</h3><span class="task-label">회의/마감/중요일정</span></div>
+              <form id="calendarEventForm" class="calendar-event-form">
+                <input type="hidden" id="calendarEventId" />
+                <label class="wide">일정명<input id="calendarEventTitle" placeholder="예: 평택 면접관 회의" /></label>
+                <div class="calendar-event-row">
+                  <label>날짜<input id="calendarEventDate" type="date" /></label>
+                  <label>시간<input id="calendarEventTime" type="time" /></label>
+                </div>
+                <div class="calendar-event-row">
+                  <label>구분<select id="calendarEventType"><option>중요</option><option>회의</option><option>마감</option><option>교육</option><option>메모</option><option>기타</option></select></label>
+                  <label>근무지<select id="calendarEventWorkplace"><option>전체</option><option>천안</option><option>평택</option><option>기타</option></select></label>
+                </div>
+                <label>중요도<select id="calendarEventImportance"><option value="normal">일반</option><option value="high">중요</option><option value="urgent">매우중요</option></select></label>
+                <label class="wide">메모<textarea id="calendarEventMemo" rows="3" placeholder="준비물, 담당자, 특이사항"></textarea></label>
+                <div class="form-actions wrap calendar-event-actions">
+                  <button class="primary" type="submit" id="btnCalendarSave">일정 저장</button>
+                  <button class="ghost" type="button" id="btnCalendarReset">새 일정</button>
+                  <button class="danger" type="button" id="btnCalendarDelete" style="display:none;">삭제</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="stats" class="page">
         <div class="panel stats-filter-panel">
           <div class="stats-filter-row">
@@ -432,7 +494,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt'];
-    var v = '10.11.13';
+    var v = '10.12.0';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
