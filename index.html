@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.11.8</title>
+  <title>이력서 관리 시스템 v10.11.10</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.11.8';
+    var v = '10.11.10';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,12 +29,12 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.11.8" />
-  <link rel="stylesheet" href="css/components.css?v=10.11.8" />
-  <link rel="stylesheet" href="css/pages.css?v=10.11.8" />
+  <link rel="stylesheet" href="css/layout.css?v=10.11.10" />
+  <link rel="stylesheet" href="css/components.css?v=10.11.10" />
+  <link rel="stylesheet" href="css/pages.css?v=10.11.10" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase_config.js"></script>
-  <!-- v10.11.8: 여백 축소, 평가항목4칸 병합(rowspan2), 서약박스 우측선 제거+여백조정, 회사명 매페이지 표시 -->
+  <!-- v10.11.10: 면접 명단표 회사 Word 양식 기준 A4 가로 출력 복구, 여백/컬럼/행 높이 보정 -->
 </head>
 <body>
   <div id="loginOverlay" class="login-overlay" style="display:none;">
@@ -56,7 +56,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.11.8</p>
+          <p>Recruit ERP 2.0 · v10.11.10</p>
         </div>
       </div>
       <nav class="nav">
@@ -432,7 +432,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt'];
-    var v = '10.11.8';
+    var v = '10.11.10';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
@@ -448,7 +448,7 @@
       })
       .catch(function(e){
         document.body.insertAdjacentHTML('beforeend',
-          '<div style="padding:24px;color:#c83838;font-weight:800">앱 로드 실패: app_data_1~7.txt 파일이 모두 있는지 확인해주세요. (' + e + ')</div>');
+          '<div style="padding:24px;color:#c83838;font-weight:800">앱 로드 실패: app_data_1~10.txt 파일이 모두 있는지 확인해주세요. (' + e + ')</div>');
       });
   })();
   </script>
