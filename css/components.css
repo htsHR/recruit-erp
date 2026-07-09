@@ -643,20 +643,39 @@ tbody tr.applicant-row td{
 }
 .auth-note span{color:#d7e3f7;font-size:11.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-/* v10.11.0: 면접 명단표 인쇄 - 평소엔 숨김, 인쇄할 때만 나타남 */
+/* v10.11.0: 면접 명단표 인쇄 - 평소엔 숨김, 인쇄할 때만 나타남
+   v10.11.3: 앱의 일반 표 스타일(파란 배경, 최소너비 1460px 등)이 그대로 상속돼서
+   회사 원본 양식과 다르게 보이던 문제 수정 - 명단표 전용 스타일을 전부 명시적으로
+   지정해서 다른 곳의 스타일이 끼어들 수 없게 완전히 격리함. 가로방향으로 전환. */
 #rosterPrintArea{display:none;}
-.roster-page{padding:16px 4px;page-break-after:always;}
-.roster-company{margin:0;font-size:15px;text-align:center;font-weight:900;}
-.roster-title{margin:6px 0 10px;font-size:19px;text-align:center;font-weight:900;}
-.roster-oath{border:1px solid #000;padding:8px 10px;font-size:10.5px;line-height:1.6;margin:0 0 10px;}
-.roster-table{width:100%;border-collapse:collapse;}
-.roster-table th,.roster-table td{border:1px solid #000;padding:5px 6px;font-size:11.5px;text-align:center;height:26px;}
-.roster-table td.roster-name{text-align:left;font-weight:800;}
-.roster-table td.roster-birth{text-align:left;color:#333;}
-.roster-legend{font-size:10.5px;margin:5px 0 0;}
+#rosterPrintArea, #rosterPrintArea *{
+  background:#fff !important;
+  color:#000 !important;
+  font-family:"Malgun Gothic","맑은 고딕",sans-serif !important;
+  box-shadow:none !important;
+}
+.roster-page{padding:10mm 6mm;page-break-after:always;}
+.roster-company{margin:0;font-size:15px;text-align:center;font-weight:700;}
+.roster-title{margin:6px 0 10px;font-size:19px;text-align:center;font-weight:700;}
+.roster-oath{border:1px solid #000 !important;padding:8px 10px;font-size:10.5px;line-height:1.6;margin:0 0 10px;font-weight:400;}
+.roster-table{width:100% !important;min-width:0 !important;border-collapse:collapse;table-layout:fixed;}
+.roster-table th,.roster-table td{
+  border:1px solid #000 !important;
+  padding:5px 6px;
+  font-size:11.5px;
+  font-weight:400;
+  text-align:center;
+  height:26px;
+  white-space:normal !important;
+}
+.roster-table th{font-weight:700;}
+.roster-table td.roster-name{text-align:left;font-weight:700;}
+.roster-table td.roster-birth{text-align:left;font-weight:400;}
+.roster-legend{font-size:10.5px;margin:5px 0 0;font-weight:400;}
+@page{ size:A4 landscape; margin:12mm; }
 @media print{
+  body.roster-printing{background:#fff !important;}
   body.roster-printing .app-shell{display:none !important;}
   body.roster-printing #loginOverlay{display:none !important;}
   body.roster-printing #rosterPrintArea{display:block !important;}
-  @page{ size:A4; margin:14mm; }
 }
