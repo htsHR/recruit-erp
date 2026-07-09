@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.15.1</title>
+  <title>이력서 관리 시스템 v10.17.1</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.15.1';
+    var v = '10.17.1';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,9 +29,9 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.15.1" />
-  <link rel="stylesheet" href="css/components.css?v=10.15.1" />
-  <link rel="stylesheet" href="css/pages.css?v=10.15.1" />
+  <link rel="stylesheet" href="css/layout.css?v=10.17.1" />
+  <link rel="stylesheet" href="css/components.css?v=10.17.1" />
+  <link rel="stylesheet" href="css/pages.css?v=10.17.1" />
 
   <style id="calendar-v10-12-1-critical">
     /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.15.1</p>
+          <p>Recruit ERP 2.0 · v10.17.1</p>
         </div>
       </div>
       <nav class="nav">
@@ -296,7 +296,7 @@
     </div>
     <div class="form-grid resume-info-grid resume-input-grid">
       <label>학력구분<select id="education"><option value="">선택</option><option>고졸</option><option>전졸</option><option>대졸</option><option>대학원</option><option>기타</option></select></label>
-      <label>학교<input id="school" list="schoolDatalist" placeholder="학교명 (입력하면 자동완성)" autocomplete="off" /><datalist id="schoolDatalist"></datalist></label>
+      <label>학교<input id="school" list="schoolDatalist" placeholder="학교명 (입력하면 자동완성)" autocomplete="off" /><datalist id="schoolDatalist"></datalist><div id="schoolSimilarHint" class="school-similar-hint" style="display:none;"></div></label>
       <label>학과<input id="major" placeholder="전공/학과" /></label>
       <label>자격증<input id="certs" placeholder="전기기능사, 운전면허 등" /></label>
       <label>외국어/기타자격<input id="languageEtc" placeholder="OPIC, ADsP, 6시그마 등" /></label>
@@ -538,10 +538,15 @@
 
           <div class="panel stats-funnel-panel">
             <div class="panel-head"><h3>학교별 종합 랭킹</h3><span class="task-label">점수 = 지원자수(40%) + 입사전환율(30%) + 평균검토점수(30%)</span></div>
-            <p class="muted stats-funnel-note">평균검토점수는 지원자 상세보기에 쓰이는 전공·경력·자격·현장적응도 검토점수(100점 만점)를 학교별로 평균낸 값입니다. 표본이 3명 미만인 학교는 점수가 튈 수 있어 참고용으로만 봐주세요.</p>
+            <div class="tabs compact-tabs" id="schoolRankTypeTabs">
+              <button class="tab active" data-schoolranktype="all">전체</button>
+              <button class="tab" data-schoolranktype="고등학교">고등학교</button>
+              <button class="tab" data-schoolranktype="대학교">대학(전문대·대학교)</button>
+            </div>
+            <p class="muted stats-funnel-note">평균검토점수는 지원자 상세보기에 쓰이는 전공·경력·자격·현장적응도 검토점수(100점 만점)를 학교별로 평균낸 값입니다. 표본이 3명 미만인 학교는 점수가 튈 수 있어 참고용으로만 봐주세요. 구분을 나눠서 보면 순위·상위 10%/20%도 그 구분 안에서 다시 계산돼요.</p>
             <div class="table-wrap">
               <table class="funnel-table school-rank-table">
-                <thead><tr><th>순위</th><th>학교명</th><th>지원자</th><th>입사</th><th>입사전환율</th><th>평균검토점수</th><th>종합점수</th><th>구간</th></tr></thead>
+                <thead><tr><th>순위</th><th>학교명</th><th>구분</th><th>지원자</th><th>입사</th><th>입사전환율</th><th>평균검토점수</th><th>종합점수</th><th>구간</th></tr></thead>
                 <tbody id="schoolsBody"></tbody>
               </table>
             </div>
@@ -553,6 +558,7 @@
             <div class="panel-head"><h3>학교 등록</h3><span class="task-label">이름을 정하면 표기 정리에서 이 이름으로 통합됩니다</span></div>
             <div class="form-grid compact">
               <label>학교명<input id="schoolNewName" placeholder="정식 명칭" /></label>
+              <label>구분<select id="schoolNewType"><option value="">선택 안 함</option><option>고등학교</option><option>전문대</option><option>대학교</option><option>기타</option></select></label>
               <label>지역<input id="schoolNewRegion" placeholder="예: 대구" /></label>
               <label>담당자/연락처<input id="schoolNewContact" placeholder="선택 입력" /></label>
               <label>MOU 체결일<input id="schoolNewMou" type="date" /></label>
@@ -564,9 +570,14 @@
 
           <div class="panel">
             <div class="panel-head"><h3>등록된 학교</h3><span class="task-label" id="schoolManageCount">0개교</span></div>
+            <div class="tabs compact-tabs" id="schoolManageTypeTabs">
+              <button class="tab active" data-schoolmanagetype="all">전체</button>
+              <button class="tab" data-schoolmanagetype="고등학교">고등학교</button>
+              <button class="tab" data-schoolmanagetype="대학교">대학(전문대·대학교)</button>
+            </div>
             <div class="table-wrap">
               <table class="funnel-table school-manage-table">
-                <thead><tr><th>학교명</th><th>별칭</th><th>지역</th><th>담당자</th><th>MOU일</th><th>지원자</th><th>관리</th></tr></thead>
+                <thead><tr><th>학교명</th><th>구분</th><th>별칭</th><th>지역</th><th>담당자</th><th>MOU일</th><th>지원자</th><th>관리</th></tr></thead>
                 <tbody id="schoolManageBody"></tbody>
               </table>
             </div>
@@ -624,8 +635,8 @@
   <div id="rosterPrintArea"></div>
   <script>
   (function(){
-    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt','app_data_11.txt','app_data_12.txt'];
-    var v = '10.15.1';
+    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt','app_data_11.txt','app_data_12.txt','app_data_13.txt'];
+    var v = '10.17.1';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
@@ -641,7 +652,7 @@
       })
       .catch(function(e){
         document.body.insertAdjacentHTML('beforeend',
-          '<div style="padding:24px;color:#c83838;font-weight:800">앱 로드 실패: app_data_1~12.txt 파일이 모두 있는지 확인해주세요. (' + e + ')</div>');
+          '<div style="padding:24px;color:#c83838;font-weight:800">앱 로드 실패: app_data_1~13.txt 파일이 모두 있는지 확인해주세요. (' + e + ')</div>');
       });
   })();
   </script>
