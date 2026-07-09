@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.7.7 — COMPONENTS
+   Recruit ERP v10.9.0 — COMPONENTS
    역할: 카드, 버튼, 입력칸, 배지, 테이블, 모달 등 공통 부품 기준 고정
    ========================================================= */
 
@@ -308,6 +308,19 @@ tbody td{
 }
 .name-button:hover{text-decoration:underline;text-underline-offset:3px;}
 .applicant-name-cell small{display:block;margin-top:4px;color:#64748b;font-size:11.5px;font-weight:850;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.stale-badge{
+  display:inline-flex;
+  align-items:center;
+  margin-left:6px;
+  padding:2px 7px;
+  border-radius:999px;
+  background:#fff1cc;
+  color:#8a5a00;
+  border:1px solid #f5d791;
+  font-size:10.5px;
+  font-weight:1000;
+  white-space:nowrap;
+}
 .phone-cell strong,.schedule-cell strong,.decision-cell strong{font-size:12.8px;font-weight:1000;}
 .email-cell{font-size:12px;color:#475569;max-width:210px;overflow:hidden;text-overflow:ellipsis;}
 .email-cell span{display:block;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -571,3 +584,61 @@ tbody tr.applicant-row td{
 .hero-card{
   background:linear-gradient(135deg,#fff,#eef5ff);
 }
+
+/* v10.9.1: 클라우드 동기화 실패 시 사이드바 안내 강조 */
+.security-note.sync-warn-note{
+  background:linear-gradient(180deg,rgba(255,196,61,.28),rgba(255,196,61,.12));
+  border-color:rgba(255,196,61,.5);
+}
+.chip.chip-alert{
+  background:#fff4dd;
+  border-color:#f5d791;
+  color:#8a5a00;
+}
+.chip.chip-alert.active{
+  background:#986514;
+  border-color:#986514;
+  color:#fff;
+}
+
+/* v10.10.0: 로그인 화면 */
+.login-overlay{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:radial-gradient(circle at 88% 15%,rgba(20,184,166,.18),transparent 40%),linear-gradient(135deg,#0f172a 0%,#1e3a8a 55%,#2563eb 100%);
+}
+.login-card{
+  width:min(380px,90vw);
+  background:#fff;
+  border-radius:22px;
+  padding:28px 26px;
+  box-shadow:0 30px 80px rgba(15,23,42,.35);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.login-card h3{margin:2px 0 4px;font-size:22px;color:#0f172a;}
+.login-card label{margin-top:4px;}
+.login-error{min-height:18px;color:#c83838;font-size:12.5px;font-weight:900;}
+.login-hint{font-size:11.5px;line-height:1.5;margin-top:6px;}
+.login-card .btnLoginSkip,.login-card #btnLoginSkip{margin-top:2px;}
+
+.auth-note{
+  position:absolute;
+  left:22px;
+  right:22px;
+  bottom:104px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;
+  padding:10px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.auth-note span{color:#d7e3f7;font-size:11.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}

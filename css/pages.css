@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.7.7 — PAGES
+   Recruit ERP v10.9.0 — PAGES
    역할: 홈 / 지원자 입력 / 지원자 목록 / 오늘 할 일 / 입사 통계 / 상세 프로필의 화면별 배치만 관리
    공통 폭·입력칸·버튼·카드 기준은 layout.css/components.css에 분리
    ========================================================= */
@@ -472,3 +472,32 @@
 .slim-page-panel{max-width:640px;}
 .slim-page-panel .template-box{min-height:170px;}
 .panel-intro{margin:0 0 14px;font-size:13px;}
+
+/* v10.9.0 자동 백업 스냅샷 목록 */
+.snapshot-panel{margin-top:16px;}
+.snapshot-list{display:flex;flex-direction:column;gap:8px;}
+.snapshot-row{
+  display:grid;
+  grid-template-columns:120px minmax(0,1fr) 70px auto;
+  align-items:center;
+  gap:12px;
+  padding:10px 13px;
+  border:1px solid var(--erp-line-soft);
+  border-radius:13px;
+  background:#fbfdff;
+}
+.snapshot-time{font-size:12.5px;font-weight:1000;color:#0f172a;white-space:nowrap;}
+.snapshot-reason{font-size:12px;color:#64748b;font-weight:800;}
+.snapshot-count{font-size:12.5px;font-weight:1000;color:#0f2e74;text-align:right;}
+@media(max-width:640px){
+  .snapshot-row{grid-template-columns:1fr;gap:6px;}
+  .snapshot-count{text-align:left;}
+}
+
+/* v10.10.0: 기수/배치별 목표 진행률 */
+.batch-table td:last-child{white-space:normal;}
+.batch-progress{display:flex;align-items:center;gap:8px;}
+.batch-progress-track{width:80px;height:10px;border-radius:999px;background:#eef2f8;overflow:hidden;flex:0 0 auto;}
+.batch-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#0f8057,#34d399);}
+.batch-progress span{font-size:11.5px;font-weight:900;color:#334155;white-space:nowrap;}
+.batch-progress .mini{height:24px;min-height:24px;padding:0 8px;font-size:11px;}
