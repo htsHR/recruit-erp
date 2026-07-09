@@ -658,12 +658,10 @@ tbody tr.applicant-row td{
 .roster-page{padding:0;page-break-after:always;width:100%;box-sizing:border-box;}
 .roster-company{margin:0 0 3px;font-size:12px;line-height:1.15;text-align:left;font-weight:400;text-decoration:underline;}
 .roster-title{margin:0 0 7px;font-size:18px;line-height:1.2;text-align:center;font-weight:700;}
-.roster-oath-table{width:100% !important;min-width:0 !important;border-collapse:collapse;margin:0 0 7px;table-layout:fixed;}
-.roster-oath-table td{border:1px solid #000 !important;padding:5px 8px;vertical-align:top;}
-.roster-oath-table tr > td + td{border-left:none !important;}
-.roster-oath-text{width:auto;font-size:10.5px;line-height:1.55;text-align:left;font-weight:400;border-right:none !important;}
-.roster-oath-meta{width:260px;font-size:10.5px;line-height:1.8;text-align:left;font-weight:400;white-space:nowrap;border-left:none !important;border-right:none !important;padding-right:8px !important;}
-.roster-oath-meta-inner{padding-left:8px;}
+.roster-oath-box{display:flex;align-items:stretch;width:100%;margin:0 0 7px;border:1px solid #000;box-sizing:border-box;}
+.roster-oath-text{flex:1 1 auto;font-size:10.5px;line-height:1.55;text-align:left;font-weight:400;padding:5px 8px;box-sizing:border-box;}
+.roster-oath-meta{flex:0 0 260px;font-size:10.5px;line-height:1.8;text-align:left;font-weight:400;white-space:nowrap;padding:5px 8px;box-sizing:border-box;display:flex;align-items:center;}
+.roster-oath-meta-inner{width:100%;}
 .roster-oath-line{display:flex;align-items:baseline;}
 .roster-oath-line + .roster-oath-line{margin-top:2px;}
 .roster-oath-label{display:inline-block;width:3.6em;flex:0 0 3.6em;text-align:left;}
@@ -677,10 +675,12 @@ tbody tr.applicant-row td{
   white-space:normal !important;
   word-break:keep-all;
 }
-.roster-table th{font-weight:700;font-size:11.5px;padding:4px 4px;}
+.roster-table th{font-weight:700;font-size:11.5px;padding:4px 4px;vertical-align:middle;}
+.roster-table th.roster-name-head-cell{padding:0 !important;}
 .roster-table td.roster-no{font-weight:700;font-size:11.5px;}
-.roster-name-head{display:flex;flex-direction:column;align-items:stretch;line-height:1.15;}
-.roster-name-head-divider{display:block;border-top:1px solid #000;width:100%;margin:3px 0 2px;}
+.roster-name-head{display:flex;flex-direction:column;align-items:stretch;justify-content:center;height:100%;min-height:100%;}
+.roster-name-head-text{display:flex;align-items:center;justify-content:center;width:100%;flex:1 1 auto;padding:0 4px;box-sizing:border-box;text-align:center;line-height:1.2;}
+.roster-name-head-divider{display:block;align-self:stretch;width:100%;border-top:1px solid #000;margin:0;box-sizing:border-box;}
 .roster-table td.roster-name{text-align:center;font-weight:400;font-size:11.5px;}
 .roster-row-top td,.roster-row-bottom td{height:42px;}
 .roster-table td.roster-pass{font-weight:700;font-size:11.5px;}
