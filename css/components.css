@@ -654,25 +654,29 @@ tbody tr.applicant-row td{
   font-family:"Malgun Gothic","맑은 고딕",sans-serif !important;
   box-shadow:none !important;
 }
-.roster-page{padding:10mm 6mm;page-break-after:always;}
-.roster-company{margin:0;font-size:15px;text-align:center;font-weight:700;}
-.roster-title{margin:6px 0 10px;font-size:19px;text-align:center;font-weight:700;}
-.roster-oath{border:1px solid #000 !important;padding:8px 10px;font-size:10.5px;line-height:1.6;margin:0 0 10px;font-weight:400;}
+.roster-page{padding:10mm 8mm;page-break-after:always;}
+.roster-company{margin:0 0 4px;font-size:12px;text-align:left;font-weight:400;text-decoration:underline;}
+.roster-title{margin:0 0 10px;font-size:20px;text-align:center;font-weight:700;}
+.roster-oath-table{width:100% !important;min-width:0 !important;border-collapse:collapse;margin:0 0 10px;}
+.roster-oath-table td{border:1px solid #000 !important;padding:8px 10px;vertical-align:top;}
+.roster-oath-text{width:68%;font-size:10px;line-height:1.7;text-align:left;font-weight:400;}
+.roster-oath-meta{width:32%;font-size:10.5px;line-height:2;text-align:right;font-weight:400;white-space:nowrap;}
 .roster-table{width:100% !important;min-width:0 !important;border-collapse:collapse;table-layout:fixed;}
 .roster-table th,.roster-table td{
   border:1px solid #000 !important;
-  padding:5px 6px;
-  font-size:11.5px;
+  padding:4px 6px;
+  font-size:11px;
   font-weight:400;
   text-align:center;
-  height:26px;
   white-space:normal !important;
+  word-break:keep-all;
 }
-.roster-table th{font-weight:700;}
-.roster-table td.roster-name{text-align:left;font-weight:700;}
-.roster-table td.roster-birth{text-align:left;font-weight:400;}
-.roster-legend{font-size:10.5px;margin:5px 0 0;font-weight:400;}
-@page{ size:A4 landscape; margin:12mm; }
+.roster-table th{font-weight:700;font-size:11px;padding:6px 4px;}
+.roster-table td.roster-no{font-weight:700;}
+.roster-table td.roster-name{text-align:center;font-weight:400;line-height:1.9;height:56px;}
+.roster-table td.roster-pass{font-weight:700;}
+.roster-legend{font-size:10px;margin:5px 0 0;font-weight:400;text-align:left;}
+@page{ size:A4 portrait; margin:14mm 12mm; }
 @media print{
   body.roster-printing{background:#fff !important;}
   body.roster-printing .app-shell{display:none !important;}
