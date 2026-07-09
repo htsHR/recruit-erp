@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.8.1</title>
+  <title>이력서 관리 시스템 v10.9.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.8.1';
+    var v = '10.9.0';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -34,7 +34,7 @@
   <link rel="stylesheet" href="css/pages.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase_config.js"></script>
-  <!-- v10.8.1: 긴급수정 - 동기화 시 데이터 덮어쓰기 -> 병합 방식으로 변경(데이터손실 방지) -->
+  <!-- v10.9.0: 자동 백업 스냅샷/복원 + 지원경로별 통계 + 미연락 방치 강조 -->
 </head>
 <body>
   <div class="app-shell">
@@ -43,7 +43,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.8.1</p>
+          <p>Recruit ERP 2.0 · v10.9.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -336,6 +336,17 @@
             </table>
           </div>
         </div>
+
+        <div class="panel stats-funnel-panel">
+          <div class="panel-head"><h3>지원경로별 성과</h3><span class="task-label">전체 기간</span></div>
+          <p class="muted stats-funnel-note">면접진행 = 면접일이 지난 지원자 · 합격 = 입사예정 또는 출근 상태 기준</p>
+          <div class="table-wrap">
+            <table class="funnel-table">
+              <thead><tr><th>지원경로</th><th>지원자</th><th>면접진행</th><th>합격</th><th>합격률</th></tr></thead>
+              <tbody id="statsSourceBody"></tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       <section id="templates" class="page">
@@ -357,6 +368,12 @@
           <p class="backup-safety-note">JSON 가져오기 전에는 현재 데이터 개수와 가져올 데이터 개수를 확인한 뒤 진행합니다.</p>
           <div class="form-actions wrap"><button class="primary" id="btnCsv">CSV 다운로드</button><button class="ghost" id="btnJson">JSON 백업 다운로드</button><label class="file-label">JSON 가져오기<input type="file" id="jsonImport" accept=".json" /></label><button class="danger" id="btnClearAll">전체 삭제</button></div>
         </div>
+
+        <div class="panel snapshot-panel">
+          <div class="panel-head"><h3>클라우드 자동 백업 이력</h3><span class="task-label">최근 14개 유지</span></div>
+          <p class="muted panel-intro">전체삭제·가져오기 직전, 그리고 하루에 한 번씩 자동으로 백업이 남습니다. 문제가 생기면 원하는 시점으로 바로 복원할 수 있어요.</p>
+          <div id="snapshotList" class="snapshot-list"></div>
+        </div>
       </section>
 
       <div id="detailModal" class="modal" aria-hidden="true">
@@ -374,8 +391,8 @@
   </div>
   <script>
   (function(){
-    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt'];
-    var v = '10.8.1';
+    var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt'];
+    var v = '10.9.0';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
