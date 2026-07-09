@@ -223,6 +223,17 @@ textarea:focus,
 .badge.bad{background:#ffecec;color:#c83838;}
 .badge.hold{background:#f0eefc;color:#614fd0;}
 .workplace-pill{padding:5px 9px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+.school-filter-pill{display:inline-flex;align-items:center;gap:6px;}
+.school-filter-pill button{
+  border:0;
+  background:transparent;
+  color:#1d4ed8;
+  font-weight:900;
+  font-size:14px;
+  line-height:1;
+  cursor:pointer;
+  padding:0;
+}
 .dorm-pill{padding:5px 9px;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;}
 .dorm-pill.on{background:#ecfdf5;color:#047857;border-color:#bbf7d0;}
 .dorm-pill.off{background:#f8fafc;color:#334155;border-color:#cbd5e1;}

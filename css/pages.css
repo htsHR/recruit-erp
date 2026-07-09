@@ -452,6 +452,7 @@
 /* v10.13.0: 협력학교 랭킹 */
 #schoolsSummaryGrid{grid-template-columns:repeat(4,minmax(0,1fr));}
 .school-rank-table td:nth-child(2){text-align:left;}
+.school-rank-num{color:var(--blue);font-weight:1000;font-size:14px;}
 .school-tier-top10 td{background:#fff7ed;}
 .school-tier-top20 td{background:#fefbf3;}
 @media(max-width:920px){
