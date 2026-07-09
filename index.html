@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.8.0</title>
+  <title>이력서 관리 시스템 v10.8.1</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.8.0';
+    var v = '10.8.1';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -34,7 +34,7 @@
   <link rel="stylesheet" href="css/pages.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase_config.js"></script>
-  <!-- v10.8.0: Supabase 클라우드 동기화 추가 (브라우저 저장과 동시 사용) -->
+  <!-- v10.8.1: 긴급수정 - 동기화 시 데이터 덮어쓰기 -> 병합 방식으로 변경(데이터손실 방지) -->
 </head>
 <body>
   <div class="app-shell">
@@ -43,7 +43,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.8.0</p>
+          <p>Recruit ERP 2.0 · v10.8.1</p>
         </div>
       </div>
       <nav class="nav">
@@ -375,7 +375,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt'];
-    var v = '10.8.0';
+    var v = '10.8.1';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
