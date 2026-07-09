@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.12.0</title>
+  <title>이력서 관리 시스템 v10.12.1</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.12.0';
+    var v = '10.12.1';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,12 +29,77 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.12.0" />
-  <link rel="stylesheet" href="css/components.css?v=10.12.0" />
-  <link rel="stylesheet" href="css/pages.css?v=10.12.0" />
+  <link rel="stylesheet" href="css/layout.css?v=10.12.1" />
+  <link rel="stylesheet" href="css/components.css?v=10.12.1" />
+  <link rel="stylesheet" href="css/pages.css?v=10.12.1" />
+
+  <style id="calendar-v10-12-1-critical">
+    /* v10.12.1 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
+    #calendar .calendar-control-panel{margin-bottom:16px;}
+    #calendar .calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+    #calendar .calendar-toolbar h3{margin:0;font-size:24px;font-weight:900;color:#0f172a;letter-spacing:-.03em;}
+    #calendar .calendar-nav-group,#calendar .calendar-filter-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    #calendar .calendar-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px;}
+    #calendar .calendar-summary-card{border:1px solid #dbeafe;border-radius:16px;background:#f8fbff;padding:13px 14px;display:flex;flex-direction:column;gap:3px;}
+    #calendar .calendar-summary-card span{font-size:12px;font-weight:900;color:#64748b;}
+    #calendar .calendar-summary-card strong{font-size:25px;color:#0f172a;line-height:1.1;}
+    #calendar .calendar-summary-card small{font-size:11px;color:#94a3b8;}
+    #calendar .calendar-layout-grid{display:grid !important;grid-template-columns:1fr !important;gap:16px !important;align-items:start;}
+    #calendar .calendar-month-panel{overflow:hidden;padding:0 !important;border-radius:18px;}
+    #calendar .calendar-weekdays{display:grid !important;grid-template-columns:repeat(7,minmax(0,1fr)) !important;border-bottom:1px solid #cbd5e1;background:#f8fafc;}
+    #calendar .calendar-weekdays span{display:flex;align-items:center;justify-content:center;min-height:42px;text-align:center;font-size:13px;font-weight:900;color:#334155;border-right:1px solid #e2e8f0;box-sizing:border-box;}
+    #calendar .calendar-weekdays span:first-child{color:#dc2626;}
+    #calendar .calendar-weekdays span:last-child{border-right:0;color:#2563eb;}
+    #calendar .calendar-grid{display:grid !important;grid-template-columns:repeat(7,minmax(0,1fr)) !important;border:0 !important;background:#e2e8f0;gap:1px;}
+    #calendar .calendar-day{appearance:none;-webkit-appearance:none;width:100%;min-width:0;min-height:124px;border:0 !important;border-radius:0 !important;background:#fff;padding:10px;display:flex !important;flex-direction:column;gap:7px;text-align:left;cursor:pointer;transition:.15s ease;box-sizing:border-box;color:#0f172a;font:inherit;}
+    #calendar .calendar-day:hover{background:#f8fafc;}
+    #calendar .calendar-day.other-month{background:#f8fafc;color:#cbd5e1;}
+    #calendar .calendar-day.today{box-shadow:inset 0 0 0 2px #2563eb;background:#eff6ff;}
+    #calendar .calendar-day.selected{box-shadow:inset 0 0 0 3px #4f46e5;background:#eef2ff;}
+    #calendar .calendar-date-num{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:14px;font-weight:900;color:#0f172a;}
+    #calendar .calendar-day:nth-child(7n+1) .calendar-date-num{color:#dc2626;}
+    #calendar .calendar-day:nth-child(7n) .calendar-date-num{color:#2563eb;}
+    #calendar .calendar-day.other-month .calendar-date-num{color:#94a3b8;}
+    #calendar .calendar-today-dot{font-size:10px;color:#2563eb;font-weight:900;background:#dbeafe;border-radius:999px;padding:2px 6px;}
+    #calendar .calendar-day-lines{display:flex;flex-direction:column;gap:4px;min-width:0;}
+    #calendar .calendar-day-line{display:block;width:100%;border-radius:6px;padding:4px 7px;font-size:11px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box;}
+    #calendar .calendar-type-interview{background:#dbeafe;color:#1d4ed8;}
+    #calendar .calendar-type-hire{background:#dcfce7;color:#15803d;}
+    #calendar .calendar-type-custom{background:#fef3c7;color:#b45309;}
+    #calendar .calendar-type-urgent{background:#fee2e2;color:#b91c1c;}
+    #calendar .calendar-more-line{font-size:11px;color:#64748b;font-weight:900;padding-left:2px;}
+    #calendar .calendar-side-stack{display:grid !important;grid-template-columns:minmax(0,1.1fr) minmax(330px,.9fr);gap:16px;align-items:start;}
+    #calendar .calendar-day-panel .panel-head{align-items:center;}
+    #calendar .calendar-timeline{display:flex;flex-direction:column;gap:8px;}
+    #calendar .calendar-timeline-item{border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:11px 12px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
+    #calendar .calendar-timeline-main{min-width:0;}
+    #calendar .calendar-timeline-main strong{display:block;font-size:14px;color:#111827;margin-bottom:3px;}
+    #calendar .calendar-timeline-main small{display:block;color:#64748b;font-size:12px;line-height:1.45;}
+    #calendar .calendar-time-badge{display:inline-flex;align-items:center;border-radius:999px;padding:3px 8px;font-size:11px;font-weight:900;margin-right:6px;background:#f1f5f9;color:#334155;}
+    #calendar .calendar-timeline-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+    #calendar .calendar-event-form{display:flex;flex-direction:column;gap:10px;}
+    #calendar .calendar-event-form label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:800;color:#475569;}
+    #calendar .calendar-event-form input,#calendar .calendar-event-form select,#calendar .calendar-event-form textarea{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:9px 10px;font:inherit;background:#fff;}
+    #calendar .calendar-event-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    @media(max-width:1100px){
+      #calendar .calendar-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+      #calendar .calendar-side-stack{grid-template-columns:1fr;}
+      #calendar .calendar-day{min-height:104px;}
+    }
+    @media(max-width:720px){
+      #calendar .calendar-toolbar{align-items:stretch;}
+      #calendar .calendar-nav-group,#calendar .calendar-filter-group{width:100%;}
+      #calendar .calendar-toolbar h3{width:100%;order:-1;}
+      #calendar .calendar-summary-grid{grid-template-columns:1fr 1fr;}
+      #calendar .calendar-day{min-height:82px;padding:7px;}
+      #calendar .calendar-day-line{font-size:10px;padding:3px 5px;}
+      #calendar .calendar-weekdays span{min-height:36px;font-size:12px;}
+    }
+  </style>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="supabase_config.js"></script>
-  <!-- v10.12.0: 일정관리 월간 캘린더 1차 추가(면접/입사 자동 일정 + 직접 중요일정 등록) -->
+  <!-- v10.12.1: 일정관리 월간 캘린더 1차 추가(면접/입사 자동 일정 + 직접 중요일정 등록) -->
 </head>
 <body>
   <div id="loginOverlay" class="login-overlay" style="display:none;">
@@ -56,7 +121,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.12.0</p>
+          <p>Recruit ERP 2.0 · v10.12.1</p>
         </div>
       </div>
       <nav class="nav">
@@ -494,7 +559,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt'];
-    var v = '10.12.0';
+    var v = '10.12.1';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
