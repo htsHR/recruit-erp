@@ -449,6 +449,19 @@
   color:#0f2e74;
 }
 
+/* v10.13.0: 협력학교 랭킹 */
+#schoolsSummaryGrid{grid-template-columns:repeat(4,minmax(0,1fr));}
+.school-rank-table td:nth-child(2){text-align:left;}
+.school-tier-top10 td{background:#fff7ed;}
+.school-tier-top20 td{background:#fefbf3;}
+@media(max-width:920px){
+  #schoolsSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:640px){
+  #schoolsSummaryGrid{grid-template-columns:1fr;}
+}
+
+
 /* =========================================================
    v10.7.3 PAGE 보정
    - 입사 통계 상단 근무지 필터 컨트롤
