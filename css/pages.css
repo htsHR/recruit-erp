@@ -664,3 +664,89 @@
       #calendar .calendar-day-line{font-size:10px;padding:3px 5px;}
       #calendar .calendar-weekdays span{min-height:36px;font-size:12px;}
     }
+
+/* v10.24.1: mockup-aligned sidebar/topbar/사원명부 레이아웃 */
+.sidebar{
+  background:linear-gradient(180deg,#062766 0%,#05215a 46%,#041948 100%);
+  color:#fff;
+  padding:22px 18px;
+  position:sticky;
+  top:0;
+  min-height:100vh;
+  box-sizing:border-box;
+}
+.brand{display:flex;align-items:center;gap:14px;padding:0 6px 18px;border-bottom:1px solid rgba(255,255,255,.10);margin-bottom:18px;}
+.brand-mark{width:46px;height:46px;border-radius:16px;background:linear-gradient(135deg,#37a2ff,#194cff);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;box-shadow:0 12px 28px rgba(16,72,173,.35);}
+.brand h1{margin:0 0 4px;font-size:18px;line-height:1.2;color:#fff;letter-spacing:-.03em;}
+.brand p{margin:0;color:#c9d8ff;font-size:12px;font-weight:700;}
+.nav{display:grid;gap:10px;}
+.nav-group-label{font-size:12px;color:rgba(226,235,255,.72);padding:4px 8px;letter-spacing:.01em;text-transform:none;}
+.nav-btn{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:14px;color:#eef4ff;background:transparent;}
+.nav-ico{width:34px;height:34px;border-radius:12px;background:rgba(255,255,255,.09);display:inline-flex;align-items:center;justify-content:center;line-height:1;font-size:15px;}
+.nav-btn.active{background:rgba(111,150,255,.22);box-shadow:inset 0 0 0 1px rgba(160,188,255,.08);}
+.nav-btn.active:before{display:none;}
+.security-note{display:none !important;}
+.auth-note{left:18px;right:18px;bottom:18px;}
+.main{background:#f5f7fb;padding:0 24px 28px;}
+.topbar{background:#fff;border-radius:0;box-shadow:none;border-bottom:1px solid #e5e7eb;padding:16px 4px;margin:0 0 22px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:14px;}
+.topbar-left .eyebrow{display:none;}
+.topbar h2{margin:0;font-size:18px;color:#1f2937;}
+.topbar-right{display:flex;align-items:center;gap:12px;justify-self:end;}
+.topbar-icon-btn,.topbar-chip,.topbar-user{border:0;background:transparent;padding:0 4px;font:inherit;color:#1e293b;display:inline-flex;align-items:center;gap:8px;cursor:pointer;}
+.topbar-icon-btn{position:relative;font-size:22px;line-height:1;}
+.topbar-badge{position:absolute;top:-6px;right:-5px;width:18px;height:18px;border-radius:999px;background:#2563eb;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.topbar-chip,.topbar-user{font-size:14px;font-weight:700;color:#334155;}
+.topbar-user-mark{width:34px;height:34px;border-radius:999px;background:#1e40af;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;}
+.top-actions .primary{background:#2563eb;color:#fff;}
+#employees.page.active{display:flex;flex-direction:column;gap:18px;}
+.employee-page-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+.employee-page-title{margin:2px 0 8px;font-size:34px;line-height:1.1;letter-spacing:-.05em;color:#111827;}
+.employee-page-note{margin:0;color:#6b7280;font-size:13px;font-weight:700;}
+.emp-summary-grid{gap:18px;}
+.emp-summary-grid .stat{background:#fff;border:1px solid #e6ebf2;border-radius:20px;box-shadow:none;padding:24px 24px;min-height:108px;align-items:center;}
+.emp-stat{gap:16px;}
+.emp-stat-ico{width:68px;height:68px;min-width:68px;border-radius:999px;font-size:28px;font-weight:800;}
+.emp-stat span{display:block;font-size:13px;color:#6b7280;font-weight:800;margin-bottom:6px;}
+.emp-stat strong{display:block;font-size:28px;color:#0f172a;line-height:1.1;}
+#employeeViewTabs{display:none;}
+#employeeStatusTabs{display:flex;gap:14px;flex-wrap:wrap;border-bottom:1px solid #e5e7eb;padding:0 6px 0;margin:0;}
+#employeeStatusTabs .tab{border:0;background:transparent;border-radius:0;padding:0 10px 14px;color:#64748b;font-size:16px;font-weight:800;}
+#employeeStatusTabs .tab.active{color:#2563eb;box-shadow:inset 0 -3px 0 #2563eb;background:transparent;}
+#employeeListView>.panel:first-child{padding:18px 20px;border-radius:20px;}
+#employeeListView .form-grid.compact{grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:end;}
+#employeeListView .form-grid.compact label.wide{grid-column:span 1;}
+#employeeListView .form-actions{justify-content:center;padding-top:6px;}
+.employee-entry-details{border-radius:20px;overflow:hidden;}
+.employee-entry-details summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:18px 20px;font-size:16px;font-weight:900;color:#0f172a;}
+.employee-entry-details summary::-webkit-details-marker{display:none;}
+.employee-entry-details:not([open]) .employee-entry-body{display:none;}
+.employee-entry-details[open] .employee-entry-summary{border-bottom:1px solid #eef2f7;}
+.employee-entry-body{padding:0 20px 20px;}
+.employee-table-panel{border-radius:20px;}
+.employee-table-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.employee-table-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.employee-table-panel .table-wrap{margin-top:8px;overflow:auto;}
+.employee-table-panel table{min-width:1000px;}
+.employee-table-panel th{background:#f8fafc;color:#334155;font-size:13px;}
+.employee-table-panel td,.employee-table-panel th{padding:14px 12px;}
+.employee-table-panel .badge.good{background:#dcfce7;color:#15803d;border-color:#bbf7d0;}
+.employee-table-panel .badge.bad{background:#fee2e2;color:#b91c1c;border-color:#fecaca;}
+.employee-table-panel .badge.info{background:#dbeafe;color:#1d4ed8;border-color:#bfdbfe;}
+.emp-pagination-row{justify-content:space-between;align-items:center;padding-top:12px;}
+.emp-pagination .mini.active{background:#2563eb;border-color:#2563eb;}
+#employeeDeptView .panel{border-radius:20px;}
+@media (max-width: 1200px){
+  #employeeListView .form-grid.compact{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width: 900px){
+  .topbar{grid-template-columns:1fr;}
+  .topbar-right{justify-self:start;}
+  .top-actions,.form-top-actions{justify-self:start;}
+  #employeeListView .form-grid.compact{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width: 680px){
+  .main{padding:0 14px 20px;}
+  .employee-page-title{font-size:28px;}
+  #employeeListView .form-grid.compact{grid-template-columns:1fr;}
+  .employee-table-head{flex-direction:column;align-items:flex-start;}
+}

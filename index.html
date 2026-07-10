@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.24.0</title>
+  <title>채용관리 시스템 v10.24.1</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt'];
-    var v = '10.24.0';
+    var v = '10.24.1';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,9 +29,9 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.24.0" />
-  <link rel="stylesheet" href="css/components.css?v=10.24.0" />
-  <link rel="stylesheet" href="css/pages.css?v=10.24.0" />
+  <link rel="stylesheet" href="css/layout.css?v=10.24.1" />
+  <link rel="stylesheet" href="css/components.css?v=10.24.1" />
+  <link rel="stylesheet" href="css/pages.css?v=10.24.1" />
 
   <style id="calendar-v10-12-1-critical">
     /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
@@ -122,8 +122,8 @@
       <div class="brand">
         <div class="brand-mark">HT</div>
         <div>
-          <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.24.0</p>
+          <h1>채용관리 시스템</h1>
+          <p>Recruit ERP 2.0 · v10.24.1</p>
         </div>
       </div>
       <nav class="nav">
@@ -132,18 +132,18 @@
           <div class="nav-group-items">
             <button class="nav-btn active" data-page="home"><span class="nav-ico">⌂</span><span>홈</span></button>
             <button class="nav-btn" data-page="applicants"><span class="nav-ico">☷</span><span>지원자 목록</span></button>
-            <button class="nav-btn" data-page="form"><span class="nav-ico">＋</span><span>지원자 입력</span></button>
+            <button class="nav-btn" data-page="form"><span class="nav-ico">＋</span><span>신규 지원자 등록</span></button>
             <button class="nav-btn" data-page="today"><span class="nav-ico">✓</span><span>오늘 할 일</span></button>
             <button class="nav-btn" data-page="calendar"><span class="nav-ico">◷</span><span>일정관리</span></button>
-            <button class="nav-btn" data-page="stats"><span class="nav-ico">▤</span><span>입사 통계</span></button>
-            <button class="nav-btn" data-page="templates"><span class="nav-ico">✎</span><span>안내문구</span></button>
+            <button class="nav-btn" data-page="stats"><span class="nav-ico">▤</span><span>채용 통계</span></button>
+            <button class="nav-btn" data-page="templates"><span class="nav-ico">✎</span><span>안내문 템플릿</span></button>
           </div>
         </div>
         <div class="nav-group" data-navgroup="hr">
-          <button type="button" class="nav-group-label" data-navtoggle="hr"><span>인재풀 · HR</span><span class="nav-group-chevron">⌄</span></button>
+          <button type="button" class="nav-group-label" data-navtoggle="hr"><span>인사 · HR</span><span class="nav-group-chevron">⌄</span></button>
           <div class="nav-group-items">
-            <button class="nav-btn" data-page="schools"><span class="nav-ico">❂</span><span>협력학교</span></button>
-            <button class="nav-btn" data-page="employees"><span class="nav-ico">▦</span><span>직원명부</span></button>
+            <button class="nav-btn" data-page="schools"><span class="nav-ico">❂</span><span>협력학교 관리</span></button>
+            <button class="nav-btn" data-page="employees"><span class="nav-ico">▦</span><span>사원명부</span></button>
           </div>
         </div>
         <div class="nav-group" data-navgroup="system">
@@ -165,7 +165,7 @@
 
     <main class="main">
       <header class="topbar">
-        <div>
+        <div class="topbar-left">
           <p class="eyebrow">RECRUIT ERP 2.0</p>
           <h2 id="page-title">홈</h2>
         </div>
@@ -175,6 +175,11 @@
         <div class="top-actions form-top-actions" style="display:none;">
           <button type="submit" form="applicantForm" class="primary" id="submitBtn">지원자 등록</button>
           <button type="button" class="ghost" id="btnResetForm">초기화</button>
+        </div>
+        <div class="topbar-right">
+          <button class="topbar-icon-btn" type="button" aria-label="알림">🔔<span class="topbar-badge">3</span></button>
+          <button class="topbar-chip" type="button">(주)휴먼테크 <span>⌄</span></button>
+          <button class="topbar-user" type="button"><span class="topbar-user-mark">김</span><span>김인사 부장</span><span>⌄</span></button>
         </div>
       </header>
 
@@ -608,8 +613,11 @@
       </section>
 
       <section id="employees" class="page">
-        <div class="panel stats-filter-panel">
-          <p class="muted panel-intro">사번·성명·부서·직무·학교·입사일·퇴사일·재직상태·상벌여부만 관리합니다. 주민번호·계좌·주소·연락처·이메일 같은 민감정보는 다루지 않습니다.</p>
+        <div class="employee-page-hero">
+          <div>
+            <h3 class="employee-page-title">사원명부</h3>
+            <p class="employee-page-note">민감정보 제외 관리 · 주민번호 · 계좌 · 주소 · 연락처 · 이메일 저장 안 함</p>
+          </div>
         </div>
 
         <div class="stats-summary-grid emp-summary-grid" id="employeesSummaryGrid">
@@ -621,7 +629,7 @@
 
         <div class="panel stats-filter-panel">
           <div class="tabs compact-tabs" id="employeeViewTabs">
-            <button class="tab active" data-empview="list">목록</button>
+            <button class="tab active" data-empview="list">사원 목록</button>
             <button class="tab" data-empview="dept">부서별 현황</button>
           </div>
           <div class="tabs compact-tabs" id="employeeStatusTabs">
@@ -646,8 +654,9 @@
             <div class="form-actions"><button class="ghost" id="btnEmployeeResetFilters">↻ 초기화</button><button class="primary" id="btnEmployeeSearch">🔍 검색</button></div>
           </div>
 
-          <div class="panel">
-            <div class="panel-head"><h3>직원 등록</h3></div>
+          <details class="panel employee-entry-details">
+            <summary class="employee-entry-summary">+ 사원 추가 · JSON 가져오기</summary>
+            <div class="employee-entry-body">
             <div class="form-grid compact">
               <label>사번<input id="empNo" placeholder="선택 입력" /></label>
               <label>성명<input id="empName" placeholder="필수 입력" /></label>
@@ -660,11 +669,12 @@
               <label>상벌 건수<input id="empDisciplineCount" type="number" min="0" placeholder="0" /></label>
               <label class="wide">비고<input id="empNotes" placeholder="선택 입력" /></label>
             </div>
-            <div class="form-actions"><button class="primary" id="btnAddEmployee">직원 추가</button><label class="file-label">직원명부 JSON 일괄 가져오기<input type="file" id="employeeJsonImport" accept=".json" /></label></div>
-          </div>
+            <div class="form-actions"><button class="primary" id="btnAddEmployee">사원 저장</button><label class="file-label">사원명부 JSON 가져오기<input type="file" id="employeeJsonImport" accept=".json" /></label></div>
+            </div>
+          </details>
 
-          <div class="panel">
-            <div class="panel-head"><h3>직원 목록</h3><button class="mini" id="btnCsvEmployees">⬇ 내보내기</button></div>
+          <div class="panel employee-table-panel">
+            <div class="panel-head employee-table-head"><h3>사원 목록</h3><div class="employee-table-tools"><button class="mini" id="btnCsvEmployees">⬇ 내보내기</button><button class="mini" type="button" onclick="document.querySelector('.employee-entry-details')?.setAttribute('open','open');document.querySelector('.employee-entry-details')?.scrollIntoView({behavior:'smooth',block:'start'});">＋ 사원 추가</button></div></div>
             <div class="table-wrap">
               <table class="funnel-table">
                 <thead><tr><th>사번</th><th>이름</th><th>부서</th><th>직무</th><th>입사일</th><th>상태</th><th>출신학교</th><th>비고</th><th>상벌</th><th>관리</th></tr></thead>
@@ -736,7 +746,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt'];
-    var v = '10.24.0';
+    var v = '10.24.1';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
