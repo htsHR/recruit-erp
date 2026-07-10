@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>채용관리 시스템 v10.30.4</title>
+  <title>채용관리 시스템 v10.31.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt'];
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>채용관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.30.4</p>
+          <p>Recruit ERP 2.0 · v10.31.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -593,17 +593,42 @@
 
           <div class="panel school-manage-panel">
             <div class="panel-head"><h3>등록된 학교</h3><span class="task-label" id="schoolManageCount">0개교</span></div>
-            <div class="toolbar-row rank-toolbar-row">
-              <div class="tabs compact-tabs" id="schoolManageTypeTabs">
-                <button class="tab active" data-schoolmanagetype="all">전체</button>
-                <button class="tab" data-schoolmanagetype="고등학교">고등학교</button>
-                <button class="tab" data-schoolmanagetype="대학교">대학(전문대·대학교)</button>
+            <div class="school-filter-panel">
+              <div class="school-filter-grid">
+                <label class="school-filter-search">학교명 검색
+                  <input id="schoolManageSearch" type="search" placeholder="학교명 또는 별칭 입력" autocomplete="off" />
+                </label>
+                <label>지역
+                  <select id="schoolManageRegion"><option value="all">지역 전체</option></select>
+                </label>
+                <label>담당자
+                  <select id="schoolManageContact"><option value="all">담당자 전체</option><option value="yes">등록됨</option><option value="no">미등록</option></select>
+                </label>
+                <label>MOU
+                  <select id="schoolManageMou"><option value="all">MOU 전체</option><option value="yes">체결</option><option value="no">미체결</option></select>
+                </label>
+                <label>정렬
+                  <select class="sort-select" id="schoolManageSort">
+                    <option value="name">이름순</option>
+                    <option value="applicant">지원자 많은 순</option>
+                    <option value="employee">직원 많은 순</option>
+                  </select>
+                </label>
               </div>
-              <select class="sort-select" id="schoolManageSort">
-                <option value="name">이름순</option>
-                <option value="applicant">지원자 많은 순</option>
-                <option value="employee">직원 많은 순</option>
-              </select>
+              <div class="school-filter-lower">
+                <div class="tabs compact-tabs" id="schoolManageTypeTabs">
+                  <button class="tab active" data-schoolmanagetype="all">전체</button>
+                  <button class="tab" data-schoolmanagetype="고등학교">고등학교</button>
+                  <button class="tab" data-schoolmanagetype="대학교">대학(전문대·대학교)</button>
+                </div>
+                <div class="school-filter-checks">
+                  <label class="check-inline"><input type="checkbox" id="schoolManageHasApplicants" /> 지원자 있는 학교만</label>
+                  <label class="check-inline"><input type="checkbox" id="schoolManageHasEmployees" /> 직원 있는 학교만</label>
+                  <label class="check-inline"><input type="checkbox" id="schoolManageMissingHistory" /> 관리이력 미등록만</label>
+                  <button type="button" class="ghost school-filter-reset" id="btnResetSchoolManageFilters">↻ 검색조건 초기화</button>
+                </div>
+              </div>
+              <div class="school-filter-summary" id="schoolManageFilterSummary"><span class="muted">검색 조건 없이 전체 학교를 표시하고 있습니다.</span></div>
             </div>
             <div class="table-wrap">
               <table class="funnel-table school-manage-table">
