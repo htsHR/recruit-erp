@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>채용관리 시스템 v10.27.1</title>
+  <title>채용관리 시스템 v10.28.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt'];
-    var v = '10.27.1';
+    var v = '10.28.0';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,9 +29,9 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.27.1" />
-  <link rel="stylesheet" href="css/components.css?v=10.27.1" />
-  <link rel="stylesheet" href="css/pages.css?v=10.27.1" />
+  <link rel="stylesheet" href="css/layout.css?v=10.28.0" />
+  <link rel="stylesheet" href="css/components.css?v=10.28.0" />
+  <link rel="stylesheet" href="css/pages.css?v=10.28.0" />
 
   <style id="calendar-v10-12-1-critical">
     /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>채용관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.27.1</p>
+          <p>Recruit ERP 2.0 · v10.28.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -540,7 +540,6 @@
 
       <section id="schools" class="page">
         <div class="panel stats-filter-panel">
-          <p class="muted panel-intro">지원자 입력 화면의 "출신학교" 칸과, 사원명부에서 뽑은 학교별 재직·무사고 통계를 함께 반영합니다(개인정보는 담기지 않습니다). 학교마다 데이터가 있는 영역만큼만 반영해서 점수를 계산하고, 몇 개 영역이 반영됐는지는 종합점수 옆에 표시돼요.</p>
           <div class="tabs compact-tabs" id="schoolSubTabs">
             <button class="tab active" data-schooltab="rank">랭킹</button>
             <button class="tab" data-schooltab="manage">학교 관리</button>
@@ -556,13 +555,15 @@
           </div>
 
           <div class="panel stats-funnel-panel">
-            <div class="panel-head"><h3>학교별 종합 랭킹</h3><span class="task-label">점수 = 재직인원규모(30%)+평균근속기간(30%)+무사고품행(20%)+총배출인원규모(20%) · TOP 뱃지는 배출인원 10명 이상만</span></div>
-            <div class="tabs compact-tabs" id="schoolRankTypeTabs">
-              <button class="tab active" data-schoolranktype="all">전체</button>
-              <button class="tab" data-schoolranktype="고등학교">고등학교</button>
-              <button class="tab" data-schoolranktype="대학교">대학(전문대·대학교)</button>
+            <div class="panel-head"><h3>학교별 종합 랭킹</h3></div>
+            <div class="toolbar-row rank-toolbar-row">
+              <div class="tabs compact-tabs" id="schoolRankTypeTabs">
+                <button class="tab active" data-schoolranktype="all">전체</button>
+                <button class="tab" data-schoolranktype="고등학교">고등학교</button>
+                <button class="tab" data-schoolranktype="대학교">대학(전문대·대학교)</button>
+              </div>
+              <label class="check-inline"><input type="checkbox" id="schoolHideLowVolume" /> 배출 10명 미만 숨기기</label>
             </div>
-            <p class="muted stats-funnel-note">채용담당자가 "새로 컨택할 학교"를 고르는 걸 기준으로 설계했어요. 총 배출인원(재직+퇴직 합)·재직인원은 절대 숫자로, 평균근속기간은 재직자는 오늘까지·퇴직자는 퇴사일까지로 계산해서 "퇴사했어도 오래 다녔으면" 좋은 점수를 받아요. <strong>TOP 10%/20% 뱃지는 배출인원 10명 이상인 학교만</strong> 받을 수 있어서, 1~2명짜리 학교가 우연히 높게 나오는 일이 없게 했어요. 사원명부가 바뀌면 랭킹도 실시간으로 다시 계산됩니다.</p>
             <div class="table-wrap">
               <table class="funnel-table school-rank-table">
                 <thead><tr><th>순위</th><th>학교명</th><th>구분</th><th>총 배출인원</th><th>재직인원</th><th>평균근속</th><th>무사고율</th><th>종합점수</th><th>구간</th></tr></thead>
@@ -574,8 +575,8 @@
 
         <div id="schoolManageView" style="display:none;">
           <div class="panel">
-            <div class="panel-head"><h3>학교 등록</h3><span class="task-label">이름을 정하면 표기 정리에서 이 이름으로 통합됩니다</span></div>
-            <div class="form-grid compact">
+            <div class="panel-head"><h3>학교 등록</h3></div>
+            <div class="form-grid compact school-form-compact">
               <label>학교명<input id="schoolNewName" placeholder="정식 명칭" /></label>
               <label>구분<select id="schoolNewType"><option value="">선택 안 함</option><option>고등학교</option><option>전문대</option><option>대학교</option><option>기타</option></select></label>
               <label>지역<input id="schoolNewRegion" placeholder="예: 대구" /></label>
@@ -584,15 +585,22 @@
               <label class="wide">별칭(쉼표로 구분)<input id="schoolNewAliases" placeholder="예: 영남이공대학교, YNIT" /></label>
               <label class="wide">비고<input id="schoolNewNotes" placeholder="선택 입력" /></label>
             </div>
-            <div class="form-actions"><button class="primary" id="btnAddSchool">학교 추가</button><label class="file-label">학교 JSON 일괄 가져오기<input type="file" id="schoolJsonImport" accept=".json" /></label><label class="file-label">HR 통계 가져오기(사원명부 미연결 학교용)<input type="file" id="schoolHrStatsImport" accept=".json" /></label></div>
+            <div class="form-actions school-form-actions"><button class="primary" id="btnAddSchool">학교 추가</button><label class="file-label">학교 JSON 일괄 가져오기<input type="file" id="schoolJsonImport" accept=".json" /></label><label class="file-label">HR 통계 가져오기(사원명부 미연결 학교용)<input type="file" id="schoolHrStatsImport" accept=".json" /></label></div>
           </div>
 
-          <div class="panel">
+          <div class="panel school-manage-panel">
             <div class="panel-head"><h3>등록된 학교</h3><span class="task-label" id="schoolManageCount">0개교</span></div>
-            <div class="tabs compact-tabs" id="schoolManageTypeTabs">
-              <button class="tab active" data-schoolmanagetype="all">전체</button>
-              <button class="tab" data-schoolmanagetype="고등학교">고등학교</button>
-              <button class="tab" data-schoolmanagetype="대학교">대학(전문대·대학교)</button>
+            <div class="toolbar-row rank-toolbar-row">
+              <div class="tabs compact-tabs" id="schoolManageTypeTabs">
+                <button class="tab active" data-schoolmanagetype="all">전체</button>
+                <button class="tab" data-schoolmanagetype="고등학교">고등학교</button>
+                <button class="tab" data-schoolmanagetype="대학교">대학(전문대·대학교)</button>
+              </div>
+              <select class="sort-select" id="schoolManageSort">
+                <option value="name">이름순</option>
+                <option value="applicant">지원자 많은 순</option>
+                <option value="employee">직원 많은 순</option>
+              </select>
             </div>
             <div class="table-wrap">
               <table class="funnel-table school-manage-table">
@@ -604,7 +612,6 @@
 
           <div class="panel">
             <div class="panel-head"><h3>표기 정리</h3><span class="task-label" id="schoolCoverageStat">-</span></div>
-            <p class="muted stats-funnel-note">지원자·직원이 적은 "출신학교" 텍스트 중, 위 학교 목록의 이름/별칭과 아직 안 겹치는 것들이에요. 기존 학교에 별칭으로 합치거나, 새 학교로 등록할 수 있습니다. 정리 전 데이터는 그대로 남아있으니 부담 없이 진행하세요.</p>
             <div id="schoolUnmatchedList" class="card-list"></div>
           </div>
         </div>
@@ -744,7 +751,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt'];
-    var v = '10.27.1';
+    var v = '10.28.0';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
