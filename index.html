@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>채용관리 시스템 v10.30.3</title>
+  <title>채용관리 시스템 v10.30.4</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt'];
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>채용관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.30.3</p>
+          <p>Recruit ERP 2.0 · v10.30.4</p>
         </div>
       </div>
       <nav class="nav">
@@ -576,8 +576,8 @@
         </div>
 
         <div id="schoolManageView" style="display:none;">
-          <div class="panel">
-            <div class="panel-head"><h3>학교 등록</h3></div>
+          <div class="panel" id="schoolEditPanel">
+            <div class="panel-head"><h3 id="schoolFormTitle">학교 등록</h3></div>
             <div class="form-grid compact school-form-compact">
               <label>학교명<input id="schoolNewName" placeholder="정식 명칭" /></label>
               <label>구분<select id="schoolNewType"><option value="">선택 안 함</option><option>고등학교</option><option>전문대</option><option>대학교</option><option>기타</option></select></label>
@@ -588,7 +588,7 @@
               <label class="wide">별칭(쉼표로 구분)<input id="schoolNewAliases" placeholder="예: 영남이공대학교, YNIT" /></label>
               <label class="wide">비고<input id="schoolNewNotes" placeholder="선택 입력" /></label>
             </div>
-            <div class="form-actions school-form-actions"><button class="primary" id="btnAddSchool">학교 추가</button><label class="file-label">학교 JSON 일괄 가져오기<input type="file" id="schoolJsonImport" accept=".json" /></label><label class="file-label">HR 통계 가져오기(사원명부 미연결 학교용)<input type="file" id="schoolHrStatsImport" accept=".json" /></label></div>
+            <div class="form-actions school-form-actions"><button class="primary" id="btnAddSchool">학교 추가</button><button type="button" id="btnCancelSchoolEdit" style="display:none;">수정 취소</button><label class="file-label">학교 JSON 일괄 가져오기<input type="file" id="schoolJsonImport" accept=".json" /></label><label class="file-label">HR 통계 가져오기(사원명부 미연결 학교용)<input type="file" id="schoolHrStatsImport" accept=".json" /></label></div>
           </div>
 
           <div class="panel school-manage-panel">

@@ -794,3 +794,9 @@
 @media(max-width:1050px){.school-detail-hero{grid-template-columns:1fr}.school-detail-hero-kpis,.school-detail-hr-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:720px){.school-detail-kpi-grid,.school-basic-grid{grid-template-columns:1fr}.school-detail-hero-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.school-detail-hero{padding:17px}.school-detail-hero h2{font-size:24px}}
 @media(max-width:440px){.school-detail-hero-kpis{grid-template-columns:1fr}.school-detail-footer{flex-wrap:wrap}.school-detail-save-state{width:100%;}}
+
+/* v10.30.4 학교 수정 모드 안내 */
+#schoolEditPanel{scroll-margin-top:18px;transition:border-color .2s ease,box-shadow .2s ease,background .2s ease}
+#schoolEditPanel.is-editing{border-color:#8ab4ff;box-shadow:0 0 0 3px rgba(37,99,235,.10);background:linear-gradient(180deg,#f8fbff 0,#fff 110px)}
+#schoolEditPanel.is-editing .panel-head h3::after{content:' · 선택한 학교를 수정 중입니다';margin-left:8px;font-size:12px;font-weight:700;color:#2563eb}
+#btnCancelSchoolEdit{align-items:center;justify-content:center}
