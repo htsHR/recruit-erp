@@ -454,6 +454,8 @@
 .form-grid.compact.school-form-compact{grid-template-columns:repeat(4,minmax(0,1fr));gap:11px 12px;}
 .school-form-actions{margin-top:16px;}
 .school-manage-panel{padding-left:28px;}
+.link-like{border:0;background:transparent;color:var(--blue);font-weight:900;cursor:pointer;padding:0;text-decoration:none;font:inherit;text-align:left;}
+.link-like:hover{text-decoration:underline;}
 @media(max-width:900px){
   .form-grid.compact.school-form-compact{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
