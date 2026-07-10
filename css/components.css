@@ -569,18 +569,39 @@ tbody tr.applicant-row td{
   transform:translateY(-50%);
   opacity:.85;
 }
-.nav-btn{position:relative;}
-/* v10.20.0: 사이드바 그룹 라벨 (채용 / 인재풀·HR / 시스템) */
+.nav-btn{position:relative;font-size:14px;}
+/* v10.21.0: 사이드바 그룹 접기/펴기 (채용 / 인재풀·HR / 시스템) */
+.nav-group{grid-column:1/-1;}
 .nav-group-label{
-  grid-column:1/-1;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  border:0;
+  background:transparent;
+  cursor:pointer;
   font-size:11px;
   font-weight:800;
   letter-spacing:.04em;
   color:rgba(219,228,245,.55);
-  padding:14px 10px 2px;
+  padding:14px 10px 6px;
   text-transform:uppercase;
 }
-.nav-group-label:first-child{padding-top:0;}
+.nav-group:first-child .nav-group-label{padding-top:0;}
+.nav-group-chevron{
+  font-size:12px;
+  transition:transform .16s ease;
+  transform:rotate(0deg);
+}
+.nav-group.collapsed .nav-group-chevron{transform:rotate(-90deg);}
+.nav-group-items{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  overflow:hidden;
+}
+.nav-group.collapsed .nav-group-items{display:none;}
 .nav-btn.active:before{
   content:'';
   position:absolute;
