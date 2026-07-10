@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>이력서 관리 시스템 v10.17.1</title>
+  <title>이력서 관리 시스템 v10.18.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt','css/base_data_3.txt','css/base_data_4.txt','css/base_data_5.txt','css/base_data_6.txt','css/base_data_7.txt'];
-    var v = '10.17.1';
+    var v = '10.18.0';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,9 +29,9 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.17.1" />
-  <link rel="stylesheet" href="css/components.css?v=10.17.1" />
-  <link rel="stylesheet" href="css/pages.css?v=10.17.1" />
+  <link rel="stylesheet" href="css/layout.css?v=10.18.0" />
+  <link rel="stylesheet" href="css/components.css?v=10.18.0" />
+  <link rel="stylesheet" href="css/pages.css?v=10.18.0" />
 
   <style id="calendar-v10-12-1-critical">
     /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>이력서 관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.17.1</p>
+          <p>Recruit ERP 2.0 · v10.18.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -565,7 +565,7 @@
               <label class="wide">별칭(쉼표로 구분)<input id="schoolNewAliases" placeholder="예: 영남이공대학교, YNIT" /></label>
               <label class="wide">비고<input id="schoolNewNotes" placeholder="선택 입력" /></label>
             </div>
-            <div class="form-actions"><button class="primary" id="btnAddSchool">학교 추가</button></div>
+            <div class="form-actions"><button class="primary" id="btnAddSchool">학교 추가</button><label class="file-label">학교 JSON 일괄 가져오기<input type="file" id="schoolJsonImport" accept=".json" /></label></div>
           </div>
 
           <div class="panel">
@@ -636,7 +636,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt','app_data_6.txt','app_data_7.txt','app_data_8.txt','app_data_9.txt','app_data_10.txt','app_data_11.txt','app_data_12.txt','app_data_13.txt'];
-    var v = '10.17.1';
+    var v = '10.18.0';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
