@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>채용관리 시스템 v10.28.2</title>
+  <title>채용관리 시스템 v10.29.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt'];
-    var v = '10.28.2';
+    var v = '10.29.0';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,9 +29,9 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.28.2" />
-  <link rel="stylesheet" href="css/components.css?v=10.28.2" />
-  <link rel="stylesheet" href="css/pages.css?v=10.28.2" />
+  <link rel="stylesheet" href="css/layout.css?v=10.29.0" />
+  <link rel="stylesheet" href="css/components.css?v=10.29.0" />
+  <link rel="stylesheet" href="css/pages.css?v=10.29.0" />
 
   <style id="calendar-v10-12-1-critical">
     /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>채용관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.28.2</p>
+          <p>Recruit ERP 2.0 · v10.29.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -384,6 +384,7 @@
           <div class="focus-metric"><span>연락 필요</span><strong id="recallCount">0</strong><small>미연락·부재중</small></div>
           <div class="focus-metric"><span>출근방법 확인</span><strong id="todayCheckCount">0</strong><small>기숙사/출퇴근</small></div>
           <div class="focus-metric"><span>입사 일정</span><strong id="hireScheduleCount">0</strong><small>D-7 이내</small></div>
+          <div class="focus-metric"><span>사원명부 미등록</span><strong id="employeeLinkCount">0</strong><small>출근했지만 사원명부엔 아직</small></div>
         </div>
 
         <div class="task-board task-board-clean">
@@ -393,6 +394,7 @@
           <div class="panel task-panel"><div class="panel-head"><h3>출근방법 확인</h3><span class="task-label">기숙사/출퇴근</span></div><div id="dormCheckList" class="card-list"></div></div>
           <div class="panel task-panel"><div class="panel-head"><h3>입사 일정</h3><span class="task-label">D-Day</span></div><div id="hireScheduleList" class="card-list"></div></div>
           <div class="panel task-panel"><div class="panel-head"><h3>판정/대기</h3><span class="task-label">검토</span></div><div id="decisionWaitList" class="card-list"></div></div>
+          <div class="panel task-panel"><div class="panel-head"><h3>사원명부 미등록</h3><span class="task-label">출근 → 등록 필요</span></div><div id="employeeLinkList" class="card-list"></div></div>
         </div>
 
         <div class="panel roster-tool-panel">
@@ -751,7 +753,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt'];
-    var v = '10.28.2';
+    var v = '10.29.0';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
