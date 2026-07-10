@@ -449,15 +449,15 @@
   color:#0f2e74;
 }
 
-/* v10.28.0: 협력학교 UI 정리(디자이너 피드백) */
+/* v10.28.1: 협력학교 학교등록 폼 실제로 컴팩트하게(우선순위 버그 수정) */
 .rank-toolbar-row{justify-content:space-between;margin-bottom:14px;}
-.school-form-compact{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;}
+.form-grid.compact.school-form-compact{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;}
 .school-form-compact label{gap:3px;font-size:11px;}
-.school-form-compact input,.school-form-compact select{padding:6px 8px;font-size:12px;border-radius:8px;}
+.school-form-compact input,.school-form-compact select{padding:6px 8px;font-size:12px;border-radius:8px;height:auto;}
 .school-form-actions{margin-top:16px;}
 .school-manage-panel{padding-left:28px;}
 @media(max-width:900px){
-  .school-form-compact{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .form-grid.compact.school-form-compact{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 
 #schoolsSummaryGrid{grid-template-columns:repeat(4,minmax(0,1fr));}
