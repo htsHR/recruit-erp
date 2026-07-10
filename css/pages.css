@@ -451,6 +451,19 @@
 
 /* v10.13.0: 협력학교 랭킹 */
 #schoolsSummaryGrid{grid-template-columns:repeat(4,minmax(0,1fr));}
+/* v10.22.0: 직원명부 */
+#employeesSummaryGrid{grid-template-columns:repeat(4,minmax(0,1fr));}
+/* v10.23.0: 직원명부 목업 스타일(아이콘 카드/페이지네이션/부서별 현황) */
+.emp-stat{display:flex;align-items:center;gap:12px;}
+.emp-stat-ico{width:44px;height:44px;min-width:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;}
+.emp-stat-total .emp-stat-ico{background:#eaf2ff;color:#1d5fc9;}
+.emp-stat-active .emp-stat-ico{background:#e7f8f1;color:#0f8057;}
+.emp-stat-left .emp-stat-ico{background:#fff0ec;color:#c2410c;}
+.emp-stat-upcoming .emp-stat-ico{background:#f0eefc;color:#614fd0;}
+.emp-pagination-row{display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:10px;}
+.emp-pagination{display:flex;gap:4px;flex-wrap:wrap;}
+.emp-pagination .mini[disabled]{opacity:.4;cursor:not-allowed;}
+.emp-pagination .mini.active{background:var(--navy);color:#fff;border-color:var(--navy);}
 .school-rank-table td:nth-child(2){text-align:left;}
 .school-rank-num{color:var(--blue);font-weight:1000;font-size:14px;}
 .school-tier-top10 td{background:#eaf2ff;}
@@ -460,9 +473,11 @@
 .school-tier-chip-top20{background:#eaf2ff;border-color:#bfdbfe;color:#1d5fc9;}
 @media(max-width:920px){
   #schoolsSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #employeesSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 @media(max-width:640px){
   #schoolsSummaryGrid{grid-template-columns:1fr;}
+  #employeesSummaryGrid{grid-template-columns:1fr;}
 }
 
 

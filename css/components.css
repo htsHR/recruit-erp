@@ -569,7 +569,7 @@ tbody tr.applicant-row td{
   transform:translateY(-50%);
   opacity:.85;
 }
-.nav-btn{position:relative;font-size:14px;}
+.nav-btn{position:relative;font-size:14px;padding:9px 12px;gap:9px;font-weight:750;}
 /* v10.21.0: 사이드바 그룹 접기/펴기 (채용 / 인재풀·HR / 시스템) */
 .nav-group{grid-column:1/-1;}
 .nav-group-label{
@@ -585,7 +585,7 @@ tbody tr.applicant-row td{
   font-weight:800;
   letter-spacing:.04em;
   color:rgba(219,228,245,.55);
-  padding:14px 10px 6px;
+  padding:10px 10px 5px;
   text-transform:uppercase;
 }
 .nav-group:first-child .nav-group-label{padding-top:0;}
@@ -598,7 +598,7 @@ tbody tr.applicant-row td{
 .nav-group-items{
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:5px;
   overflow:hidden;
 }
 .nav-group.collapsed .nav-group-items{display:none;}
