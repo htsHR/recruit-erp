@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>채용관리 시스템 v10.31.0</title>
+  <title>채용관리 시스템 v10.32.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt'];
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>채용관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.31.0</p>
+          <p>Recruit ERP 2.0 · v10.32.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -585,6 +585,7 @@
               <label>담당자<input id="schoolNewContact" placeholder="선택 입력" /></label>
               <label>연락처<input id="schoolNewContactPhone" placeholder="선택 입력" /></label>
               <label>MOU 체결일<input id="schoolNewMou" type="date" /></label>
+              <label>관리상태<select id="schoolNewManagementStatus"><option value="">미지정</option><option>신규 발굴</option><option>연락 예정</option><option>협의 중</option><option>협력 중</option><option>휴면</option><option>관리 제외</option></select></label>
               <label class="wide">별칭(쉼표로 구분)<input id="schoolNewAliases" placeholder="예: 영남이공대학교, YNIT" /></label>
               <label class="wide">비고<input id="schoolNewNotes" placeholder="선택 입력" /></label>
             </div>
@@ -606,6 +607,9 @@
                 </label>
                 <label>MOU
                   <select id="schoolManageMou"><option value="all">MOU 전체</option><option value="yes">체결</option><option value="no">미체결</option></select>
+                </label>
+                <label>관리상태
+                  <select id="schoolManageStatus"><option value="all">관리상태 전체</option><option>신규 발굴</option><option>연락 예정</option><option>협의 중</option><option>협력 중</option><option>휴면</option><option>관리 제외</option><option value="">미지정</option></select>
                 </label>
                 <label>정렬
                   <select class="sort-select" id="schoolManageSort">
@@ -632,7 +636,7 @@
             </div>
             <div class="table-wrap">
               <table class="funnel-table school-manage-table">
-                <thead><tr><th>학교명</th><th>구분</th><th>별칭</th><th>지역</th><th>담당자</th><th>MOU일</th><th>지원자</th><th>직원</th><th>관리</th></tr></thead>
+                <thead><tr><th>학교명</th><th>구분</th><th>관리상태</th><th>지역</th><th>담당자</th><th>MOU일</th><th>지원자</th><th>직원</th><th>관리</th></tr></thead>
                 <tbody id="schoolManageBody"></tbody>
               </table>
             </div>

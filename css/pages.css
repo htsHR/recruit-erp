@@ -802,9 +802,9 @@
 #btnCancelSchoolEdit{align-items:center;justify-content:center}
 
 
-/* v10.31.0 협력학교 검색·필터 */
+/* v10.32.0 협력학교 검색·필터 + 관리상태 */
 .school-filter-panel{margin-bottom:16px;padding:16px;border:1px solid #dbe7f7;border-radius:16px;background:linear-gradient(180deg,#fbfdff 0%,#f7faff 100%)}
-.school-filter-grid{display:grid;grid-template-columns:minmax(260px,2fr) repeat(4,minmax(135px,1fr));gap:12px;align-items:end}
+.school-filter-grid{display:grid;grid-template-columns:minmax(240px,1.8fr) repeat(5,minmax(125px,1fr));gap:12px;align-items:end}
 .school-filter-grid label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:800;color:#52637a}
 .school-filter-grid input,.school-filter-grid select{width:100%;height:40px;border:1px solid #cfdced;border-radius:10px;background:#fff;padding:0 12px;font:inherit;color:#17233b;outline:none}
 .school-filter-grid input:focus,.school-filter-grid select:focus{border-color:#3176ef;box-shadow:0 0 0 3px rgba(49,118,239,.12)}
@@ -818,3 +818,15 @@
 .school-filter-chip{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#eaf2ff;color:#1b5dcc;font-weight:800;border:1px solid #cfe0ff}
 @media(max-width:1180px){.school-filter-grid{grid-template-columns:repeat(3,minmax(150px,1fr))}.school-filter-search{grid-column:span 2}.school-filter-lower{align-items:flex-start;flex-direction:column}.school-filter-checks{justify-content:flex-start}}
 @media(max-width:720px){.school-filter-grid{grid-template-columns:1fr 1fr}.school-filter-search{grid-column:1/-1}.school-filter-checks{display:grid;grid-template-columns:1fr}.school-filter-reset{width:100%}}
+
+
+/* v10.32.0 협력학교 관리상태 */
+.school-status-badge{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:5px 10px;border-radius:999px;border:1px solid transparent;font-size:11px;font-weight:900;white-space:nowrap}
+.school-status-badge.unset{color:#718096;background:#f4f6f8;border-color:#e1e6ec}
+.school-status-badge.new{color:#245bb5;background:#edf4ff;border-color:#cfe0ff}
+.school-status-badge.planned{color:#865d08;background:#fff8df;border-color:#f5df91}
+.school-status-badge.discussion{color:#7b3fb5;background:#f7efff;border-color:#e2c9fa}
+.school-status-badge.active{color:#14724d;background:#eaf9f1;border-color:#bde8d1}
+.school-status-badge.dormant{color:#596579;background:#f0f3f7;border-color:#d8dee7}
+.school-status-badge.excluded{color:#9b3f49;background:#fff0f1;border-color:#f5c7cc}
+.school-manage-table th:nth-child(3),.school-manage-table td:nth-child(3){min-width:96px;text-align:center}
