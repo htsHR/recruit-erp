@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>채용관리 시스템 v10.25.1</title>
+  <title>채용관리 시스템 v10.26.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt'];
-    var v = '10.25.1';
+    var v = '10.26.0';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,9 +29,9 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.25.1" />
-  <link rel="stylesheet" href="css/components.css?v=10.25.1" />
-  <link rel="stylesheet" href="css/pages.css?v=10.25.1" />
+  <link rel="stylesheet" href="css/layout.css?v=10.26.0" />
+  <link rel="stylesheet" href="css/components.css?v=10.26.0" />
+  <link rel="stylesheet" href="css/pages.css?v=10.26.0" />
 
   <style id="calendar-v10-12-1-critical">
     /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>채용관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.25.1</p>
+          <p>Recruit ERP 2.0 · v10.26.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -562,7 +562,7 @@
               <button class="tab" data-schoolranktype="고등학교">고등학교</button>
               <button class="tab" data-schoolranktype="대학교">대학(전문대·대학교)</button>
             </div>
-            <p class="muted stats-funnel-note">평균검토점수는 지원자 상세보기에 쓰이는 전공·경력·자격·현장적응도 검토점수(100점 만점)를 학교별로 평균낸 값입니다. 재직률(12M+)은 사원명부 퇴직자 기준 "12개월 이상 재직 후 퇴사한 비율", 무사고율은 "징계 이력이 없는 비율"이에요. 두 값이 "-"로 보이면 아직 그 학교의 HR 통계가 반영되지 않은 것이고, 지원자만으로 계산된 점수예요. 구분을 나눠서 보면 순위·상위 10%/20%도 그 구분 안에서 다시 계산돼요.</p>
+            <p class="muted stats-funnel-note">평균검토점수는 지원자 상세보기에 쓰이는 전공·경력·자격·현장적응도 검토점수(100점 만점)를 학교별로 평균낸 값입니다. 재직률(12M+)·무사고율은 사원명부의 재직·퇴직 데이터에서 그때그때 실시간으로 계산돼요(사원명부가 바뀌면 랭킹도 바로 반영됩니다). 두 값이 "-"로 보이면 그 학교로 연결된 사원명부 데이터가 아직 없는 것이고, 지원자만으로 계산된 점수예요. 구분을 나눠서 보면 순위·상위 10%/20%도 그 구분 안에서 다시 계산돼요.</p>
             <div class="table-wrap">
               <table class="funnel-table school-rank-table">
                 <thead><tr><th>순위</th><th>학교명</th><th>구분</th><th>지원자</th><th>입사전환율</th><th>평균검토점수</th><th>재직률(12M+)</th><th>무사고율</th><th>종합점수</th><th>구간</th></tr></thead>
@@ -584,7 +584,7 @@
               <label class="wide">별칭(쉼표로 구분)<input id="schoolNewAliases" placeholder="예: 영남이공대학교, YNIT" /></label>
               <label class="wide">비고<input id="schoolNewNotes" placeholder="선택 입력" /></label>
             </div>
-            <div class="form-actions"><button class="primary" id="btnAddSchool">학교 추가</button><label class="file-label">학교 JSON 일괄 가져오기<input type="file" id="schoolJsonImport" accept=".json" /></label><label class="file-label">HR 통계(재직·무사고) 가져오기<input type="file" id="schoolHrStatsImport" accept=".json" /></label></div>
+            <div class="form-actions"><button class="primary" id="btnAddSchool">학교 추가</button><label class="file-label">학교 JSON 일괄 가져오기<input type="file" id="schoolJsonImport" accept=".json" /></label><label class="file-label">HR 통계 가져오기(사원명부 미연결 학교용)<input type="file" id="schoolHrStatsImport" accept=".json" /></label></div>
           </div>
 
           <div class="panel">
@@ -744,7 +744,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt'];
-    var v = '10.25.1';
+    var v = '10.26.0';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
