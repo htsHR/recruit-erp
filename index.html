@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>채용관리 시스템 v10.32.0</title>
+  <title>채용관리 시스템 v10.33.0</title>
   <script>
   (function(){
     var parts = ['css/base_data_1.txt','css/base_data_2.txt'];
-    var v = '10.30.3';
+    var v = '10.33.0';
     try {
       var b64 = '';
       for (var i = 0; i < parts.length; i++) {
@@ -29,9 +29,9 @@
     }
   })();
   </script>
-  <link rel="stylesheet" href="css/layout.css?v=10.30.3" />
-  <link rel="stylesheet" href="css/components.css?v=10.30.3" />
-  <link rel="stylesheet" href="css/pages.css?v=10.30.3" />
+  <link rel="stylesheet" href="css/layout.css?v=10.33.0" />
+  <link rel="stylesheet" href="css/components.css?v=10.33.0" />
+  <link rel="stylesheet" href="css/pages.css?v=10.33.0" />
 
   <style id="calendar-v10-12-1-critical">
     /* v10.12.2 일정관리: 흔히 보는 월간 7열 달력형 UI 강제 적용 */
@@ -123,7 +123,7 @@
         <div class="brand-mark">HT</div>
         <div>
           <h1>채용관리 시스템</h1>
-          <p>Recruit ERP 2.0 · v10.32.0</p>
+          <p>Recruit ERP 2.0 · v10.33.0</p>
         </div>
       </div>
       <nav class="nav">
@@ -593,8 +593,9 @@
           </div>
 
           <div class="panel school-manage-panel">
-            <div class="panel-head"><h3>등록된 학교</h3><span class="task-label" id="schoolManageCount">0개교</span></div>
+            <div class="panel-head school-list-head"><div><h3>등록된 학교</h3><span class="school-list-help">학교명과 숫자를 누르면 상세 목록으로 이동합니다.</span></div><div class="school-list-head-actions"><label>페이지당 <select id="schoolManagePageSize"><option value="30">30개</option><option value="50">50개</option><option value="100">100개</option></select></label><span class="task-label" id="schoolManageCount">0개교</span><button type="button" class="ghost school-filter-toggle" id="btnToggleSchoolFilters" aria-expanded="true">필터 접기 ▴</button></div></div>
             <div class="school-filter-panel">
+              <div id="schoolFilterContent">
               <div class="school-filter-grid">
                 <label class="school-filter-search">학교명 검색
                   <input id="schoolManageSearch" type="search" placeholder="학교명 또는 별칭 입력" autocomplete="off" />
@@ -613,9 +614,12 @@
                 </label>
                 <label>정렬
                   <select class="sort-select" id="schoolManageSort">
-                    <option value="name">이름순</option>
-                    <option value="applicant">지원자 많은 순</option>
-                    <option value="employee">직원 많은 순</option>
+                    <option value="name">학교명</option>
+                    <option value="region">지역</option>
+                    <option value="type">학교 구분</option>
+                    <option value="status">관리상태</option>
+                    <option value="applicant">지원자 수</option>
+                    <option value="employee">직원 수</option>
                   </select>
                 </label>
               </div>
@@ -633,13 +637,15 @@
                 </div>
               </div>
               <div class="school-filter-summary" id="schoolManageFilterSummary"><span class="muted">검색 조건 없이 전체 학교를 표시하고 있습니다.</span></div>
+              </div>
             </div>
-            <div class="table-wrap">
+            <div class="table-wrap school-manage-table-wrap">
               <table class="funnel-table school-manage-table">
-                <thead><tr><th>학교명</th><th>구분</th><th>관리상태</th><th>지역</th><th>담당자</th><th>MOU일</th><th>지원자</th><th>직원</th><th>관리</th></tr></thead>
+                <thead id="schoolManageHead"></thead>
                 <tbody id="schoolManageBody"></tbody>
               </table>
             </div>
+            <div class="school-pagination" id="schoolManagePagination"></div>
           </div>
 
           <div class="panel">
@@ -795,7 +801,7 @@
   <script>
   (function(){
     var parts = ['app_data_1.txt','app_data_2.txt','app_data_3.txt','app_data_4.txt','app_data_5.txt'];
-    var v = '10.30.3';
+    var v = '10.33.0';
     Promise.all(parts.map(function(p){
       return fetch(p + '?v=' + v, {cache:'no-store'}).then(function(r){ return r.text(); });
     }))
