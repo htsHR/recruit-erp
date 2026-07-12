@@ -830,3 +830,44 @@
 .school-status-badge.dormant{color:#596579;background:#f0f3f7;border-color:#d8dee7}
 .school-status-badge.excluded{color:#9b3f49;background:#fff0f1;border-color:#f5c7cc}
 .school-manage-table th:nth-child(3),.school-manage-table td:nth-child(3){min-width:96px;text-align:center}
+
+
+/* v10.33.0 협력학교 목록 UI 개선 */
+.school-list-head{gap:16px;align-items:flex-start}
+.school-list-head>div:first-child{display:flex;flex-direction:column;gap:4px}
+.school-list-help{font-size:12px;color:#7a879b;font-weight:600}
+.school-list-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.school-list-head-actions label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:#52637a}
+.school-list-head-actions select{height:34px;border:1px solid #d4dfed;border-radius:9px;background:#fff;padding:0 9px;color:#25344d}
+.school-filter-toggle{height:34px;border-radius:9px;white-space:nowrap}
+#schoolFilterContent[hidden]{display:none!important}
+.school-manage-table-wrap{position:relative;max-height:64vh;overflow:auto;border:1px solid #e2e9f2;border-radius:14px;background:#fff}
+.school-manage-table{min-width:1120px;border-collapse:separate;border-spacing:0}
+.school-manage-table thead th{position:sticky;top:0;z-index:6;background:#f7f9fc;box-shadow:inset 0 -1px 0 #dfe6ef}
+.school-manage-table tbody tr{transition:background .14s ease,box-shadow .14s ease}
+.school-manage-table tbody tr:hover td{background:#f5f9ff}
+.school-manage-table th,.school-manage-table td{height:54px;vertical-align:middle}
+.school-manage-table .sticky-col{position:sticky;z-index:5;background:#fff}
+.school-manage-table thead .sticky-col{z-index:8;background:#f7f9fc}
+.school-manage-table .sticky-left{left:0;min-width:210px;max-width:250px;box-shadow:1px 0 0 #e5ebf3}
+.school-manage-table .sticky-right{right:0;min-width:126px;box-shadow:-1px 0 0 #e5ebf3}
+.school-name-cell{overflow:hidden}
+.school-name-link{display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;font-weight:850}
+.table-sort-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:0!important;background:transparent!important;padding:4px 2px!important;color:inherit!important;font:inherit!important;font-weight:900!important;box-shadow:none!important}
+.table-sort-btn:hover{color:#1f62d6!important}
+.sort-mark{font-size:11px;color:#a0acba}
+.sort-mark.active{color:#2266da}
+.count-pill{display:inline-flex;align-items:center;justify-content:center;min-width:54px;height:30px;padding:0 10px;border-radius:999px!important;border:1px solid #cfe0ff!important;background:#eef5ff!important;color:#195ecb!important;font-weight:900!important;font-size:12px!important;box-shadow:none!important}
+.count-pill.employee{border-color:#ccebdc!important;background:#effaf5!important;color:#18724f!important}
+.count-pill:hover{transform:translateY(-1px);filter:brightness(.98)}
+.school-empty-state{padding:46px 18px!important;text-align:center!important}
+.school-empty-state strong,.school-empty-state span{display:block}
+.school-empty-state strong{font-size:15px;color:#25344d;margin-bottom:7px}
+.school-empty-state span{font-size:12px;color:#7b8798;margin-bottom:14px}
+.school-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 2px 2px}
+.school-page-summary{font-size:12px;font-weight:800;color:#67768a}
+.school-page-controls{display:flex;align-items:center;gap:7px}
+.school-page-controls button{height:34px;padding:0 11px;border:1px solid #d6e0ed;border-radius:9px;background:#fff;color:#34445d;font-weight:800}
+.school-page-controls button:disabled{opacity:.38;cursor:not-allowed}
+.school-page-controls span{min-width:72px;text-align:center;font-size:12px;color:#52637a}
+@media(max-width:900px){.school-list-head{flex-direction:column}.school-list-head-actions{justify-content:flex-start}.school-pagination{align-items:flex-start;flex-direction:column}.school-page-controls{width:100%;justify-content:space-between}.school-page-controls button{padding:0 8px}}
