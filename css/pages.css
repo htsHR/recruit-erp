@@ -871,3 +871,8 @@
 .school-page-controls button:disabled{opacity:.38;cursor:not-allowed}
 .school-page-controls span{min-width:72px;text-align:center;font-size:12px;color:#52637a}
 @media(max-width:900px){.school-list-head{flex-direction:column}.school-list-head-actions{justify-content:flex-start}.school-pagination{align-items:flex-start;flex-direction:column}.school-page-controls{width:100%;justify-content:space-between}.school-page-controls button{padding:0 8px}}
+
+/* v10.34.0 복구 준비 모드 배너 */
+.sync-mode-banner{background:#fff8e8;border:1px solid #f1d18a;border-radius:16px;padding:14px 16px;margin-bottom:16px;color:#7a5600}
+.sync-mode-banner strong{display:block;font-size:14px;margin-bottom:4px}
+.sync-mode-banner span{display:block;font-size:12.5px;line-height:1.5}
