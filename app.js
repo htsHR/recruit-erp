@@ -1,4 +1,4 @@
-// [HOME_DEV] 이력서 관리 시스템 v10.36.1 Recruit ERP 2.0 협력학교 관리 탭 UI·UX 개선(KPI카드/등록폼접기/배지/계층형표시)
+// [HOME_DEV] Recruit ERP v10.36.2 — 기업형 공통 레이아웃(사이드바·상단 헤더) + 협력학교 관리 대시보드 UI/UX 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.36.1 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.36.2 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -658,7 +658,7 @@ function schoolManagementStatusClass(status){
   const map={'신규 발굴':'new','연락 예정':'planned','협의 중':'discussion','협력 중':'active','휴면':'dormant','관리 제외':'excluded'};
   return map[status]||'unset';
 }
-/* v10.36.1: 협력학교 관리 탭 UI 개선 — 학교구분 배지, KPI 카드, 등록폼 접기/펼치기 */
+/* v10.36.2: 협력학교 관리 탭 UI 개선 — 학교구분 배지, KPI 카드, 등록폼 접기/펼치기 */
 function schoolTypeBadgeClass(type){
   const t = normalizeSchoolType(type);
   const map = {'고등학교':'type-high','전문대':'type-college','대학교':'type-univ','기타':'type-etc'};
@@ -701,10 +701,16 @@ function applySchoolKpiFilter(kpi){
 function toggleSchoolRegisterForm(forceOpen){
   const body = $('schoolEditPanelBody');
   const btn = $('btnToggleSchoolEditPanel');
+  const panel = $('schoolEditPanel');
   if(!body) return;
-  const shouldOpen = forceOpen !== undefined ? forceOpen : (body.style.display === 'none');
+  const currentlyOpen = body.style.display !== 'none';
+  const shouldOpen = forceOpen !== undefined ? !!forceOpen : !currentlyOpen;
   body.style.display = shouldOpen ? '' : 'none';
-  if(btn){ btn.setAttribute('aria-expanded', String(shouldOpen)); btn.textContent = shouldOpen ? '접기 ▴' : '펼치기 ▾'; }
+  if(panel) panel.classList.toggle('is-collapsed', !shouldOpen);
+  if(btn){
+    btn.setAttribute('aria-expanded', String(shouldOpen));
+    btn.textContent = shouldOpen ? '접기 ▴' : '닫기';
+  }
 }
 function schoolManagementStatusBadge(status){
   return `<span class="school-status-badge ${schoolManagementStatusClass(status)}">${esc(schoolManagementStatusLabel(status))}</span>`;
@@ -1324,6 +1330,7 @@ function setPage(page){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
   const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',backup:'백업/내보내기'};
   $('page-title').textContent = titleMap[page] || '홈';
+  if(window.innerWidth<=1020) document.body.classList.remove('sidebar-mobile-open');
   if(page==='form' && !$('applyDate').value) $('applyDate').value = today();
   const topActions = document.querySelector('.top-actions:not(.form-top-actions)');
   const formTopActions = document.querySelector('.form-top-actions');
@@ -2795,7 +2802,15 @@ bind('schoolManageHasEmployees','change',e=>{ schoolManageHasEmployees=e.target.
 bind('schoolManageMissingHistory','change',e=>{ schoolManageMissingHistory=e.target.checked; schoolManagePage=1; renderSchoolManage(); });
 bind('schoolManageUnclassified','change',e=>{ schoolManageUnclassifiedFilter=e.target.checked; schoolManagePage=1; renderSchoolManage(); });
 bind('btnResetSchoolManageFilters','click',resetSchoolManageFilters);
-bind('btnToggleSchoolEditPanel','click',()=>toggleSchoolRegisterForm());
+bind('btnApplySchoolFilters','click',()=>{ schoolManagePage=1; renderSchoolManage(); });
+bind('sidebarToggle','click',()=>{
+  if(window.innerWidth<=1020){
+    document.body.classList.toggle('sidebar-mobile-open');
+  }else{
+    document.body.classList.toggle('sidebar-collapsed');
+  }
+});
+bind('btnToggleSchoolEditPanel','click',()=>toggleSchoolRegisterForm(false));
 bind('btnOpenSchoolRegister','click',()=>{
   toggleSchoolRegisterForm(true);
   const panel=$('schoolEditPanel');
@@ -2981,7 +2996,9 @@ function updateAuthNote(email){
     if(email){
       topbarUser.style.display='flex';
       if($('topbarUserEmail')) $('topbarUserEmail').textContent=email;
-      if($('topbarUserMark')) $('topbarUserMark').textContent=email.charAt(0).toUpperCase();
+      const userInitials=String(email||'HT').split('@')[0].replace(/[^a-zA-Z0-9가-힣]/g,'').slice(0,2).toUpperCase() || 'HT';
+      if($('topbarUserMark')) $('topbarUserMark').textContent=userInitials;
+      if($('authUserMark')) $('authUserMark').textContent=userInitials;
     } else {
       topbarUser.style.display='none';
     }

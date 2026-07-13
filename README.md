@@ -1,21 +1,35 @@
-# Recruit ERP v10.35.0 — Normalized Source
+# Recruit ERP v10.36.2 HOME_DEV
 
-This folder is functionally equivalent to the GitHub snapshot, but JavaScript is restored to normal files:
+## 이번 버전
 
-- `index.html`
-- `app.js`
-- `supabase_config.js`
-- `css/*.css`
+시안 2의 기업형 대시보드 방향을 기준으로 공통 레이아웃과 협력학교 관리 화면을 개선했습니다.
 
-No 50 KB splitting rule is used in this folder.
+- 좌측 네이비 메뉴바 전면 개선
+- 메뉴 아이콘을 간결한 인라인 SVG로 통일
+- 상단 네이비 헤더 및 사용자 영역 개선
+- 데스크톱 사이드바 접기 기능 추가
+- 모바일 사이드바 열기/닫기 대응
+- 협력학교 KPI를 기업형 요약 스트립으로 개선
+- 검색·필터 영역을 짙은 네이비 패널로 개선
+- 학교 목록 테이블과 페이지네이션 가독성 개선
+- 학교 등록 패널은 기본 숨김, `+ 학교 등록`으로 열기
 
-## Important
+## 데이터 안전 범위
 
-The current source still contains the legacy synchronization behavior:
+이번 버전은 UI·UX 중심 변경입니다.
 
-- localStorage is saved before Supabase completes.
-- whole arrays are upserted.
-- cloud and local arrays are automatically merged on load.
-- employee and school reads are not yet safely paginated beyond 1,000 rows.
+- `schools`, `employees`, `applicants` 데이터 구조 변경 없음
+- LocalStorage 키 변경 없음
+- Supabase 테이블 및 저장 구조 변경 없음
+- 학교·직원 연결 로직 변경 없음
+- 랭킹 계산 로직 변경 없음
+- 기존 등록·수정·삭제·필터·페이지네이션 기능 유지
 
-Do not run the employee/school recovery import until synchronization stabilization is implemented and tested.
+## 남아 있는 개선 과제
+
+- 직원 저장은 아직 전체 배열 upsert 방식을 사용합니다.
+- SQL 변경 이력 문서화는 정식 운영 전 별도 진행이 필요합니다.
+
+## 배포
+
+압축을 푼 뒤 폴더 안의 `index.html`, `app.js`, `css/` 등 파일을 GitHub 저장소 최상단에 덮어쓰면 됩니다.
