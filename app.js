@@ -1,4 +1,4 @@
-// [HOME_DEV] 이력서 관리 시스템 v10.35.1 Recruit ERP 2.0 지원자 로드 시 자동 재업로드 제거(supabaseSyncOnLoad)
+// [HOME_DEV] 이력서 관리 시스템 v10.35.2 Recruit ERP 2.0 직원명부 Supabase 조회 페이지네이션(1,000행 한도 해결)
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.35.1 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.35.2 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -882,23 +882,40 @@ function supabaseDeleteEmployee(id){
 }
 function supabaseEmployeesSyncOnLoad(){
   if(!window.sb) return;
-  window.sb.from('employees').select('*').then(function(res){
-    if(res && res.error){ console.warn('직원명부 불러오기 실패, 로컬 데이터로 계속 진행:', res.error.message); return; }
-    const cloud=(res && res.data) ? res.data.map(normalizeEmployee) : [];
-    const local=employees;
-    const map={};
-    local.forEach(function(e){ map[e.id]=e; });
+  const PAGE_SIZE = 500;
+  function loadPage(from, collected){
+    return window.sb.from('employees').select('*').order('id', { ascending: true }).range(from, from + PAGE_SIZE - 1)
+      .then(function(res){
+        if(res && res.error){ throw new Error(res.error.message); }
+        const rows = (res && res.data) ? res.data : [];
+        const merged = collected.concat(rows);
+        if(rows.length < PAGE_SIZE){
+          return merged; // 마지막 페이지(요청 크기보다 적게 옴)
+        }
+        return loadPage(from + PAGE_SIZE, merged);
+      });
+  }
+  loadPage(0, []).then(function(cloudRaw){
+    // v10.35.2: 전체 페이지 조회가 전부 성공한 뒤에만 병합/반영. 1,000행 조회 한도로
+    // 일부만 가져와 조용히 누락되던 문제(직원 1,381명 중 381명 유실 위험)를 제거함.
+    const cloud = cloudRaw.map(normalizeEmployee);
+    const local = employees;
+    const map = {};
+    local.forEach(function(e){ map[e.id] = e; });
     cloud.forEach(function(c){
-      const l=map[c.id];
-      if(!l){ map[c.id]=c; return; }
-      const lt=l.updatedAt||l.createdAt||'';
-      const ct=c.updatedAt||c.createdAt||'';
-      map[c.id]=(ct>lt)?c:l;
+      const l = map[c.id];
+      if(!l){ map[c.id] = c; return; }
+      const lt = l.updatedAt || l.createdAt || '';
+      const ct = c.updatedAt || c.createdAt || '';
+      map[c.id] = (ct > lt) ? c : l;
     });
-    employees=Object.keys(map).map(function(k){ return map[k]; });
+    employees = Object.keys(map).map(function(k){ return map[k]; });
     localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
     renderEmployees();
-  }).catch(function(e){ console.warn('직원명부 Supabase 연결 실패, 로컬 데이터로 계속 진행:', e); });
+    console.info('직원명부 Supabase 페이지 조회 완료: 클라우드 ' + cloud.length + '명 -> 병합 후 ' + employees.length + '명');
+  }).catch(function(e){
+    console.warn('직원명부 페이지 조회 중 실패 — 불완전한 데이터를 반영하지 않고 기존 로컬 데이터 유지:', e);
+  });
 }
 let employeeStatusFilter='all';
 let employeeSearchName='';
