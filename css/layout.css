@@ -86,7 +86,7 @@
 .home-work-queue,
 .today-focus-row{
   display:grid;
-  grid-template-columns:repeat(5,minmax(0,1fr));
+  grid-template-columns:repeat(7,minmax(0,1fr));
   gap:12px;
 }
 
@@ -153,7 +153,7 @@ table{min-width:var(--erp-table-min);}
     --erp-page-pad-x:18px;
   }
   .home-work-queue,
-  .today-focus-row{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .today-focus-row{grid-template-columns:repeat(4,minmax(0,1fr));}
   .compact-four-grid,
   .identity-grid,
   .compact-process-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
