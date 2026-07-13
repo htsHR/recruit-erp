@@ -1,4 +1,4 @@
-// [HOME_DEV] 이력서 관리 시스템 v10.35.0 Recruit ERP 2.0 학교 구분(type) 표준화 — normalizeSchoolType() 공통화
+// [HOME_DEV] 이력서 관리 시스템 v10.35.1 Recruit ERP 2.0 지원자 로드 시 자동 재업로드 제거(supabaseSyncOnLoad)
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.35.0 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.35.1 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -254,8 +254,10 @@ function supabaseSyncOnLoad(){
     applicants = merged;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants));
     renderAll();
-    if(merged.length){ supabaseSyncAll(merged); }
-    console.info('Supabase 동기화(병합) 완료: 로컬 ' + beforeCount + '명 + 클라우드 ' + cloud.length + '명 -> 최종 ' + merged.length + '명 (데이터 손실 없음)');
+    // v10.35.1: 병합 직후 자동 재업로드(supabaseSyncAll) 제거.
+    // 로드는 이제 읽기 전용 병합 + 화면 렌더만 수행하고, 클라우드에는 아무것도 쓰지 않음.
+    // 신규 등록/수정/삭제/JSON 가져오기 등 사용자가 직접 저장을 실행할 때만 업로드됨(save() 등 기존 경로 그대로 유지).
+    console.info('Supabase 동기화(병합) 완료: 로컬 ' + beforeCount + '명 + 클라우드 ' + cloud.length + '명 -> 화면에 ' + merged.length + '명 표시 (클라우드에는 다시 쓰지 않음)');
   }).catch(function(e){ console.warn('Supabase 연결 실패, 로컬 데이터로 계속 진행:', e); setCloudSyncStatus('error'); });
 }
 /* =========================================================
