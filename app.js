@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.36.2 — 기업형 공통 레이아웃(사이드바·상단 헤더) + 협력학교 관리 대시보드 UI/UX 개선
+// [HOME_DEV] Recruit ERP v10.36.3 — 기업형 공통 레이아웃(사이드바·상단 헤더) + 협력학교 관리 대시보드 UI/UX 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.36.2 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.36.3 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -658,7 +658,7 @@ function schoolManagementStatusClass(status){
   const map={'신규 발굴':'new','연락 예정':'planned','협의 중':'discussion','협력 중':'active','휴면':'dormant','관리 제외':'excluded'};
   return map[status]||'unset';
 }
-/* v10.36.2: 협력학교 관리 탭 UI 개선 — 학교구분 배지, KPI 카드, 등록폼 접기/펼치기 */
+/* v10.36.3: 협력학교 관리 탭 UI 개선 — 학교구분 배지, KPI 카드, 등록폼 접기/펼치기 */
 function schoolTypeBadgeClass(type){
   const t = normalizeSchoolType(type);
   const map = {'고등학교':'type-high','전문대':'type-college','대학교':'type-univ','기타':'type-etc'};
@@ -1329,7 +1329,21 @@ function setPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
   const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',backup:'백업/내보내기'};
+  const descMap = {
+    home:'오늘의 채용 업무와 주요 현황을 확인합니다.',
+    applicants:'지원자 진행상태와 면접·입사 일정을 관리합니다.',
+    form:'새 지원자의 기본정보와 전형정보를 등록합니다.',
+    today:'오늘 우선 처리할 채용 업무를 확인합니다.',
+    calendar:'면접·입사·관리 일정을 한눈에 확인합니다.',
+    stats:'채용 흐름과 주요 성과지표를 분석합니다.',
+    schools:'협력학교 현황과 지원자·직원 배출 정보를 관리합니다.',
+    employees:'재직·휴직·퇴사 현황과 출신학교 정보를 확인합니다.',
+    templates:'지원자 안내문을 빠르게 작성하고 복사합니다.',
+    backup:'ERP 데이터를 안전하게 백업하고 복원합니다.'
+  };
   $('page-title').textContent = titleMap[page] || '홈';
+  const breadcrumb=document.querySelector('.topbar-breadcrumb');
+  if(breadcrumb) breadcrumb.textContent=descMap[page] || 'Recruit ERP 운영 대시보드';
   if(window.innerWidth<=1020) document.body.classList.remove('sidebar-mobile-open');
   if(page==='form' && !$('applyDate').value) $('applyDate').value = today();
   const topActions = document.querySelector('.top-actions:not(.form-top-actions)');
