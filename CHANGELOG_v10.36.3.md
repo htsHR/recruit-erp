@@ -1,4 +1,4 @@
-# Recruit ERP v10.36.3 HOME_DEV — Unified Corporate UI
+# Recruit ERP v10.36.4 HOME_DEV — Unified Corporate UI
 
 ## 변경 범위
 - 좌측 메뉴바와 상단 헤더를 전 페이지 공통 기업형 레이아웃으로 통일

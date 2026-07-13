@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.36.3 — 기업형 공통 레이아웃(사이드바·상단 헤더) + 협력학교 관리 대시보드 UI/UX 개선
+// [HOME_DEV] Recruit ERP v10.36.4 — 기업형 공통 레이아웃(사이드바·상단 헤더) + 협력학교 관리 대시보드 UI/UX 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.36.3 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.36.4 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -658,7 +658,7 @@ function schoolManagementStatusClass(status){
   const map={'신규 발굴':'new','연락 예정':'planned','협의 중':'discussion','협력 중':'active','휴면':'dormant','관리 제외':'excluded'};
   return map[status]||'unset';
 }
-/* v10.36.3: 협력학교 관리 탭 UI 개선 — 학교구분 배지, KPI 카드, 등록폼 접기/펼치기 */
+/* v10.36.4: 협력학교 관리 탭 UI 개선 — 학교구분 배지, KPI 카드, 등록폼 접기/펼치기 */
 function schoolTypeBadgeClass(type){
   const t = normalizeSchoolType(type);
   const map = {'고등학교':'type-high','전문대':'type-college','대학교':'type-univ','기타':'type-etc'};

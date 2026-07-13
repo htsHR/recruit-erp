@@ -528,7 +528,7 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 @media(max-width:560px){.school-kpi-grid{grid-template-columns:1fr;}.school-filter-checks{grid-template-columns:1fr;}}
 
 /* =========================================================
-   Recruit ERP v10.36.3 — SCHOOL DIRECTORY / CORPORATE DASHBOARD
+   Recruit ERP v10.36.4 — SCHOOL DIRECTORY / CORPORATE DASHBOARD
    시안 2 기반: KPI 스트립 + 네이비 필터 + 엔터프라이즈 테이블
    ========================================================= */
 #schools .stats-filter-panel{

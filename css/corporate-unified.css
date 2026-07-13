@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.36.3 — Unified Corporate UI
+   Recruit ERP v10.36.4 — Unified Corporate UI
    목적: 전 페이지 공통 레이아웃·타이포·카드·테이블 통일
    데이터/저장 로직에는 영향 없음
    ========================================================= */
@@ -741,3 +741,95 @@ th{font-size:11.5px!important;color:#53627a!important;background:#f8fafc!importa
   box-shadow:none!important;
 }
 #calendar .calendar-summary-card strong{color:#fff!important;}
+
+
+/* =========================================================
+   Recruit ERP v10.36.4 — readability boost
+   목적: 흐리게 보이는 텍스트/라벨/테이블 가독성 강화
+   ========================================================= */
+:root{
+  --cu-text:#0f1e37;
+  --cu-muted:#55657b;
+}
+body{font-size:15px!important;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+.brand-copy p,.brand p{color:#b8cbee!important;font-size:11px!important;}
+.nav-group-label{color:#a5c0e6!important;font-size:12px!important;}
+.nav-btn,.nav-btn.nav-sub{color:#eef5ff!important;font-size:14px!important;font-weight:900!important;}
+.nav-ico{color:#d7e7ff!important;background:rgba(255,255,255,.085)!important;}
+.security-note strong{font-size:12.5px!important;color:#f5f9ff!important;}
+.security-note span{font-size:11px!important;color:#c3d6f2!important;}
+.auth-user-copy strong{font-size:11.5px!important;color:#fff!important;}
+.auth-user-copy small{font-size:10.5px!important;color:#bed0eb!important;}
+#btnLogout{font-size:12.5px!important;font-weight:900!important;}
+.topbar h2{font-size:20px!important;}
+.topbar-breadcrumb{font-size:10.5px!important;color:#9eb7db!important;}
+.topbar-user-copy strong{font-size:11.5px!important;}
+.topbar-user-copy small{font-size:10.5px!important;color:#b7cceb!important;}
+.main>.page{padding:26px 0 46px!important;}
+.panel-head .muted,.panel-intro,.muted{color:var(--cu-muted)!important;font-weight:600!important;}
+.panel-head h3,.panel h3{font-size:18px!important;}
+label{font-size:13px!important;color:#334155!important;font-weight:900!important;}
+.primary,.ghost,.mini,.danger,.file-label{font-size:13px!important;}
+input,select,textarea{font-size:13.5px!important;color:#10213b!important;font-weight:650!important;}
+input::placeholder,textarea::placeholder{color:#8b9ab0!important;opacity:1;}
+th,td{font-size:13px!important;}
+th{font-size:12px!important;color:#475569!important;font-weight:900!important;}
+.badge{font-size:11.5px!important;font-weight:900!important;}
+.row-actions button{font-size:12px!important;font-weight:900!important;}
+.page{font-size:15px;}
+#schools .stats-filter-panel{margin-bottom:18px!important;}
+.school-manage-title{font-size:33px!important;color:#0f172a!important;}
+.school-manage-note{color:#5b6b80!important;font-size:14px!important;font-weight:800!important;}
+#btnOpenSchoolRegister{font-size:13px!important;}
+.school-kpi-card span{color:#28374e!important;font-size:12px!important;}
+.school-kpi-card strong{font-size:31px!important;color:#0f1e37!important;}
+.school-filter-panel{padding:18px 20px 16px!important;}
+.school-filter-grid label{color:#f4f8ff!important;font-size:12.5px!important;}
+.school-filter-grid input,.school-filter-grid select{height:42px!important;font-size:12.8px!important;color:#fff!important;font-weight:700!important;}
+.school-filter-grid input::placeholder{color:#d3e2f7!important;}
+#schoolManageTypeTabs .tab{font-size:11.5px!important;font-weight:900!important;}
+.school-filter-checks .check-inline{font-size:11.5px!important;font-weight:900!important;color:#edf4ff!important;}
+.school-filter-reset{font-size:11.5px!important;color:#e6f0ff!important;font-weight:900!important;}
+.school-filter-apply{font-size:12px!important;font-weight:900!important;}
+.school-filter-summary{font-size:11.5px!important;}
+.school-filter-summary .muted{color:#c4d5ef!important;font-weight:700!important;}
+.school-list-head h3{font-size:15px!important;}
+.school-list-head-actions label{font-size:11.5px!important;color:#475569!important;font-weight:800!important;}
+.school-list-head-actions select{font-size:12px!important;color:#0f1e37!important;font-weight:700!important;}
+#schoolManageCount{font-size:11.5px!important;font-weight:900!important;}
+#btnToggleSchoolFilters{font-size:11.5px!important;font-weight:800!important;}
+.school-manage-table thead th{font-size:11.5px!important;color:#475569!important;font-weight:900!important;}
+.school-manage-table tbody td{font-size:12.5px!important;color:#223248!important;font-weight:600!important;}
+.school-name-link{font-size:13.5px!important;color:#0f1e37!important;}
+.school-name-sub{font-size:10.5px!important;color:#6b7b8f!important;font-weight:700!important;}
+.school-inline-value{font-size:11.8px!important;color:#223248!important;}
+.school-inline-stack strong{font-size:11.8px!important;color:#223248!important;font-weight:900!important;}
+.school-inline-stack small{font-size:10.5px!important;color:#6b7b8f!important;font-weight:700!important;}
+.school-status-badge,.school-type-badge{font-size:10.5px!important;font-weight:900!important;}
+.count-pill{font-size:10.5px!important;font-weight:900!important;}
+.school-action-btn{font-size:10.8px!important;font-weight:900!important;}
+.school-page-summary{font-size:11.5px!important;color:#526173!important;font-weight:700!important;}
+.school-page-controls button,.school-page-controls span{font-size:11.5px!important;font-weight:800!important;}
+#applicants .list-top-card .search,
+#applicants .list-top-card .sort-select,
+#employeeListView > .panel:first-child input,
+#employeeListView > .panel:first-child select,
+#stats > .stats-filter-panel select,
+#calendar .calendar-control-panel select{font-size:13px!important;font-weight:700!important;}
+#applicants .list-top-card .check-inline,
+#employeeListView > .panel:first-child label,
+#stats > .stats-filter-panel .stats-filter-title,
+#stats > .stats-filter-panel .stats-filter-note,
+#calendar .calendar-control-panel h3,
+#calendar .calendar-summary-card span,
+#calendar .calendar-summary-card small{font-size:12px!important;font-weight:800!important;}
+.employee-page-title{font-size:33px!important;color:#0f1e37!important;}
+.employee-page-note{font-size:14px!important;color:#5b6b80!important;font-weight:700!important;}
+.stat span{font-size:12.5px!important;color:#5b6b80!important;font-weight:700!important;}
+.stat strong{font-size:30px!important;color:#0f1e37!important;}
+.queue-card span,.focus-metric span{font-size:12.5px!important;font-weight:700!important;color:#5b6b80!important;}
+.queue-card small,.focus-metric small{font-size:11.5px!important;font-weight:700!important;color:#6b7b8f!important;}
+@media(max-width:760px){
+  body{font-size:14px!important;}
+  .school-manage-title{font-size:29px!important;}
+}
