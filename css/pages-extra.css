@@ -405,3 +405,32 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
       #calendar .calendar-weekdays span{min-height:36px;font-size:12px;}
     }
   
+/* v10.36.0: 협력학교 관리 탭 UI 개선 */
+.school-manage-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px;}
+.school-manage-kicker{margin:0 0 7px;color:#2563eb;font-size:11px;font-weight:1000;letter-spacing:.12em;}
+.school-manage-title{margin:2px 0 8px;font-size:30px;line-height:1.1;letter-spacing:-.04em;color:#111827;}
+.school-manage-note{margin:0;color:#6b7280;font-size:13px;font-weight:700;max-width:640px;line-height:1.55;}
+.school-kpi-grid{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:16px;}
+.school-kpi-card{border:0;background:#fff;border-radius:16px;padding:14px;display:flex;align-items:center;gap:10px;cursor:pointer;text-align:left;box-shadow:0 6px 15px rgba(15,23,42,.04);border:1px solid #e5e9f0;transition:.15s ease;}
+.school-kpi-card:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(15,23,42,.08);}
+.school-kpi-card.active{border-color:var(--blue,#2563eb);box-shadow:0 0 0 2px rgba(37,99,235,.15);}
+.school-kpi-ico{width:34px;height:34px;min-width:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;background:#eef4ff;color:#2563eb;}
+.school-kpi-card.school-kpi-alert .school-kpi-ico{background:#fff1f0;color:#dc4b3f;}
+.school-kpi-card span{display:block;font-size:11px;font-weight:800;color:#6b7280;}
+.school-kpi-card strong{display:block;font-size:20px;color:#0f172a;line-height:1.2;}
+.school-name-cell{display:flex;flex-direction:column;gap:2px;}
+.school-name-sub{color:#94a3b8;font-size:11px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;}
+.school-type-badge{display:inline-flex;align-items:center;justify-content:center;min-width:56px;padding:5px 10px;border-radius:999px;border:1px solid transparent;font-size:11px;font-weight:900;white-space:nowrap;}
+.school-type-badge.type-high{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe;}
+.school-type-badge.type-college{color:#0f766e;background:#effaf5;border-color:#bbe8d8;}
+.school-type-badge.type-univ{color:#7b3fb5;background:#f7efff;border-color:#e2c9fa;}
+.school-type-badge.type-etc{color:#865d08;background:#fff8df;border-color:#f5df91;}
+.school-type-badge.type-unset{color:#718096;background:#f4f6f8;border-color:#e1e6ec;}
+@media(max-width:1100px){
+  .school-kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media(max-width:720px){
+  .school-manage-hero{flex-direction:column;align-items:flex-start;}
+  .school-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .school-name-sub{max-width:120px;}
+}
