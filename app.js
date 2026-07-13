@@ -1,4 +1,4 @@
-// [HOME_DEV] 이력서 관리 시스템 v10.36.0 Recruit ERP 2.0 협력학교 관리 탭 UI·UX 개선(KPI카드/등록폼접기/배지/계층형표시)
+// [HOME_DEV] 이력서 관리 시스템 v10.36.1 Recruit ERP 2.0 협력학교 관리 탭 UI·UX 개선(KPI카드/등록폼접기/배지/계층형표시)
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.36.0 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.36.1 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -658,7 +658,7 @@ function schoolManagementStatusClass(status){
   const map={'신규 발굴':'new','연락 예정':'planned','협의 중':'discussion','협력 중':'active','휴면':'dormant','관리 제외':'excluded'};
   return map[status]||'unset';
 }
-/* v10.36.0: 협력학교 관리 탭 UI 개선 — 학교구분 배지, KPI 카드, 등록폼 접기/펼치기 */
+/* v10.36.1: 협력학교 관리 탭 UI 개선 — 학교구분 배지, KPI 카드, 등록폼 접기/펼치기 */
 function schoolTypeBadgeClass(type){
   const t = normalizeSchoolType(type);
   const map = {'고등학교':'type-high','전문대':'type-college','대학교':'type-univ','기타':'type-etc'};
@@ -813,17 +813,23 @@ function renderSchoolManage(){
     <th><button class="table-sort-btn" onclick="setSchoolManageSort('applicant')">지원자 ${schoolManageSortIcon('applicant')}</button></th>
     <th><button class="table-sort-btn" onclick="setSchoolManageSort('employee')">직원 ${schoolManageSortIcon('employee')}</button></th>
     <th class="sticky-col sticky-right">관리</th></tr>`;
-  body.innerHTML = pageList.length ? pageList.map(s=>`<tr>
-    <td class="sticky-col sticky-left school-name-cell" title="${esc(s.name)}"><button class="link-like school-name-link" onclick="openSchoolDetail('${s.id}')">${esc(s.name)}</button><small class="school-name-sub">${esc((s.aliases||[])[0] || s.region || '')}</small></td>
-    <td>${schoolTypeBadge(s.type)}</td>
-    <td>${schoolManagementStatusBadge(s.managementStatus)}</td>
-    <td>${esc(s.region)||'-'}</td>
-    <td>${esc(s.contact)||'-'}</td>
-    <td>${esc(s.mouDate)||'-'}</td>
-    <td><button class="count-pill" onclick="viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
-    <td><button class="count-pill employee" onclick="viewSchoolEmployees('${s.id}','${escJs(s.name)}')">${schoolEmployeeCount(s.id)}명</button></td>
-    <td class="row-actions sticky-col sticky-right"><button onclick="editSchoolPrompt('${s.id}')">수정</button><button class="delete" onclick="deleteSchool('${s.id}')">삭제</button></td>
-  </tr>`).join('') : `<tr><td colspan="9" class="empty school-empty-state"><strong>조건에 맞는 학교가 없습니다.</strong><span>검색어 또는 필터를 바꾸거나 검색조건을 초기화해 주세요.</span><button type="button" class="ghost" onclick="resetSchoolManageFilters()">검색조건 초기화</button></td></tr>`;
+  body.innerHTML = pageList.length ? pageList.map(s=>{
+    const schoolAlias=(s.aliases||[]).filter(Boolean).slice(0,2).join(' · ');
+    const schoolMeta=schoolAlias ? `별칭 ${schoolAlias}` : (s.region ? `지역 ${s.region}` : '등록된 기본 정보 확인');
+    const contactLine=String(s.contact||'').trim() || '담당자 미등록';
+    const mouLine=String(s.mouDate||'').trim() || '미체결';
+    return `<tr>
+      <td class="sticky-col sticky-left school-name-cell" title="${esc(s.name)}"><button class="link-like school-name-link" onclick="openSchoolDetail('${s.id}')">${esc(s.name)}</button><small class="school-name-sub">${esc(schoolMeta)}</small></td>
+      <td>${schoolTypeBadge(s.type)}</td>
+      <td>${schoolManagementStatusBadge(s.managementStatus)}</td>
+      <td><span class="school-inline-value">${esc(s.region)||'-'}</span></td>
+      <td><div class="school-inline-stack"><strong>${esc(contactLine)}</strong><small>${String(s.contactPhone||'').trim()?esc(s.contactPhone):'연락처 미등록'}</small></div></td>
+      <td><div class="school-inline-stack"><strong>${esc(mouLine)}</strong><small>${String(s.mouDate||'').trim()?'체결일 등록':'일정 없음'}</small></div></td>
+      <td><button class="count-pill" onclick="viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
+      <td><button class="count-pill employee" onclick="viewSchoolEmployees('${s.id}','${escJs(s.name)}')">${schoolEmployeeCount(s.id)}명</button></td>
+      <td class="row-actions sticky-col sticky-right school-row-actions"><button class="school-action-btn edit" onclick="editSchoolPrompt('${s.id}')">수정</button><button class="school-action-btn delete" onclick="deleteSchool('${s.id}')">삭제</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="9" class="empty school-empty-state"><strong>조건에 맞는 학교가 없습니다.</strong><span>검색어 또는 필터를 바꾸거나 검색조건을 초기화해 주세요.</span><button type="button" class="ghost" onclick="resetSchoolManageFilters()">검색조건 초기화</button></td></tr>`;
   const pager=$('schoolManagePagination');
   if(pager){
     const first=totalFiltered?startIndex+1:0;
