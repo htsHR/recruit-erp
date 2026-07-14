@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.36.5 — 기업형 공통 레이아웃(사이드바·상단 헤더) + 협력학교 관리 대시보드 UI/UX 개선
+// [HOME_DEV] Recruit ERP v10.36.6 LIST_UX — 지원자·협력학교·사원명부 목록 UI/UX 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.36.5 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.36.6 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -824,16 +824,16 @@ function renderSchoolManage(){
     const schoolMeta=schoolAlias ? `별칭 ${schoolAlias}` : (s.region ? `지역 ${s.region}` : '등록된 기본 정보 확인');
     const contactLine=String(s.contact||'').trim() || '담당자 미등록';
     const mouLine=String(s.mouDate||'').trim() || '미체결';
-    return `<tr>
-      <td class="sticky-col sticky-left school-name-cell" title="${esc(s.name)}"><button class="link-like school-name-link" onclick="openSchoolDetail('${s.id}')">${esc(s.name)}</button><small class="school-name-sub">${esc(schoolMeta)}</small></td>
-      <td>${schoolTypeBadge(s.type)}</td>
-      <td>${schoolManagementStatusBadge(s.managementStatus)}</td>
-      <td><span class="school-inline-value">${esc(s.region)||'-'}</span></td>
-      <td><div class="school-inline-stack"><strong>${esc(contactLine)}</strong><small>${String(s.contactPhone||'').trim()?esc(s.contactPhone):'연락처 미등록'}</small></div></td>
-      <td><div class="school-inline-stack"><strong>${esc(mouLine)}</strong><small>${String(s.mouDate||'').trim()?'체결일 등록':'일정 없음'}</small></div></td>
-      <td><button class="count-pill" onclick="viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
-      <td><button class="count-pill employee" onclick="viewSchoolEmployees('${s.id}','${escJs(s.name)}')">${schoolEmployeeCount(s.id)}명</button></td>
-      <td class="row-actions sticky-col sticky-right school-row-actions"><button class="school-action-btn edit" onclick="editSchoolPrompt('${s.id}')">수정</button><button class="school-action-btn delete" onclick="deleteSchool('${s.id}')">삭제</button></td>
+    return `<tr class="school-manage-row clickable-data-row" tabindex="0" onclick="if(!event.target.closest('button,select,a,input,label,summary,details')) openSchoolDetail('${s.id}')" onkeydown="listRowKeyActivate(event,()=>openSchoolDetail('${s.id}'))">
+      <td class="sticky-col sticky-left school-name-cell" data-label="학교명" title="${esc(s.name)}"><button class="link-like school-name-link" onclick="openSchoolDetail('${s.id}')">${esc(s.name)}</button><small class="school-name-sub">${esc(schoolMeta)}</small></td>
+      <td class="school-type-cell" data-label="구분">${schoolTypeBadge(s.type)}</td>
+      <td class="school-status-cell" data-label="관리상태">${schoolManagementStatusBadge(s.managementStatus)}</td>
+      <td class="school-region-cell" data-label="지역"><span class="school-inline-value">${esc(s.region)||'-'}</span></td>
+      <td class="school-contact-cell" data-label="담당자"><div class="school-inline-stack"><strong>${esc(contactLine)}</strong><small>${String(s.contactPhone||'').trim()?esc(s.contactPhone):'연락처 미등록'}</small></div></td>
+      <td class="school-mou-cell" data-label="MOU일"><div class="school-inline-stack"><strong>${esc(mouLine)}</strong><small>${String(s.mouDate||'').trim()?'체결일 등록':'일정 없음'}</small></div></td>
+      <td class="school-applicant-cell" data-label="지원자"><button class="count-pill" onclick="viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
+      <td class="school-employee-cell" data-label="직원"><button class="count-pill employee" onclick="viewSchoolEmployees('${s.id}','${escJs(s.name)}')">${schoolEmployeeCount(s.id)}명</button></td>
+      <td class="row-actions sticky-col sticky-right school-row-actions" data-label="관리"><button class="school-action-btn edit" onclick="editSchoolPrompt('${s.id}')">수정</button><div class="row-more-menu"><button type="button" class="row-more-toggle" onclick="toggleRowMore(event,this)">더보기</button><div class="row-more-menu-panel"><button class="school-action-btn delete" onclick="deleteSchool('${s.id}')">삭제</button></div></div></td>
     </tr>`;
   }).join('') : `<tr><td colspan="9" class="empty school-empty-state"><strong>조건에 맞는 학교가 없습니다.</strong><span>검색어 또는 필터를 바꾸거나 검색조건을 초기화해 주세요.</span><button type="button" class="ghost" onclick="resetSchoolManageFilters()">검색조건 초기화</button></td></tr>`;
   const pager=$('schoolManagePagination');
@@ -1142,33 +1142,61 @@ function renderEmployeeDeptView(){
   if(!rows.length){ body.innerHTML=`<tr><td colspan="5" class="empty">등록된 직원이 없습니다.</td></tr>`; return; }
   body.innerHTML=rows.map(d=>`<tr><td>${esc(d.dept)}</td><td>${d.total}명</td><td>${d.active}명</td><td>${d.left}명</td><td>${d.upcoming}명</td></tr>`).join('');
 }
+function toggleRowMore(event, button){
+  event.preventDefault();
+  event.stopPropagation();
+  const menu=button.closest('.row-more-menu');
+  if(!menu) return;
+  const willOpen=!menu.classList.contains('open');
+  document.querySelectorAll('.row-more-menu.open').forEach(x=>x.classList.remove('open'));
+  if(willOpen) menu.classList.add('open');
+}
+function closeAllRowMoreMenus(){ document.querySelectorAll('.row-more-menu.open').forEach(x=>x.classList.remove('open')); }
+function listRowKeyActivate(event, action){
+  if(event.key!=='Enter' && event.key!==' ') return;
+  if(event.target.closest('button,select,a,input,label,summary,details')) return;
+  event.preventDefault();
+  action();
+}
+function updateEmployeeStatusTabCounts(){
+  const labels={all:'전체',재직중:'재직자',퇴사:'퇴직자',입사예정:'입사예정자',휴직:'휴직'};
+  document.querySelectorAll('#employeeStatusTabs [data-empstatus]').forEach(btn=>{
+    const key=btn.dataset.empstatus;
+    const count=key==='all' ? employees.length : employees.filter(e=>e.status===key).length;
+    btn.innerHTML=`<span>${labels[key]||key}</span><small class="tab-count">${count}</small>`;
+  });
+}
 function renderEmployees(){
   const body=$('employeesBody');
   if(!body) return;
   populateEmployeeFilterOptions();
+  updateEmployeeStatusTabCounts();
   const all=employees.filter(employeeMatchesFilter).sort((a,b)=>(b.hireDate||'').localeCompare(a.hireDate||''));
   setText('employeesTotalCount', employees.length);
   setText('employeesActiveCount', employees.filter(e=>e.status==='재직중').length);
   setText('employeesLeftCount', employees.filter(e=>e.status==='퇴사').length);
   setText('employeesUpcomingCount', employees.filter(e=>e.status==='입사예정').length);
+  const activeFilterCount=[employeeStatusFilter!=='all',employeeSearchName,employeeSearchNo,employeeDeptFilter!=='all',employeeRoleFilter!=='all',employeeSchoolSearch].filter(Boolean).length;
+  const resultText=activeFilterCount ? `${all.length}명 / 전체 ${employees.length}명` : `${all.length}명 표시`;
+  setText('employeeListSummary', resultText);
   const totalPages=Math.max(1, Math.ceil(all.length/employeePageSize));
   if(employeePage>totalPages) employeePage=totalPages;
   const start=(employeePage-1)*employeePageSize;
   const rows=all.slice(start, start+employeePageSize);
   renderEmployeePagination(totalPages, all.length);
   renderEmployeeDeptView();
-  if(!all.length){ body.innerHTML=`<tr><td colspan="10" class="empty">조건에 맞는 직원이 없습니다.</td></tr>`; return; }
-  body.innerHTML=rows.map(e=>`<tr>
-    <td>${esc(e.empNo)||'-'}</td>
-    <td><button class="link-like" onclick="openEmployeeDetail('${e.id}')">${esc(e.name)}</button></td>
-    <td>${esc(e.department)||'-'}</td>
-    <td>${esc(e.role)||'-'}</td>
-    <td>${esc(e.hireDate)||'-'}</td>
-    <td><span class="badge ${employeeStatusBadgeClass(e.status)}">${esc(e.status)}</span></td>
-    <td>${esc(e.school)||'<span class="muted">미입력</span>'}</td>
-    <td>${esc(e.notes)||'-'}</td>
-    <td>${e.disciplineCount>0 ? `<span class="badge bad">${e.disciplineCount}건</span>` : '<span class="muted">없음</span>'}</td>
-    <td class="row-actions"><button onclick="editEmployeePrompt('${e.id}')">수정</button><button class="delete" onclick="deleteEmployee('${e.id}')">삭제</button></td>
+  if(!all.length){ body.innerHTML=`<tr><td colspan="10" class="empty employee-empty-state"><strong>조건에 맞는 직원이 없습니다.</strong><span>검색어 또는 필터를 바꿔주세요.</span><button class="ghost" onclick="resetEmployeeFilters()">검색조건 초기화</button></td></tr>`; return; }
+  body.innerHTML=rows.map(e=>`<tr class="employee-list-row clickable-data-row" tabindex="0" onclick="if(!event.target.closest('button,select,a,input,label,summary,details')) openEmployeeDetail('${e.id}')" onkeydown="listRowKeyActivate(event,()=>openEmployeeDetail('${e.id}'))">
+    <td class="employee-no-cell" data-label="사번">${esc(e.empNo)||'-'}</td>
+    <td class="employee-name-cell" data-label="이름"><button class="link-like employee-name-link" onclick="openEmployeeDetail('${e.id}')">${esc(e.name)}</button><small>${esc(e.department)||'부서 미입력'} · ${esc(e.role)||'직무 미입력'}</small></td>
+    <td class="employee-dept-cell" data-label="부서">${esc(e.department)||'-'}</td>
+    <td class="employee-role-cell" data-label="직무">${esc(e.role)||'-'}</td>
+    <td class="employee-hire-cell" data-label="입사일">${esc(e.hireDate)||'-'}</td>
+    <td class="employee-status-cell" data-label="상태"><span class="badge ${employeeStatusBadgeClass(e.status)}">${esc(e.status)}</span></td>
+    <td class="employee-school-cell" data-label="출신학교">${esc(e.school)||'<span class="muted">미입력</span>'}</td>
+    <td class="employee-notes-cell" data-label="비고">${esc(e.notes)||'-'}</td>
+    <td class="employee-discipline-cell" data-label="상벌">${e.disciplineCount>0 ? `<span class="badge bad">${e.disciplineCount}건</span>` : '<span class="muted">없음</span>'}</td>
+    <td class="row-actions employee-row-actions" data-label="관리"><button class="view" onclick="openEmployeeDetail('${e.id}')">상세</button><button onclick="editEmployeePrompt('${e.id}')">수정</button><div class="row-more-menu"><button type="button" class="row-more-toggle" onclick="toggleRowMore(event,this)">더보기</button><div class="row-more-menu-panel"><button class="delete" onclick="deleteEmployee('${e.id}')">삭제</button></div></div></td>
   </tr>`).join('');
 }
 function importEmployeesJson(list){
@@ -1531,7 +1559,7 @@ function renderTable(){
   const commuteCount=rows.filter(a=>dormLabel(a)==='출퇴근').length;
   const dormPendingCount=rows.filter(isDormPending).length;
   const schoolFilterName = currentSchoolFilterId ? (schools.find(s=>s.id===currentSchoolFilterId)?.name || '선택한 학교') : '';
-  $('listSummary').innerHTML = `<span class="summary-strong">${rows.length}명</span> 표시 <span>정렬 ${esc(sortName)}</span><span>연락필요 ${contactCount}명</span><span>면접/예정 ${interviewCount}명</span><span class="summary-commute">출근방법: 기숙사 ${dormCount}명 · 출퇴근 ${commuteCount}명 · 확인 ${dormPendingCount}명</span>${hideFinished ? '<span>종료숨김 적용</span>' : ''}${schoolFilterName ? `<span class="workplace-pill school-filter-pill">학교 필터: ${esc(schoolFilterName)}<button onclick="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}`;
+  $('listSummary').innerHTML = `<span class="summary-strong">${rows.length}명</span> 표시 <span>정렬 ${esc(sortName)}</span><span>연락필요 ${contactCount}명</span><span>면접/예정 ${interviewCount}명</span><span class="summary-commute">출근방법: 기숙사 ${dormCount}명 · 출퇴근 ${commuteCount}명 · 확인 ${dormPendingCount}명</span>${hideFinished ? '<span>종료숨김 적용</span>' : ''}${schoolFilterName ? `<span class="workplace-pill school-filter-pill">학교 필터: ${esc(schoolFilterName)}<button onclick="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}<span class="list-interaction-hint">행 클릭 → 상세보기</span>`;
   $('applicantTbody').innerHTML=rows.length?rows.map((a,idx)=>{
     const score=calcScore(a), decision=finalDecisionOf(a);
     const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
@@ -1541,19 +1569,19 @@ function renderTable(){
     const typeLine = [a.batch, a.careerType, a.education].filter(Boolean).join(' · ') || '기본정보 미입력';
     const staleDays = ['미연락','부재중'].includes(a.status) ? daysSinceApply(a) : null;
     const staleBadge = (staleDays!==null && staleDays>=3) ? `<span class="stale-badge" title="지원일 기준 ${staleDays}일째 연락 안 됨">⏰${staleDays}일째</span>` : '';
-    return `<tr class="applicant-row compact-row ${statusToneClass(a)}">
-      <td class="no-cell">${idx+1}</td>
-      <td class="apply-date-cell">${esc(a.applyDate||'-')}</td>
-      <td class="status-cell"><select class="status-inline ${badgeClass(a.status)}" onchange="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></td>
-      <td class="applicant-name-cell"><button class="name-button ${genderClass(a)}" onclick="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button>${staleBadge}<small>${esc(typeLine)}</small></td>
-      <td class="phone-cell"><strong>${esc(a.phone||'')}</strong></td>
-      <td class="email-cell">${a.email ? `<span>${esc(a.email)}</span>` : ''}</td>
-      <td><span class="workplace-pill">${esc(a.workplace||'')}</span></td>
-      <td>${esc(a.region||'')}</td>
-      <td class="schedule-cell"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
-      <td><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
-      <td class="decision-cell"><strong>${esc(decision)}</strong><small>${score}점</small></td>
-      <td class="row-actions compact-actions"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></td>
+    return `<tr class="applicant-row compact-row clickable-data-row ${statusToneClass(a)}" tabindex="0" onclick="if(!event.target.closest('button,select,a,input,label,summary,details')) viewApplicant('${a.id}')" onkeydown="listRowKeyActivate(event,()=>viewApplicant('${a.id}'))">
+      <td class="no-cell sticky-app-col sticky-app-no" data-label="번호">${idx+1}</td>
+      <td class="apply-date-cell sticky-app-col sticky-app-date" data-label="지원일">${esc(a.applyDate||'-')}</td>
+      <td class="status-cell sticky-app-col sticky-app-status" data-label="상태"><select class="status-inline ${badgeClass(a.status)}" onchange="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></td>
+      <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><button class="name-button ${genderClass(a)}" onclick="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button>${staleBadge}<small>${esc(typeLine)}</small></td>
+      <td class="phone-cell" data-label="연락처"><strong>${esc(a.phone||'')}</strong></td>
+      <td class="email-cell" data-label="이메일">${a.email ? `<span>${esc(a.email)}</span>` : ''}</td>
+      <td data-label="근무지"><span class="workplace-pill">${esc(a.workplace||'')}</span></td>
+      <td data-label="지역">${esc(a.region||'')}</td>
+      <td class="schedule-cell" data-label="면접일정"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
+      <td data-label="출근방법"><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
+      <td class="decision-cell" data-label="판정"><strong>${esc(decision)}</strong><small>${score}점</small></td>
+      <td class="row-actions compact-actions sticky-app-actions" data-label="관리"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><div class="row-more-menu"><button type="button" class="row-more-toggle" onclick="toggleRowMore(event,this)">더보기</button><div class="row-more-menu-panel"><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></div></div></td>
     </tr>`;
   }).join(''):`<tr><td colspan="12" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" onclick="resetAndRenderList()">필터 초기화</button></td></tr>`;
 }
@@ -2878,6 +2906,7 @@ bind('employeeJsonImport','change',e=>{
   };
   r.readAsText(file);
 });
+document.addEventListener('click',e=>{ if(!e.target.closest('.row-more-menu')) closeAllRowMoreMenus(); });
 document.querySelectorAll('#employeeStatusTabs .tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#employeeStatusTabs .tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); employeeStatusFilter=b.dataset.empstatus; employeePage=1; renderEmployees();
@@ -2890,6 +2919,7 @@ document.querySelectorAll('#employeeViewTabs .tab').forEach(b=>b.addEventListene
   if($('employeeDeptView')) $('employeeDeptView').style.display = employeeViewMode==='dept' ? '' : 'none';
 }));
 bind('btnEmployeeSearch','click', applyEmployeeSearch);
+['empSearchName','empSearchNo','empSearchSchool'].forEach(id=>bind(id,'keydown',e=>{ if(e.key==='Enter') applyEmployeeSearch(); }));
 bind('btnEmployeeResetFilters','click', resetEmployeeFilters);
 bind('btnCsvEmployees','click', csvEmployees);
 bind('btnGoSchools','click', ()=>setPage('schools'));
