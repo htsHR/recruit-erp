@@ -4945,3 +4945,38 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 #detailModal .modal-head,#detailModal .form-actions{flex:0 0 auto!important}#detailModal .detail-body{flex:1 1 auto!important;min-height:0!important;overflow:auto!important}
 @media(max-width:900px){#applicants .compact-list-controls{grid-template-columns:1fr 120px auto!important}#applicants .compact-tabs{grid-column:1/-1}.applicant-filter-panel{width:100vw}.filter-grid{grid-template-columns:1fr}}
 
+
+
+/* v10.39.2 applicant list polish */
+#applicants .compact-list-controls{grid-template-columns:auto minmax(340px,1fr) 150px auto auto auto!important;gap:8px!important;padding:13px 14px 8px!important;}
+#applicants .quick-filters{margin:0!important;padding:0 14px 11px!important;}
+#applicants .list-top-card{padding:0!important;overflow:hidden!important;}
+#applicants .check-inline{font-size:11px!important;line-height:1.2!important;}
+#applicants .list-summary{display:flex!important;align-items:center!important;gap:7px!important;flex-wrap:wrap!important;}
+.active-filter-chip{display:inline-flex;align-items:center;gap:5px;height:25px;padding:0 8px;border:1px solid #bfd7fb;border-radius:999px;background:#eef6ff;color:#155bb6;font-size:11px;font-weight:750;}
+.active-filter-chip button{border:0;background:transparent;color:#155bb6;font-size:14px;line-height:1;cursor:pointer;padding:0;}
+.list-interaction-hint{display:none!important;}
+.applicant-table{min-width:1040px!important;table-layout:fixed!important;}
+.applicant-table th:nth-child(1),.applicant-table td:nth-child(1){width:48px!important;}
+.applicant-table th:nth-child(2),.applicant-table td:nth-child(2){width:92px!important;}
+.applicant-table th:nth-child(3),.applicant-table td:nth-child(3){width:96px!important;}
+.applicant-table th:nth-child(4),.applicant-table td:nth-child(4){width:170px!important;}
+.applicant-table th:nth-child(5),.applicant-table td:nth-child(5){width:145px!important;}
+.applicant-table th:nth-child(7),.applicant-table td:nth-child(7){width:92px!important;}
+.applicant-table th:nth-child(9),.applicant-table td:nth-child(9){width:150px!important;}
+.applicant-table th:nth-child(11),.applicant-table td:nth-child(11){width:138px!important;}
+.applicant-table th:nth-child(12),.applicant-table td:nth-child(12){width:108px!important;}
+.applicant-table .decision-cell{padding-left:14px!important;padding-right:10px!important;}
+.applicant-table .sticky-app-actions{position:static!important;right:auto!important;box-shadow:none!important;background:transparent!important;}
+.applicant-table tbody tr:nth-child(even) .sticky-app-actions,.applicant-table tbody tr:hover .sticky-app-actions{background:transparent!important;}
+.applicant-table .row-actions{min-width:0!important;width:108px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;padding:8px 8px!important;overflow:visible!important;}
+.applicant-table .row-actions>.view{min-width:42px!important;}
+.applicant-table .row-more-toggle{width:32px!important;min-width:32px!important;font-size:18px!important;line-height:1!important;padding:0!important;}
+.applicant-table .row-more-menu{position:relative!important;display:block!important;}
+.applicant-table .row-more-menu-panel{right:0!important;left:auto!important;min-width:108px!important;z-index:30!important;}
+.applicant-table .muted-schedule{color:#94a3b8!important;font-weight:650!important;}
+.bulk-mode-button.active{background:#132a50!important;color:#fff!important;border-color:#132a50!important;}
+.bulk-select-cell,.bulk-head-cell{width:42px!important;min-width:42px!important;text-align:center!important;}
+.saved-search-box,.applicant-filter-panel .saved-search-box{padding:10px 12px!important;margin:0 0 14px!important;}
+.saved-search-create{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:7px!important;}
+@media(max-width:1450px){#applicants .compact-list-controls{grid-template-columns:auto minmax(260px,1fr) 145px auto auto!important}.applicant-table{min-width:960px!important}}
