@@ -1,0 +1,41 @@
+/* Recruit ERP v10.38.5 UI cleanup — visual simplification only */
+:root{--cleanup-radius:12px;--cleanup-border:#e4e9f0}
+.page-intro-badge,.eyebrow,.backup-center-hero-badge{display:none!important}
+.nav-btn[data-page="advancedSearch"],.nav-btn[data-page="duplicates"],.nav-btn[data-page="templates"]{display:none!important}
+.topbar-icon-btn{display:none!important}
+.panel,.list-top-card,.page-intro-card,.health-hero,.advanced-hero,.backup-center-hero{box-shadow:none!important;border-color:var(--cleanup-border)!important;border-radius:var(--cleanup-radius)!important}
+.page-intro-card,.advanced-hero,.health-hero,.backup-center-hero{background:#fff!important}
+.page-intro-card{padding:18px 20px!important}
+.page-intro-card h3,.advanced-hero h3,.health-hero h3,.backup-center-hero h3{font-weight:800!important}
+.page-intro-card p,.advanced-hero p,.health-hero p,.backup-center-hero p{font-size:13px!important;line-height:1.55!important}
+.home-work-queue{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.home-work-queue .queue-card:nth-child(n+4){display:none!important}
+.home-dashboard-intro{margin-bottom:14px!important}
+.dashboard-stats{margin-bottom:16px!important}
+.section-heading{margin:22px 0 10px!important}
+.dashboard-panels{gap:14px!important}
+.compact-list-controls{gap:8px!important}
+.quick-filters.slim{padding-top:8px!important}
+.list-top-card{padding:14px!important}
+.cleanup-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px}
+.cleanup-list-toolbar .cleanup-toolbar-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cleanup-advanced-btn{white-space:nowrap}
+.cleanup-data-tabs{display:flex;gap:6px;margin:0 0 14px;padding:4px;background:#f3f6f9;border-radius:10px;width:max-content}
+.cleanup-data-tabs button{border:0;background:transparent;padding:8px 14px;border-radius:8px;font-weight:700;color:#5d6877;cursor:pointer}
+.cleanup-data-tabs button.active{background:#fff;color:#172033;box-shadow:0 1px 3px rgba(20,30,45,.12)}
+.advanced-search-page,.health-page,.duplicate-page{max-width:1400px}
+.advanced-layout{gap:14px!important}
+.advanced-filter-panel,.advanced-result-panel{box-shadow:none!important}
+.health-kpi-grid{gap:10px!important}
+.health-filterbar{border-radius:10px!important}
+.bulk-modal-card .eyebrow,.detail-body~.eyebrow{display:none!important}
+.chip,.mini,.ghost,.primary{border-radius:8px!important}
+.table-wrap{border-radius:10px!important}
+@media(max-width:900px){
+ .home-work-queue{grid-template-columns:1fr!important}
+ .cleanup-list-toolbar{align-items:stretch;flex-direction:column}
+ .cleanup-list-toolbar .cleanup-toolbar-left{width:100%}
+ .cleanup-advanced-btn{width:100%}
+ .cleanup-data-tabs{width:100%}
+ .cleanup-data-tabs button{flex:1}
+}
