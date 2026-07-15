@@ -1584,9 +1584,9 @@ function renderTable(){
       <td class="phone-cell" data-label="연락처"><strong>${esc(a.phone||'')}</strong></td>
       <td class="email-cell" data-label="이메일">${a.email ? `<span>${esc(a.email)}</span>` : ''}</td>
       <td data-label="근무지"><span class="workplace-pill">${esc(a.workplace||'')}</span></td>
-      <td data-label="지역">${esc(a.region||'')}</td>
+      <td class="region-cell" data-label="지역">${esc(a.region||'')}</td>
       <td class="schedule-cell" data-label="면접일정"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
-      <td data-label="출근방법"><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
+      <td class="commute-cell" data-label="출근방법"><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
       <td class="decision-cell" data-label="판정"><strong>${esc(decision)}</strong><small>${score}점</small></td>
       <td class="row-actions compact-actions sticky-app-actions" data-label="관리"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><button onclick="editApplicant('${a.id}')">수정</button><div class="row-more-menu"><button type="button" class="row-more-toggle" onclick="toggleRowMore(event,this)">더보기</button><div class="row-more-menu-panel"><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></div></div></td>
     </tr>`;
