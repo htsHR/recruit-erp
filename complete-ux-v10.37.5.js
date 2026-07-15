@@ -1,4 +1,4 @@
-/* Recruit ERP v10.37.5 ENV_MODE
+/* Recruit ERP v10.37.6 ENV_MODE
    UI/UX enhancement layer only. Core applicant/school/employee storage schemas remain unchanged. */
 (function(){
 'use strict';
@@ -403,7 +403,8 @@ function uxSetOperationEnvironment(mode){
   const next=mode==='company'?'company':'home';
   localStorage.setItem(OPERATION_ENV_KEY,next);
   updateStorageNote();
-  uxToast(next==='company'?'회사 운영 모드로 전환했습니다.':'집 개발 모드로 전환했습니다.');
+  if(typeof window.erpHandleOperationEnvironmentChange==='function') window.erpHandleOperationEnvironmentChange(next);
+  uxToast(next==='company'?'회사 운영 모드로 전환했습니다. Supabase 연결을 중단했습니다.':'집 개발 모드로 전환했습니다. 로그인 후에만 Supabase를 사용합니다.');
 }
 updateStorageNote=function(){
   const el=uxEl('storageNote'); if(!el) return;

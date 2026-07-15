@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.37.5 ENV_MODE — 지원자·협력학교·사원명부 목록 UI/UX 개선
+// [HOME_DEV] Recruit ERP v10.37.7 ENV_MODE — 지원자·협력학교·사원명부 목록 UI/UX 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.37.5 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.37.7 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -114,6 +114,10 @@ function load(){
   }
 }
 let cloudSyncStatus = 'unknown'; // 'ok' | 'error' | 'unknown'
+let cloudAuthenticated = false;
+const OPERATION_ENV_STORAGE_KEY = 'recruit_erp_ui_operation_environment';
+function isCompanyLocalMode(){ return localStorage.getItem(OPERATION_ENV_STORAGE_KEY) === 'company'; }
+function canUseCloud(){ return !!window.sb && !isCompanyLocalMode() && cloudAuthenticated; }
 function setCloudSyncStatus(status){ cloudSyncStatus = status; updateStorageNote(); }
 function updateStorageNote(){
   var el = $('storageNote');
@@ -128,7 +132,7 @@ function updateStorageNote(){
     el.innerHTML = '<strong>클라우드 동기화 중</strong><span>브라우저 + Supabase 클라우드에 동시 저장됩니다.</span>';
   }
 }
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants)); supabaseSyncAll(applicants); renderAll(); }
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants)); if(canUseCloud()) supabaseSyncAll(applicants); renderAll(); }
 
 /* =========================================================
    v10.8.0 Supabase 연동
@@ -145,7 +149,7 @@ function applicantForCloud(a){
   return row;
 }
 function supabaseSyncAll(list){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   var cloudRows = (Array.isArray(list) ? list : []).map(applicantForCloud);
   window.sb.from('applicants').upsert(cloudRows).then(function(res){
     if(res && res.error){ console.warn('Supabase 저장 실패(로컬엔 정상 저장됨):', res.error.message); setCloudSyncStatus('error'); return; }
@@ -153,13 +157,13 @@ function supabaseSyncAll(list){
   }).catch(function(e){ console.warn('Supabase 저장 실패(로컬엔 정상 저장됨):', e); setCloudSyncStatus('error'); });
 }
 function supabaseDeleteOne(id){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('applicants').delete().eq('id', id).then(function(res){
     if(res && res.error) console.warn('Supabase 삭제 실패(로컬엔 정상 삭제됨):', res.error.message);
   }).catch(function(e){ console.warn('Supabase 삭제 실패(로컬엔 정상 삭제됨):', e); });
 }
 function supabaseDeleteAll(){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('applicants').delete().neq('id','__none__').then(function(res){
     if(res && res.error) console.warn('Supabase 전체삭제 실패(로컬엔 정상 삭제됨):', res.error.message);
   }).catch(function(e){ console.warn('Supabase 전체삭제 실패(로컬엔 정상 삭제됨):', e); });
@@ -172,7 +176,7 @@ function supabaseDeleteAll(){
    - 전부 실패해도 로컬 동작에는 영향 없음(try/catch)
    ========================================================= */
 function supabaseSnapshotSave(reason){
-  if(!window.sb || !applicants.length) return Promise.resolve();
+  if(!canUseCloud() || !applicants.length) return Promise.resolve();
   return window.sb.from('applicant_snapshots').insert({
     reason: reason || '',
     count: applicants.length,
@@ -183,7 +187,7 @@ function supabaseSnapshotSave(reason){
   }).catch(function(e){ console.warn('스냅샷 저장 실패:', e); });
 }
 function supabaseSnapshotCleanup(){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('applicant_snapshots').select('id,created_at').order('created_at',{ascending:false}).then(function(res){
     if(!res || res.error || !res.data) return;
     var extra = res.data.slice(14);
@@ -193,7 +197,7 @@ function supabaseSnapshotCleanup(){
   }).catch(function(){});
 }
 function supabaseSnapshotDailyCheck(){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('applicant_snapshots').select('created_at').order('created_at',{ascending:false}).limit(1).then(function(res){
     if(res && res.error) return;
     var last = (res && res.data && res.data[0]) ? res.data[0].created_at : null;
@@ -205,7 +209,7 @@ function supabaseSnapshotDailyCheck(){
 function renderSnapshotList(){
   var el = $('snapshotList');
   if(!el) return;
-  if(!window.sb){ el.innerHTML = '<div class="empty">클라우드 연결 시에만 백업 이력이 표시됩니다.</div>'; return; }
+  if(!canUseCloud()){ el.innerHTML = '<div class="empty">회사 로컬 모드이거나 로그인되지 않아 클라우드 백업 이력을 사용하지 않습니다.</div>'; return; }
   window.sb.from('applicant_snapshots').select('id,created_at,reason,count').order('created_at',{ascending:false}).limit(14).then(function(res){
     if(!res || res.error || !res.data || !res.data.length){ el.innerHTML = '<div class="empty">아직 저장된 백업 이력이 없습니다. (자동으로 하루 단위로 쌓여요)</div>'; return; }
     el.innerHTML = res.data.map(function(s){
@@ -216,7 +220,7 @@ function renderSnapshotList(){
   }).catch(function(){ el.innerHTML = '<div class="empty">백업 이력을 불러오지 못했습니다.</div>'; });
 }
 function restoreSnapshot(id){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   if(!confirm('이 시점으로 복원하면 현재 데이터('+applicants.length+'명)가 그 시점 데이터로 교체됩니다.\n\n복원 전에 현재 상태도 자동으로 백업해둘게요. 진행할까요?')) return;
   supabaseSnapshotSave('복원 직전 자동 백업').then(function(){
     return window.sb.from('applicant_snapshots').select('data,count,created_at').eq('id', id).single();
@@ -229,7 +233,7 @@ function restoreSnapshot(id){
   }).catch(function(e){ alert('복원 중 오류가 발생했습니다: '+e); });
 }
 function supabaseSyncOnLoad(){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('applicants').select('*').then(function(res){
     if(res && res.error){ console.warn('Supabase 불러오기 실패, 로컬 데이터로 계속 진행:', res.error.message); setCloudSyncStatus('error'); return; }
     setCloudSyncStatus('ok');
@@ -311,7 +315,7 @@ function saveSchools(){
   renderSchools();
 }
 function supabaseSyncSchools(list){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('schools').upsert(list).then(function(res){
     if(!res || !res.error) return;
     const msg=String(res.error.message||'');
@@ -326,13 +330,13 @@ function supabaseSyncSchools(list){
   }).catch(function(e){ console.warn('학교마스터 Supabase 저장 실패(로컬엔 정상 저장됨):', e); });
 }
 function supabaseDeleteSchool(id){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('schools').delete().eq('id', id).then(function(res){
     if(res && res.error) console.warn('학교마스터 삭제 실패(로컬엔 정상 삭제됨):', res.error.message);
   }).catch(function(e){ console.warn('학교마스터 삭제 실패(로컬엔 정상 삭제됨):', e); });
 }
 function supabaseSchoolsSyncOnLoad(){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('schools').select('*').then(function(res){
     if(res && res.error){ console.warn('학교마스터 불러오기 실패, 로컬 데이터로 계속 진행:', res.error.message); return; }
     const cloud = (res && res.data) ? res.data.map(normalizeSchool) : [];
@@ -937,19 +941,19 @@ function saveEmployees(){
   renderSchools();
 }
 function supabaseSyncEmployees(list){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('employees').upsert(list).then(function(res){
     if(res && res.error) console.warn('직원명부 Supabase 저장 실패(로컬엔 정상 저장됨):', res.error.message);
   }).catch(function(e){ console.warn('직원명부 Supabase 저장 실패(로컬엔 정상 저장됨):', e); });
 }
 function supabaseDeleteEmployee(id){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   window.sb.from('employees').delete().eq('id', id).then(function(res){
     if(res && res.error) console.warn('직원명부 삭제 실패(로컬엔 정상 삭제됨):', res.error.message);
   }).catch(function(e){ console.warn('직원명부 삭제 실패(로컬엔 정상 삭제됨):', e); });
 }
 function supabaseEmployeesSyncOnLoad(){
-  if(!window.sb) return;
+  if(!canUseCloud()) return;
   const PAGE_SIZE = 500;
   function loadPage(from, collected){
     return window.sb.from('employees').select('*').order('id', { ascending: true }).range(from, from + PAGE_SIZE - 1)
@@ -3027,9 +3031,16 @@ function showLoginOverlay(msg){
 function hideLoginOverlay(){ var ov=$('loginOverlay'); if(ov) ov.style.display='none'; }
 function updateAuthNote(email){
   var note=$('authNote');
-  if(note){
-    if(email){ note.style.display='flex'; if($('authEmailText')) $('authEmailText').textContent=email; }
-    else { note.style.display='none'; }
+  var loggedIn=$('authLoggedIn');
+  var loggedOut=$('authLoggedOut');
+  if(note) note.style.display='flex';
+  if(email){
+    if(loggedIn) loggedIn.style.display='flex';
+    if(loggedOut) loggedOut.style.display='none';
+    if($('authEmailText')) $('authEmailText').textContent=email;
+  } else {
+    if(loggedIn) loggedIn.style.display='none';
+    if(loggedOut) loggedOut.style.display='flex';
   }
   var topbarUser=$('topbarUser');
   if(topbarUser){
@@ -3045,6 +3056,7 @@ function updateAuthNote(email){
   }
 }
 function afterLoginSuccess(email){
+  cloudAuthenticated = true;
   hideLoginOverlay();
   updateAuthNote(email);
   supabaseSyncOnLoad();
@@ -3055,10 +3067,11 @@ function afterLoginSuccess(email){
 }
 function initAuth(){
   if(!window.sb) return;
+  if(isCompanyLocalMode()){ cloudAuthenticated=false; hideLoginOverlay(); updateAuthNote(null); cloudSyncStatus='unknown'; updateStorageNote(); return; }
   window.sb.auth.getSession().then(function(res){
     var session = res && res.data ? res.data.session : null;
     if(session && session.user){ afterLoginSuccess(session.user.email); }
-    else { showLoginOverlay(); updateAuthNote(null); }
+    else { cloudAuthenticated=false; showLoginOverlay(); updateAuthNote(null); }
   }).catch(function(){ showLoginOverlay(); });
 }
 function doLogin(){
@@ -3075,14 +3088,30 @@ function doLogin(){
 function doLogout(){
   if(!window.sb) return;
   window.sb.auth.signOut().then(function(){
+    cloudAuthenticated=false;
     updateAuthNote(null);
     cloudSyncStatus='unknown';
     updateStorageNote();
     showLoginOverlay();
   });
 }
+function handleOperationEnvironmentChange(mode){
+  if(mode === 'company'){
+    cloudAuthenticated=false;
+    hideLoginOverlay();
+    updateAuthNote(null);
+    cloudSyncStatus='unknown';
+    updateStorageNote();
+    renderSnapshotList();
+    return;
+  }
+  initAuth();
+}
+window.erpHandleOperationEnvironmentChange = handleOperationEnvironmentChange;
+
+bind('btnOpenLogin','click', ()=>{ if(!window.sb){ alert('Supabase 설정을 찾을 수 없습니다.'); return; } showLoginOverlay(); });
 bind('btnLogin','click', doLogin);
-bind('btnLoginSkip','click', ()=>hideLoginOverlay());
+bind('btnLoginSkip','click', ()=>{ cloudAuthenticated=false; hideLoginOverlay(); updateAuthNote(null); cloudSyncStatus='unknown'; updateStorageNote(); });
 bind('btnLogout','click', doLogout);
 bind('loginPassword','keydown', e=>{ if(e.key==='Enter') doLogin(); });
 
