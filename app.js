@@ -1609,7 +1609,7 @@ function renderTable(){
       <td class="schedule-cell" data-label="면접일정"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
       <td class="commute-cell" data-label="출근방법"><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
       <td class="decision-cell" data-label="판정"><strong>${esc(decision)}</strong><small>${score}점</small></td>
-      <td class="row-actions compact-actions applicant-actions" data-label="관리"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><div class="row-more-menu"><button type="button" class="row-more-toggle applicant-more-toggle" aria-label="지원자 관리 메뉴" title="더보기">⋯</button><div class="row-more-menu-panel applicant-more-panel"><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></div></div></td>
+      <td class="row-actions compact-actions applicant-actions" data-label="관리"><button class="view" onclick="event.stopPropagation();viewApplicant('${a.id}')">상세</button><button onclick="event.stopPropagation();editApplicant('${a.id}')">수정</button><button class="delete" onclick="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
   }).join(''):`<tr><td colspan="12" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" onclick="resetAndRenderList()">필터 초기화</button></td></tr>`;
 }
@@ -3142,51 +3142,3 @@ bind('btnLogout','click', doLogout);
 bind('loginPassword','keydown', e=>{ if(e.key==='Enter') doLogin(); });
 
 try{ resetForm(); resetCalendarEventForm(); renderAll(); updateStorageNote(); initAuth(); if($('rosterDate') && !$('rosterDate').value) $('rosterDate').value = today(); }catch(e){ console.error('Recruit ERP render error', e); alert('화면 표시 중 오류가 발생했습니다. app.js 교체 상태를 확인해주세요.'); }
-
-
-
-
-/* ===== v10.39.9 verified applicant action menu ===== */
-(function(){
-  'use strict';
-  function closeApplicantActionMenus(except){
-    document.querySelectorAll('#applicants .row-more-menu.open').forEach(function(menu){
-      if(menu===except) return;
-      menu.classList.remove('open');
-      var panel=menu.querySelector('.applicant-more-panel');
-      if(panel){ panel.style.left=''; panel.style.top=''; panel.style.right=''; }
-    });
-  }
-  function positionApplicantActionMenu(button, panel){
-    var rect=button.getBoundingClientRect();
-    var width=Math.max(120, panel.offsetWidth || 120);
-    var height=Math.max(118, panel.offsetHeight || 118);
-    var left=Math.max(8, Math.min(window.innerWidth-width-8, rect.right-width));
-    var top=rect.bottom+6;
-    if(top+height>window.innerHeight-8) top=Math.max(8, rect.top-height-6);
-    panel.style.position='fixed';
-    panel.style.left=left+'px';
-    panel.style.top=top+'px';
-    panel.style.right='auto';
-  }
-  document.addEventListener('click', function(event){
-    var button=event.target.closest('#applicants .applicant-more-toggle');
-    if(button){
-      event.preventDefault();
-      event.stopPropagation();
-      var menu=button.closest('.row-more-menu');
-      var panel=menu && menu.querySelector('.applicant-more-panel');
-      if(!menu || !panel) return;
-      var shouldOpen=!menu.classList.contains('open');
-      closeApplicantActionMenus(menu);
-      menu.classList.toggle('open', shouldOpen);
-      if(shouldOpen) requestAnimationFrame(function(){ positionApplicantActionMenu(button,panel); });
-      return;
-    }
-    if(!event.target.closest('#applicants .applicant-more-panel')) closeApplicantActionMenus();
-  });
-  document.addEventListener('keydown', function(event){ if(event.key==='Escape') closeApplicantActionMenus(); });
-  window.addEventListener('scroll', function(){ closeApplicantActionMenus(); }, true);
-  window.addEventListener('resize', function(){ closeApplicantActionMenus(); });
-  window.erpCloseApplicantActionMenus=closeApplicantActionMenus;
-})();

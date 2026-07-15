@@ -5082,3 +5082,11 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 #applicants .applicant-more-panel{display:none!important;position:fixed!important;z-index:10000!important;min-width:120px!important;padding:6px!important;border:1px solid #d7e2f0!important;border-radius:12px!important;background:#fff!important;box-shadow:0 14px 34px rgba(15,23,42,.18)!important;}
 #applicants .row-more-menu.open>.applicant-more-panel{display:grid!important;gap:4px!important;}
 #applicants .applicant-more-panel button{width:100%!important;min-height:34px!important;}
+
+
+/* ===== v10.39.10 applicant action buttons restore ===== */
+#applicants .applicant-actions{display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;white-space:nowrap!important;overflow:visible!important;}
+#applicants .applicant-actions>button{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:48px!important;height:32px!important;padding:0 10px!important;border-radius:7px!important;}
+#applicants .applicant-actions>.delete{color:#dc2626!important;background:#fff!important;border-color:#fecaca!important;}
+#applicants .applicant-actions>.delete:hover{background:#fff1f2!important;border-color:#fca5a5!important;}
+#applicants .applicant-actions .row-more-menu,#applicants .applicant-actions .applicant-more-toggle,#applicants .applicant-actions .applicant-more-panel{display:none!important;}
