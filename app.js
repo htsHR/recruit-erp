@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.39.1 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.39.7 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
