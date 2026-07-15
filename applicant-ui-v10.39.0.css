@@ -1,0 +1,31 @@
+
+:root{--ap-line:#dbe5f0;--ap-text:#17243a;--ap-muted:#66758b;--ap-blue:#1769e8}
+#applicants .compact-list-controls{display:grid!important;grid-template-columns:auto minmax(320px,1fr) 150px auto auto!important;gap:8px!important;align-items:center!important}
+#applicants .advanced-filter-inline{height:38px!important;padding:0 14px!important;white-space:nowrap!important}
+#applicants .email-head,#applicants .region-head,#applicants .commute-head,#applicants tbody td:nth-child(6),#applicants tbody td:nth-child(8),#applicants tbody td:nth-child(10){display:none!important}
+#applicants .applicant-table{table-layout:fixed!important;width:100%!important}
+#applicants .applicant-table th:nth-child(1){width:46px}#applicants .applicant-table th:nth-child(2){width:92px}#applicants .applicant-table th:nth-child(3){width:92px}#applicants .applicant-table th:nth-child(4){width:150px}#applicants .applicant-table th:nth-child(5){width:140px}#applicants .applicant-table th:nth-child(7){width:95px}#applicants .applicant-table th:nth-child(9){width:140px}#applicants .applicant-table th:nth-child(11){width:150px}#applicants .applicant-table th:nth-child(12){width:76px}
+#applicants .applicant-table td{overflow:hidden;text-overflow:ellipsis}
+#advancedSearch.applicant-filter-drawer{position:fixed!important;inset:0!important;z-index:1600!important;display:none!important;background:transparent!important}
+#advancedSearch.applicant-filter-drawer.drawer-open{display:block!important}
+.applicant-filter-backdrop{position:absolute;inset:0;background:rgba(18,31,51,.38);backdrop-filter:blur(2px)}
+.applicant-filter-panel{position:absolute;top:0;right:0;width:min(460px,100vw);height:100vh;background:#fff;display:flex;flex-direction:column;box-shadow:-18px 0 48px rgba(18,31,51,.20)}
+.applicant-filter-header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--ap-line)}
+.applicant-filter-header h3{margin:0;font-size:20px;color:var(--ap-text)}
+.applicant-filter-header-actions{display:flex;gap:7px}
+.applicant-filter-body{flex:1 1 auto;min-height:0;overflow:auto;padding:16px 18px 92px}
+.filter-block{margin:0 0 18px;padding:0 0 18px;border-bottom:1px solid #edf1f6}
+.filter-block h4{margin:0 0 10px;font-size:13px;color:var(--ap-text)}
+.filter-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.filter-grid label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#344054}
+.filter-grid label.advanced-wide{grid-column:1/-1}
+.filter-grid input,.filter-grid select{width:100%;height:40px}
+.saved-filter-block .saved-search-box{display:block!important;margin:0!important;padding:10px!important;border:1px solid #e2e8f0!important;border-radius:10px!important;background:#f8fafc!important}
+.saved-search-create{display:grid!important;grid-template-columns:1fr auto!important;gap:7px!important}.saved-search-create input,.saved-search-create button{height:38px!important}
+.date-filter-block summary{cursor:pointer;font-weight:800;font-size:13px;color:var(--ap-text);padding:2px 0 10px}.date-filter-block[open] summary{margin-bottom:10px}
+.applicant-filter-footer{position:absolute;left:0;right:0;bottom:0;display:grid;grid-template-columns:92px 1fr;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--ap-line);background:#fff}
+.applicant-filter-footer button{height:42px}
+#detailModal.show{display:flex!important;align-items:center!important;justify-content:center!important;padding:18px!important}
+#detailModal .modal-card{width:min(900px,calc(100vw - 36px))!important;max-height:calc(100vh - 36px)!important;margin:0!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
+#detailModal .modal-head,#detailModal .form-actions{flex:0 0 auto!important}#detailModal .detail-body{flex:1 1 auto!important;min-height:0!important;overflow:auto!important}
+@media(max-width:900px){#applicants .compact-list-controls{grid-template-columns:1fr 120px auto!important}#applicants .compact-tabs{grid-column:1/-1}.applicant-filter-panel{width:100vw}.filter-grid{grid-template-columns:1fr}}
