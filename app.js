@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.39.7 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.39.8 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -3142,3 +3142,50 @@ bind('btnLogout','click', doLogout);
 bind('loginPassword','keydown', e=>{ if(e.key==='Enter') doLogin(); });
 
 try{ resetForm(); resetCalendarEventForm(); renderAll(); updateStorageNote(); initAuth(); if($('rosterDate') && !$('rosterDate').value) $('rosterDate').value = today(); }catch(e){ console.error('Recruit ERP render error', e); alert('화면 표시 중 오류가 발생했습니다. app.js 교체 상태를 확인해주세요.'); }
+
+
+/* ===== v10.39.8 applicant action menu hard fix ===== */
+(function(){
+  'use strict';
+  function closeMenus(except){
+    document.querySelectorAll('#applicants .row-more-menu.open').forEach(menu=>{
+      if(menu===except) return;
+      menu.classList.remove('open');
+      const panel=menu.querySelector('.row-more-menu-panel');
+      if(panel){ panel.style.left=''; panel.style.top=''; panel.style.right=''; }
+    });
+  }
+  function placeMenu(button, menu, panel){
+    const rect=button.getBoundingClientRect();
+    const width=Math.max(120, panel.offsetWidth||120);
+    const height=Math.max(122, panel.offsetHeight||122);
+    let left=Math.min(window.innerWidth-width-12, Math.max(12, rect.right-width));
+    let top=rect.bottom+6;
+    if(top+height>window.innerHeight-12) top=Math.max(12, rect.top-height-6);
+    panel.style.position='fixed';
+    panel.style.left=left+'px';
+    panel.style.top=top+'px';
+    panel.style.right='auto';
+  }
+  document.addEventListener('click', function(event){
+    const button=event.target.closest('#applicants .applicant-more-toggle');
+    if(button){
+      event.preventDefault();
+      event.stopPropagation();
+      const menu=button.closest('.row-more-menu');
+      const panel=menu && menu.querySelector('.applicant-more-panel');
+      if(!menu || !panel) return;
+      const opening=!menu.classList.contains('open');
+      closeMenus(menu);
+      if(!opening){ menu.classList.remove('open'); return; }
+      menu.classList.add('open');
+      requestAnimationFrame(()=>placeMenu(button,menu,panel));
+      return;
+    }
+    if(!event.target.closest('#applicants .row-more-menu')) closeMenus();
+  }, true);
+  document.addEventListener('keydown', function(event){ if(event.key==='Escape') closeMenus(); });
+  window.addEventListener('scroll', ()=>closeMenus(), true);
+  window.addEventListener('resize', ()=>closeMenus());
+  window.erpCloseApplicantMenus=closeMenus;
+})();
