@@ -1533,6 +1533,10 @@ function filtered(){
     return workplaceOk && searchOk && schoolOk && filterOk;
   });
   if(hideFinished) rows = rows.filter(isActive);
+  if(Array.isArray(window.__erpAdvancedFilterIds)) {
+    const advancedIds = new Set(window.__erpAdvancedFilterIds);
+    rows = rows.filter(a=>advancedIds.has(a.id));
+  }
   rows.sort((a,b)=>{
     if(currentSort==='applyDesc') return (b.applyDate||'').localeCompare(a.applyDate||'');
     if(currentSort==='applyAsc') return (a.applyDate||'').localeCompare(b.applyDate||'');
