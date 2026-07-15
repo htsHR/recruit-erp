@@ -4947,49 +4947,33 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 
 
 
-/* v10.39.3 applicant list polish */
-#applicants .compact-list-controls{grid-template-columns:auto minmax(340px,1fr) 150px auto auto auto!important;gap:8px!important;padding:13px 14px 8px!important;}
-#applicants .quick-filters{margin:0!important;padding:0 14px 11px!important;}
-#applicants .list-top-card{padding:0!important;overflow:hidden!important;}
-#applicants .check-inline{font-size:11px!important;line-height:1.2!important;}
-#applicants .list-summary{display:flex!important;align-items:center!important;gap:7px!important;flex-wrap:wrap!important;}
-.active-filter-chip{display:inline-flex;align-items:center;gap:5px;height:25px;padding:0 8px;border:1px solid #bfd7fb;border-radius:999px;background:#eef6ff;color:#155bb6;font-size:11px;font-weight:750;}
-.active-filter-chip button{border:0;background:transparent;color:#155bb6;font-size:14px;line-height:1;cursor:pointer;padding:0;}
-.list-interaction-hint{display:none!important;}
-.applicant-table{min-width:1040px!important;table-layout:fixed!important;}
-.applicant-table th:nth-child(1),.applicant-table td:nth-child(1){width:48px!important;}
-.applicant-table th:nth-child(2),.applicant-table td:nth-child(2){width:92px!important;}
-.applicant-table th:nth-child(3),.applicant-table td:nth-child(3){width:96px!important;}
-.applicant-table th:nth-child(4),.applicant-table td:nth-child(4){width:170px!important;}
-.applicant-table th:nth-child(5),.applicant-table td:nth-child(5){width:145px!important;}
-.applicant-table th:nth-child(7),.applicant-table td:nth-child(7){width:92px!important;}
-.applicant-table th:nth-child(9),.applicant-table td:nth-child(9){width:150px!important;}
-.applicant-table th:nth-child(11),.applicant-table td:nth-child(11){width:138px!important;}
-.applicant-table th:nth-child(12),.applicant-table td:nth-child(12){width:108px!important;}
-.applicant-table .decision-cell{padding-left:14px!important;padding-right:10px!important;}
-.applicant-table .sticky-app-actions{position:static!important;right:auto!important;box-shadow:none!important;background:transparent!important;}
-.applicant-table tbody tr:nth-child(even) .sticky-app-actions,.applicant-table tbody tr:hover .sticky-app-actions{background:transparent!important;}
-.applicant-table .row-actions{min-width:0!important;width:108px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:6px!important;padding:8px 8px!important;overflow:visible!important;}
-.applicant-table .row-actions>.view{min-width:42px!important;}
-.applicant-table .row-more-toggle{width:32px!important;min-width:32px!important;font-size:18px!important;line-height:1!important;padding:0!important;}
-.applicant-table .row-more-menu{position:relative!important;display:block!important;}
-.applicant-table .row-more-menu-panel{right:0!important;left:auto!important;min-width:108px!important;z-index:30!important;}
-.applicant-table .muted-schedule{color:#94a3b8!important;font-weight:650!important;}
-.bulk-mode-button.active{background:#132a50!important;color:#fff!important;border-color:#132a50!important;}
-.bulk-select-cell,.bulk-head-cell{width:42px!important;min-width:42px!important;text-align:center!important;}
-.saved-search-box,.applicant-filter-panel .saved-search-box{padding:10px 12px!important;margin:0 0 14px!important;}
-.saved-search-create{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:7px!important;}
-@media(max-width:1450px){#applicants .compact-list-controls{grid-template-columns:auto minmax(260px,1fr) 145px auto auto!important}.applicant-table{min-width:960px!important}}
-
-
-/* v10.39.3 runtime and column alignment fix */
-#applicants .applicant-table .sticky-app-col,#applicants .applicant-table .sticky-app-date,#applicants .applicant-table .sticky-app-status,#applicants .applicant-table .sticky-app-name,#applicants .applicant-table .sticky-app-actions,#applicants .applicant-table thead th{position:static!important;left:auto!important;right:auto!important;box-shadow:none!important}
-#applicants .applicant-table .phone-cell{padding-left:14px!important;overflow:visible!important}
-#applicants .applicant-table .phone-cell strong{display:block;white-space:nowrap;overflow:visible!important}
-#applicants .applicant-table .row-actions{background:transparent!important;box-shadow:none!important;border:0!important}
-#applicants .applicant-table .row-more-menu{position:relative!important;display:inline-flex!important}
-#applicants .applicant-table .row-more-menu-panel{display:none!important;position:absolute!important;top:calc(100% + 5px)!important;right:0!important;z-index:80!important;background:#fff!important;border:1px solid #d9e3ef!important;border-radius:9px!important;padding:5px!important;box-shadow:0 10px 26px rgba(15,23,42,.16)!important}
-#applicants .applicant-table .row-more-menu.open .row-more-menu-panel{display:grid!important;gap:3px!important}
-#applicants .applicant-table .row-more-menu-panel button{min-width:92px!important;text-align:left!important;border:0!important;background:transparent!important;padding:7px 9px!important;border-radius:6px!important}
-#applicants .applicant-table .row-more-menu-panel button:hover{background:#f1f5f9!important}
-#applicants .applicant-table .row-more-menu-panel .delete{color:#dc2626!important}
+/* ===== v10.39.4 applicant table final polish ===== */
+#applicants .compact-list-controls{grid-template-columns:auto minmax(320px,1fr) 150px auto auto auto!important;align-items:center!important;gap:8px!important}
+#applicants .bulk-mode-button{min-width:66px;white-space:nowrap}
+#applicants .bulk-mode-button.active{background:#0f5ed7!important;border-color:#0f5ed7!important;color:#fff!important}
+#applicants .applicant-table{table-layout:fixed!important;width:100%!important}
+#applicants .applicant-table .email-head,#applicants .applicant-table .email-cell,#applicants .applicant-table .region-head,#applicants .applicant-table .region-cell,#applicants .applicant-table .commute-head,#applicants .applicant-table .commute-cell{display:none!important}
+#applicants .applicant-table th:nth-child(1){width:48px!important}
+#applicants .applicant-table th:nth-child(2){width:96px!important}
+#applicants .applicant-table th:nth-child(3){width:92px!important}
+#applicants .applicant-table th:nth-child(4){width:180px!important}
+#applicants .applicant-table th:nth-child(5){width:150px!important}
+#applicants .applicant-table th:nth-child(7){width:100px!important}
+#applicants .applicant-table th:nth-child(9){width:145px!important}
+#applicants .applicant-table th:nth-child(11){width:145px!important}
+#applicants .applicant-table th:nth-child(12){width:104px!important}
+#applicants .applicant-table .sticky-app-col,#applicants .applicant-table .sticky-app-actions{position:static!important;left:auto!important;right:auto!important;box-shadow:none!important;background:inherit!important;z-index:auto!important}
+#applicants .applicant-table tbody tr{cursor:pointer}
+#applicants .applicant-table tbody tr:hover td{background:#f5f9ff!important}
+#applicants .applicant-actions{display:flex!important;align-items:center!important;justify-content:center!important;gap:6px!important;white-space:nowrap!important;overflow:visible!important;background:transparent!important;box-shadow:none!important}
+#applicants .applicant-actions>.view{min-width:44px!important}
+#applicants .row-more-menu{position:relative!important;display:inline-flex!important;min-width:0!important}
+#applicants .applicant-more-toggle{display:inline-flex!important;align-items:center!important;justify-content:center!important;width:34px!important;min-width:34px!important;height:32px!important;padding:0!important;font-size:20px!important;line-height:1!important}
+#applicants .applicant-more-panel{display:none!important;position:absolute!important;right:0!important;top:calc(100% + 6px)!important;z-index:100!important;min-width:112px!important;padding:6px!important;border:1px solid #d7e2f1!important;border-radius:10px!important;background:#fff!important;box-shadow:0 12px 30px rgba(15,23,42,.18)!important}
+#applicants .row-more-menu.open>.applicant-more-panel{display:grid!important;gap:4px!important}
+#applicants .applicant-more-panel button{width:100%!important;min-height:32px!important;text-align:left!important;padding:6px 10px!important;border-radius:7px!important}
+#applicants .applicant-more-panel .delete{color:#dc2626!important}
+#applicants .bulk-select-cell,#applicants .bulk-head-cell{width:42px!important;min-width:42px!important;text-align:center!important}
+#applicants .phone-cell strong{white-space:nowrap!important}
+@media(max-width:1100px){#applicants .compact-list-controls{grid-template-columns:auto minmax(240px,1fr) 145px auto auto!important}#applicants .check-inline{grid-column:1/-1;justify-self:end}}
+@media(max-width:760px){#applicants .compact-list-controls{display:grid!important;grid-template-columns:1fr auto auto!important}#applicants .compact-tabs{grid-column:1/-1}#applicants #searchInput{grid-column:1/-1}#applicants #sortSelect{grid-column:1/2}#applicants .check-inline{grid-column:1/-1;justify-self:start}}

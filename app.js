@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.39.3 CSS_JS_CONSOLIDATION — 통교체용 통합 빌드
+// [HOME_DEV] Recruit ERP v10.39.1 CSS_JS_CONSOLIDATION — 통교체용 통합 빌드
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.39.3 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.39.1 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -1570,7 +1570,7 @@ function renderTable(){
   const commuteCount=rows.filter(a=>dormLabel(a)==='출퇴근').length;
   const dormPendingCount=rows.filter(isDormPending).length;
   const schoolFilterName = currentSchoolFilterId ? (schools.find(s=>s.id===currentSchoolFilterId)?.name || '선택한 학교') : '';
-  $('listSummary').innerHTML = `<span class="summary-strong">${rows.length}명</span> 표시 <span>정렬 ${esc(sortName)}</span><span>연락필요 ${contactCount}명</span><span>면접/예정 ${interviewCount}명</span><span class="summary-commute">출근방법: 기숙사 ${dormCount}명 · 출퇴근 ${commuteCount}명 · 확인 ${dormPendingCount}명</span>${hideFinished ? '<span>종료숨김 적용</span>' : ''}${schoolFilterName ? `<span class="workplace-pill school-filter-pill">학교 필터: ${esc(schoolFilterName)}<button onclick="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}${typeof window.__erpAdvancedCriteria==='object' ? Object.entries(window.__erpAdvancedCriteria).filter(([k,v])=>v&&v!=='all').map(([k,v])=>`<span class="active-filter-chip">${esc(({Status:'상태',Workplace:'근무지',School:'학교',Manager:'담당자',Contact:'연락',Dorm:'기숙사',Keyword:'검색어',ApplyFrom:'지원일 시작',ApplyTo:'지원일 종료',InterviewFrom:'면접일 시작',InterviewTo:'면접일 종료',HireFrom:'입사일 시작',HireTo:'입사일 종료'}[k]||k)+': '+v)}<button onclick="window.clearAdvancedCriterion&&window.clearAdvancedCriterion('${k}')" aria-label="필터 해제">×</button></span>`).join('') : ''}`;
+  $('listSummary').innerHTML = `<span class="summary-strong">${rows.length}명</span> 표시 <span>정렬 ${esc(sortName)}</span><span>연락필요 ${contactCount}명</span><span>면접/예정 ${interviewCount}명</span><span class="summary-commute">출근방법: 기숙사 ${dormCount}명 · 출퇴근 ${commuteCount}명 · 확인 ${dormPendingCount}명</span>${hideFinished ? '<span>종료숨김 적용</span>' : ''}${schoolFilterName ? `<span class="workplace-pill school-filter-pill">학교 필터: ${esc(schoolFilterName)}<button onclick="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}<span class="list-interaction-hint">행 클릭 → 상세보기</span>`;
   $('applicantTbody').innerHTML=rows.length?rows.map((a,idx)=>{
     const score=calcScore(a), decision=finalDecisionOf(a);
     const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
@@ -1592,7 +1592,7 @@ function renderTable(){
       <td class="schedule-cell" data-label="면접일정"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
       <td class="commute-cell" data-label="출근방법"><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
       <td class="decision-cell" data-label="판정"><strong>${esc(decision)}</strong><small>${score}점</small></td>
-      <td class="row-actions compact-actions sticky-app-actions" data-label="관리"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><div class="row-more-menu"><button type="button" class="row-more-toggle" aria-label="${esc(a.name||'지원자')} 관리 메뉴" onclick="toggleRowMore(event,this)">⋯</button><div class="row-more-menu-panel"><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></div></div></td>
+      <td class="row-actions compact-actions applicant-actions" data-label="관리"><button class="view" onclick="viewApplicant('${a.id}')">상세</button><div class="row-more-menu"><button type="button" class="row-more-toggle applicant-more-toggle" aria-label="지원자 관리 메뉴" title="더보기" onclick="toggleRowMore(event,this)">⋯</button><div class="row-more-menu-panel applicant-more-panel"><button onclick="editApplicant('${a.id}')">수정</button><button onclick="duplicateApplicant('${a.id}')">복제</button><button class="delete" onclick="deleteApplicant('${a.id}')">삭제</button></div></div></td>
     </tr>`;
   }).join(''):`<tr><td colspan="12" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" onclick="resetAndRenderList()">필터 초기화</button></td></tr>`;
 }
