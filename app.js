@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.38.0 ENV_MODE — 지원자·협력학교·사원명부 목록 UI/UX 개선
+// [HOME_DEV] Recruit ERP v10.38.2 DATA_HEALTH_DUPLICATE_MANAGER — 지원자·협력학교·사원명부 목록 UI/UX 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.38.0 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.38.2 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
@@ -1360,7 +1360,7 @@ function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 function setPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',backup:'백업/내보내기'};
+  const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업/내보내기'};
   const descMap = {
     home:'오늘의 채용 업무와 주요 현황을 확인합니다.',
     applicants:'지원자 진행상태와 면접·입사 일정을 관리합니다.',
@@ -1371,6 +1371,8 @@ function setPage(page){
     schools:'협력학교 현황과 지원자·직원 배출 정보를 관리합니다.',
     employees:'재직·휴직·퇴사 현황과 출신학교 정보를 확인합니다.',
     templates:'지원자 안내문을 빠르게 작성하고 복사합니다.',
+    dataHealth:'데이터 누락과 상태 불일치를 읽기 전용으로 점검합니다.',
+    duplicates:'중복 후보와 재지원 기록을 사용자 확인 방식으로 검토합니다.',
     backup:'ERP 데이터를 안전하게 백업하고 복원합니다.'
   };
   $('page-title').textContent = titleMap[page] || '홈';
