@@ -1151,11 +1151,28 @@ function toggleRowMore(event, button){
   event.stopPropagation();
   const menu=button.closest('.row-more-menu');
   if(!menu) return;
+  const panel=menu.querySelector('.row-more-menu-panel');
   const willOpen=!menu.classList.contains('open');
-  document.querySelectorAll('.row-more-menu.open').forEach(x=>x.classList.remove('open'));
-  if(willOpen) menu.classList.add('open');
+  closeAllRowMoreMenus();
+  if(!willOpen || !panel) return;
+  menu.classList.add('open');
+  const rect=button.getBoundingClientRect();
+  const panelWidth=120;
+  const estimatedHeight=122;
+  let left=Math.min(window.innerWidth-panelWidth-12,Math.max(12,rect.right-panelWidth));
+  let top=rect.bottom+6;
+  if(top+estimatedHeight>window.innerHeight-12) top=Math.max(12,rect.top-estimatedHeight-6);
+  panel.style.left=`${left}px`;
+  panel.style.top=`${top}px`;
+  panel.style.right='auto';
 }
-function closeAllRowMoreMenus(){ document.querySelectorAll('.row-more-menu.open').forEach(x=>x.classList.remove('open')); }
+function closeAllRowMoreMenus(){
+  document.querySelectorAll('.row-more-menu.open').forEach(x=>{
+    x.classList.remove('open');
+    const panel=x.querySelector('.row-more-menu-panel');
+    if(panel){panel.style.left='';panel.style.top='';panel.style.right='';}
+  });
+}
 function listRowKeyActivate(event, action){
   if(event.key!=='Enter' && event.key!==' ') return;
   if(event.target.closest('button,select,a,input,label,summary,details')) return;
@@ -2918,6 +2935,8 @@ bind('employeeJsonImport','change',e=>{
   r.readAsText(file);
 });
 document.addEventListener('click',e=>{ if(!e.target.closest('.row-more-menu')) closeAllRowMoreMenus(); });
+window.addEventListener('scroll',closeAllRowMoreMenus,true);
+window.addEventListener('resize',closeAllRowMoreMenus);
 document.querySelectorAll('#employeeStatusTabs .tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#employeeStatusTabs .tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); employeeStatusFilter=b.dataset.empstatus; employeePage=1; renderEmployees();

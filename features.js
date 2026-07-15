@@ -899,7 +899,43 @@ function renderSaved(){el('asSavedList').innerHTML=saved().map((x,i)=>`<span cla
 function saveCurrent(){const name=el('asSavedName').value.trim();if(!name)return alert('검색조건 이름을 입력해주세요.');const arr=saved();arr.unshift({name,criteria:criteria(),createdAt:new Date().toISOString()});localStorage.setItem(SAVED_KEY,JSON.stringify(arr.slice(0,20)));el('asSavedName').value='';renderSaved()}
 function selectedApplicants(){return applicants.filter(a=>selected.has(a.id))}
 function updateBulkDock(){const rows=selectedApplicants(),dock=el('bulkDock');el('bulkSelectedCount').textContent=rows.length;el('bulkSelectedNames').textContent=rows.slice(0,5).map(a=>a.name||'이름없음').join(', ')+(rows.length>5?` 외 ${rows.length-5}명`:'');dock.classList.toggle('show',rows.length>0);dock.setAttribute('aria-hidden',rows.length?'false':'true');decorateRows()}
-function decorateRows(){qa('#applicantTbody tr.applicant-row').forEach(tr=>{const onclick=tr.getAttribute('onclick')||'';const m=onclick.match(/viewApplicant\('([^']+)'\)/);if(!m)return;const id=m[1];let td=tr.querySelector('.bulk-select-cell');if(bulkMode){if(!td){td=document.createElement('td');td.className='bulk-select-cell';tr.insertBefore(td,tr.firstChild)}td.innerHTML=`<input class="bulk-row-checkbox" type="checkbox" data-bulk-id="${id}" ${selected.has(id)?'checked':''}>`}else if(td){td.remove()}tr.classList.toggle('bulk-selection-mode',bulkMode)});const th=q('#applicants table thead tr');if(th){let cell=th.querySelector('.bulk-head-cell');if(bulkMode&&!cell){cell=document.createElement('th');cell.className='bulk-head-cell';cell.textContent='선택';th.insertBefore(cell,th.firstChild)}else if(!bulkMode&&cell)cell.remove()}const btn=el('bulkModeButton');if(btn){btn.classList.toggle('active',bulkMode);btn.textContent=bulkMode?'선택 종료':'선택'}}
+function decorateRows(){
+ qa('#applicantTbody tr.applicant-row').forEach(tr=>{
+  const onclick=tr.getAttribute('onclick')||'';
+  const m=onclick.match(/viewApplicant\('([^']+)'\)/);
+  if(!m)return;
+  const id=m[1];
+  const td=tr.querySelector('td.no-cell')||tr.firstElementChild;
+  if(!td)return;
+  if(bulkMode){
+   if(!td.dataset.originalHtml)td.dataset.originalHtml=td.innerHTML;
+   td.classList.add('bulk-select-cell');
+   td.innerHTML=`<input class="bulk-row-checkbox" type="checkbox" data-bulk-id="${id}" ${selected.has(id)?'checked':''} aria-label="${safe(tr.querySelector('.name-button')?.textContent||'지원자')} 선택">`;
+  }else if(td.classList.contains('bulk-select-cell')){
+   td.innerHTML=td.dataset.originalHtml||'';
+   delete td.dataset.originalHtml;
+   td.classList.remove('bulk-select-cell');
+  }
+  tr.classList.toggle('bulk-selection-mode',bulkMode);
+ });
+ const th=q('#applicants table thead tr');
+ if(th){
+  const first=th.firstElementChild;
+  if(first){
+   if(bulkMode){
+    if(!first.dataset.originalText)first.dataset.originalText=first.textContent;
+    first.classList.add('bulk-head-cell');
+    first.textContent='선택';
+   }else if(first.classList.contains('bulk-head-cell')){
+    first.textContent=first.dataset.originalText||'NO';
+    delete first.dataset.originalText;
+    first.classList.remove('bulk-head-cell');
+   }
+  }
+ }
+ const btn=el('bulkModeButton');
+ if(btn){btn.classList.toggle('active',bulkMode);btn.textContent=bulkMode?'선택 종료':'선택'}
+}
 function ensureBulkToggle(){ decorateRows(); }
 function toggleBulkMode(){bulkMode=!bulkMode;if(!bulkMode){selected.clear();updateBulkDock()}decorateRows()}
 function openBulk(){const rows=selectedApplicants();if(!rows.length)return alert('지원자를 먼저 선택해주세요.');el('bulkTargetSummary').innerHTML=`<strong>처리 대상 ${rows.length}명</strong><br>${safe(rows.map(a=>a.name||'이름없음').join(', '))}`;el('bulkModal').classList.add('open');el('bulkModal').setAttribute('aria-hidden','false');syncBulkValue();previewBulk()}

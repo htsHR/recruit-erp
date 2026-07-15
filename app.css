@@ -5045,3 +5045,34 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 @media(max-width:1100px){
   #applicants .applicant-table{min-width:980px!important}
 }
+
+/* ===== v10.39.6 selection-mode and action-menu stabilization ===== */
+#applicants .applicant-table .bulk-select-cell,
+#applicants .applicant-table .bulk-head-cell{
+  width:48px!important;
+  min-width:48px!important;
+  max-width:48px!important;
+  text-align:center!important;
+  padding-left:6px!important;
+  padding-right:6px!important;
+}
+#applicants .applicant-table .bulk-row-checkbox{
+  width:17px!important;
+  height:17px!important;
+  margin:0!important;
+  vertical-align:middle!important;
+  cursor:pointer!important;
+}
+#applicants .applicant-table tr.bulk-selection-mode td{
+  vertical-align:middle!important;
+}
+#applicants .applicant-more-panel{
+  position:fixed!important;
+  right:auto!important;
+  top:auto;
+  z-index:5000!important;
+  min-width:120px!important;
+}
+#applicants .row-more-menu.open>.applicant-more-panel{
+  display:grid!important;
+}
