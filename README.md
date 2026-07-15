@@ -1,4 +1,4 @@
-# Recruit ERP v10.37.4 HOME_DEV · COMPLETE_UX
+# Recruit ERP v10.37.5 HOME_DEV · ENV_MODE
 
 기준 버전: `v10.36.6 HOME_DEV · LIST_UX`
 
@@ -34,3 +34,11 @@ UI 편의 기능은 별도 키만 사용합니다.
 ## 운영 안내
 
 현재 회사에서는 브라우저 localStorage가 Master입니다. 적용 전 기존 폴더와 JSON 백업을 별도로 보관하세요.
+
+
+## v10.37.5 운영 환경 선택
+
+- 사이드바에서 `회사` / `집` 운영 환경을 직접 선택합니다.
+- 선택값은 `recruit_erp_ui_operation_environment`에 브라우저별로 저장됩니다.
+- 기본값은 HOME_DEV 성격에 맞춰 `집 개발·복원 모드`입니다.
+- 지원자·학교·사원·일정 데이터 및 기존 저장키는 변경하지 않습니다.

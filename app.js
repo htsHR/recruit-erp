@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.37.4 COMPLETE_UX — 지원자·협력학교·사원명부 목록 UI/UX 개선
+// [HOME_DEV] Recruit ERP v10.37.5 ENV_MODE — 지원자·협력학교·사원명부 목록 UI/UX 개선
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.37.4 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.37.5 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
