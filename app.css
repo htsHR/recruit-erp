@@ -4947,7 +4947,7 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 
 
 
-/* v10.39.2 applicant list polish */
+/* v10.39.3 applicant list polish */
 #applicants .compact-list-controls{grid-template-columns:auto minmax(340px,1fr) 150px auto auto auto!important;gap:8px!important;padding:13px 14px 8px!important;}
 #applicants .quick-filters{margin:0!important;padding:0 14px 11px!important;}
 #applicants .list-top-card{padding:0!important;overflow:hidden!important;}
@@ -4980,3 +4980,16 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 .saved-search-box,.applicant-filter-panel .saved-search-box{padding:10px 12px!important;margin:0 0 14px!important;}
 .saved-search-create{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:7px!important;}
 @media(max-width:1450px){#applicants .compact-list-controls{grid-template-columns:auto minmax(260px,1fr) 145px auto auto!important}.applicant-table{min-width:960px!important}}
+
+
+/* v10.39.3 runtime and column alignment fix */
+#applicants .applicant-table .sticky-app-col,#applicants .applicant-table .sticky-app-date,#applicants .applicant-table .sticky-app-status,#applicants .applicant-table .sticky-app-name,#applicants .applicant-table .sticky-app-actions,#applicants .applicant-table thead th{position:static!important;left:auto!important;right:auto!important;box-shadow:none!important}
+#applicants .applicant-table .phone-cell{padding-left:14px!important;overflow:visible!important}
+#applicants .applicant-table .phone-cell strong{display:block;white-space:nowrap;overflow:visible!important}
+#applicants .applicant-table .row-actions{background:transparent!important;box-shadow:none!important;border:0!important}
+#applicants .applicant-table .row-more-menu{position:relative!important;display:inline-flex!important}
+#applicants .applicant-table .row-more-menu-panel{display:none!important;position:absolute!important;top:calc(100% + 5px)!important;right:0!important;z-index:80!important;background:#fff!important;border:1px solid #d9e3ef!important;border-radius:9px!important;padding:5px!important;box-shadow:0 10px 26px rgba(15,23,42,.16)!important}
+#applicants .applicant-table .row-more-menu.open .row-more-menu-panel{display:grid!important;gap:3px!important}
+#applicants .applicant-table .row-more-menu-panel button{min-width:92px!important;text-align:left!important;border:0!important;background:transparent!important;padding:7px 9px!important;border-radius:6px!important}
+#applicants .applicant-table .row-more-menu-panel button:hover{background:#f1f5f9!important}
+#applicants .applicant-table .row-more-menu-panel .delete{color:#dc2626!important}

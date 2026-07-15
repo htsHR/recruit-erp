@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.39.2 CSS_JS_CONSOLIDATION — 통교체용 통합 빌드
+// [HOME_DEV] Recruit ERP v10.39.3 CSS_JS_CONSOLIDATION — 통교체용 통합 빌드
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -20,7 +20,7 @@ let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
 let detailCurrentId = '';
-console.info('[HOME_DEV] Recruit ERP v10.39.2 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.39.3 loaded applicants:', applicants.length);
 const $ = id => document.getElementById(id);
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
