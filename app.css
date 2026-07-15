@@ -4977,3 +4977,71 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 #applicants .phone-cell strong{white-space:nowrap!important}
 @media(max-width:1100px){#applicants .compact-list-controls{grid-template-columns:auto minmax(240px,1fr) 145px auto auto!important}#applicants .check-inline{grid-column:1/-1;justify-self:end}}
 @media(max-width:760px){#applicants .compact-list-controls{display:grid!important;grid-template-columns:1fr auto auto!important}#applicants .compact-tabs{grid-column:1/-1}#applicants #searchInput{grid-column:1/-1}#applicants #sortSelect{grid-column:1/2}#applicants .check-inline{grid-column:1/-1;justify-self:start}}
+
+/* ===== v10.39.5 applicant table width / scroll stabilization ===== */
+#applicants .table-wrap{
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+}
+#applicants .applicant-table{
+  width:100%!important;
+  min-width:1040px!important;
+  table-layout:fixed!important;
+}
+#applicants .applicant-table th,
+#applicants .applicant-table td{
+  position:static!important;
+  left:auto!important;
+  right:auto!important;
+  box-shadow:none!important;
+}
+#applicants .applicant-table .sticky-app-col,
+#applicants .applicant-table .sticky-app-actions{
+  position:static!important;
+  left:auto!important;
+  right:auto!important;
+  min-width:0!important;
+  max-width:none!important;
+  box-shadow:none!important;
+  z-index:auto!important;
+}
+#applicants .applicant-table .row-actions,
+#applicants .applicant-table .applicant-actions{
+  min-width:0!important;
+  width:auto!important;
+  padding-left:6px!important;
+  padding-right:6px!important;
+  background:inherit!important;
+}
+#applicants .applicant-table th:nth-child(1),
+#applicants .applicant-table td:nth-child(1){width:48px!important}
+#applicants .applicant-table th:nth-child(2),
+#applicants .applicant-table td:nth-child(2){width:96px!important}
+#applicants .applicant-table th:nth-child(3),
+#applicants .applicant-table td:nth-child(3){width:92px!important}
+#applicants .applicant-table th:nth-child(4),
+#applicants .applicant-table td:nth-child(4){width:180px!important}
+#applicants .applicant-table th:nth-child(5),
+#applicants .applicant-table td:nth-child(5){width:150px!important}
+#applicants .applicant-table th:nth-child(7),
+#applicants .applicant-table td:nth-child(7){width:100px!important}
+#applicants .applicant-table th:nth-child(9),
+#applicants .applicant-table td:nth-child(9){width:145px!important}
+#applicants .applicant-table th:nth-child(11),
+#applicants .applicant-table td:nth-child(11){width:145px!important}
+#applicants .applicant-table th:nth-child(12),
+#applicants .applicant-table td:nth-child(12){width:104px!important}
+#applicants .applicant-table .email-head,
+#applicants .applicant-table .email-cell,
+#applicants .applicant-table .region-head,
+#applicants .applicant-table .region-cell,
+#applicants .applicant-table .commute-head,
+#applicants .applicant-table .commute-cell{
+  display:none!important;
+}
+#applicants .applicant-more-panel{
+  z-index:500!important;
+}
+@media(max-width:1100px){
+  #applicants .applicant-table{min-width:980px!important}
+}
