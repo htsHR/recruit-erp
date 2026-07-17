@@ -254,7 +254,7 @@ bind('btnCopySummary','click',async()=>{ const a=applicants.find(x=>x.id===detai
   }catch{ alert('복사가 막히면 상세 내용을 직접 드래그해서 복사해주세요.'); } });
 
 
-/* v10.40.1 엑셀 지원자 한 행 붙여넣기 이벤트 */
+/* v10.40.2 엑셀 지원자 한 행 붙여넣기 이벤트 */
 bind('btnOpenExcelRowPaste','click',openExcelRowPaste);
 bind('btnCloseExcelRowPaste','click',closeExcelRowPaste);
 bind('btnCancelExcelPaste','click',closeExcelRowPaste);

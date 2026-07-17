@@ -495,7 +495,7 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 #applicants .applicant-actions .row-more-menu,#applicants .applicant-actions .applicant-more-toggle,#applicants .applicant-actions .applicant-more-panel{display:none!important;}
 
 /* =========================================================
-   v10.40.1 엑셀 지원자 한 행 붙여넣기
+   v10.40.2 엑셀 지원자 한 행 붙여넣기
    ========================================================= */
 .excel-row-paste-launch{border-color:#93c5fd!important;background:#eff6ff!important;color:#1d4ed8!important}
 .excel-paste-modal-card{width:min(1120px,calc(100vw - 36px))!important;max-height:calc(100vh - 36px)!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
