@@ -169,15 +169,9 @@ function renderSchools(){
 }
 
 
-function renderBatchOptions(){
-  const el=$('batchOptions');
-  if(!el) return;
-  const values=[...new Set(applicants.map(a=>a.batch).filter(Boolean))].sort();
-  el.innerHTML = values.map(v=>`<option value="${esc(v)}"></option>`).join('');
-}
-function renderAll(){ renderStats(); backupNotice(); renderScheduleReminder(); renderHomeLists(); renderTable(); renderToday(); renderEmployeeLinkTask(); renderCalendar(); renderHireStats(); populateSchoolDatalist(); renderSchools(); renderSchoolManage(); renderEmployees(); updateScorePreview(); renderBatchOptions(); }
+function renderAll(){ renderStats(); backupNotice(); renderScheduleReminder(); renderHomeLists(); renderTable(); renderToday(); renderEmployeeLinkTask(); renderCalendar(); renderHireStats(); populateSchoolDatalist(); renderSchools(); renderSchoolManage(); renderEmployees(); updateScorePreview(); }
 
-const fields=['editId','applyDate','source','extra','status','workplace','batch','name','phone','email',
+const fields=['editId','applyDate','source','status','workplace','name','phone','email',
   'gender','birthYear','age','region','commute','dormUse','education','finalEducation','school',
   'major','gradePoint','languageEtc','certs','career','lastCompany','duties','leaveReason','careerType',
   'jobFitCategory','interviewDate','interviewTime','hireDate','decisionReason','consult','memo'];
@@ -216,7 +210,7 @@ function memoBlock(title, value){
   return `<div class="detail-memo"><h4>${title}</h4><p>${esc(v)}</p></div>`;
 }
 function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a); return `${a.name||'지원자'} / ${a.workplace||'근무지 미입력'} / ${a.phone||'연락처 없음'}
-상태: ${a.status||'-'} / 출근방법: ${dormLabel(a)} / 기타: ${a.extra||'-'} / 판정: ${finalDecisionOf(a)} / 검토점수: ${score}점
+상태: ${a.status||'-'} / 출근방법: ${dormLabel(a)} / 판정: ${finalDecisionOf(a)} / 검토점수: ${score}점
 직무적합: ${displayCategory(a)} / 경력구분: ${a.careerType||'-'}
 학력구분: ${a.education||'-'} / 학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'} / 외국어·기타자격: ${a.languageEtc||'-'}
 세부점수: 전공 ${sc.major}/25, 경력 ${sc.career}/35, 자격 ${sc.cert}/20, 현장 ${sc.field}/20
@@ -264,8 +258,7 @@ function viewApplicant(id){
   ].join('');
   const educationRows = [
     detailRow('학력구분',a.education), detailRow('학교/전공',[a.school,a.major].filter(Boolean).join(' / ')),
-      detailRow('자격증',a.certs,'wide-row'), detailRow('외국어/기타자격',a.languageEtc,'wide-row'), detailRow('기타',
-      a.extra,'wide-row')
+      detailRow('자격증',a.certs,'wide-row'), detailRow('외국어/기타자격',a.languageEtc,'wide-row')
   ].join('');
   const jobRows = [
     detailRow('직무적합',displayCategory(a)), detailRow('확인필요사항',displayCheckNeeds(a.checkNeeds),'wide-row'), detailRow('자소서/태도 키워드',a.selfIntroKeywords,'wide-row')

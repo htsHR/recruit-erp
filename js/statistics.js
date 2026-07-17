@@ -147,42 +147,5 @@ function renderStatsSource(){
   const totalRow=`<tr class="funnel-total-row"><td>전체 합계</td>${funnelRowCells(total)}</tr>`;
   $('statsSourceBody').innerHTML = rows + totalRow;
 }
-const BATCH_TARGET_KEY = 'recruit_erp_batch_targets';
-function getBatchTargets(){
-  try{ return JSON.parse(localStorage.getItem(BATCH_TARGET_KEY)||'{}'); }catch{ return {}; }
-}
-function promptBatchTarget(batchName){
-  const targets=getBatchTargets();
-  const cur=targets[batchName]||'';
-  const v=prompt(`"${batchName}" 배치의 채용 목표 인원을 숫자로 입력하세요.\n(합격=입사예정 또는 출근 상태 기준으로 진행률을 계산합니다. 비우면 목표 해제)`, cur);
-  if(v===null) return;
-  const n=parseInt(v,10);
-  if(Number.isFinite(n) && n>0){ targets[batchName]=n; } else { delete targets[batchName]; }
-  localStorage.setItem(BATCH_TARGET_KEY, JSON.stringify(targets));
-  renderStatsBatch();
-}
-function renderStatsBatch(){
-  if(!$('statsBatchBody')) return;
-  const map={};
-  statsScope().forEach(a=>{
-    const b=(a.batch||'').trim() || '기수 미지정';
-    if(!map[b]) map[b]={apply:0,interview:0,pass:0};
-    map[b].apply++;
-    if(isInterviewed(a)) map[b].interview++;
-    if(isPassed(a)) map[b].pass++;
-  });
-  const batches=Object.keys(map).sort((a,b)=>map[b].apply-map[a].apply);
-  if(!batches.length){ $('statsBatchBody').innerHTML=`<tr><td colspan="6" class="empty">기수/배치가 입력된 지원자가 없습니다. 지원자 입력 화면에서 "기수/배치" 칸을 채워주세요.</td></tr>`; return; }
-  const targets=getBatchTargets();
-  $('statsBatchBody').innerHTML = batches.map(b=>{
-    const v=map[b];
-    const rate = v.apply ? Math.round((v.pass/v.apply)*100) : 0;
-    const target=targets[b]||0;
-    const progressCell = target
-      ? `<div class="batch-progress"><div class="batch-progress-track"><div class="batch-progress-fill" style="width:${Math.min(100,Math.round((v.pass/target)*100))}%"></div></div><span>${v.pass}/${target}명 · <button class="mini" onclick="promptBatchTarget('${esc(b)}')">수정</button></span></div>`
-      : `<button class="mini" onclick="promptBatchTarget('${esc(b)}')">목표 설정</button>`;
-    return `<tr><td>${esc(b)}</td><td>${v.apply}명</td><td>${v.interview}명</td><td>${v.pass}명</td><td>${rate}%</td><td>${progressCell}</td></tr>`;
-  }).join('');
-}
-function renderHireStats(){ renderStatsWorkplaceFilter(); renderStatsSummary(); renderStatsYear(); renderStatsMonth(); renderStatsWorkplace(); renderStatsDorm(); renderStatsStatus(); renderStatsFunnel(); renderStatsSource(); renderStatsBatch(); }
+function renderHireStats(){ renderStatsWorkplaceFilter(); renderStatsSummary(); renderStatsYear(); renderStatsMonth(); renderStatsWorkplace(); renderStatsDorm(); renderStatsStatus(); renderStatsFunnel(); renderStatsSource(); }
 

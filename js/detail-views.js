@@ -274,11 +274,11 @@ function download(name, content, type='text/plain;charset=utf-8'){
   const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
 }
 function csv(){
-  const headers=['지원날짜','지원경로','기타','연락상태','지원근무지','기수/배치','성명','연락처','이메일','성별','생년월일','연령','거주지역',
+  const headers=['지원날짜','지원경로','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일','연령','거주지역',
     '출근방법','학력구분','최종학교','전공/학과','외국어/기타자격','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜',
     '면접시간','입사예정일','상담내용','판정/메모/다음액션','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
   const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,
-    a.source,a.extra,a.status,a.workplace,a.batch,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,
+    a.source,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,
     dormLabel(a),a.education,a.school,a.major,a.languageEtc,a.careerType,displayCategory(a),displayCheckNeeds(a.checkNeeds),
     a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.consult,[a.memo,
     a.decisionReason].filter(Boolean).join(' / '),sc.major,sc.career,sc.cert,sc.field,sc.total,
