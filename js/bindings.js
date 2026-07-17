@@ -254,7 +254,7 @@ bind('btnCopySummary','click',async()=>{ const a=applicants.find(x=>x.id===detai
   }catch{ alert('복사가 막히면 상세 내용을 직접 드래그해서 복사해주세요.'); } });
 
 
-/* v10.40.2 엑셀 지원자 한 행 붙여넣기 이벤트 */
+/* v10.40.3 엑셀 지원자 한 행 붙여넣기 안정화 이벤트 */
 bind('btnOpenExcelRowPaste','click',openExcelRowPaste);
 bind('btnCloseExcelRowPaste','click',closeExcelRowPaste);
 bind('btnCancelExcelPaste','click',closeExcelRowPaste);
@@ -262,27 +262,45 @@ bind('excelRowPasteBackdrop','click',closeExcelRowPaste);
 bind('btnParseExcelRow','click',parseExcelRowPaste);
 bind('btnClearExcelPaste','click',()=>{resetExcelRowPaste();$('excelPasteRaw')?.focus();});
 bind('btnApplyExcelPaste','click',applyExcelRowPasteToForm);
+bind('xpManualConfirm','change',excelPasteUpdateApplyState);
 bind('excelPasteRaw','paste',()=>setTimeout(()=>{
   const raw=$('excelPasteRaw')?.value||'';
-  if(raw.includes('\t')) parseExcelRowPaste();
+  if(raw.includes('\t'))parseExcelRowPaste();
 },0));
 const excelPasteEditorEl=$('excelPasteEditor');
 if(excelPasteEditorEl){
-  excelPasteEditorEl.addEventListener('input',e=>{
+  const refreshExcelPaste=source=>{
     if(!excelPasteParsedData)return;
+    const sourceWrap=source?.closest?.('[data-field-wrap]');
+    if(sourceWrap&&!source.classList.contains('excel-paste-apply'))excelPasteTouchedFields.add(sourceWrap.dataset.fieldWrap);
     const current=excelPasteCurrentApplicant();
-    const wrap=e.target.closest('[data-field-wrap]');
-    if(current && wrap && !e.target.classList.contains('excel-paste-apply')){
-      const field=wrap.dataset.fieldWrap;
-      const check=wrap.querySelector('.excel-paste-apply');
-      const changed=!excelPasteSameValue(field,current[field]||'',excelPasteGetField(field));
-      if(check)check.checked=changed;
-      wrap.classList.toggle('has-change',changed);
+    if(current&&source&&!source.classList.contains('excel-paste-apply')){
+      const wrap=source.closest('[data-field-wrap]');
+      if(wrap){
+        const field=wrap.dataset.fieldWrap,check=wrap.querySelector('.excel-paste-apply');
+        const changed=!excelPasteSameValue(field,current?.[field]||'',excelPasteGetField(field));
+        if(check)check.checked=changed&&!!excelPasteSourcePresent[field];
+      }
     }
-    const live={}; Object.keys(EXCEL_PASTE_FIELD_MAP).forEach(field=>live[field]=excelPasteGetField(field));
-    excelPasteRenderDuplicates(live);
+    excelPasteUpdateApplyState();
+  };
+  excelPasteEditorEl.addEventListener('input',e=>refreshExcelPaste(e.target));
+  excelPasteEditorEl.addEventListener('change',e=>{
+    if(e.target.id==='xpDuplicateConfirm')return;
+    refreshExcelPaste(e.target);
+  });
+  excelPasteEditorEl.addEventListener('click',e=>{
+    const button=e.target.closest('[data-excel-duplicate-id]');
+    if(!button)return;
+    e.preventDefault(); e.stopPropagation();
+    const id=button.dataset.excelDuplicateId;
+    closeExcelRowPaste();
+    if(id)viewApplicant(id);
+  });
+  excelPasteEditorEl.addEventListener('change',e=>{
+    if(e.target.id==='xpDuplicateConfirm')excelPasteUpdateApplyState();
   });
 }
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape' && $('excelRowPasteModal')?.classList.contains('show')) closeExcelRowPaste();
+  if(e.key==='Escape'&&$('excelRowPasteModal')?.classList.contains('show'))closeExcelRowPaste();
 });

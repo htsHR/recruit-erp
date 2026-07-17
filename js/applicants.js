@@ -350,10 +350,11 @@ function renderTable(){
 function resetAndRenderList(){ resetListFiltersToAll(); renderTable(); }
 
 /* =========================================================
-   v10.40.2 엑셀 지원자 한 행 붙여넣기
-   - 구직 지원자 명단 A~V(22열) 한 행을 탭 구분 텍스트로 분석
-   - 신규 등록: 변환 결과를 편집한 뒤 기존 입력폼에 적용
-   - 수정 화면: 현재 값과 비교하고 선택한 항목만 입력폼에 적용
+   v10.40.3 엑셀 지원자 한 행 붙여넣기 안정화
+   - 현재 2026 명단과 기존 22열 형식을 자동 판별
+   - 원본 행 미리보기, 필수값/형식/일정 관계 검증
+   - 지원근무지·출근방법 직접 확인 및 중복 후보 확인
+   - 오류가 남아 있으면 입력폼 적용 차단
    - 자동 저장/자동 덮어쓰기 없음
    ========================================================= */
 const EXCEL_ROW_HEADERS_LEGACY = ['NO','지원날짜','연락상태','면접날짜','시간','입사날짜','지원경로','지원구분','지원파트','성별','성명','이메일','최종학력','학과','연락처','연생','나이','지역(시)','세부지역(동)','경력','자격증','비고'];
@@ -372,10 +373,19 @@ const EXCEL_PASTE_FIELD_MAP = {
   name:'xpName', gender:'xpGender', birthYear:'xpBirthYear', age:'xpAge', phone:'xpPhone', email:'xpEmail', region:'xpRegion',
   education:'xpEducation', school:'xpSchool', major:'xpMajor', career:'xpCareer', certs:'xpCerts', memo:'xpMemo'
 };
+const EXCEL_PASTE_FIELD_LABELS = {
+  applyDate:'지원일',status:'연락상태',interviewDate:'면접일',interviewTime:'면접시간',hireDate:'입사일',source:'지원경로',careerType:'경력구분',extra:'지원파트',
+  workplace:'지원근무지',dormUse:'출근방법',name:'성명',gender:'성별',birthYear:'생년월일',age:'나이',phone:'연락처',email:'이메일',region:'지역',
+  education:'학력구분',school:'학교',major:'학과',career:'경력',certs:'자격증',memo:'비고·메모'
+};
 let excelPasteParsedData = null;
-let excelPasteWarnings = [];
+let excelPasteParseIssues = [];
 let excelPasteSourcePresent = {};
 let excelPasteDetectedFormat = '';
+let excelPasteRawInvalidFields = new Set();
+let excelPasteDuplicateMatches = [];
+let excelPastePreviewMeta = null;
+let excelPasteTouchedFields = new Set();
 
 function excelPasteText(v){ return String(v ?? '').replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim(); }
 function excelPastePhoneDigits(v){ return String(v||'').replace(/\D/g,''); }
@@ -397,18 +407,14 @@ function excelPasteParseTsv(text){
     if(ch==='\t' && !quoted){ rows[rows.length-1].push(value); value=''; continue; }
     if((ch==='\n'||ch==='\r') && !quoted){
       if(ch==='\r' && text[i+1]==='\n') i++;
-      rows[rows.length-1].push(value); value='';
-      rows.push([]);
-      continue;
+      rows[rows.length-1].push(value); value=''; rows.push([]); continue;
     }
     value+=ch;
   }
   rows[rows.length-1].push(value);
   return rows.map(row=>row.map(excelPasteText)).filter(row=>row.some(Boolean));
 }
-function excelPasteHeaderToken(v){
-  return String(v||'').replace(/[\s\n\r]/g,'').replace(/[()·._\-/]/g,'').toLowerCase();
-}
+function excelPasteHeaderToken(v){ return String(v||'').replace(/[\s\n\r]/g,'').replace(/[()·._\-/]/g,'').toLowerCase(); }
 function excelPasteIsHeaderRow(row){
   const tokens=row.map(excelPasteHeaderToken);
   return tokens.some(v=>v.includes('지원날짜')||v==='지원일') && tokens.some(v=>v==='성명'||v==='이름') && tokens.some(v=>v.includes('연락처')||v.includes('휴대폰'));
@@ -418,30 +424,96 @@ function excelPasteLooksPhone(v){ const d=excelPastePhoneDigits(v); return /^01[
 function excelPasteLooksEmail(v){ const s=excelPasteText(v); return !s || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
 function excelPasteLooksEducation(v){ return /^(고졸|고등학교|전졸|전문대|전문대졸|초대졸|대졸|대학교|4년제|대학원|대학원졸|기타)$/.test(excelPasteText(v).replace(/\s/g,'')); }
 function excelPasteLooksAge(v){ const n=Number(excelPasteText(v)); return Number.isFinite(n)&&n>=15&&n<=80; }
-function excelPasteLooksBirth(v){
-  const raw=excelPasteText(v);
-  if(!raw) return false;
-  if(/^\d{2}$|^\d{4}$|^\d{6}$|^\d{8}$/.test(raw)) return true;
-  if(/^\d{2,4}[.\-/]\d{1,2}([.\-/]\d{1,2})?$/.test(raw)) return true;
-  const n=Number(raw);
-  return Number.isFinite(n)&&n>=20000&&n<=60000;
+function excelPasteValidDateParts(y,m,d){
+  const dt=new Date(Date.UTC(y,m-1,d));
+  return dt.getUTCFullYear()===y && dt.getUTCMonth()===m-1 && dt.getUTCDate()===d;
 }
-function excelPasteHasNoColumn(row,headerRow=null){
-  if(headerRow){
-    const first=excelPasteHeaderToken(headerRow[0]);
-    return first==='no'||first==='번호'||first==='순번';
+function excelPasteDateFromSerial(serial){
+  const n=Number(serial);
+  if(!Number.isFinite(n) || n<1 || n>60000) return '';
+  const ms=Date.UTC(1899,11,30)+Math.floor(n)*86400000;
+  const d=new Date(ms);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+}
+function excelPasteDate(v){
+  const raw=excelPasteText(v);
+  if(!raw) return '';
+  if(/^\d+(\.\d+)?$/.test(raw)){
+    if(/^\d{8}$/.test(raw)){
+      const y=Number(raw.slice(0,4)),m=Number(raw.slice(4,6)),d=Number(raw.slice(6,8));
+      return excelPasteValidDateParts(y,m,d)?`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';
+    }
+    if(/^\d{6}$/.test(raw)){
+      const yy=Number(raw.slice(0,2)),current=Number(String(new Date().getFullYear()).slice(-2));
+      const y=yy>current?1900+yy:2000+yy,m=Number(raw.slice(2,4)),d=Number(raw.slice(4,6));
+      return excelPasteValidDateParts(y,m,d)?`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';
+    }
+    const n=Number(raw);
+    if(n>=20000) return excelPasteDateFromSerial(n);
   }
-  const first=excelPasteText(row[0]);
-  const second=excelPasteText(row[1]);
-  if(!first) return true;
-  if(/^\d{1,5}$/.test(first) && (excelPasteDate(second)||/^\d{5}(\.\d+)?$/.test(second))) return true;
-  return false;
+  const cleaned=raw.replace(/년|월/g,'-').replace(/일/g,'').replace(/[./]/g,'-').replace(/\s+/g,'');
+  const parts=cleaned.split('-').filter(Boolean);
+  if(parts.length===3){
+    let y=Number(parts[0]); const m=Number(parts[1]),d=Number(parts[2]);
+    if(y<100){ const current=Number(String(new Date().getFullYear()).slice(-2)); y=y>current?1900+y:2000+y; }
+    return y>=1900&&excelPasteValidDateParts(y,m,d)?`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';
+  }
+  if(parts.length===2){
+    const y=new Date().getFullYear(),m=Number(parts[0]),d=Number(parts[1]);
+    return excelPasteValidDateParts(y,m,d)?`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`:'';
+  }
+  return '';
+}
+function excelPasteTime(v){
+  const raw=excelPasteText(v);
+  if(!raw) return '';
+  if(/^\d+(\.\d+)?$/.test(raw)){
+    const n=Number(raw),fraction=n<1?n:(n-Math.floor(n));
+    if(fraction>0){
+      const minutes=Math.round(fraction*1440)%1440;
+      return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
+    }
+    return '';
+  }
+  const kor=raw.match(/(오전|오후)?\s*(\d{1,2})\s*[:시]\s*(\d{1,2})?/);
+  if(kor){
+    let h=Number(kor[2]),m=Number(kor[3]||0);
+    if(kor[1]==='오후'&&h<12)h+=12;
+    if(kor[1]==='오전'&&h===12)h=0;
+    if(h>=0&&h<24&&m>=0&&m<60)return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  }
+  const compact=raw.replace(/\s/g,'');
+  if(/^\d{3,4}$/.test(compact)){
+    const h=Number(compact.slice(0,-2)),m=Number(compact.slice(-2));
+    if(h<24&&m<60)return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  }
+  return '';
+}
+function excelPasteBirthValue(v){
+  const raw=excelPasteText(v);
+  if(!raw) return '';
+  if(/^\d{2}$/.test(raw)){
+    const yy=Number(raw),current=Number(String(new Date().getFullYear()).slice(-2));
+    return String(yy>current?1900+yy:2000+yy);
+  }
+  if(/^\d{4}$/.test(raw) && Number(raw)>=1900 && Number(raw)<=new Date().getFullYear()) return raw;
+  const parsed=excelPasteDate(raw);
+  if(!parsed)return '';
+  const year=Number(parsed.slice(0,4));
+  if(year<1900||year>new Date().getFullYear())return '';
+  return parsed;
+}
+function excelPasteLooksBirth(v){ return !!excelPasteBirthValue(v); }
+function excelPasteHasNoColumn(row,headerRow=null){
+  if(headerRow){ const first=excelPasteHeaderToken(headerRow[0]); return first==='no'||first==='번호'||first==='순번'; }
+  const first=excelPasteText(row[0]),second=excelPasteText(row[1]);
+  if(!first)return true;
+  return /^\d{1,5}$/.test(first) && (!!excelPasteDate(second)||/^\d{5}(\.\d+)?$/.test(second));
 }
 function excelPasteNormalizeRows(row,headerRow=null){
-  let data=[...row];
-  let header=headerRow?[...headerRow]:null;
+  let data=[...row],header=headerRow?[...headerRow]:null;
   const hasNo=excelPasteHasNoColumn(data,header);
-  if(!hasNo){ data=['',...data]; if(header) header=['',...header]; }
+  if(!hasNo){ data=['',...data]; if(header)header=['',...header]; }
   while(data.length<22)data.push('');
   if(header)while(header.length<data.length)header.push('');
   return {cells:data,headers:header};
@@ -463,9 +535,9 @@ function excelPasteBuildHeaderLayout(headers){
   const finalEducation=excelPasteHeaderIndex(headers,['최종학력']);
   const explicitEducation=excelPasteHeaderIndex(headers,['학력구분','최종학력구분']);
   const school=excelPasteHeaderIndex(headers,['학교명','출신학교','학교']);
-  if(explicitEducation>=0) layout.education=explicitEducation;
-  if(school>=0){ layout.school=school; if(finalEducation>=0 && layout.education===undefined)layout.education=finalEducation; }
-  else if(finalEducation>=0) layout.school=finalEducation;
+  if(explicitEducation>=0)layout.education=explicitEducation;
+  if(school>=0){ layout.school=school; if(finalEducation>=0&&layout.education===undefined)layout.education=finalEducation; }
+  else if(finalEducation>=0)layout.school=finalEducation;
   const city=excelPasteHeaderIndex(headers,['지역시','거주지역','지역']);
   if(city>=0)layout.region=city;
   return layout;
@@ -473,93 +545,21 @@ function excelPasteBuildHeaderLayout(headers){
 function excelPasteDetectLayout(cells,headers=null){
   const headerLayout=excelPasteBuildHeaderLayout(headers);
   if(headerLayout && headerLayout.name!==undefined && headerLayout.phone!==undefined){
-    const is2026=headerLayout.education!==undefined && headerLayout.school!==undefined;
+    const is2026=headerLayout.education!==undefined&&headerLayout.school!==undefined;
     return {layout:{...(is2026?EXCEL_LAYOUT_2026:EXCEL_LAYOUT_LEGACY),...headerLayout},format:is2026?'2026 형식(헤더 기준)':'기존 형식(헤더 기준)',confidence:100};
   }
-  let legacy=0, modern=0;
-  if(excelPasteLooksGender(cells[9])) legacy+=5;
-  if(excelPasteLooksGender(cells[8])) modern+=5;
-  if(excelPasteLooksPhone(cells[14])) legacy+=6;
-  if(excelPasteLooksPhone(cells[15])) modern+=6;
-  if(excelPasteLooksEducation(cells[12])) modern+=4; else if(excelPasteText(cells[12])) legacy+=1;
-  if(excelPasteLooksAge(cells[16])){ legacy+=1; modern+=1; }
-  if(excelPasteLooksBirth(cells[15])) legacy+=2;
-  if(excelPasteLooksBirth(cells[17])) modern+=2;
-  if(excelPasteLooksEmail(cells[11])){ legacy+=1; modern+=1; }
-  if(modern>legacy) return {layout:{...EXCEL_LAYOUT_2026},format:'2026 형식',confidence:modern-legacy};
+  let legacy=0,modern=0;
+  if(excelPasteLooksGender(cells[9]))legacy+=5;
+  if(excelPasteLooksGender(cells[8]))modern+=5;
+  if(excelPasteLooksPhone(cells[14]))legacy+=6;
+  if(excelPasteLooksPhone(cells[15]))modern+=6;
+  if(excelPasteLooksEducation(cells[12]))modern+=4; else if(excelPasteText(cells[12]))legacy+=1;
+  if(excelPasteLooksAge(cells[16])){legacy+=1;modern+=1;}
+  if(excelPasteLooksBirth(cells[15]))legacy+=2;
+  if(excelPasteLooksBirth(cells[17]))modern+=2;
+  if(excelPasteLooksEmail(cells[11])){legacy+=1;modern+=1;}
+  if(modern>legacy)return {layout:{...EXCEL_LAYOUT_2026},format:'2026 형식',confidence:modern-legacy};
   return {layout:{...EXCEL_LAYOUT_LEGACY},format:'기존 형식',confidence:legacy-modern};
-}
-function excelPasteDateFromSerial(serial){
-  const n=Number(serial);
-  if(!Number.isFinite(n) || n<1 || n>60000) return '';
-  const ms=Date.UTC(1899,11,30)+Math.floor(n)*86400000;
-  const d=new Date(ms);
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-}
-function excelPasteDate(v){
-  const raw=excelPasteText(v);
-  if(!raw) return '';
-  if(/^\d+(\.\d+)?$/.test(raw)){
-    if(/^\d{8}$/.test(raw)) return `${raw.slice(0,4)}-${raw.slice(4,6)}-${raw.slice(6,8)}`;
-    if(/^\d{6}$/.test(raw)){
-      const yy=Number(raw.slice(0,2));
-      const current=Number(String(new Date().getFullYear()).slice(-2));
-      const yyyy=yy>current?1900+yy:2000+yy;
-      return `${yyyy}-${raw.slice(2,4)}-${raw.slice(4,6)}`;
-    }
-    const n=Number(raw);
-    if(n>=20000) return excelPasteDateFromSerial(n);
-  }
-  const cleaned=raw.replace(/년|월/g,'-').replace(/일/g,'').replace(/[./]/g,'-').replace(/\s+/g,'');
-  const parts=cleaned.split('-').filter(Boolean);
-  if(parts.length===3){
-    let y=Number(parts[0]); const m=Number(parts[1]), d=Number(parts[2]);
-    if(y<100){ const current=Number(String(new Date().getFullYear()).slice(-2)); y=y>current?1900+y:2000+y; }
-    if(y>=1900&&m>=1&&m<=12&&d>=1&&d<=31) return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  }
-  if(parts.length===2){
-    const y=new Date().getFullYear(),m=Number(parts[0]),d=Number(parts[1]);
-    if(m>=1&&m<=12&&d>=1&&d<=31) return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-  }
-  return '';
-}
-function excelPasteTime(v){
-  const raw=excelPasteText(v);
-  if(!raw) return '';
-  if(/^\d+(\.\d+)?$/.test(raw)){
-    const n=Number(raw);
-    const fraction=n<1?n:(n-Math.floor(n));
-    if(fraction>0){
-      const minutes=Math.round(fraction*1440)%1440;
-      return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
-    }
-    return '';
-  }
-  const kor=raw.match(/(오전|오후)?\s*(\d{1,2})\s*[:시]\s*(\d{1,2})?/);
-  if(kor){
-    let h=Number(kor[2]), m=Number(kor[3]||0);
-    if(kor[1]==='오후'&&h<12)h+=12;
-    if(kor[1]==='오전'&&h===12)h=0;
-    if(h>=0&&h<24&&m>=0&&m<60) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-  }
-  const compact=raw.replace(/\s/g,'');
-  if(/^\d{3,4}$/.test(compact)){
-    const h=Number(compact.slice(0,-2)),m=Number(compact.slice(-2));
-    if(h<24&&m<60)return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-  }
-  return '';
-}
-function excelPasteBirthValue(v){
-  const raw=excelPasteText(v);
-  if(!raw) return '';
-  if(/^\d{2}$/.test(raw)){
-    const yy=Number(raw),current=Number(String(new Date().getFullYear()).slice(-2));
-    return String(yy>current?1900+yy:2000+yy);
-  }
-  if(/^\d{4}$/.test(raw) && Number(raw)>=1900 && Number(raw)<=new Date().getFullYear()) return raw;
-  const parsed=excelPasteDate(raw);
-  if(parsed) return parsed;
-  return '';
 }
 function excelPasteNormalizeEducation(value){
   const v=excelPasteText(value).replace(/\s/g,'');
@@ -573,239 +573,283 @@ function excelPasteNormalizeEducation(value){
 }
 function excelPasteCareerType(value,career){
   const v=excelPasteText(value);
-  if(v.includes('신입')) return '신입';
-  if(v.includes('경력')) return '경력';
+  if(v.includes('신입'))return '신입';
+  if(v.includes('경력'))return '경력';
   const c=excelPasteText(career);
-  if(!c||c==='-') return '';
-  return /신입|졸업|졸업예정/.test(c) && !/[~～]\s*(현재|재직|\d{2})/.test(c) ? '신입' : '경력';
+  if(!c||c==='-')return '';
+  return /신입|졸업|졸업예정/.test(c)&&!/[~～]\s*(현재|재직|\d{2})/.test(c)?'신입':'경력';
 }
 function excelPasteEducation(school){
   const s=excelPasteText(school);
-  if(!s) return '';
+  if(!s)return '';
   if(typeof findSchoolByText==='function'){
     const matched=findSchoolByText(s);
     const type=matched&&typeof normalizeSchoolType==='function'?normalizeSchoolType(matched.type):'';
-    if(type==='고등학교') return '고졸';
-    if(type==='전문대') return '전졸';
-    if(type==='대학교') return '대졸';
+    if(type==='고등학교')return '고졸';
+    if(type==='전문대')return '전졸';
+    if(type==='대학교')return '대졸';
   }
-  if(/대학원/.test(s)) return '대학원';
-  if(/고등학교|고교|하이텍/.test(s)) return '고졸';
-  if(/전문대|전문대학교|과학대|공업대|도립.*대|폴리텍|기능대|직업.*학교|전문학교/.test(s)) return '전졸';
-  if(/대학교|대$|대\(|대학|학점은행/.test(s)) return '대졸';
+  if(/대학원/.test(s))return '대학원';
+  if(/고등학교|고교|하이텍/.test(s))return '고졸';
+  if(/전문대|전문대학교|이공대|과학대|공업대|도립.*대|폴리텍|기능대|직업.*학교|전문학교/.test(s))return '전졸';
+  if(/대학교|대$|대\(|대학|학점은행/.test(s))return '대졸';
   return '기타';
 }
 function excelPasteDorm(note){
   const s=excelPasteText(note).replace(/\s/g,'');
-  if(!s) return '';
-  if(/기숙사.*(출퇴근|통근)|출퇴근|통근/.test(s)) return '출퇴근';
-  if(/기숙사/.test(s)) return '기숙사';
-  if(/확인필요|확인요망|미확인/.test(s)) return '확인필요';
+  if(!s)return '';
+  if(/기숙사.*(출퇴근|통근)|출퇴근|통근/.test(s))return '출퇴근';
+  if(/기숙사/.test(s))return '기숙사';
+  if(/확인필요|확인요망|미확인/.test(s))return '확인필요';
   return '';
 }
-function excelPasteValue(cells,layout,field){
-  const index=layout[field];
-  return index===undefined||index<0?'':excelPasteText(cells[index]);
+function excelPasteValue(cells,layout,field){ const index=layout[field]; return index===undefined||index<0?'':excelPasteText(cells[index]); }
+function excelPasteIssue(field,text,level='warning',code=''){ return {field,text,level,code}; }
+function excelPasteRecognizedStatus(raw){
+  const s=excelPasteText(raw);
+  if(!s)return true;
+  const known=['문자발송','연락완료','보류','부적합','전형마감','취소','입사포기'];
+  return STATUS_OPTIONS.includes(s)||known.includes(s);
 }
 function excelPasteRowToApplicant(row,headerRow=null){
-  const warnings=[];
-  if(row.length<20 || row.length>23) throw new Error(`지원자 한 행은 약 21~22열이어야 합니다. 현재 ${row.length}열이 감지됐습니다.`);
-  const normalized=excelPasteNormalizeRows(row,headerRow);
-  const cells=normalized.cells;
-  const detected=excelPasteDetectLayout(cells,normalized.headers);
-  const layout=detected.layout;
-  const get=field=>excelPasteValue(cells,layout,field);
-  const statusRaw=get('status');
-  const applyDate=excelPasteDate(get('applyDate'));
-  const interviewDate=excelPasteDate(get('interviewDate'));
-  const interviewTime=excelPasteTime(get('interviewTime'));
-  const hireDate=excelPasteDate(get('hireDate'));
-  const name=get('name');
-  const phoneRaw=get('phone');
-  const phone=formatPhoneDisplay(phoneRaw);
-  const school=get('school');
-  const memo=get('memo');
-  const birthValue=excelPasteBirthValue(get('birthYear'));
-  const explicitEducation=excelPasteNormalizeEducation(get('education'));
+  const issues=[];
+  if(row.length<20||row.length>23)throw new Error(`지원자 한 행은 약 21~22열이어야 합니다. 현재 ${row.length}열이 감지됐습니다.`);
+  const normalized=excelPasteNormalizeRows(row,headerRow),cells=normalized.cells;
+  const detected=excelPasteDetectLayout(cells,normalized.headers),layout=detected.layout,get=field=>excelPasteValue(cells,layout,field);
+  const statusRaw=get('status'),applyRaw=get('applyDate'),interviewRaw=get('interviewDate'),timeRaw=get('interviewTime'),hireRaw=get('hireDate');
+  const birthRaw=get('birthYear'),phoneRaw=get('phone'),genderRaw=get('gender'),emailRaw=get('email');
+  const applyDate=excelPasteDate(applyRaw),interviewDate=excelPasteDate(interviewRaw),interviewTime=excelPasteTime(timeRaw),hireDate=excelPasteDate(hireRaw);
+  const school=get('school'),memo=get('memo'),birthValue=excelPasteBirthValue(birthRaw),explicitEducation=excelPasteNormalizeEducation(get('education'));
   const region=[get('region'),get('detailRegion')].filter(Boolean).join(' ');
   const data={
-    applyDate,
-    status:statusRaw?normalizeStatus(statusRaw):'미연락',
-    interviewDate,
-    interviewTime,
-    hireDate,
-    source:get('source'),
-    careerType:excelPasteCareerType(get('careerType'),get('career')),
-    extra:get('extra'),
-    workplace:'',
-    dormUse:excelPasteDorm(memo),
-    gender:normalizeGender(get('gender')),
-    name,
-    email:get('email'),
-    school,
-    major:get('major'),
-    phone,
-    birthYear:birthValue,
-    age:get('age') || (birthValue&&typeof calcAge==='function'?String(calcAge(birthValue)||''):''),
-    region,
-    career:get('career'),
-    certs:get('certs'),
-    memo,
-    education:explicitEducation || excelPasteEducation(school)
+    applyDate,status:statusRaw?normalizeStatus(statusRaw):'미연락',interviewDate,interviewTime,hireDate,source:get('source'),
+    careerType:excelPasteCareerType(get('careerType'),get('career')),extra:get('extra'),workplace:'',dormUse:excelPasteDorm(memo),
+    gender:normalizeGender(genderRaw),name:get('name'),email:emailRaw,school,major:get('major'),phone:formatPhoneDisplay(phoneRaw),birthYear:birthValue,
+    age:get('age')||(birthValue&&typeof calcAge==='function'?String(calcAge(birthValue)||''):''),region,career:get('career'),certs:get('certs'),memo,
+    education:explicitEducation||excelPasteEducation(school)
   };
-  if(!name) warnings.push({field:'name',text:'성명이 비어 있습니다.'});
-  if(!phoneRaw) warnings.push({field:'phone',text:'연락처가 비어 있습니다.'});
-  else if(!excelPasteLooksPhone(phoneRaw)) warnings.push({field:'phone',text:`연락처 “${phoneRaw}” 형식을 확인하세요.`});
-  if(data.email && !excelPasteLooksEmail(data.email)) warnings.push({field:'email',text:'이메일 형식을 확인하세요.'});
-  if(get('gender') && !data.gender) warnings.push({field:'gender',text:`성별 “${get('gender')}” 값을 확인하세요.`});
-  if(get('birthYear') && !birthValue) warnings.push({field:'birthYear',text:`생년월일 “${get('birthYear')}” 형식을 확인하세요.`});
-  if(!applyDate && get('applyDate')) warnings.push({field:'applyDate',text:'지원일 형식을 확인하세요.'});
-  if(!interviewDate && get('interviewDate')) warnings.push({field:'interviewDate',text:'면접일 형식을 확인하세요.'});
-  if(!interviewTime && get('interviewTime')) warnings.push({field:'interviewTime',text:'면접시간 형식을 확인하세요.'});
-  if(!hireDate && get('hireDate')) warnings.push({field:'hireDate',text:'입사일 형식을 확인하세요.'});
-  if(!data.workplace) warnings.push({field:'workplace',text:'엑셀에 지원근무지 열이 없어 직접 선택해야 합니다.'});
-  if(statusRaw && data.status==='미연락' && !/미연락|문자발송/.test(statusRaw)) warnings.push({field:'status',text:`연락상태 “${statusRaw}”를 미연락으로 변환했습니다.`});
-  if(detected.confidence<2 && !normalized.headers) warnings.push({field:'extra',text:'엑셀 열 형식 판단이 애매합니다. 성별·지원파트·학교·연락처를 확인하세요.'});
+  if(!data.name)issues.push(excelPasteIssue('name','성명이 비어 있습니다.','error','required-name'));
+  if(!applyRaw)issues.push(excelPasteIssue('applyDate','지원일이 비어 있습니다.','error','required-applyDate'));
+  else if(!applyDate)issues.push(excelPasteIssue('applyDate',`지원일 “${applyRaw}” 형식을 해석하지 못했습니다.`,'error','raw-applyDate'));
+  if(!phoneRaw)issues.push(excelPasteIssue('phone','연락처가 비어 있습니다.','error','required-phone'));
+  else if(!excelPasteLooksPhone(phoneRaw))issues.push(excelPasteIssue('phone',`연락처 “${phoneRaw}” 형식을 확인하세요.`,'error','raw-phone'));
+  if(emailRaw&&!excelPasteLooksEmail(emailRaw))issues.push(excelPasteIssue('email',`이메일 “${emailRaw}” 형식을 확인하세요.`,'error','raw-email'));
+  if(genderRaw&&!data.gender)issues.push(excelPasteIssue('gender',`성별 “${genderRaw}” 값을 확인하세요.`,'error','raw-gender'));
+  if(birthRaw&&!birthValue)issues.push(excelPasteIssue('birthYear',`생년월일 “${birthRaw}” 형식을 확인하세요.`,'error','raw-birthYear'));
+  if(interviewRaw&&!interviewDate)issues.push(excelPasteIssue('interviewDate',`면접일 “${interviewRaw}” 형식을 확인하세요.`,'error','raw-interviewDate'));
+  if(timeRaw&&!interviewTime)issues.push(excelPasteIssue('interviewTime',`면접시간 “${timeRaw}” 형식을 확인하세요.`,'error','raw-interviewTime'));
+  if(hireRaw&&!hireDate)issues.push(excelPasteIssue('hireDate',`입사일 “${hireRaw}” 형식을 확인하세요.`,'error','raw-hireDate'));
+  if(statusRaw&&!excelPasteRecognizedStatus(statusRaw))issues.push(excelPasteIssue('status',`연락상태 “${statusRaw}”를 자동 판단할 수 없습니다. 직접 선택하세요.`,'error','raw-status'));
+  if(detected.confidence<2&&!normalized.headers)issues.push(excelPasteIssue('extra','엑셀 열 형식 판단이 애매합니다. 성별·지원파트·학교·연락처를 확인하세요.','error','layout-confidence'));
+  if(!explicitEducation&&school)issues.push(excelPasteIssue('education',`학력구분을 학교명 “${school}”에서 ${data.education||'기타'}(으)로 추정했습니다.`,'warning','education-inferred'));
   const present={};
-  Object.keys(EXCEL_PASTE_FIELD_MAP).forEach(field=>{ present[field]=field==='workplace'?false:!!get(field); });
-  present.education=!!get('education')||!!school;
-  present.dormUse=!!memo;
-  present.careerType=!!get('careerType')||!!get('career');
-  present.region=!!region;
-  return {data,warnings,present,format:detected.format,confidence:detected.confidence};
+  Object.keys(EXCEL_PASTE_FIELD_MAP).forEach(field=>{present[field]=field==='workplace'?false:!!get(field);});
+  present.education=!!get('education')||!!school; present.dormUse=!!memo; present.careerType=!!get('careerType')||!!get('career'); present.region=!!region;
+  return {data,issues,present,format:detected.format,confidence:detected.confidence,preview:{cells,headers:normalized.headers,layout}};
 }
 function excelPasteFindDuplicates(data,editId=''){
-  const p=excelPastePhoneDigits(data.phone);
-  const email=excelPasteText(data.email).toLowerCase();
-  return applicants.filter(a=>{
-    if(a.id===editId) return false;
-    const samePhone=p.length>=8 && excelPastePhoneDigits(a.phone)===p;
-    const sameEmail=email && excelPasteText(a.email).toLowerCase()===email;
-    const sameIdentity=data.name&&a.name===data.name&&data.birthYear&&a.birthYear===data.birthYear;
-    return samePhone||sameEmail||sameIdentity;
-  }).slice(0,5);
+  const p=excelPastePhoneDigits(data.phone),email=excelPasteText(data.email).toLowerCase(),birth=excelPasteText(data.birthYear);
+  return applicants.map(a=>{
+    if(a.id===editId)return null;
+    const reasons=[];
+    if(p.length>=8&&excelPastePhoneDigits(a.phone)===p)reasons.push('연락처 동일');
+    if(email&&excelPasteText(a.email).toLowerCase()===email)reasons.push('이메일 동일');
+    if(data.name&&a.name===data.name&&birth&&excelPasteText(a.birthYear)===birth)reasons.push('성명+생년월일 동일');
+    return reasons.length?{applicant:a,reasons}:null;
+  }).filter(Boolean).slice(0,5);
 }
-function excelPasteCurrentApplicant(){
-  const id=$('editId')?.value||'';
-  return id?applicants.find(a=>a.id===id)||null:null;
-}
+function excelPasteCurrentApplicant(){ const id=$('editId')?.value||''; return id?applicants.find(a=>a.id===id)||null:null; }
 function excelPasteSetMessage(message,type='info'){
-  const el=$('excelPasteMessage');
-  if(!el)return;
-  el.className=`excel-paste-message ${type}`;
-  el.textContent=message||'';
+  const el=$('excelPasteMessage'); if(!el)return;
+  el.className=`excel-paste-message ${type}`; el.textContent=message||'';
 }
-function excelPasteSetField(field,value){
-  const id=EXCEL_PASTE_FIELD_MAP[field],el=$(id);
-  if(!el)return;
-  el.value=value??'';
-}
-function excelPasteGetField(field){
-  const el=$(EXCEL_PASTE_FIELD_MAP[field]);
-  return el?el.value.trim():'';
-}
+function excelPasteSetField(field,value){ const el=$(EXCEL_PASTE_FIELD_MAP[field]); if(el)el.value=value??''; }
+function excelPasteGetField(field){ const el=$(EXCEL_PASTE_FIELD_MAP[field]); return el?el.value.trim():''; }
+function excelPasteLiveData(){ const data={}; Object.keys(EXCEL_PASTE_FIELD_MAP).forEach(field=>data[field]=excelPasteGetField(field)); return data; }
 function excelPasteResetReviewClasses(){
-  document.querySelectorAll('#excelPasteEditor [data-field-wrap]').forEach(el=>el.classList.remove('needs-review','has-change'));
+  document.querySelectorAll('#excelPasteEditor [data-field-wrap]').forEach(el=>el.classList.remove('needs-review','has-change','has-error'));
+}
+function excelPasteAgeFromBirth(v){ return typeof calcAge==='function'?Number(calcAge(v)||0):0; }
+function excelPasteValidateLive(data){
+  const errors=[],warnings=[];
+  if(!data.name)errors.push(excelPasteIssue('name','성명은 필수입니다.','error','required-name'));
+  if(!data.applyDate)errors.push(excelPasteIssue('applyDate','지원일은 필수입니다.','error','required-applyDate'));
+  if(!data.phone)errors.push(excelPasteIssue('phone','연락처는 필수입니다.','error','required-phone'));
+  else if(!excelPasteLooksPhone(data.phone))errors.push(excelPasteIssue('phone','연락처 형식이 올바르지 않습니다.','error','phone-format'));
+  if(!data.workplace)errors.push(excelPasteIssue('workplace','지원근무지를 직접 선택하세요.','error','required-workplace'));
+  if(!data.dormUse)errors.push(excelPasteIssue('dormUse','출근방법을 직접 선택하세요.','error','required-dormUse'));
+  if(data.email&&!excelPasteLooksEmail(data.email))errors.push(excelPasteIssue('email','이메일 형식이 올바르지 않습니다.','error','email-format'));
+  if(data.gender&&!excelPasteLooksGender(data.gender))errors.push(excelPasteIssue('gender','성별 값을 확인하세요.','error','gender-format'));
+  if(data.birthYear&&!excelPasteLooksBirth(data.birthYear))errors.push(excelPasteIssue('birthYear','생년월일 형식이 올바르지 않습니다.','error','birth-format'));
+  excelPasteRawInvalidFields.forEach(field=>{ if(!data[field]&&!excelPasteTouchedFields.has(field))errors.push(excelPasteIssue(field,`${EXCEL_PASTE_FIELD_LABELS[field]||field} 원본 값이 해석되지 않았습니다. 올바른 값으로 수정하거나 비워 둘 것인지 확인하세요.`,'error',`raw-unresolved-${field}`)); });
+  if(data.interviewTime&&!data.interviewDate)errors.push(excelPasteIssue('interviewDate','면접시간이 있으면 면접일도 입력해야 합니다.','error','schedule-interview'));
+  if(['면접예정','면접완료','다음면접'].includes(data.status)&&!data.interviewDate)errors.push(excelPasteIssue('interviewDate',`${data.status} 상태에는 면접일이 필요합니다.`,'error','status-interview'));
+  if(['입사예정','출근'].includes(data.status)&&!data.hireDate)errors.push(excelPasteIssue('hireDate',`${data.status} 상태에는 입사일이 필요합니다.`,'error','status-hire'));
+  if(data.applyDate&&data.interviewDate&&data.interviewDate<data.applyDate)warnings.push(excelPasteIssue('interviewDate','면접일이 지원일보다 빠릅니다. 날짜를 확인하세요.','warning','date-order-interview'));
+  if(data.applyDate&&data.hireDate&&data.hireDate<data.applyDate)errors.push(excelPasteIssue('hireDate','입사일이 지원일보다 빠릅니다.','error','date-order-hire'));
+  if(data.interviewDate&&data.hireDate&&data.hireDate<data.interviewDate)errors.push(excelPasteIssue('hireDate','입사일이 면접일보다 빠릅니다.','error','date-order-interview-hire'));
+  const expectedAge=data.birthYear?excelPasteAgeFromBirth(data.birthYear):0,enteredAge=Number(data.age||0);
+  if(expectedAge&&enteredAge&&Math.abs(expectedAge-enteredAge)>1)warnings.push(excelPasteIssue('age',`생년월일 기준 나이(${expectedAge})와 입력 나이(${enteredAge})가 다릅니다.`,'warning','age-mismatch'));
+  if(!data.school)warnings.push(excelPasteIssue('school','학교가 비어 있습니다.','warning','missing-school'));
+  if(!data.education)warnings.push(excelPasteIssue('education','학력구분이 비어 있습니다.','warning','missing-education'));
+  return {errors,warnings};
+}
+function excelPasteRenderOriginalPreview(preview,format){
+  const block=$('excelPasteOriginalBlock'),target=$('excelPasteOriginalPreview'),note=$('excelPasteOriginalMeta');
+  if(!block||!target||!preview)return;
+  const headers=preview.headers&&preview.headers.some(Boolean)?preview.headers:(format.includes('2026')?EXCEL_ROW_HEADERS_2026:EXCEL_ROW_HEADERS_LEGACY);
+  const cells=preview.cells||[];
+  target.innerHTML=`<div class="excel-paste-original-table-wrap"><table class="excel-paste-original-table"><thead><tr>${headers.slice(0,cells.length).map(h=>`<th>${esc(h||'-')}</th>`).join('')}</tr></thead><tbody><tr>${cells.map(v=>`<td title="${esc(v)}">${esc(v||'-')}</td>`).join('')}</tr></tbody></table></div>`;
+  if(note)note.textContent=`${format} · ${cells.length}열 감지`;
+  block.hidden=false;
+}
+function excelPasteRenderValidation(errors,warnings){
+  const box=$('excelPasteValidationBox'); if(!box)return;
+  if(!errors.length&&!warnings.length){ box.className='excel-paste-validation is-clear'; box.innerHTML='<strong>검사 완료</strong><span>입력값 형식과 필수 항목에 문제가 없습니다.</span>'; return; }
+  box.className=`excel-paste-validation ${errors.length?'has-errors':'has-warnings'}`;
+  const rows=[...errors.map(i=>`<li class="is-error"><b>수정 필요</b>${esc(i.text)}</li>`),...warnings.map(i=>`<li class="is-warning"><b>확인</b>${esc(i.text)}</li>`)];
+  box.innerHTML=`<div><strong>${errors.length?`수정 필요 ${errors.length}개`:'오류 없음'}${warnings.length?` · 확인 ${warnings.length}개`:''}</strong><span>${errors.length?'빨간 항목을 수정해야 입력폼에 적용할 수 있습니다.':'노란 항목을 확인한 뒤 계속할 수 있습니다.'}</span></div><ul>${rows.join('')}</ul>`;
+}
+function excelPasteRenderFinalSummary(data){
+  const box=$('excelPasteFinalSummary'); if(!box)return;
+  const schedule=data.interviewDate?`${data.interviewDate}${data.interviewTime?` ${data.interviewTime}`:''}`:'면접 미정';
+  const items=[['성명',data.name||'미입력'],['연락처',data.phone||'미입력'],['지원',`${data.applyDate||'미입력'} · ${data.status||'미연락'}`],['근무',`${data.workplace||'미선택'} · ${data.dormUse||'미선택'}`],['학력',`${data.education||'미선택'} · ${data.school||'학교 미입력'}`],['일정',schedule]];
+  box.innerHTML=`<div class="excel-paste-summary-head"><strong>적용 전 최종 요약</strong><span>아래 내용이 기존 지원자 입력폼으로 전달됩니다.</span></div><div class="excel-paste-summary-grid">${items.map(([k,v])=>`<div><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`).join('')}</div>`;
 }
 function excelPasteRenderDuplicates(data){
-  const box=$('excelPasteDuplicateBox');
-  if(!box)return;
-  const current=excelPasteCurrentApplicant();
-  const rows=excelPasteFindDuplicates(data,current?.id||'');
-  if(!rows.length){ box.className='excel-paste-duplicate clear'; box.innerHTML='<strong>중복 후보 없음</strong><span>연락처·이메일·성명+생년 기준으로 같은 지원자를 찾지 못했습니다.</span>'; return; }
+  const box=$('excelPasteDuplicateBox'); if(!box)return [];
+  const previousSignature=excelPasteDuplicateMatches.map(x=>`${x.applicant.id}:${x.reasons.join(',')}`).join('|');
+  const previousConfirmed=!!$('xpDuplicateConfirm')?.checked;
+  const current=excelPasteCurrentApplicant(),rows=excelPasteFindDuplicates(data,current?.id||'');
+  const nextSignature=rows.map(x=>`${x.applicant.id}:${x.reasons.join(',')}`).join('|');
+  excelPasteDuplicateMatches=rows;
+  if(!rows.length){ box.className='excel-paste-duplicate clear'; box.innerHTML='<div><strong>중복 후보 없음</strong><span>연락처·이메일·성명+생년월일 기준으로 같은 지원자를 찾지 못했습니다.</span></div>'; return rows; }
   box.className='excel-paste-duplicate warning';
-  box.innerHTML=`<strong>중복 가능성 ${rows.length}명</strong><span>${rows.map(a=>`${esc(a.name||'이름없음')} · ${esc(a.phone||'연락처 없음')} · ${esc(a.applyDate||'지원일 없음')}`).join('<br>')}</span>`;
+  box.innerHTML=`<div><strong>중복 가능성 ${rows.length}명</strong><span>기존 지원자를 확인하고 신규 등록 또는 수정 적용 여부를 판단하세요.</span></div><div class="excel-paste-duplicate-list">${rows.map(({applicant:a,reasons})=>`<div class="excel-paste-duplicate-row"><span><b>${esc(a.name||'이름없음')}</b> · ${esc(a.phone||'연락처 없음')} · ${esc(a.applyDate||'지원일 없음')}<small>${reasons.map(esc).join(' · ')}</small></span><button class="mini" data-excel-duplicate-id="${esc(a.id)}" type="button">기존 지원자 보기</button></div>`).join('')}</div><label class="excel-paste-confirm-line"><input id="xpDuplicateConfirm" type="checkbox"/> 중복 후보를 확인했으며 계속 진행합니다.</label>`;
+  if(previousConfirmed&&previousSignature===nextSignature&&$('xpDuplicateConfirm'))$('xpDuplicateConfirm').checked=true;
+  return rows;
 }
-function excelPastePopulateEditor(data,warnings=[],present={},meta={}){
-  const current=excelPasteCurrentApplicant();
-  const prepared={...data};
-  if(!current){
-    Object.keys(EXCEL_PASTE_FIELD_MAP).forEach(field=>{
-      if(!present[field] && $(field)?.value) prepared[field]=$(field).value;
-    });
-    if(prepared.workplace) warnings=warnings.filter(w=>w.field!=='workplace');
-  }
-  excelPasteParsedData={...prepared}; excelPasteWarnings=warnings; excelPasteSourcePresent={...present}; excelPasteDetectedFormat=meta.format||'';
-  excelPasteResetReviewClasses();
-  Object.keys(EXCEL_PASTE_FIELD_MAP).forEach(field=>excelPasteSetField(field,prepared[field]||''));
-  const modalCard=document.querySelector('#excelRowPasteModal .excel-paste-modal-card');
-  modalCard?.classList.toggle('is-edit-mode',!!current);
-  document.querySelectorAll('.excel-paste-apply').forEach(check=>{
-    const field=check.dataset.field;
-    const currentValue=current?.[field]||'';
-    const nextValue=prepared[field]||'';
-    check.checked=!!current && !!excelPasteSourcePresent[field] && !excelPasteSameValue(field,currentValue,nextValue);
-    const note=document.querySelector(`[data-current-for="${field}"]`);
-    if(note) note.textContent=current?`현재: ${currentValue||'비어 있음'}`:'';
-    const wrap=document.querySelector(`[data-field-wrap="${field}"]`);
-    if(current && !excelPasteSameValue(field,currentValue,nextValue)) wrap?.classList.add('has-change');
+function excelPasteUpdateApplyState(){
+  if(!excelPasteParsedData)return;
+  const data=excelPasteLiveData(),validation=excelPasteValidateLive(data);
+  const staticErrors=excelPasteParseIssues.filter(i=>i.level==='error').filter(i=>{
+    if(i.code==='layout-confidence')return true;
+    if(String(i.code).startsWith('raw-'))return !excelPasteTouchedFields.has(i.field);
+    return false;
   });
-  warnings.forEach(w=>document.querySelector(`[data-field-wrap="${w.field}"]`)?.classList.add('needs-review'));
+  const staticWarnings=excelPasteParseIssues.filter(i=>i.level!=='error'&&!validation.warnings.some(w=>w.code===i.code));
+  const errors=[...staticErrors,...validation.errors].filter((issue,index,arr)=>arr.findIndex(x=>x.field===issue.field&&x.code===issue.code)===index);
+  const warnings=[...staticWarnings,...validation.warnings];
+  excelPasteResetReviewClasses();
+  errors.forEach(i=>document.querySelector(`[data-field-wrap="${i.field}"]`)?.classList.add('has-error'));
+  warnings.forEach(i=>document.querySelector(`[data-field-wrap="${i.field}"]`)?.classList.add('needs-review'));
+  const current=excelPasteCurrentApplicant();
+  if(current){
+    document.querySelectorAll('.excel-paste-apply').forEach(check=>{
+      const field=check.dataset.field,currentValue=current?.[field]||'',nextValue=data[field]||'';
+      const wrap=document.querySelector(`[data-field-wrap="${field}"]`);
+      wrap?.classList.toggle('has-change',!excelPasteSameValue(field,currentValue,nextValue));
+    });
+  }
+  excelPasteRenderValidation(errors,warnings);
+  excelPasteRenderFinalSummary(data);
+  const duplicates=excelPasteRenderDuplicates(data);
+  const manualConfirmed=!!$('xpManualConfirm')?.checked;
+  const duplicateConfirmed=!duplicates.length||!!$('xpDuplicateConfirm')?.checked;
+  const selectedFields=current?[...document.querySelectorAll('.excel-paste-apply:checked')].map(el=>el.dataset.field):Object.keys(EXCEL_PASTE_FIELD_MAP);
+  const selectionOkay=!current||selectedFields.length>0;
+  const button=$('btnApplyExcelPaste');
+  if(button){
+    button.disabled=!!errors.length||!manualConfirmed||!duplicateConfirmed||!selectionOkay;
+    button.textContent=current?'선택 항목을 입력폼에 적용':'입력폼에 적용';
+    button.title=errors.length?'수정 필요 항목을 먼저 해결하세요.':!manualConfirmed?'지원근무지와 출근방법 확인 체크가 필요합니다.':!duplicateConfirmed?'중복 후보 확인 체크가 필요합니다.':!selectionOkay?'적용 항목을 선택하세요.':'';
+  }
+  const status=$('excelPasteReadyState');
+  if(status){
+    if(errors.length){status.className='excel-paste-ready is-blocked';status.textContent=`적용 불가 · 수정 필요 ${errors.length}개`;}
+    else if(!manualConfirmed){status.className='excel-paste-ready is-waiting';status.textContent='지원근무지·출근방법 확인 필요';}
+    else if(!duplicateConfirmed){status.className='excel-paste-ready is-waiting';status.textContent='중복 후보 확인 필요';}
+    else{status.className='excel-paste-ready is-ready';status.textContent='입력폼 적용 가능';}
+  }
+}
+function excelPastePopulateEditor(data,issues=[],present={},meta={}){
+  const current=excelPasteCurrentApplicant(),prepared={...data};
+  if(!current){
+    Object.keys(EXCEL_PASTE_FIELD_MAP).forEach(field=>{ if(!present[field]&&$(field)?.value)prepared[field]=$(field).value; });
+  }
+  excelPasteParsedData={...prepared}; excelPasteParseIssues=issues; excelPasteSourcePresent={...present}; excelPasteDetectedFormat=meta.format||'';
+  excelPasteTouchedFields=new Set();
+  excelPasteRawInvalidFields=new Set(issues.filter(i=>i.level==='error'&&String(i.code).startsWith('raw-')).map(i=>i.field));
+  Object.keys(EXCEL_PASTE_FIELD_MAP).forEach(field=>excelPasteSetField(field,prepared[field]||''));
+  const card=document.querySelector('#excelRowPasteModal .excel-paste-modal-card'); card?.classList.toggle('is-edit-mode',!!current);
+  document.querySelectorAll('.excel-paste-apply').forEach(check=>{
+    const field=check.dataset.field,currentValue=current?.[field]||'',nextValue=prepared[field]||'';
+    check.checked=!!current&&!!excelPasteSourcePresent[field]&&!excelPasteSameValue(field,currentValue,nextValue);
+    const note=document.querySelector(`[data-current-for="${field}"]`); if(note)note.textContent=current?`현재: ${currentValue||'비어 있음'}`:'';
+  });
+  if($('xpManualConfirm'))$('xpManualConfirm').checked=false;
   const editor=$('excelPasteEditor'); if(editor)editor.hidden=false;
-  const btn=$('btnApplyExcelPaste'); if(btn){btn.disabled=false;btn.textContent=current?'선택 항목을 입력폼에 적용':'입력폼에 적용';}
-  const summary=$('excelPasteColumnSummary'); if(summary)summary.textContent=`${excelPasteDetectedFormat||'행 형식 감지'} · ${warnings.length?`확인 필요 ${warnings.length}개`:'형식 정상'}`;
-  excelPasteRenderDuplicates(prepared);
-  excelPasteSetMessage(warnings.length?`행을 분석했습니다. ${warnings.map(w=>w.text).join(' / ')}`:'행을 정상적으로 분석했습니다. 내용을 수정한 뒤 입력폼에 적용하세요.',warnings.length?'warn':'success');
+  const summary=$('excelPasteColumnSummary'); if(summary)summary.textContent=`${excelPasteDetectedFormat||'행 형식 감지'} · ${meta.confidence===100?'헤더 매핑':`자동 판별 점수 ${meta.confidence}`}`;
+  excelPasteRenderOriginalPreview(meta.preview,excelPasteDetectedFormat);
+  excelPasteUpdateApplyState();
+  const errorCount=issues.filter(i=>i.level==='error').length;
+  excelPasteSetMessage(errorCount?`행 분석은 완료됐지만 수정이 필요한 값이 ${errorCount}개 있습니다.`:'행을 정상적으로 분석했습니다. 최종 내용을 확인하세요.',errorCount?'error':'success');
 }
 function parseExcelRowPaste(){
   try{
     const raw=$('excelPasteRaw')?.value||'';
-    if(!raw.trim()) throw new Error('엑셀에서 지원자 한 행을 복사한 뒤 붙여넣어 주세요.');
-    let rows=excelPasteParseTsv(raw);
-    let headerRow=null;
-    if(rows.length && excelPasteIsHeaderRow(rows[0])) headerRow=rows.shift();
+    if(!raw.trim())throw new Error('엑셀에서 지원자 한 행을 복사한 뒤 붙여넣어 주세요.');
+    let rows=excelPasteParseTsv(raw),headerRow=null;
+    if(rows.length&&excelPasteIsHeaderRow(rows[0]))headerRow=rows.shift();
     rows=rows.filter(row=>row.some(Boolean));
-    if(!rows.length) throw new Error('지원자 데이터 행을 찾지 못했습니다. 헤더가 아닌 지원자 행도 함께 복사해 주세요.');
-    if(rows.length>1) throw new Error(`지원자 ${rows.length}개 행이 감지됐습니다. 현재는 한 행씩 붙여넣어 주세요.`);
+    if(!rows.length)throw new Error('지원자 데이터 행을 찾지 못했습니다. 헤더가 아닌 지원자 행도 함께 복사해 주세요.');
+    if(rows.length>1)throw new Error(`지원자 ${rows.length}개 행이 감지됐습니다. 현재는 한 행씩 붙여넣어 주세요.`);
     const parsed=excelPasteRowToApplicant(rows[0],headerRow);
-    excelPastePopulateEditor(parsed.data,parsed.warnings,parsed.present,{format:parsed.format,confidence:parsed.confidence});
+    excelPastePreviewMeta=parsed.preview;
+    excelPastePopulateEditor(parsed.data,parsed.issues,parsed.present,{format:parsed.format,confidence:parsed.confidence,preview:parsed.preview});
   }catch(err){
-    excelPasteParsedData=null; excelPasteWarnings=[]; excelPasteSourcePresent={}; excelPasteDetectedFormat='';
-    if($('excelPasteEditor')) $('excelPasteEditor').hidden=true;
-    if($('btnApplyExcelPaste')) $('btnApplyExcelPaste').disabled=true;
+    excelPasteParsedData=null; excelPasteParseIssues=[]; excelPasteSourcePresent={}; excelPasteDetectedFormat=''; excelPasteRawInvalidFields=new Set();
+    if($('excelPasteEditor'))$('excelPasteEditor').hidden=true;
+    if($('excelPasteOriginalBlock'))$('excelPasteOriginalBlock').hidden=true;
+    if($('btnApplyExcelPaste'))$('btnApplyExcelPaste').disabled=true;
     excelPasteSetMessage(err.message||'붙여넣은 행을 분석하지 못했습니다.','error');
   }
 }
 function resetExcelRowPaste(){
-  excelPasteParsedData=null; excelPasteWarnings=[]; excelPasteSourcePresent={}; excelPasteDetectedFormat='';
-  if($('excelPasteRaw')) $('excelPasteRaw').value='';
-  if($('excelPasteEditor')) $('excelPasteEditor').hidden=true;
-  if($('btnApplyExcelPaste')) $('btnApplyExcelPaste').disabled=true;
-  if($('excelPasteDuplicateBox')) $('excelPasteDuplicateBox').innerHTML='';
-  excelPasteSetMessage('');
-  excelPasteResetReviewClasses();
+  excelPasteParsedData=null; excelPasteParseIssues=[]; excelPasteSourcePresent={}; excelPasteDetectedFormat=''; excelPasteRawInvalidFields=new Set(); excelPasteDuplicateMatches=[]; excelPastePreviewMeta=null; excelPasteTouchedFields=new Set();
+  if($('excelPasteRaw'))$('excelPasteRaw').value='';
+  if($('excelPasteEditor'))$('excelPasteEditor').hidden=true;
+  if($('excelPasteOriginalBlock'))$('excelPasteOriginalBlock').hidden=true;
+  if($('btnApplyExcelPaste'))$('btnApplyExcelPaste').disabled=true;
+  if($('excelPasteDuplicateBox'))$('excelPasteDuplicateBox').innerHTML='';
+  if($('excelPasteValidationBox'))$('excelPasteValidationBox').innerHTML='';
+  if($('excelPasteFinalSummary'))$('excelPasteFinalSummary').innerHTML='';
+  excelPasteSetMessage(''); excelPasteResetReviewClasses();
 }
 function openExcelRowPaste(){
   resetExcelRowPaste();
-  const modal=$('excelRowPasteModal'), current=excelPasteCurrentApplicant();
-  if(!modal)return;
+  const modal=$('excelRowPasteModal'),current=excelPasteCurrentApplicant(); if(!modal)return;
   modal.classList.add('show'); modal.setAttribute('aria-hidden','false');
   const card=modal.querySelector('.excel-paste-modal-card'); card?.classList.toggle('is-edit-mode',!!current);
-  if($('excelPasteModeBadge')) $('excelPasteModeBadge').textContent=current?'기존 지원자 수정':'신규 등록';
-  if($('excelPasteCandidateLabel')) $('excelPasteCandidateLabel').textContent=current?`${current.name||'현재 지원자'}의 엑셀 값과 현재 값을 비교합니다.`:'엑셀에서 지원자 한 행을 복사해 붙여넣으세요.';
+  if($('excelPasteModeBadge'))$('excelPasteModeBadge').textContent=current?'기존 지원자 수정':'신규 등록';
+  if($('excelPasteCandidateLabel'))$('excelPasteCandidateLabel').textContent=current?`${current.name||'현재 지원자'}의 엑셀 값과 현재 값을 비교합니다.`:'엑셀에서 지원자 한 행을 복사해 붙여넣으세요.';
   setTimeout(()=>$('excelPasteRaw')?.focus(),0);
 }
-function closeExcelRowPaste(){
-  const modal=$('excelRowPasteModal'); if(!modal)return;
-  modal.classList.remove('show'); modal.setAttribute('aria-hidden','true');
-}
+function closeExcelRowPaste(){ const modal=$('excelRowPasteModal'); if(!modal)return; modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
 function applyExcelRowPasteToForm(){
   if(!excelPasteParsedData){excelPasteSetMessage('먼저 붙여넣은 행을 분석해 주세요.','error');return;}
+  excelPasteUpdateApplyState();
+  const button=$('btnApplyExcelPaste'); if(button?.disabled){excelPasteSetMessage('수정 필요 항목과 확인 체크를 모두 완료해야 적용할 수 있습니다.','error');return;}
   const current=excelPasteCurrentApplicant();
-  const selectedFields=current
-    ? [...document.querySelectorAll('.excel-paste-apply:checked')].map(el=>el.dataset.field)
-    : Object.keys(EXCEL_PASTE_FIELD_MAP);
-  if(current && !selectedFields.length){excelPasteSetMessage('현재 지원자에게 적용할 항목을 하나 이상 선택해 주세요.','warn');return;}
+  const selectedFields=current?[...document.querySelectorAll('.excel-paste-apply:checked')].map(el=>el.dataset.field):Object.keys(EXCEL_PASTE_FIELD_MAP);
   selectedFields.forEach(field=>{
     const target=$(field); if(!target)return;
     const value=excelPasteGetField(field);
-    if(field==='interviewTime' && value && target.tagName==='SELECT' && ![...target.options].some(o=>o.value===value)) target.add(new Option(value,value));
-    target.value=value;
-    target.dispatchEvent(new Event('input',{bubbles:true}));
-    target.dispatchEvent(new Event('change',{bubbles:true}));
+    if(field==='interviewTime'&&value&&target.tagName==='SELECT'&&![...target.options].some(o=>o.value===value))target.add(new Option(value,value));
+    target.value=value; target.dispatchEvent(new Event('input',{bubbles:true})); target.dispatchEvent(new Event('change',{bubbles:true}));
   });
-  updateScorePreview(); checkDuplicate(); updateFormMode();
-  closeExcelRowPaste();
-  if(typeof uxToast==='function') uxToast(current?'선택한 엑셀 값을 수정 폼에 적용했습니다. 저장 버튼을 눌러 확정하세요.':'엑셀 값을 신규 지원자 폼에 적용했습니다. 내용을 확인한 뒤 등록하세요.');
-  const focusTarget=$('name'); if(focusTarget) setTimeout(()=>focusTarget.focus(),0);
+  updateScorePreview(); checkDuplicate(); updateFormMode(); closeExcelRowPaste();
+  if(typeof uxToast==='function')uxToast(current?'선택한 엑셀 값을 수정 폼에 적용했습니다. 저장 버튼을 눌러 확정하세요.':'검증된 엑셀 값을 신규 지원자 폼에 적용했습니다. 내용을 확인한 뒤 등록하세요.');
+  setTimeout(()=>$('name')?.focus(),0);
 }
+

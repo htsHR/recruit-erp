@@ -1,7 +1,7 @@
-// Recruit ERP v10.40.2 — runtime state initialization
+// Recruit ERP v10.40.3 — runtime state initialization
 // All function declarations are loaded before data is normalized and rendered.
 schools = loadSchools();
 employees = loadEmployees();
 applicants = load();
 calendarEvents = loadCalendarEvents();
-console.info('[HOME_DEV] Recruit ERP v10.40.2 loaded applicants:', applicants.length);
+console.info('[HOME_DEV] Recruit ERP v10.40.3 loaded applicants:', applicants.length);
