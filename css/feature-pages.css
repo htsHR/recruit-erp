@@ -586,3 +586,53 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 .bulk-dock:not(.show){opacity:0;visibility:hidden;pointer-events:none}.bulk-dock.show{opacity:1;visibility:visible;pointer-events:auto}
 .health-excel-toggle{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:center!important;gap:8px!important}.health-excel-toggle input{display:inline-block!important;flex:0 0 auto!important;margin:0!important;width:16px!important;height:16px!important}
 @media(max-width:480px){.health-excel-toggle{justify-content:flex-start!important}}
+
+
+/* ===== v10.40.10 APPLICANT_LIST_REGRESSION_FIX =====
+   고정 px colgroup을 제거하고 핵심 열을 비율 폭으로 배치합니다.
+   데스크톱에서는 카드 전체 폭을 사용하며 모바일 카드형 규칙은 유지합니다. */
+@media(min-width:761px){
+  #applicants .table-wrap{
+    width:100%!important;
+    max-width:100%!important;
+    overflow-x:auto!important;
+  }
+  #applicants .applicant-table{
+    display:table!important;
+    width:100%!important;
+    min-width:980px!important;
+    max-width:none!important;
+    table-layout:fixed!important;
+  }
+  #applicants .applicant-table th,
+  #applicants .applicant-table td{
+    min-width:0!important;
+    max-width:none!important;
+  }
+  #applicants .applicant-table .email-head,
+  #applicants .applicant-table .email-cell,
+  #applicants .applicant-table .region-head,
+  #applicants .applicant-table .region-cell,
+  #applicants .applicant-table .commute-head,
+  #applicants .applicant-table .commute-cell{
+    display:none!important;
+  }
+  #applicants .applicant-table th:nth-child(7),
+  #applicants .applicant-table td:nth-child(7),
+  #applicants .applicant-table th:nth-child(11),
+  #applicants .applicant-table td:nth-child(11),
+  #applicants .applicant-table th:nth-child(12),
+  #applicants .applicant-table td:nth-child(12){display:table-cell!important;}
+  #applicants .applicant-table th:nth-child(1),#applicants .applicant-table td:nth-child(1){width:4.5%!important;}
+  #applicants .applicant-table th:nth-child(2),#applicants .applicant-table td:nth-child(2){width:8%!important;}
+  #applicants .applicant-table th:nth-child(3),#applicants .applicant-table td:nth-child(3){width:8%!important;}
+  #applicants .applicant-table th:nth-child(4),#applicants .applicant-table td:nth-child(4){width:14%!important;}
+  #applicants .applicant-table th:nth-child(5),#applicants .applicant-table td:nth-child(5){width:13%!important;}
+  #applicants .applicant-table th:nth-child(7),#applicants .applicant-table td:nth-child(7){width:9%!important;}
+  #applicants .applicant-table th:nth-child(9),#applicants .applicant-table td:nth-child(9){width:14%!important;}
+  #applicants .applicant-table th:nth-child(11),#applicants .applicant-table td:nth-child(11){width:11%!important;}
+  #applicants .applicant-table th:nth-child(12),#applicants .applicant-table td:nth-child(12){width:18.5%!important;}
+}
+@media(min-width:1301px){
+  #applicants .applicant-table{min-width:100%!important;max-width:100%!important;}
+}
