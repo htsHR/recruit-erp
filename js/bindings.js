@@ -254,7 +254,7 @@ bind('btnCopySummary','click',async()=>{ const a=applicants.find(x=>x.id===detai
   }catch{ alert('복사가 막히면 상세 내용을 직접 드래그해서 복사해주세요.'); } });
 
 
-/* v10.40.4 엑셀 지원자 한 행 붙여넣기 안정화 이벤트 */
+/* v10.40.7 엑셀 한 행·여러 행 붙여넣기 이벤트 */
 bind('btnOpenExcelRowPaste','click',openExcelRowPaste);
 bind('btnCloseExcelRowPaste','click',closeExcelRowPaste);
 bind('btnCancelExcelPaste','click',closeExcelRowPaste);
@@ -262,11 +262,21 @@ bind('excelRowPasteBackdrop','click',closeExcelRowPaste);
 bind('btnParseExcelRow','click',parseExcelRowPaste);
 bind('btnClearExcelPaste','click',()=>{resetExcelRowPaste();$('excelPasteRaw')?.focus();});
 bind('btnApplyExcelPaste','click',applyExcelRowPasteToForm);
+bind('btnRegisterExcelBatch','click',registerExcelPasteBatch);
+bind('btnUndoExcelBatch','click',undoExcelPasteBatch);
+bind('btnBatchSelectReady','click',excelPasteBatchSelectReady);
+bind('btnBatchClearSelection','click',excelPasteBatchClearSelection);
+bind('xpBatchWarningConfirm','change',excelPasteBatchUpdateSelectionState);
+bind('xpBatchDuplicateConfirm','change',excelPasteBatchUpdateSelectionState);
 bind('xpManualConfirm','change',excelPasteUpdateApplyState);
 bind('excelPasteRaw','paste',()=>setTimeout(()=>{
   const raw=$('excelPasteRaw')?.value||'';
   if(raw.includes('\t'))parseExcelRowPaste();
 },0));
+const excelPasteBatchEl=$('excelPasteBatch');
+if(excelPasteBatchEl){
+  excelPasteBatchEl.addEventListener('change',e=>{if(e.target.matches('.excel-batch-select,[data-batch-field]'))excelPasteBatchHandleChange(e.target);});
+}
 const excelPasteEditorEl=$('excelPasteEditor');
 if(excelPasteEditorEl){
   const refreshExcelPaste=source=>{
