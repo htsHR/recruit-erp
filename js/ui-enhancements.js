@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='10.40.11';
+const UX_VERSION='10.40.13';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -386,12 +386,16 @@ renderSchoolManage=function(){
 window.renderSchoolManage=renderSchoolManage;
 
 /* ---------- Employee action/detail ---------- */
-function uxOpenEmployeeEntry(){ const d=uxEl('employeeEntryDetails'); if(d){ d.open=true; d.scrollIntoView({behavior:'smooth',block:'start'}); setTimeout(()=>uxEl('empName')?.focus(),350); } }
+function uxOpenEmployeeEntry(){ resetEmployeeForm(); const d=uxEl('employeeEntryDetails'); if(d){ d.open=true; d.scrollIntoView({behavior:'smooth',block:'start'}); setTimeout(()=>uxEl('empName')?.focus(),350); } }
 function uxSaveEmployeeDetailStatus(){
   const e=employees.find(x=>x.id===employeeDetailCurrentId); if(!e) return;
-  const next=uxEl('employeeDetailStatus')?.value||e.status; const patch={status:next,updatedAt:new Date().toISOString()};
-  if(next==='퇴사'&&!e.leaveDate){ const d=prompt('퇴사일을 입력하세요.',today()); if(d===null)return; patch.leaveDate=d.trim(); }
-  employees=employees.map(x=>x.id===e.id?normalizeEmployee({...x,...patch}):x); saveEmployees(); renderEmployeeDetail(); uxToast(`${e.name}님의 재직상태를 ${next}(으)로 변경했습니다.`);
+  const next=uxEl('employeeDetailStatus')?.value||e.status;
+  const patch={status:next,updatedAt:new Date().toISOString()};
+  if(next==='퇴사'&&!e.leaveDate){const d=prompt('퇴사일을 입력하세요.',today());if(d===null)return;patch.leaveDate=d.trim();if(!patch.leaveDate){uxToast('퇴사일이 필요합니다.','warn');return;}}
+  if(next==='휴직'&&!e.leaveStartDate){const d=prompt('휴직 시작일을 입력하세요.',today());if(d===null)return;patch.leaveStartDate=d.trim();if(!patch.leaveStartDate){uxToast('휴직일이 필요합니다.','warn');return;}}
+  if(next==='재직중'&&e.status==='휴직'&&!e.returnDate){const d=prompt('복직일을 입력하세요.',today());if(d===null)return;patch.returnDate=d.trim();if(!patch.returnDate){uxToast('복직일이 필요합니다.','warn');return;}}
+  employees=employees.map(x=>x.id===e.id?normalizeEmployee({...x,...patch}):x);
+  saveEmployees();renderEmployeeDetail();uxToast(`${e.name}님의 재직상태를 ${next}(으)로 변경했습니다.`);
 }
 const uxBaseOpenEmployeeDetail=openEmployeeDetail;
 openEmployeeDetail=function(id){ uxBaseOpenEmployeeDetail(id); const e=employees.find(x=>x.id===id); if(e&&uxEl('employeeDetailStatus')) uxEl('employeeDetailStatus').value=e.status||'재직중'; };

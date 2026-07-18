@@ -151,22 +151,23 @@ bind('employeeJsonImport','change',e=>{
 document.addEventListener('click',e=>{ if(!e.target.closest('.row-more-menu')) closeAllRowMoreMenus(); });
 window.addEventListener('scroll',closeAllRowMoreMenus,true);
 window.addEventListener('resize',closeAllRowMoreMenus);
-document.querySelectorAll('#employeeStatusTabs .tab').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('#employeeStatusTabs .tab').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active'); employeeStatusFilter=b.dataset.empstatus; employeePage=1; renderEmployees();
+document.querySelectorAll('#employeeStatusTabs [data-empstatus]').forEach(b=>b.addEventListener('click',()=>setEmployeeStatusFilter(b.dataset.empstatus)));
+document.querySelectorAll('[data-employee-summary-status]').forEach(b=>b.addEventListener('click',()=>setEmployeeStatusFilter(b.dataset.employeeSummaryStatus)));
+document.querySelectorAll('#employeeViewTabs [data-empview]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('#employeeViewTabs [data-empview]').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');employeeViewMode=b.dataset.empview;
+  if($('employeeListView'))$('employeeListView').style.display=employeeViewMode==='list'?'':'none';
+  if($('employeeDeptView'))$('employeeDeptView').style.display=employeeViewMode==='dept'?'':'none';
 }));
-document.querySelectorAll('#employeeViewTabs .tab').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('#employeeViewTabs .tab').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  employeeViewMode=b.dataset.empview;
-  if($('employeeListView')) $('employeeListView').style.display = employeeViewMode==='list' ? '' : 'none';
-  if($('employeeDeptView')) $('employeeDeptView').style.display = employeeViewMode==='dept' ? '' : 'none';
-}));
-bind('btnEmployeeSearch','click', applyEmployeeSearch);
-['empSearchName','empSearchNo','empSearchSchool'].forEach(id=>bind(id,'keydown',e=>{ if(e.key==='Enter') applyEmployeeSearch(); }));
-bind('btnEmployeeResetFilters','click', resetEmployeeFilters);
-bind('btnCsvEmployees','click', csvEmployees);
-bind('btnGoSchools','click', ()=>setPage('schools'));
+bind('btnEmployeeSearch','click',applyEmployeeSearch);
+['empSearchName','empSearchNo','empSearchSchool'].forEach(id=>bind(id,'keydown',e=>{if(e.key==='Enter')applyEmployeeSearch();}));
+bind('btnEmployeeResetFilters','click',resetEmployeeFilters);
+bind('btnCsvEmployees','click',csvEmployees);
+bind('btnEmployeeAddFromList','click',()=>{resetEmployeeForm();const d=$('employeeEntryDetails');if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});}setTimeout(()=>$('empName')?.focus(),250);});
+bind('btnCancelEmployeeEdit','click',resetEmployeeForm);
+bind('btnDeleteEmployeeRecord','click',deleteEditingEmployee);
+bind('btnEmployeeDetailEdit','click',editEmployeeFromDetail);
+bind('btnGoSchools','click',()=>setPage('schools'));
 bind('btnResetFilters','click',()=>{ resetListFiltersToAll(); renderTable(); });
 bind('sortSelect','change',e=>{ currentSort=e.target.value; renderTable(); });
 bind('statsYearSelect','change', renderStatsMonth);

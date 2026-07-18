@@ -135,101 +135,93 @@ function saveSchoolDetailHistory(){
   alert('관리이력이 안전하게 저장됐습니다.');
 }
 /* =========================================================
-   v10.34.3 직원 상세 모달 ( 빌드 — DB/Supabase 연결 없음)
-   - 학교 상세 모달과 같은 CSS(.detail-grid/.core-item)를 재사용
-   - 이번 단계 범위: 모달 UI, 이름클릭 연결, 5개 섹션 표시만
-   - 휴직/발령은 employees의 단일 필드가 아니라 별도 이력 배열로 설계
-     (한 사람이 여러 번 휴직/발령날 수 있으므로)
-   - 저장 기능은 다음 단계에서 연결 예정. 지금은 항상 빈 배열이라
-     "이력 없음"으로 보이는 게 정상입니다.
-
-   예정 스키마 (다음 단계에서 Supabase 테이블로 그대로 옮길 구조):
-   employeeLeaves: {
-     id, employeeId, empNo, leaveType, startDate,
-     expectedReturnDate, actualReturnDate, status, note,
-     createdAt, updatedAt
-   }
-   employeeChanges: {
-     id, employeeId, empNo, changeType, fromValue, toValue,
-     note, createdAt
-   }
+   Recruit ERP v10.40.13 — 사원 상세보기 최종화
+   - 기본/조직/채용/학력/기타 정보를 선택 필드로 표시
+   - 기존 사원 데이터에 확장 필드가 없어도 빈값으로 안전하게 표시
    ========================================================= */
 let employeeDetailCurrentId='';
-let employeeLeaves=[];   // 다음 단계에서 loadEmployeeLeaves()로 교체 예정
-let employeeChanges=[];  // 다음 단계에서 loadEmployeeChanges()로 교체 예정
 function openEmployeeDetail(id){
-  const e=employees.find(x=>x.id===id);
-  if(!e) return;
+  const e=employees.find(x=>x.id===id);if(!e)return;
   employeeDetailCurrentId=id;
   renderEmployeeDetail();
-  $('employeeDetailModal').classList.add('show');
+  if($('employeeDetailStatus'))$('employeeDetailStatus').value=e.status||'재직중';
+  $('employeeDetailModal')?.classList.add('show');
 }
-function closeEmployeeDetail(){ $('employeeDetailModal').classList.remove('show'); employeeDetailCurrentId=''; }
+function closeEmployeeDetail(){
+  $('employeeDetailModal')?.classList.remove('show');
+  employeeDetailCurrentId='';
+}
+function editEmployeeFromDetail(){
+  const id=employeeDetailCurrentId;
+  closeEmployeeDetail();
+  if(id){setPage('employees');setTimeout(()=>editEmployeePrompt(id),0);}
+}
+function openEmployeeLinkedApplicant(id){
+  if(!id)return;
+  closeEmployeeDetail();
+  viewApplicant(id);
+}
+function employeeDetailValue(value){return String(value||'').trim()||'-';}
+function employeeLinkedApplicant(e){
+  if(!e.applicantId||typeof applicants==='undefined')return null;
+  return applicants.find(a=>a.id===e.applicantId)||null;
+}
 function renderEmployeeDetail(){
-  const e=employees.find(x=>x.id===employeeDetailCurrentId);
-  if(!e) return;
-  $('employeeDetailTitle').textContent=`${e.name} · 직원 상세`;
+  const e=employees.find(x=>x.id===employeeDetailCurrentId);if(!e)return;
+  $('employeeDetailTitle').textContent=`${e.name} · 사원 상세`;
   const initials=String(e.name||'?').trim().slice(0,1)||'?';
-  const statusClass=e.status==='재직중'?'good':e.status==='휴직'?'hold':e.status==='퇴사'?'bad':'info';
+  const statusClass=employeeStatusBadgeClass(e.status);
+  const linked=employeeLinkedApplicant(e);
+  const orgSummary=[e.team||e.department,e.groupName,e.product,e.part].filter(Boolean).join(' · ')||'소속 미등록';
   const basicRows=[
-    detailRow('사번', e.empNo||'-'),
-    detailRow('성명', e.name),
-    detailRow('부서', e.department||'-'),
-    detailRow('직무', e.role||'-'),
-    detailRow('비고', e.notes||'-'),
+    detailRow('사번',employeeDetailValue(e.empNo)),
+    detailRow('성명',employeeDetailValue(e.name)),
+    detailRow('성별',employeeDetailValue(e.gender)),
+    detailRow('재직상태',employeeDetailValue(e.status)),
+    detailRow('입사일',employeeDetailValue(e.hireDate)),
+    detailRow('퇴사일',employeeDetailValue(e.leaveDate)),
+    detailRow('휴직일',employeeDetailValue(e.leaveStartDate)),
+    detailRow('복직일',employeeDetailValue(e.returnDate)),
   ].join('');
-  const employmentRows=[
-    detailRow('재직상태', e.status),
-    detailRow('입사일', e.hireDate||'-'),
-    detailRow('퇴사일', e.leaveDate||'-'),
-    detailRow('상벌 건수', (e.disciplineCount||0)+'건'),
+  const organizationRows=[
+    detailRow('팀',employeeDetailValue(e.team||e.department)),
+    detailRow('그룹',employeeDetailValue(e.groupName)),
+    detailRow('제품',employeeDetailValue(e.product)),
+    detailRow('파트',employeeDetailValue(e.part)),
+    detailRow('직급',employeeDetailValue(e.rank)),
+    detailRow('직책',employeeDetailValue(e.position||e.role)),
+    detailRow('승격일',employeeDetailValue(e.promotionDate)),
   ].join('');
-  const schoolRows=[
-    detailRow('출신학교', e.school||'-'),
-    detailRow('학교 연결 상태', e.schoolId ? '등록된 학교와 연결됨' : '미연결(학교명 텍스트만 있음)'),
+  const recruitRows=[
+    detailRow('입사경위',employeeDetailValue(e.recruitType)),
+    detailRow('채용채널',employeeDetailValue(e.recruitChannel)),
+    linked
+      ? `<div class="detail-item wide-row"><span>지원자 기록</span><strong><button class="link-like" type="button" onclick="openEmployeeLinkedApplicant('${linked.id}')">${esc(linked.name)} · ${esc(linked.applyDate||'지원일 미입력')} · ${esc(linked.workplace||'근무지 미입력')}</button></strong></div>`
+      : detailRow('지원자 기록','연결되지 않음','wide-row'),
   ].join('');
-  const leaveList=employeeLeaves.filter(l=>l.employeeId===e.id);
-  const leaveRows = leaveList.length
-    ? `<table class="funnel-table"><thead><tr><th>휴직종류</th><th>시작일</th><th>복직예정일</th><th>실제복직일</th><th>상태</th></tr></thead><tbody>${
-        leaveList.map(l=>`<tr><td>${esc(l.leaveType||'-')}</td><td>${esc(l.startDate||'-')}</td><td>${esc(l.expectedReturnDate||'-')}</td><td>${esc(l.actualReturnDate||'-')}</td><td>${esc(l.status||'-')}</td></tr>`).join('')
-      }</tbody></table>`
-    : '<div class="empty">휴직 이력이 없습니다. (이 기능은 다음 단계에서 실제로 연결됩니다)</div>';
-  const changeList=employeeChanges.filter(c=>c.employeeId===e.id);
-  const changeRows = changeList.length
-    ? `<table class="funnel-table"><thead><tr><th>일시</th><th>구분</th><th>내용</th></tr></thead><tbody>${
-        changeList.map(c=>`<tr><td>${esc(c.createdAt||'-')}</td><td>${esc(c.changeType||'-')}</td><td>${esc(c.note||'-')}</td></tr>`).join('')
-      }</tbody></table>`
-    : '<div class="empty">인사발령 이력이 없습니다. (이 기능은 다음 단계에서 실제로 연결됩니다)</div>';
+  const educationRows=[
+    detailRow('최종학력',employeeDetailValue(e.education)),
+    detailRow('출신학교',employeeDetailValue(e.school)),
+    detailRow('전공',employeeDetailValue(e.major)),
+    detailRow('학교 연결 상태',e.schoolId?'협력학교 데이터와 연결됨':'미연결'),
+  ].join('');
+  const otherRows=[
+    detailRow('상벌 건수',`${Number(e.disciplineCount||0)}건`),
+    detailRow('최근 수정일',employeeDetailValue(formatEmployeeDateTime(e.updatedAt||e.createdAt))),
+    detailRow('비고',employeeDetailValue(e.notes),'wide-row'),
+  ].join('');
   $('employeeDetailBody').innerHTML=`
     <section class="employee-profile-hero">
       <div class="employee-avatar" aria-hidden="true">${esc(initials)}</div>
-      <div class="employee-profile-main">
-        <p class="eyebrow">EMPLOYEE PROFILE</p>
-        <h2>${esc(e.name||'-')}</h2>
-        <div class="employee-profile-meta">
-          <span>${esc(e.empNo||'사번 미등록')}</span>
-          <span>${esc(e.department||'부서 미등록')}</span>
-          <span>${esc(e.role||'직무 미등록')}</span>
-        </div>
-      </div>
-      <div class="employee-profile-status">
-        <span class="badge ${statusClass}">${esc(e.status||'상태 미등록')}</span>
-        <small>현재 재직 상태</small>
-      </div>
+      <div class="employee-profile-main"><p class="eyebrow">EMPLOYEE PROFILE</p><h2>${esc(e.name||'-')}</h2><div class="employee-profile-meta"><span>${esc(e.empNo||'사번 미등록')}</span><span>${esc(orgSummary)}</span><span>${esc(employeeRankDisplay(e))}</span></div></div>
+      <div class="employee-profile-status"><span class="badge ${statusClass}">${esc(e.status||'상태 미등록')}</span><small>${esc(employeeTenureText(e))} 근속</small></div>
     </section>
-
-    <div class="employee-detail-quick-grid">
-      <div><span>입사일</span><strong>${esc(e.hireDate||'-')}</strong></div>
-      <div><span>출신학교</span><strong>${esc(e.school||'-')}</strong></div>
-      <div><span>상벌 건수</span><strong>${esc(String(e.disciplineCount||0))}건</strong></div>
-    </div>
-
-    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">01</span><div><h4>기본정보</h4><p>직원의 기본 인사 정보를 확인합니다.</p></div></div><div class="detail-grid">${basicRows}</div></section>
-    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">02</span><div><h4>재직정보</h4><p>현재 재직 상태와 입·퇴사 정보를 확인합니다.</p></div></div><div class="detail-grid">${employmentRows}</div></section>
-    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">03</span><div><h4>출신학교</h4><p>학교 연결 상태와 원본 학교명을 확인합니다.</p></div></div><div class="detail-grid">${schoolRows}</div></section>
-    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">04</span><div><h4>휴직 이력</h4><p>휴직 기록은 다음 단계에서 저장 기능과 연결됩니다.</p></div></div>${leaveRows}</section>
-    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">05</span><div><h4>인사발령 이력</h4><p>부서이동·직무변경 등 발령 기록 영역입니다.</p></div></div>${changeRows}</section>
-  `;
+    <div class="employee-detail-quick-grid"><div><span>입사일</span><strong>${esc(e.hireDate||'-')}</strong></div><div><span>출신학교</span><strong>${esc(e.school||'-')}</strong></div><div><span>최근 수정</span><strong>${esc(formatEmployeeDateTime(e.updatedAt||e.createdAt)||'-')}</strong></div></div>
+    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">01</span><div><h4>기본정보</h4><p>재직 상태와 입·퇴사·휴복직 일자를 확인합니다.</p></div></div><div class="detail-grid">${basicRows}</div></section>
+    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">02</span><div><h4>조직정보</h4><p>팀·그룹·제품·파트와 직급·직책 정보입니다.</p></div></div><div class="detail-grid">${organizationRows}</div></section>
+    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">03</span><div><h4>채용정보</h4><p>입사경위·채용채널과 지원자 기록 연결 상태입니다.</p></div></div><div class="detail-grid">${recruitRows}</div></section>
+    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">04</span><div><h4>학력정보</h4><p>최종학력·출신학교·전공과 학교 연결 상태입니다.</p></div></div><div class="detail-grid">${educationRows}</div></section>
+    <section class="employee-detail-section"><div class="employee-detail-section-head"><span class="employee-section-index">05</span><div><h4>기타정보</h4><p>상벌과 업무상 필요한 비고만 표시합니다.</p></div></div><div class="detail-grid">${otherRows}</div></section>`;
 }
 window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant;
   window.viewApplicant=viewApplicant; window.updateApplicantStatus=updateApplicantStatus; window.resetAndRenderList=resetAndRenderList;
