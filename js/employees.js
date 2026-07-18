@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.40.20 — 사원명부 UI + 상세/등록/수정 최종화
+   Recruit ERP v10.40.21 — 사원명부 UI + 상세/등록/수정 최종화
    - 기존 employees/localStorage 구조와 레거시 필드를 그대로 호환
    - 신규 인사 필드는 모두 선택값이며, 기존 데이터에 없어도 정상 동작
    - 주민번호·주소·개인 연락처·개인 이메일은 저장/표시하지 않음
@@ -618,7 +618,7 @@ function formatBirthDisplay(v){
 }
 
 /* =========================================================
-   Recruit ERP v10.40.20 — 기존 사원 조직정보 일괄 보강
+   Recruit ERP v10.40.21 — 기존 사원 조직정보 일괄 보강
    - 엑셀 원본에서 별도 생성한 조직정보 전용 JSON만 사용
    - 사번 기준 연결 + 이름 교차검증
    - 팀/그룹/제품/파트만 선택 반영
@@ -874,7 +874,7 @@ function employeeOrgImportSafetyBackup(){
   if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function'){
     window.erpBackupCenter.exportFull();return;
   }
-  const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.20',createdAt:new Date().toISOString(),employees};
+  const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.21',createdAt:new Date().toISOString(),employees};
   download(`사원조직정보_반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
 }
 function applyEmployeeOrgImport(){
@@ -908,7 +908,7 @@ function applyEmployeeOrgImport(){
 }
 
 /* =========================================================
-   Recruit ERP v10.40.20 — EMPLOYEE STATUS + EXCEL COMPARE
+   Recruit ERP v10.40.21 — EMPLOYEE STATUS + EXCEL COMPARE
    - 재직상태 전환을 날짜 규칙과 함께 검증
    - 사원명부 XLSX를 브라우저에서 직접 읽어 사번 기준 비교
    - 변경 필드만 선택 반영, 빈 셀 기존값 보호, 적용 전 전체 안전 백업
@@ -1205,7 +1205,7 @@ function employeeExcelSelectActionable(){employeeExcelCompareState.rows.forEach(
 function employeeExcelClearSelection(){employeeExcelCompareState.selected.clear();renderEmployeeExcelCompare();}
 function employeeExcelModalClick(event){const filter=event.target.closest('[data-employee-excel-filter]');if(filter){employeeExcelCompareState.filter=filter.dataset.employeeExcelFilter||'actionable';employeeExcelCompareState.page=1;renderEmployeeExcelCompare();return;}const page=event.target.closest('[data-employee-excel-page]');if(page&&!page.disabled){employeeExcelCompareState.page=Math.max(1,Number(page.dataset.employeeExcelPage)||1);renderEmployeeExcelCompare();}}
 function employeeExcelModalChange(event){const rowBox=event.target.closest('[data-employee-excel-row-select]');if(rowBox){const row=employeeExcelCompareState.rows.find(r=>r.key===rowBox.dataset.employeeExcelRowSelect);if(row)employeeExcelToggleRow(row,rowBox.checked);renderEmployeeExcelCompare();return;}const fieldBox=event.target.closest('[data-employee-excel-field]');if(fieldBox){const token=employeeExcelToken(fieldBox.dataset.employeeExcelRow,fieldBox.dataset.employeeExcelField);if(fieldBox.checked)employeeExcelCompareState.selected.add(token);else employeeExcelCompareState.selected.delete(token);renderEmployeeExcelCompare();return;}if(event.target.id==='employeeExcelConfirm')employeeExcelUpdateApplyState();}
-function employeeExcelSafetyBackup(){if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup('사원명부 엑셀 선택 반영 직전');if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function')return window.erpBackupCenter.exportFull();const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.20',createdAt:new Date().toISOString(),employees};download(`사원명부_엑셀반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');return payload;}
+function employeeExcelSafetyBackup(){if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup('사원명부 엑셀 선택 반영 직전');if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function')return window.erpBackupCenter.exportFull();const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.21',createdAt:new Date().toISOString(),employees};download(`사원명부_엑셀반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');return payload;}
 function readEmployeeExcelUndo(){try{const data=JSON.parse(localStorage.getItem(EMPLOYEE_EXCEL_UNDO_KEY)||'null');return data&&Array.isArray(data.before)&&Array.isArray(data.newIds)?data:null;}catch{return null;}}
 function writeEmployeeExcelUndo(data){localStorage.setItem(EMPLOYEE_EXCEL_UNDO_KEY,JSON.stringify(data));}
 function employeeExcelApplyValidation(){const errors=[];employeeExcelCompareState.rows.forEach(row=>{if(row.status==='new'&&employeeExcelCompareState.selected.has(employeeExcelToken(row.key,'__create__'))){const candidate=normalizeEmployee({...row.record,status:row.record.status||'재직중'});const state=validateEmployeeStatusState(candidate,candidate.status);if(state.errors.length)errors.push(`${row.record.name}(${row.record.empNo}): ${state.errors.join(' / ')}`);}else if(row.employee){const selected=row.changes.filter(c=>employeeExcelCompareState.selected.has(employeeExcelToken(row.key,c.field)));if(!selected.length)return;const patch={};selected.forEach(c=>patch[c.field]=c.to);const candidate=normalizeEmployee({...row.employee,...patch});const transition=validateEmployeeStatusTransition(row.employee.status,candidate.status,candidate);if(transition.errors.length)errors.push(`${row.employee.name}(${row.employee.empNo}): ${transition.errors.join(' / ')}`);}});return errors;}
