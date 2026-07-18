@@ -931,7 +931,7 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 
 
 /* =========================================================
-   Recruit ERP v10.40.16 — EMPLOYEE UI / DETAIL FINAL
+   Recruit ERP v10.40.18 — EMPLOYEE UI / DETAIL FINAL
    사원명부 전용 범위. 지원자·학교·공용 목록 레이아웃에는 영향 없음.
    ========================================================= */
 #employees{--employee-line:#dbe5f2;--employee-soft:#f6f9ff;--employee-ink:#0f172a}
@@ -1059,7 +1059,7 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 }
 
 /* =========================================================
-   v10.40.16 · 사원 조직정보 안전 비교/반영
+   v10.40.18 · 사원 조직정보 안전 비교/반영
    ========================================================= */
 #employees .employee-org-import-launch{border-color:#b9cdf4;background:#eef5ff;color:#1554b8}
 #employeeOrgImportModal{z-index:5200!important}
@@ -1152,7 +1152,7 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 }
 
 /* =========================================================
-   v10.40.16 · 사원 조직 연동 필터 + 저장 조건
+   v10.40.18 · 사원 조직 연동 필터 + 저장 조건
    ========================================================= */
 #employees .employee-filter-preset-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:13px;border-top:1px solid #edf2f7}
 #employees .employee-filter-preset-controls{display:flex;align-items:flex-end;flex-wrap:wrap;gap:8px;min-width:0}
@@ -1164,3 +1164,265 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 #employees .employee-org-filter-summary strong{color:#123b70;font-size:11px}
 @media(max-width:1100px){#employees .employee-filter-preset-row{align-items:flex-start;flex-direction:column}#employees .employee-org-filter-summary{justify-content:flex-start}}
 @media(max-width:640px){#employees .employee-filter-preset-controls{display:grid;width:100%;grid-template-columns:1fr 1fr}#employees .employee-filter-preset-controls label{grid-column:1/-1;min-width:0}#employees .employee-filter-preset-controls button{width:100%}#employees .employee-org-filter-summary{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr))}#employees .employee-org-filter-summary span{justify-content:space-between}#employees .employee-org-filter-summary span.is-result{grid-column:1/-1}}
+
+/* =========================================================
+   Recruit ERP v10.40.18 · EMPLOYEE WORKSPACE UI FINAL
+   사원명부 전용. 지원자·학교·공용 목록에는 영향 없음.
+   ========================================================= */
+#employees{--emp-blue:#145ec7;--emp-navy:#0f2f66;--emp-line:#dbe5f2;--emp-soft:#f5f8fc;--emp-text:#13213a;}
+#employees .employee-workspace-header{min-height:0;padding:10px 14px;margin-bottom:7px;border-radius:14px;background:#fff;box-shadow:0 4px 14px rgba(15,23,42,.04);}
+#employees .employee-header-copy{min-width:0;}
+#employees .employee-header-title-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+#employees .employee-page-title{margin:0;font-size:21px!important;letter-spacing:-.04em;}
+#employees .employee-page-note{margin-top:1px;font-size:9.5px!important;line-height:1.35;}
+#employees .employee-version-chip{display:inline-flex;align-items:center;min-height:22px;padding:3px 8px;border:1px solid #cfe0f6;border-radius:999px;background:#f4f8ff;color:#2361b6;font-size:8px;font-weight:1000;letter-spacing:.08em;}
+#employees .employee-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap;}
+#employees .employee-header-actions button{min-height:31px;padding:6px 10px;white-space:nowrap;}
+#employeesSummaryGrid{gap:7px;margin-bottom:7px;}
+#employeesSummaryGrid .emp-stat{min-height:56px;padding:7px 10px;border-radius:12px;gap:8px;box-shadow:none;}
+#employeesSummaryGrid .emp-stat .emp-stat-ico{width:28px;height:28px;min-width:28px;font-size:10px;}
+#employeesSummaryGrid .emp-stat strong{font-size:18px;}
+#employeesSummaryGrid .emp-stat span:not(.emp-stat-ico){font-size:9px;}
+#employeesSummaryGrid .emp-stat small{display:none;}
+#employeesSummaryGrid .emp-stat::after{width:74px;height:74px;right:-23px;bottom:-31px;}
+#employees .employee-status-health{display:grid;grid-template-columns:minmax(230px,1fr) auto auto;align-items:center;gap:9px;margin:0 0 7px;padding:6px 9px;border:1px solid #f3d2c8;border-radius:11px;background:#fff8f6;}
+#employees .employee-status-health.is-clean{border-color:#cce8d7;background:#f4fbf7;}
+#employees .employee-status-health-copy{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:2px 9px;min-width:0;}
+#employees .employee-status-health-label{grid-row:1/3;display:inline-flex;align-items:center;align-self:stretch;padding:0 7px;border-radius:8px;background:#fff;color:#8c341f;font-size:8px;font-weight:1000;white-space:nowrap;}
+#employees .employee-status-health.is-clean .employee-status-health-label{color:#176b43;}
+#employees .employee-status-health-copy strong{font-size:10.5px;color:#5d271b;}
+#employees .employee-status-health.is-clean .employee-status-health-copy strong{color:#145d3d;}
+#employees .employee-status-health-copy small{color:#78665f;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#employees .employee-status-health-kpis{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+#employees .employee-status-health-kpis span{display:inline-flex;align-items:center;gap:3px;min-height:23px;padding:3px 6px;border-radius:999px;background:#fff;font-size:8px;font-weight:900;white-space:nowrap;}
+#employees .employee-status-health-kpis .is-error{color:#b42318;border:1px solid #fecaca;}
+#employees .employee-status-health-kpis .is-warning{color:#9a6700;border:1px solid #fde6a7;}
+#employees .employee-status-health-kpis .is-check{color:#245aa9;border:1px solid #c9ddfb;}
+#employees .employee-status-health-actions{display:flex;gap:6px;}
+#employees .employee-status-health-actions button.active{border-color:#2f75d6;background:#eaf2ff;color:#1657b5;}
+#employees .employee-mode-toolbar{padding:5px 7px!important;margin-bottom:7px;border:1px solid #dce6f3;border-radius:12px;background:#fff;box-shadow:none;}
+#employees .employee-mode-toolbar .tab{min-height:28px;padding:4px 9px;border-color:#dce5f2;background:#f6f8fb;color:#526176;font-size:9px;}
+#employees .employee-mode-toolbar .tab.active{border-color:#a8c7f2;background:#eaf2ff;color:#175bb9;}
+#employees #employeeStatusTabs{display:none;}
+#employees .employee-school-jump{margin-left:auto;border-color:#dbe5f2;background:#fff;color:#2b5f9f;}
+#employees .employee-filter-panel{padding:9px 11px!important;margin-bottom:7px;border-radius:13px;background:#fff;}
+#employees .employee-filter-topline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;}
+#employees .employee-filter-topline>div{display:flex;align-items:baseline;gap:8px;min-width:0;}
+#employees .employee-filter-topline strong{font-size:12px;color:#123b70;}
+#employees .employee-filter-topline span{font-size:9px;color:#758399;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#employees .employee-quick-filter-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 74px;gap:6px;align-items:end;}
+#employees .employee-quick-filter-grid label,#employees .employee-advanced-filter-grid label{display:flex;flex-direction:column;gap:3px;color:#3d4c62;font-size:8.5px;font-weight:900;}
+#employees .employee-quick-filter-grid input,#employees .employee-quick-filter-grid select,#employees .employee-advanced-filter-grid input,#employees .employee-advanced-filter-grid select{width:100%;min-width:0;min-height:30px;padding:5px 7px;font-size:9px;}
+#employees .employee-search-submit{width:100%;min-height:30px;padding:5px 7px;}
+#employees .employee-advanced-filters{margin-top:6px;border:1px solid #e1e8f2;border-radius:10px;background:#fafcff;overflow:hidden;}
+#employees .employee-advanced-filters>summary{display:flex;align-items:center;gap:7px;padding:6px 8px;cursor:pointer;color:#31547f;font-size:9px;font-weight:950;}
+#employees .employee-advanced-filters>summary small{color:#8290a3;font-size:8.5px;font-weight:700;}
+#employees .employee-advanced-filter-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;padding:7px;border-top:1px solid #e6edf6;background:#fff;}
+#employees .employee-filter-preset-row{margin-top:6px;padding-top:6px;}
+#employees .employee-filter-preset-controls{gap:6px;}
+#employees .employee-filter-preset-controls label{min-width:165px;font-size:8.5px;}
+#employees .employee-filter-preset-controls select,#employees .employee-filter-preset-controls button{min-height:27px;padding:4px 7px;font-size:8px;}
+#employees .employee-org-filter-summary span{min-height:23px;padding:2px 6px;font-size:7.5px;}
+#employees .employee-table-panel{padding:8px 7px 7px!important;margin-bottom:7px;border-radius:13px;}
+#employees .employee-table-head{padding:0 7px 8px;}
+#employees .employee-table-head h3{font-size:13px;}
+#employees .employee-table-panel .table-wrap{max-height:620px;border:1px solid #e0e7f0;border-radius:11px;}
+#employees .employee-list-table{min-width:1080px;}
+#employees .employee-list-table thead th{position:sticky;top:0;z-index:2;background:#f2f6fb;color:#526176;font-size:9px;}
+#employees .employee-list-table td{padding-top:8px;padding-bottom:8px;font-size:10px;}
+#employees .employee-list-table tbody tr:nth-child(even){background:#fbfcfe;}
+#employees .employee-list-table tbody tr:hover{background:#f3f7fd!important;}
+#employees .employee-status-cell{display:flex;align-items:center;justify-content:flex-start;gap:5px;flex-wrap:wrap;}
+#employees .employee-status-issue{display:inline-flex;align-items:center;min-height:20px;padding:2px 6px;border:0;border-radius:999px;font-size:8px;font-weight:1000;cursor:pointer;}
+#employees .employee-status-issue.is-error{background:#ffe8e5;color:#b42318;}
+#employees .employee-status-issue.is-warning{background:#fff2cf;color:#916000;}
+#employees .employee-status-issue.is-check{background:#e8f1ff;color:#1f5cae;}
+#employees .employee-entry-details{margin-top:9px;margin-bottom:0;border-radius:15px;}
+#employees .employee-entry-summary{padding:11px 14px;}
+#employees .employee-entry-summary span{font-size:12px;}
+#employees .employee-entry-summary small{font-size:9px;}
+#employees .employee-form-section{padding:12px;margin-top:10px;border-radius:13px;}
+#employees .employee-form-section-head{margin-bottom:9px;}
+#employees .employee-form-grid{gap:8px;}
+#employees .employee-form-grid input,#employees .employee-form-grid select,#employees .employee-form-grid textarea{font-size:10px;}
+#employees .employee-row-actions{min-width:116px!important;}
+#employees .employee-row-actions button{min-width:47px!important;padding:6px 8px!important;font-size:9px!important;}
+
+/* status manager */
+#employeeStatusManagerModal,#employeeStatusAuditModal,#employeeExcelCompareModal{z-index:5600!important;}
+#employeeStatusManagerModal .employee-status-manager-card{width:min(760px,calc(100vw - 28px));}
+#employeeStatusManagerModal .employee-modal-subtitle,#employeeStatusAuditModal .employee-modal-subtitle,#employeeExcelCompareModal .employee-modal-subtitle{margin:4px 0 0;color:#708096;font-size:10px;font-weight:700;}
+#employeeStatusManagerModal .employee-status-manager-body{display:grid;gap:12px;padding:16px 18px;background:#f7f9fc;}
+#employeeStatusManagerModal .employee-status-person{padding:10px 12px;border:1px solid #dce5f0;border-radius:12px;background:#fff;color:#173e73;font-size:12px;font-weight:950;}
+#employeeStatusManagerModal .employee-status-transition{display:grid;grid-template-columns:1fr auto 1.4fr;align-items:end;gap:10px;padding:13px;border:1px solid #dbe5f2;border-radius:14px;background:#fff;}
+#employeeStatusManagerModal .employee-status-transition>div{display:flex;flex-direction:column;gap:5px;}
+#employeeStatusManagerModal .employee-status-transition span,#employeeStatusManagerModal .employee-status-transition label{color:#617087;font-size:10px;font-weight:900;}
+#employeeStatusManagerModal .employee-status-transition strong{color:#183d70;font-size:15px;}
+#employeeStatusManagerModal .employee-status-transition b{padding-bottom:9px;color:#7590b3;}
+#employeeStatusManagerModal .employee-status-transition label{display:flex;flex-direction:column;gap:5px;}
+#employeeStatusManagerModal .employee-status-date-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+#employeeStatusManagerModal .employee-status-date-grid label{display:flex;flex-direction:column;gap:5px;color:#405069;font-size:9px;font-weight:900;}
+#employeeStatusManagerModal .employee-status-rule-card{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border:1px solid #cbdcf4;border-radius:12px;background:#edf4ff;}
+#employeeStatusManagerModal .employee-status-rule-card strong{white-space:nowrap;color:#1b5aaa;font-size:10px;}
+#employeeStatusManagerModal .employee-status-rule-card span{color:#48627f;font-size:10px;line-height:1.45;}
+#employeeStatusManagerModal .employee-status-validation{display:grid;gap:4px;padding:10px 12px;border-radius:12px;font-size:10px;line-height:1.45;}
+#employeeStatusManagerModal .employee-status-validation.is-error{border:1px solid #f2b8ae;background:#fff3f1;color:#9b2c1e;}
+#employeeStatusManagerModal .employee-status-validation.is-warning{border:1px solid #f2d58b;background:#fff9e9;color:#805700;}
+#employeeStatusManagerModal .employee-status-validation.is-ready{border:1px solid #bfe2cd;background:#f1faf5;color:#17613f;}
+#employeeStatusManagerModal .employee-status-manager-footer{align-items:center;}
+#employeeStatusManagerModal .employee-status-confirm{display:flex;align-items:center;gap:7px;margin-right:auto;color:#475569;font-size:10px;font-weight:850;}
+
+/* status audit */
+#employeeStatusAuditModal .employee-status-audit-card{width:min(980px,calc(100vw - 28px));height:min(780px,calc(100vh - 28px));display:flex;flex-direction:column;}
+#employeeStatusAuditModal .employee-status-audit-body{display:flex;min-height:0;flex:1;flex-direction:column;gap:10px;padding:14px 16px;background:#f6f8fb;}
+#employeeStatusAuditModal .employee-status-audit-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+#employeeStatusAuditModal .employee-status-audit-kpis>div{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid #dce5f0;border-radius:12px;background:#fff;}
+#employeeStatusAuditModal .employee-status-audit-kpis span{font-size:9px;color:#65758b;font-weight:900;}
+#employeeStatusAuditModal .employee-status-audit-kpis strong{font-size:18px;color:#173e73;}
+#employeeStatusAuditModal .employee-status-audit-kpis .is-error strong{color:#b42318;}
+#employeeStatusAuditModal .employee-status-audit-kpis .is-warning strong{color:#936200;}
+#employeeStatusAuditModal .employee-status-audit-kpis .is-check strong{color:#1c5bad;}
+#employeeStatusAuditModal .employee-status-audit-toolbar{display:grid;grid-template-columns:170px minmax(220px,1fr) auto;gap:8px;align-items:center;}
+#employeeStatusAuditModal .employee-status-audit-toolbar span{color:#53647b;font-size:10px;font-weight:900;}
+#employeeStatusAuditModal .employee-status-audit-list{display:grid;gap:7px;min-height:0;overflow:auto;}
+#employeeStatusAuditModal .employee-audit-item{display:grid;grid-template-columns:74px minmax(0,1fr) auto;align-items:center;gap:10px;padding:10px 11px;border:1px solid #dfe6ef;border-radius:12px;background:#fff;}
+#employeeStatusAuditModal .employee-audit-severity{display:inline-flex;justify-content:center;padding:5px 7px;border-radius:999px;font-size:9px;font-weight:1000;}
+#employeeStatusAuditModal .employee-audit-item.is-error .employee-audit-severity{background:#ffe7e3;color:#b42318;}
+#employeeStatusAuditModal .employee-audit-item.is-warning .employee-audit-severity{background:#fff0c7;color:#8b5c00;}
+#employeeStatusAuditModal .employee-audit-item.is-check .employee-audit-severity{background:#e8f1ff;color:#1d5aaa;}
+#employeeStatusAuditModal .employee-audit-main{display:flex;min-width:0;flex-direction:column;gap:3px;}
+#employeeStatusAuditModal .employee-audit-main strong{color:#183250;font-size:11px;}
+#employeeStatusAuditModal .employee-audit-main small{color:#8190a2;font-size:9px;}
+#employeeStatusAuditModal .employee-audit-main span{color:#58687d;font-size:10px;}
+#employeeStatusAuditModal .employee-audit-actions{display:flex;gap:6px;}
+#employeeStatusAuditModal .employee-audit-empty{display:flex;flex:1;min-height:180px;align-items:center;justify-content:center;flex-direction:column;gap:6px;color:#68778c;}
+
+/* excel compare */
+#employeeExcelCompareModal .employee-excel-compare-card{width:min(1500px,calc(100vw - 26px));height:min(920px,calc(100vh - 24px));display:flex;flex-direction:column;overflow:hidden;}
+#employeeExcelCompareModal .employee-excel-compare-body{display:flex;min-height:0;flex:1;flex-direction:column;gap:9px;padding:12px 14px;background:#f5f8fc;}
+#employeeExcelCompareModal .employee-excel-filebar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 11px;border:1px solid #dce5f1;border-radius:12px;background:#fff;}
+#employeeExcelCompareModal .employee-excel-filebar>div{display:flex;min-width:0;flex-direction:column;gap:2px;}
+#employeeExcelCompareModal .employee-excel-filebar span{color:#748298;font-size:8px;font-weight:950;}
+#employeeExcelCompareModal .employee-excel-filebar strong{color:#193d70;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#employeeExcelCompareModal .employee-excel-filebar small{color:#78869a;font-size:9px;}
+#employeeExcelCompareModal .employee-excel-kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;}
+#employeeExcelCompareModal .employee-excel-kpis>div{display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:7px 9px;border:1px solid #dce5f1;border-radius:11px;background:#fff;}
+#employeeExcelCompareModal .employee-excel-kpis span{color:#69788e;font-size:8.5px;font-weight:900;}
+#employeeExcelCompareModal .employee-excel-kpis strong{color:#183e73;font-size:17px;}
+#employeeExcelCompareModal .employee-excel-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+#employeeExcelCompareModal .employee-excel-tabs,#employeeExcelCompareModal .employee-excel-selection{display:flex;gap:5px;flex-wrap:wrap;}
+#employeeExcelCompareModal .employee-excel-tabs .chip{min-height:29px;padding:4px 8px;font-size:8.5px;}
+#employeeExcelCompareModal .employee-excel-summary{padding:7px 10px;border:1px solid #cfe0f6;border-radius:10px;background:#edf4ff;color:#28527f;font-size:9px;font-weight:850;}
+#employeeExcelCompareModal .employee-excel-table-wrap{flex:1;min-height:260px;overflow:auto;border:1px solid #dce4ee;border-radius:12px;background:#fff;}
+#employeeExcelCompareModal .employee-excel-table{width:100%;min-width:1380px;border-collapse:separate;border-spacing:0;table-layout:fixed;}
+#employeeExcelCompareModal .employee-excel-table th{position:sticky;top:0;z-index:2;padding:8px;border-bottom:1px solid #dbe4ef;background:#f2f5f9;color:#526176;font-size:8.5px;font-weight:1000;text-align:left;}
+#employeeExcelCompareModal .employee-excel-table th:nth-child(1){width:52px;text-align:center;}
+#employeeExcelCompareModal .employee-excel-table th:nth-child(2){width:120px;}
+#employeeExcelCompareModal .employee-excel-table th:nth-child(3){width:105px;}
+#employeeExcelCompareModal .employee-excel-table th:nth-child(4){width:120px;}
+#employeeExcelCompareModal .employee-excel-table th:nth-child(5),#employeeExcelCompareModal .employee-excel-table th:nth-child(6){width:220px;}
+#employeeExcelCompareModal .employee-excel-table th:nth-child(7){width:auto;}
+#employeeExcelCompareModal .employee-excel-table td{padding:8px;border-bottom:1px solid #edf1f6;color:#2c3e55;font-size:9px;line-height:1.4;vertical-align:top;}
+#employeeExcelCompareModal .employee-excel-table td:first-child{text-align:center;}
+#employeeExcelCompareModal .employee-excel-table tr.is-status-mismatch{background:#fffaf0;}
+#employeeExcelCompareModal .employee-excel-table tr.is-new{background:#f4fbf7;}
+#employeeExcelCompareModal .employee-excel-table tr.is-error{background:#fff7f6;}
+#employeeExcelCompareModal .employee-excel-table td strong{display:block;color:#16375f;font-size:10px;}
+#employeeExcelCompareModal .employee-excel-table td:nth-child(3) strong,#employeeExcelCompareModal .employee-excel-table td:nth-child(4) strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#employeeExcelCompareModal .employee-excel-table td:nth-child(4) strong{font-variant-numeric:tabular-nums;}
+#employeeExcelCompareModal .employee-excel-table td small{display:block;margin-top:2px;color:#79869a;font-size:8px;}
+#employeeExcelCompareModal .employee-excel-status{display:inline-flex;align-items:center;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:1000;white-space:nowrap;}
+#employeeExcelCompareModal .employee-excel-status.is-new{background:#ddf5e7;color:#146b42;}
+#employeeExcelCompareModal .employee-excel-status.is-changed{background:#e5f0ff;color:#1455b6;}
+#employeeExcelCompareModal .employee-excel-status.is-status-mismatch{background:#fff0c9;color:#8b5a00;}
+#employeeExcelCompareModal .employee-excel-status.is-same{background:#edf1f5;color:#657388;}
+#employeeExcelCompareModal .employee-excel-status.is-erp-only{background:#f0eaff;color:#6441a5;}
+#employeeExcelCompareModal .employee-excel-status.is-error{background:#ffe4e1;color:#b42318;}
+#employeeExcelCompareModal .employee-excel-changes{display:grid;gap:4px;}
+#employeeExcelCompareModal .employee-excel-change{display:grid;grid-template-columns:16px minmax(0,1fr);align-items:start;gap:5px;padding:4px 5px;border:1px solid #e1e8f1;border-radius:8px;background:#fff;cursor:pointer;}
+#employeeExcelCompareModal .employee-excel-change span{display:grid;grid-template-columns:43px minmax(70px,1fr) 14px minmax(70px,1fr);gap:4px;align-items:center;min-width:0;}
+#employeeExcelCompareModal .employee-excel-change b{color:#245aa9;font-size:8px;}
+#employeeExcelCompareModal .employee-excel-change em{color:#7d8998;font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#employeeExcelCompareModal .employee-excel-change i{color:#91a0b3;font-style:normal;text-align:center;}
+#employeeExcelCompareModal .employee-excel-change strong{color:#173e73!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#employeeExcelCompareModal .employee-excel-new-note{display:block;padding:7px;border:1px dashed #9fd3b4;border-radius:8px;background:#f3fbf6;color:#176a42;font-weight:900;}
+#employeeExcelCompareModal .employee-excel-pagination{display:flex;align-items:center;justify-content:space-between;color:#64748b;font-size:9px;}
+#employeeExcelCompareModal .employee-excel-pagination>div{display:flex;align-items:center;gap:7px;}
+#employeeExcelCompareModal .employee-excel-result{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid #dce5f1;border-radius:10px;background:#fff;color:#526176;font-size:9px;}
+#employeeExcelCompareModal .employee-excel-result strong{white-space:nowrap;color:#1d4e88;}
+#employeeExcelCompareModal .employee-excel-result.is-loading{border-color:#c4d8f6;background:#f1f6ff;}
+#employeeExcelCompareModal .employee-excel-result.is-ready{border-color:#bde2cc;background:#f2fbf6;}
+#employeeExcelCompareModal .employee-excel-result.is-error{border-color:#f0bdb3;background:#fff4f2;color:#9f3021;}
+#employeeExcelCompareModal .employee-excel-footer{align-items:center;padding:10px 14px;}
+#employeeExcelCompareModal .employee-excel-confirm{display:flex;align-items:center;gap:7px;margin-right:auto;color:#48576d;font-size:9px;font-weight:850;}
+#employeeExcelCompareModal #employeeExcelSelectedCount{color:#1d5aaa;font-size:9px;font-weight:950;}
+#employeeExcelCompareModal input[type="checkbox"],#employeeStatusManagerModal input[type="checkbox"]{width:15px;height:15px;accent-color:#1768d4;}
+
+#employeeDetailModal .employee-detail-footer-note{margin-right:auto;color:#6a788c;font-size:9px;font-weight:800;}
+
+@media(max-width:1180px){
+  #employees .employee-quick-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  #employees .employee-search-submit{grid-column:span 1;}
+  #employees .employee-advanced-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  #employeeExcelCompareModal .employee-excel-kpis{grid-template-columns:repeat(4,minmax(0,1fr));}
+  #employeeStatusManagerModal .employee-status-date-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:860px){
+  #employees .employee-workspace-header{align-items:flex-start;flex-direction:column;}
+  #employees .employee-header-actions{width:100%;justify-content:flex-start;}
+  #employees .employee-status-health{grid-template-columns:1fr;}
+  #employees .employee-status-health-kpis,#employees .employee-status-health-actions{justify-content:flex-start;}
+  #employees .employee-quick-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #employees .employee-advanced-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #employeeStatusAuditModal .employee-status-audit-toolbar{grid-template-columns:1fr 1fr;}
+  #employeeStatusAuditModal .employee-status-audit-toolbar span{grid-column:1/-1;}
+  #employeeExcelCompareModal .employee-excel-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}
+  #employeeExcelCompareModal .employee-excel-toolbar{align-items:flex-start;flex-direction:column;}
+}
+@media(max-width:640px){
+  #employees .employee-workspace-header{padding:12px;}
+  #employees .employee-header-actions{display:grid;grid-template-columns:1fr 1fr;}
+  #employees .employee-header-actions button{width:100%;}
+  #employees .employee-header-actions .primary{grid-column:1/-1;grid-row:1;}
+  #employeesSummaryGrid{grid-template-columns:1fr 1fr!important;}
+  #employeesSummaryGrid .emp-stat{min-height:68px;}
+  #employeesSummaryGrid .emp-stat:last-child{grid-column:1/-1;}
+  #employees .employee-quick-filter-grid,#employees .employee-advanced-filter-grid{grid-template-columns:1fr 1fr;}
+  #employees .employee-search-submit{grid-column:1/-1;}
+  #employees .employee-filter-topline span{display:none;}
+  #employees .employee-mode-toolbar{align-items:flex-start;flex-direction:column;}
+  #employees .employee-mode-toolbar .tabs{width:100%;overflow:auto;}
+  #employees #employeeStatusTabs{display:flex;}
+  #employees .employee-school-jump{width:100%;}
+  #employees .employee-list-table .employee-list-row>.employee-row-actions{grid-template-columns:1fr 1fr!important;}
+  #employees .employee-list-table .employee-org-cell,#employees .employee-list-table .employee-rank-cell,#employees .employee-list-table .employee-tenure-cell{display:flex!important;}
+  #employees .employee-list-table .employee-org-cell{grid-column:1/-1;grid-row:3;padding-top:8px!important;border-top:1px solid #edf1f6!important;}
+  #employees .employee-list-table .employee-rank-cell{grid-column:1;grid-row:4;}
+  #employees .employee-list-table .employee-tenure-cell{grid-column:2;grid-row:4;align-items:flex-end!important;}
+  #employees .employee-list-table .employee-school-cell{grid-row:5;}
+  #employees .employee-list-table .employee-row-actions{grid-row:6!important;}
+  #employeeStatusManagerModal .employee-status-manager-card,#employeeStatusAuditModal .employee-status-audit-card,#employeeExcelCompareModal .employee-excel-compare-card{width:100vw;height:100vh;max-height:none;border-radius:0;}
+  #employeeStatusManagerModal .employee-status-transition{grid-template-columns:1fr;align-items:stretch;}
+  #employeeStatusManagerModal .employee-status-transition b{display:none;}
+  #employeeStatusManagerModal .employee-status-date-grid{grid-template-columns:1fr 1fr;}
+  #employeeStatusManagerModal .employee-status-manager-footer{align-items:stretch;flex-wrap:wrap;}
+  #employeeStatusManagerModal .employee-status-confirm{width:100%;margin-right:0;}
+  #employeeStatusAuditModal .employee-status-audit-kpis{grid-template-columns:1fr 1fr;}
+  #employeeStatusAuditModal .employee-status-audit-toolbar{grid-template-columns:1fr;}
+  #employeeStatusAuditModal .employee-audit-item{grid-template-columns:68px minmax(0,1fr);}
+  #employeeStatusAuditModal .employee-audit-actions{grid-column:1/-1;justify-content:flex-end;}
+  #employeeExcelCompareModal .employee-excel-compare-body{padding:8px;}
+  #employeeExcelCompareModal .employee-excel-kpis{grid-template-columns:1fr 1fr;}
+  #employeeExcelCompareModal .employee-excel-kpis>div:first-child{grid-column:1/-1;}
+  #employeeExcelCompareModal .employee-excel-filebar{align-items:stretch;flex-direction:column;}
+  #employeeExcelCompareModal .employee-excel-table{min-width:0;display:block;}
+  #employeeExcelCompareModal .employee-excel-table thead{display:none;}
+  #employeeExcelCompareModal .employee-excel-table tbody{display:grid;gap:8px;padding:7px;background:#f5f8fc;}
+  #employeeExcelCompareModal .employee-excel-table tr{display:grid;grid-template-columns:1fr 1fr;border:1px solid #dbe4ef;border-radius:12px;background:#fff;overflow:hidden;}
+  #employeeExcelCompareModal .employee-excel-table td{display:flex;min-width:0;flex-direction:column;align-items:flex-start;padding:8px;border-bottom:1px solid #edf1f6;}
+  #employeeExcelCompareModal .employee-excel-table td::before{content:attr(data-label);display:block;margin-bottom:3px;color:#8793a5;font-size:7px;font-weight:1000;}
+  #employeeExcelCompareModal .employee-excel-table td:nth-child(5),#employeeExcelCompareModal .employee-excel-table td:nth-child(6),#employeeExcelCompareModal .employee-excel-table td:nth-child(7){grid-column:1/-1;}
+  #employeeExcelCompareModal .employee-excel-footer{align-items:stretch;flex-wrap:wrap;}
+  #employeeExcelCompareModal .employee-excel-confirm{width:100%;margin-right:0;}
+  #employeeExcelCompareModal .employee-excel-change span{grid-template-columns:40px minmax(58px,1fr) 12px minmax(58px,1fr);}
+}

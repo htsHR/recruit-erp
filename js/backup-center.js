@@ -1,4 +1,4 @@
-/* Recruit ERP v10.40.16 JSON_TYPE_GUARD + EMPLOYEE_ORG_FILTER_FINAL
+/* Recruit ERP v10.40.18 BACKUP CENTER + JSON TYPE GUARD
  * 회사: 퇴근 전 전체 JSON 다운로드 전용
  * 집: 회사 JSON 검사/비교/병합/전체교체 + 검증된 Supabase 저장 확인
  * 기존 핵심 저장키와 데이터 필드 구조는 변경하지 않습니다.
@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='10.40.16';
+  const BC_VERSION='10.40.18';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
@@ -686,7 +686,7 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 
   window.erpBackupCenter={
-    exportFull:()=>exportBackup('full'),inspectFile,runPreflight,syncPendingToCloud,version:BC_VERSION,
+    exportFull:()=>exportBackup('full'),safetyBackup:(reason='manual safety backup')=>backupCurrentBeforeChange(reason),inspectFile,runPreflight,syncPendingToCloud,version:BC_VERSION,
     getStatus:()=>({environment:environment(),changes:changesSinceBackup(),pendingCloud:readPendingCloud(),inspection:inspected&&inspected.canonical}),
     __test:{canonicalize,classifyJsonPayload,datasetDiff,snapshotOf,compareFingerprints,packageFor,importRisks}
   };

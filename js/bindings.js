@@ -352,3 +352,40 @@ if(excelPasteEditorEl){
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&$('excelRowPasteModal')?.classList.contains('show'))closeExcelRowPaste();
 });
+
+/* v10.40.18 · 사원 상태관리 / 엑셀 비교 */
+bind('btnEmployeeStatusAudit','click',openEmployeeStatusAudit);
+bind('btnEmployeeStatusAuditList','click',openEmployeeStatusAudit);
+bind('btnEmployeeIssueOnly','click',()=>toggleEmployeeIssueOnly());
+bind('btnEmployeeAuditIssueFilter','click',()=>{closeEmployeeStatusAudit();toggleEmployeeIssueOnly(true);});
+bind('btnCloseEmployeeStatusAudit','click',closeEmployeeStatusAudit);
+bind('btnCloseEmployeeStatusAuditFooter','click',closeEmployeeStatusAudit);
+bind('employeeStatusAuditBackdrop','click',closeEmployeeStatusAudit);
+bind('employeeStatusAuditSeverity','change',renderEmployeeStatusAuditModal);
+bind('employeeStatusAuditSearch','input',renderEmployeeStatusAuditModal);
+
+bind('btnOpenEmployeeStatusManager','click',()=>{if(typeof employeeDetailCurrentId!=='undefined'&&employeeDetailCurrentId){const id=employeeDetailCurrentId;closeEmployeeDetail();openEmployeeStatusManager(id);}});
+bind('btnCloseEmployeeStatusManager','click',closeEmployeeStatusManager);
+bind('btnCancelEmployeeStatusManager','click',closeEmployeeStatusManager);
+bind('employeeStatusManagerBackdrop','click',closeEmployeeStatusManager);
+['employeeStatusManagerTarget','employeeStatusManagerHireDate','employeeStatusManagerLeaveStart','employeeStatusManagerReturnDate','employeeStatusManagerLeaveDate','employeeStatusManagerConfirm'].forEach(id=>bind(id,'change',validateEmployeeStatusManager));
+bind('btnApplyEmployeeStatusManager','click',applyEmployeeStatusManager);
+
+bind('btnOpenEmployeeExcelCompare','click',employeeExcelPickFile);
+bind('btnEmployeeExcelChooseFile','click',employeeExcelPickFile);
+bind('employeeExcelCompareFile','change',e=>{const file=e.target.files&&e.target.files[0];employeeExcelReadFile(file);e.target.value='';});
+bind('btnCloseEmployeeExcelCompare','click',closeEmployeeExcelCompare);
+bind('btnCancelEmployeeExcelCompare','click',closeEmployeeExcelCompare);
+bind('employeeExcelCompareBackdrop','click',closeEmployeeExcelCompare);
+bind('btnEmployeeExcelSelectActionable','click',employeeExcelSelectActionable);
+bind('btnEmployeeExcelClearSelection','click',employeeExcelClearSelection);
+bind('btnApplyEmployeeExcelCompare','click',applyEmployeeExcelCompare);
+bind('btnUndoEmployeeExcelApply','click',undoEmployeeExcelApply);
+$('employeeExcelCompareModal')?.addEventListener('click',employeeExcelModalClick);
+$('employeeExcelCompareModal')?.addEventListener('change',employeeExcelModalChange);
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if($('employeeStatusManagerModal')?.classList.contains('show'))closeEmployeeStatusManager();
+  else if($('employeeStatusAuditModal')?.classList.contains('show'))closeEmployeeStatusAudit();
+  else if($('employeeExcelCompareModal')?.classList.contains('show'))closeEmployeeExcelCompare();
+});

@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.40.16 — 사원명부 UI + 상세/등록/수정 최종화
+   Recruit ERP v10.40.18 — 사원명부 UI + 상세/등록/수정 최종화
    - 기존 employees/localStorage 구조와 레거시 필드를 그대로 호환
    - 신규 인사 필드는 모두 선택값이며, 기존 데이터에 없어도 정상 동작
    - 주민번호·주소·개인 연락처·개인 이메일은 저장/표시하지 않음
@@ -284,6 +284,7 @@ function employeeStatusBadgeClass(status){
   return'bad';
 }
 function employeeMatchesFilter(e){
+  if(employeeStatusIssueOnly&&!employeeStatusIssuesFor(e).length)return false;
   if(employeeStatusFilter!=='all'&&e.status!==employeeStatusFilter)return false;
   if(employeeSearchName&&!e.name.toLowerCase().includes(employeeSearchName.toLowerCase()))return false;
   if(employeeSearchNo&&!e.empNo.toLowerCase().includes(employeeSearchNo.toLowerCase()))return false;
@@ -388,6 +389,7 @@ function applyEmployeeSearch(){
   employeePage=1;renderEmployees();
 }
 function resetEmployeeFilters(){
+  employeeStatusIssueOnly=false;
   employeeStatusFilter='all';employeeSearchName='';employeeSearchNo='';employeeTeamFilter='all';employeeGroupFilter='all';employeeProductFilter='all';employeePartFilter='all';employeeRankFilter='all';employeeSchoolSearch='';employeeHireFrom='';employeeHireTo='';employeePage=1;
   ['empSearchName','empSearchNo','empSearchSchool','empHireFrom','empHireTo'].forEach(id=>{if($(id))$(id).value='';});
   ['empTeamFilter','empGroupFilter','empProductFilter','empPartFilter','empRankFilter','empStatusFilter'].forEach(id=>{if($(id))$(id).value='all';});
@@ -556,6 +558,7 @@ function updateEmployeeStatusTabCounts(){
 }
 function renderEmployees(){
   const body=$('employeesBody');if(!body)return;
+  refreshEmployeeStatusAuditCache();
   populateEmployeeFilterOptions();updateEmployeeStatusTabCounts();populateEmployeeApplicantOptions($('empApplicantId')?.value||'');
   const all=employees.filter(employeeMatchesFilter).sort((a,b)=>(b.hireDate||'').localeCompare(a.hireDate||'')||(a.empNo||'').localeCompare(b.empNo||''));
   setText('employeesTotalCount',employees.length);
@@ -565,7 +568,7 @@ function renderEmployees(){
   setText('employeesUpcomingCount',employees.filter(e=>e.status==='입사예정').length);
   const activeFilterCount=[employeeStatusFilter!=='all',employeeSearchName,employeeSearchNo,employeeTeamFilter!=='all',employeeGroupFilter!=='all',employeeProductFilter!=='all',employeePartFilter!=='all',employeeRankFilter!=='all',employeeSchoolSearch,employeeHireFrom,employeeHireTo].filter(Boolean).length;
   setText('employeeListSummary',activeFilterCount?`${all.length}명 / 전체 ${employees.length}명`:`${all.length}명 표시`);
-  renderEmployeeOrgFilterPreview(all);
+  renderEmployeeOrgFilterPreview(all);renderEmployeeStatusHealth();
   const totalPages=Math.max(1,Math.ceil(all.length/employeePageSize));if(employeePage>totalPages)employeePage=totalPages;
   const rows=all.slice((employeePage-1)*employeePageSize,employeePage*employeePageSize);
   renderEmployeePagination(totalPages,all.length);renderEmployeeDeptView();
@@ -581,7 +584,7 @@ function renderEmployees(){
       <td class="employee-hire-cell" data-label="입사일">${esc(e.hireDate)||'-'}</td>
       <td class="employee-tenure-cell" data-label="근속기간">${esc(employeeTenureText(e))}</td>
       <td class="employee-school-cell" data-label="출신학교">${esc(e.school)||'<span class="muted">미입력</span>'}</td>
-      <td class="employee-status-cell" data-label="재직상태"><span class="badge ${employeeStatusBadgeClass(e.status)}">${esc(e.status)}</span></td>
+      <td class="employee-status-cell" data-label="재직상태"><span class="badge ${employeeStatusBadgeClass(e.status)}">${esc(e.status)}</span>${employeeStatusIssuesFor(e).length?`<button class="employee-status-issue ${employeeStatusIssueClass(employeeStatusIssuesFor(e))}" title="${esc(employeeStatusIssuesFor(e).map(i=>i.message).join(' / '))}" onclick="openEmployeeStatusManager('${e.id}')">! ${employeeStatusIssuesFor(e).length}</button>`:''}</td>
       <td class="row-actions employee-row-actions" data-label="관리"><button class="view" onclick="openEmployeeDetail('${e.id}')">상세</button><button onclick="editEmployeePrompt('${e.id}')">수정</button></td>
     </tr>`;
   }).join('');
@@ -615,7 +618,7 @@ function formatBirthDisplay(v){
 }
 
 /* =========================================================
-   Recruit ERP v10.40.16 — 기존 사원 조직정보 일괄 보강
+   Recruit ERP v10.40.18 — 기존 사원 조직정보 일괄 보강
    - 엑셀 원본에서 별도 생성한 조직정보 전용 JSON만 사용
    - 사번 기준 연결 + 이름 교차검증
    - 팀/그룹/제품/파트만 선택 반영
@@ -871,7 +874,7 @@ function employeeOrgImportSafetyBackup(){
   if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function'){
     window.erpBackupCenter.exportFull();return;
   }
-  const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.16',createdAt:new Date().toISOString(),employees};
+  const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.18',createdAt:new Date().toISOString(),employees};
   download(`사원조직정보_반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
 }
 function applyEmployeeOrgImport(){
@@ -903,3 +906,317 @@ function applyEmployeeOrgImport(){
   renderEmployeeOrgImport();
   alert(`조직정보 반영 완료\n\n대상 ${selectedRows.length}명\n${detail}\n\n로컬 저장을 완료했고, 로그인 상태이면 Supabase 저장도 자동 시도했습니다.`);
 }
+
+/* =========================================================
+   Recruit ERP v10.40.18 — EMPLOYEE STATUS + EXCEL COMPARE
+   - 재직상태 전환을 날짜 규칙과 함께 검증
+   - 사원명부 XLSX를 브라우저에서 직접 읽어 사번 기준 비교
+   - 변경 필드만 선택 반영, 빈 셀 기존값 보호, 적용 전 전체 안전 백업
+   - 직전 반영 실행 취소
+   ========================================================= */
+const EMPLOYEE_EXCEL_COMPARE_FIELDS=[
+  {key:'team',label:'팀'},
+  {key:'groupName',label:'그룹'},
+  {key:'product',label:'제품'},
+  {key:'part',label:'파트'},
+  {key:'rank',label:'직급'},
+  {key:'position',label:'직책'},
+  {key:'hireDate',label:'입사일'},
+  {key:'leaveDate',label:'퇴사일'},
+  {key:'status',label:'재직상태'},
+  {key:'school',label:'출신학교'},
+  {key:'major',label:'전공'}
+];
+const EMPLOYEE_EXCEL_UNDO_KEY='recruit_erp_employee_excel_compare_undo_v1';
+let employeeStatusIssueOnly=false;
+let employeeStatusAuditCache={issues:[],byEmployee:new Map(),counts:{error:0,warning:0,check:0}};
+let employeeStatusManagerId='';
+let employeeExcelCompareState={fileName:'',meta:null,rows:[],filter:'actionable',page:1,pageSize:35,selected:new Set(),lastResult:null};
+
+function employeeTodayIso(){return new Date().toISOString().slice(0,10);}
+function employeeSafeText(value){return String(value??'').normalize('NFKC').trim();}
+function employeeBlankToEmpty(value){const text=employeeSafeText(value);return ['-','–','—','없음','해당없음'].includes(text)?'':text;}
+function employeeNormalizeNo(value){return employeeSafeText(value).replace(/\s+/g,'').toUpperCase();}
+function employeeNormalizeName(value){return employeeSafeText(value).replace(/\s+/g,'').toLowerCase();}
+function employeeStatusLabel(value){return value==='재직중'?'재직':value==='퇴사'?'퇴직':value||'-';}
+function employeeDateLabel(value){return value||'미입력';}
+
+function validateEmployeeStatusState(employee,currentStatus){
+  const e=normalizeEmployee(employee||{});
+  const status=normalizeEmployeeStatus(currentStatus||e.status,e.leaveDate);
+  const errors=[];
+  const warnings=[];
+  if(status==='휴직'&&!e.leaveStartDate)errors.push('휴직 상태는 휴직 시작일이 필요합니다.');
+  if(e.leaveStartDate&&e.returnDate&&e.returnDate<e.leaveStartDate)errors.push('복직일이 휴직 시작일보다 빠릅니다.');
+  if(status==='퇴사'&&!e.leaveDate)errors.push('퇴직 상태는 퇴사일이 필요합니다.');
+  if(status==='재직중'&&e.leaveDate)warnings.push('재직 상태인데 퇴사일이 입력되어 있습니다.');
+  if(e.hireDate&&e.leaveDate&&e.leaveDate<e.hireDate)errors.push('퇴사일이 입사일보다 빠릅니다.');
+  if(status==='입사예정'&&e.hireDate&&e.hireDate<employeeTodayIso())warnings.push('입사예정일이 지났지만 상태가 입사예정입니다.');
+  if(status==='입사예정'&&!e.hireDate)warnings.push('입사예정 상태인데 예정 입사일이 없습니다.');
+  if(status==='휴직'&&e.returnDate&&e.returnDate<=employeeTodayIso())warnings.push('복직일이 지났지만 상태가 휴직입니다.');
+  if(status==='재직중'&&e.leaveStartDate&&!e.returnDate)warnings.push('휴직 이력이 있으나 복직일이 없습니다.');
+  return {errors,warnings};
+}
+function refreshEmployeeStatusAuditCache(){
+  const duplicateCounts=new Map();
+  employees.forEach(e=>{const no=employeeNormalizeNo(e.empNo);if(no)duplicateCounts.set(no,(duplicateCounts.get(no)||0)+1);});
+  const issues=[];
+  const byEmployee=new Map();
+  const add=(e,severity,code,message)=>{
+    const issue={id:`${e.id}:${code}`,employeeId:e.id,severity,code,message,empNo:e.empNo||'',name:e.name||'',status:e.status||''};
+    issues.push(issue);if(!byEmployee.has(e.id))byEmployee.set(e.id,[]);byEmployee.get(e.id).push(issue);
+  };
+  employees.forEach(e=>{
+    const state=validateEmployeeStatusState(e,e.status);
+    state.errors.forEach((message,index)=>add(e,'error',`state-error-${index}`,message));
+    state.warnings.forEach((message,index)=>add(e,'warning',`state-warning-${index}`,message));
+    const no=employeeNormalizeNo(e.empNo);
+    if(no&&(duplicateCounts.get(no)||0)>1)add(e,'error','duplicate-empno','같은 사번이 여러 사원 기록에 중복되어 있습니다.');
+    if(!no)add(e,'check','missing-empno','사번이 비어 있어 엑셀 자동 연결이 불가능합니다.');
+  });
+  const counts={error:0,warning:0,check:0};issues.forEach(i=>counts[i.severity]++);
+  employeeStatusAuditCache={issues,byEmployee,counts};
+  return employeeStatusAuditCache;
+}
+function employeeStatusIssuesFor(employee){return employeeStatusAuditCache.byEmployee.get(employee.id)||[];}
+function employeeStatusIssueClass(issues){if(issues.some(i=>i.severity==='error'))return'is-error';if(issues.some(i=>i.severity==='warning'))return'is-warning';return issues.length?'is-check':'';}
+function renderEmployeeStatusHealth(){
+  const cache=employeeStatusAuditCache;
+  const total=cache.issues.length;
+  const text=$('employeeStatusHealthText');if(text)text.textContent=total?`${total}건 확인 필요`:'상태 데이터 정상';
+  const sub=$('employeeStatusHealthSubtext');if(sub)sub.textContent=total?'자동 수정 없이 상세 점검 후 사용자가 변경합니다.':'재직상태와 관련 날짜에서 발견된 문제가 없습니다.';
+  const kpis=$('employeeStatusHealthKpis');if(kpis)kpis.innerHTML=`<span class="is-error">오류 <strong>${cache.counts.error}</strong></span><span class="is-warning">주의 <strong>${cache.counts.warning}</strong></span><span class="is-check">확인 <strong>${cache.counts.check}</strong></span>`;
+  const box=$('employeeStatusHealth');if(box)box.classList.toggle('is-clean',!total);
+  const btn=$('btnEmployeeIssueOnly');if(btn){btn.classList.toggle('active',employeeStatusIssueOnly);btn.textContent=employeeStatusIssueOnly?'전체 사원 보기':'문제만 보기';}
+}
+function toggleEmployeeIssueOnly(force){
+  employeeStatusIssueOnly=typeof force==='boolean'?force:!employeeStatusIssueOnly;
+  employeePage=1;renderEmployees();
+}
+function employeeAuditSeverityLabel(severity){return {error:'오류',warning:'주의',check:'확인 필요'}[severity]||severity;}
+function employeeAuditSeverityClass(severity){return severity==='error'?'is-error':severity==='warning'?'is-warning':'is-check';}
+function renderEmployeeStatusAuditModal(){
+  refreshEmployeeStatusAuditCache();renderEmployeeStatusHealth();
+  const counts=employeeStatusAuditCache.counts;
+  const kpis=$('employeeStatusAuditKpis');if(kpis)kpis.innerHTML=`<div><span>전체</span><strong>${employeeStatusAuditCache.issues.length}</strong></div><div class="is-error"><span>오류</span><strong>${counts.error}</strong></div><div class="is-warning"><span>주의</span><strong>${counts.warning}</strong></div><div class="is-check"><span>확인 필요</span><strong>${counts.check}</strong></div>`;
+  const severity=$('employeeStatusAuditSeverity')?.value||'all';
+  const term=employeeSafeText($('employeeStatusAuditSearch')?.value).toLowerCase();
+  const rows=employeeStatusAuditCache.issues.filter(issue=>(severity==='all'||issue.severity===severity)&&(!term||`${issue.empNo} ${issue.name}`.toLowerCase().includes(term)));
+  setText('employeeStatusAuditCount',`${rows.length}건`);
+  const list=$('employeeStatusAuditList');if(!list)return;
+  if(!rows.length){list.innerHTML='<div class="employee-audit-empty"><strong>해당 조건의 문제가 없습니다.</strong><span>필터를 변경하거나 전체 사원을 확인하세요.</span></div>';return;}
+  list.innerHTML=rows.map(issue=>`<div class="employee-audit-item ${employeeAuditSeverityClass(issue.severity)}"><div class="employee-audit-severity">${employeeAuditSeverityLabel(issue.severity)}</div><div class="employee-audit-main"><strong>${esc(issue.name||'-')} <small>${esc(issue.empNo||'사번 없음')}</small></strong><span>${esc(issue.message)}</span></div><div class="employee-audit-actions"><button class="mini" onclick="closeEmployeeStatusAudit();openEmployeeStatusManager('${issue.employeeId}')">상태 검토</button><button class="ghost" onclick="editEmployeePrompt('${issue.employeeId}');closeEmployeeStatusAudit()">수정</button></div></div>`).join('');
+}
+function openEmployeeStatusAudit(){const modal=$('employeeStatusAuditModal');if(!modal)return;modal.classList.add('show');modal.setAttribute('aria-hidden','false');renderEmployeeStatusAuditModal();}
+function closeEmployeeStatusAudit(){const modal=$('employeeStatusAuditModal');if(!modal)return;modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
+
+function employeeStatusTransitionRule(current,target){
+  if(current==='재직중'&&target==='휴직')return'휴직 시작일을 확인한 뒤 휴직 상태로 변경합니다.';
+  if(current==='휴직'&&target==='재직중')return'실제 복직일을 확인한 뒤 재직 상태로 변경합니다.';
+  if(current==='재직중'&&target==='퇴사')return'퇴사일을 확인한 뒤 퇴직 상태로 변경합니다.';
+  if(current==='입사예정'&&target==='재직중')return'실제 입사일이 오늘 이전인지 확인한 뒤 재직 상태로 변경합니다.';
+  if(current===target)return'상태는 유지하고 관련 날짜의 오류만 정정할 수 있습니다.';
+  return'상태와 관련 날짜를 함께 확인한 뒤 변경합니다.';
+}
+function openEmployeeStatusManager(id){
+  const e=employees.find(x=>x.id===id);if(!e)return;
+  employeeStatusManagerId=id;
+  setText('employeeStatusManagerPerson',`${e.name||'-'} · ${e.empNo||'사번 없음'} · ${employeeOrgPrimary(e)}`);
+  setText('employeeStatusManagerCurrent',employeeStatusLabel(e.status));
+  if($('employeeStatusManagerTarget'))$('employeeStatusManagerTarget').value=e.status||'재직중';
+  if($('employeeStatusManagerHireDate'))$('employeeStatusManagerHireDate').value=e.hireDate||'';
+  if($('employeeStatusManagerLeaveStart'))$('employeeStatusManagerLeaveStart').value=e.leaveStartDate||'';
+  if($('employeeStatusManagerReturnDate'))$('employeeStatusManagerReturnDate').value=e.returnDate||'';
+  if($('employeeStatusManagerLeaveDate'))$('employeeStatusManagerLeaveDate').value=e.leaveDate||'';
+  if($('employeeStatusManagerConfirm'))$('employeeStatusManagerConfirm').checked=false;
+  const modal=$('employeeStatusManagerModal');if(modal){modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
+  validateEmployeeStatusManager();
+}
+function closeEmployeeStatusManager(){const modal=$('employeeStatusManagerModal');if(modal){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}employeeStatusManagerId='';}
+function employeeStatusManagerPatch(){return {status:$('employeeStatusManagerTarget')?.value||'재직중',hireDate:$('employeeStatusManagerHireDate')?.value||'',leaveStartDate:$('employeeStatusManagerLeaveStart')?.value||'',returnDate:$('employeeStatusManagerReturnDate')?.value||'',leaveDate:$('employeeStatusManagerLeaveDate')?.value||''};}
+function validateEmployeeStatusTransition(current,target,patch){
+  const errors=[];const warnings=[];
+  if(target==='휴직'&&!patch.leaveStartDate)errors.push('휴직 시작일을 입력해야 합니다.');
+  if(current==='휴직'&&target==='재직중'&&!patch.returnDate)errors.push('복직일을 입력해야 합니다.');
+  if(target==='퇴사'&&!patch.leaveDate)errors.push('퇴사일을 입력해야 합니다.');
+  if(current==='입사예정'&&target==='재직중'){
+    if(!patch.hireDate)errors.push('실제 입사일을 입력해야 합니다.');
+    else if(patch.hireDate>employeeTodayIso())errors.push('재직 전환 시 실제 입사일은 오늘 이후일 수 없습니다.');
+  }
+  if(target==='재직중'&&patch.leaveDate)errors.push('재직 상태로 변경하려면 퇴사일을 비워주세요.');
+  if(patch.hireDate&&patch.leaveDate&&patch.leaveDate<patch.hireDate)errors.push('퇴사일이 입사일보다 빠릅니다.');
+  if(patch.leaveStartDate&&patch.returnDate&&patch.returnDate<patch.leaveStartDate)errors.push('복직일이 휴직 시작일보다 빠릅니다.');
+  if(target==='입사예정'&&patch.hireDate&&patch.hireDate<employeeTodayIso())warnings.push('입사예정일이 이미 지났습니다.');
+  return {errors,warnings};
+}
+function validateEmployeeStatusManager(){
+  const e=employees.find(x=>x.id===employeeStatusManagerId);if(!e)return false;
+  const patch=employeeStatusManagerPatch();const result=validateEmployeeStatusTransition(e.status,patch.status,patch);
+  const rule=$('employeeStatusManagerRule');if(rule)rule.innerHTML=`<strong>${employeeStatusLabel(e.status)} → ${employeeStatusLabel(patch.status)}</strong><span>${esc(employeeStatusTransitionRule(e.status,patch.status))}</span>`;
+  const box=$('employeeStatusManagerValidation');if(box){
+    box.className='employee-status-validation '+(result.errors.length?'is-error':result.warnings.length?'is-warning':'is-ready');
+    box.innerHTML=result.errors.length?`<strong>적용할 수 없습니다.</strong>${result.errors.map(x=>`<span>• ${esc(x)}</span>`).join('')}`:result.warnings.length?`<strong>확인이 필요합니다.</strong>${result.warnings.map(x=>`<span>• ${esc(x)}</span>`).join('')}`:'<strong>적용 가능</strong><span>상태와 날짜 규칙을 모두 통과했습니다.</span>';
+  }
+  const confirmed=!!$('employeeStatusManagerConfirm')?.checked;
+  const btn=$('btnApplyEmployeeStatusManager');if(btn)btn.disabled=!!result.errors.length||!confirmed;
+  return !result.errors.length;
+}
+function applyEmployeeStatusManager(){
+  const e=employees.find(x=>x.id===employeeStatusManagerId);if(!e)return;
+  if(!validateEmployeeStatusManager()){alert('상태 변경 규칙을 확인해주세요.');return;}
+  if(!$('employeeStatusManagerConfirm')?.checked){alert('확인 항목에 체크해주세요.');return;}
+  const patch=employeeStatusManagerPatch();
+  if(!confirm(`${e.name}님의 상태를 ${employeeStatusLabel(e.status)} → ${employeeStatusLabel(patch.status)}(으)로 변경할까요?`))return;
+  const updated=normalizeEmployee({...e,...patch,updatedAt:new Date().toISOString()});
+  employees=employees.map(x=>x.id===e.id?updated:x);saveEmployees([updated]);
+  closeEmployeeStatusManager();if($('employeeDetailModal')?.classList.contains('show'))renderEmployeeDetail();
+  if(typeof uxToast==='function')uxToast(`${e.name}님의 재직상태를 ${employeeStatusLabel(updated.status)}(으)로 변경했습니다.`);
+}
+
+/* ---------- Minimal XLSX reader: ZIP + worksheet XML ---------- */
+function employeeXlsxColumnIndex(reference){const letters=(String(reference||'').match(/[A-Z]+/i)||['A'])[0].toUpperCase();let n=0;for(const ch of letters)n=n*26+(ch.charCodeAt(0)-64);return n-1;}
+function employeeXlsxDecode(bytes){return new TextDecoder('utf-8').decode(bytes);}
+async function employeeXlsxInflate(bytes){
+  if(typeof DecompressionStream!=='function')throw new Error('현재 브라우저가 XLSX 압축 해제를 지원하지 않습니다. 최신 Chrome 또는 Edge에서 다시 시도해주세요.');
+  const stream=new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+async function employeeXlsxZipEntries(arrayBuffer){
+  const bytes=new Uint8Array(arrayBuffer),view=new DataView(arrayBuffer);let eocd=-1;
+  for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){if(view.getUint32(i,true)===0x06054b50){eocd=i;break;}}
+  if(eocd<0)throw new Error('유효한 XLSX ZIP 구조를 찾지 못했습니다.');
+  const count=view.getUint16(eocd+10,true),centralOffset=view.getUint32(eocd+16,true);let pos=centralOffset;const entries=new Map();
+  for(let i=0;i<count;i++){
+    if(view.getUint32(pos,true)!==0x02014b50)throw new Error('XLSX 중앙 디렉터리가 손상되었습니다.');
+    const method=view.getUint16(pos+10,true),compressedSize=view.getUint32(pos+20,true),nameLength=view.getUint16(pos+28,true),extraLength=view.getUint16(pos+30,true),commentLength=view.getUint16(pos+32,true),localOffset=view.getUint32(pos+42,true);
+    const name=employeeXlsxDecode(bytes.slice(pos+46,pos+46+nameLength));
+    if(view.getUint32(localOffset,true)!==0x04034b50)throw new Error(`XLSX 내부 파일(${name}) 구조가 손상되었습니다.`);
+    const localNameLength=view.getUint16(localOffset+26,true),localExtraLength=view.getUint16(localOffset+28,true),dataStart=localOffset+30+localNameLength+localExtraLength;
+    const compressed=bytes.slice(dataStart,dataStart+compressedSize);
+    entries.set(name,{method,compressed});pos+=46+nameLength+extraLength+commentLength;
+  }
+  async function read(name){const entry=entries.get(name);if(!entry)return null;if(entry.method===0)return entry.compressed;if(entry.method===8)return employeeXlsxInflate(entry.compressed);throw new Error(`지원하지 않는 XLSX 압축 방식입니다: ${entry.method}`);}
+  return {entries,read};
+}
+function employeeXlsxXml(text,label){const doc=new DOMParser().parseFromString(text,'application/xml');const error=doc.querySelector('parsererror');if(error)throw new Error(`${label} XML을 읽지 못했습니다.`);return doc;}
+function employeeXlsxSharedStrings(doc){if(!doc)return[];return Array.from(doc.getElementsByTagName('si')).map(si=>Array.from(si.getElementsByTagName('t')).map(t=>t.textContent||'').join(''));}
+function employeeXlsxCellValue(cell,shared){const type=cell.getAttribute('t')||'';if(type==='inlineStr')return Array.from(cell.getElementsByTagName('t')).map(t=>t.textContent||'').join('');const v=cell.getElementsByTagName('v')[0]?.textContent??'';if(type==='s')return shared[Number(v)]??'';if(type==='b')return v==='1';if(type==='str')return v;const n=Number(v);return v!==''&&Number.isFinite(n)?n:v;}
+function employeeXlsxSheetRows(doc,shared){const output=[];Array.from(doc.getElementsByTagName('row')).forEach(row=>{const rowIndex=Math.max(0,(Number(row.getAttribute('r'))||output.length+1)-1);const values=[];Array.from(row.getElementsByTagName('c')).forEach(cell=>{values[employeeXlsxColumnIndex(cell.getAttribute('r'))]=employeeXlsxCellValue(cell,shared);});output[rowIndex]=values;});return output;}
+function employeeXlsxNormalizePath(target){const clean=String(target||'').replace(/^\//,'');if(clean.startsWith('xl/'))return clean;const parts=['xl'];for(const part of clean.split('/')){if(part==='..')parts.pop();else if(part&&part!=='.')parts.push(part);}return parts.join('/');}
+async function employeeReadXlsx(file){
+  const zip=await employeeXlsxZipEntries(await file.arrayBuffer());
+  const workbookBytes=await zip.read('xl/workbook.xml'),relsBytes=await zip.read('xl/_rels/workbook.xml.rels');
+  if(!workbookBytes||!relsBytes)throw new Error('XLSX 통합문서 정보를 찾지 못했습니다.');
+  const workbook=employeeXlsxXml(employeeXlsxDecode(workbookBytes),'workbook');const rels=employeeXlsxXml(employeeXlsxDecode(relsBytes),'relationships');
+  const relMap=new Map(Array.from(rels.getElementsByTagName('Relationship')).map(r=>[r.getAttribute('Id'),employeeXlsxNormalizePath(r.getAttribute('Target'))]));
+  const sharedBytes=await zip.read('xl/sharedStrings.xml');const shared=sharedBytes?employeeXlsxSharedStrings(employeeXlsxXml(employeeXlsxDecode(sharedBytes),'sharedStrings')):[];
+  const sheets=[];
+  for(const sheet of Array.from(workbook.getElementsByTagName('sheet'))){
+    const name=sheet.getAttribute('name')||'시트';
+    if(!employeeSheetType(name))continue;
+    const relId=sheet.getAttribute('r:id')||sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');const path=relMap.get(relId);if(!path)continue;
+    const bytes=await zip.read(path);if(!bytes)continue;sheets.push({name,rows:employeeXlsxSheetRows(employeeXlsxXml(employeeXlsxDecode(bytes),name),shared)});
+  }
+  return sheets;
+}
+function employeeNormalizeHeader(value){return employeeSafeText(value).replace(/[\s\n\r·\/\\()_-]+/g,'').toLowerCase();}
+function employeeFindHeaderRow(rows){for(let i=0;i<Math.min(12,rows.length);i++){const normalized=(rows[i]||[]).map(employeeNormalizeHeader);if(normalized.includes('사원번호')&&normalized.includes('성명'))return i;}return-1;}
+function employeeHeaderMap(row){const map=new Map();(row||[]).forEach((v,i)=>{const key=employeeNormalizeHeader(v);if(key&&!map.has(key))map.set(key,i);});return map;}
+function employeeRowValue(row,map,aliases){for(const alias of aliases){const index=map.get(employeeNormalizeHeader(alias));if(index!==undefined){const value=row[index];if(value!==undefined&&value!==null)return value;}}return'';}
+function employeeExcelSerialToIso(value){if(!Number.isFinite(value)||value<1)return'';const epoch=Date.UTC(1899,11,30);return new Date(epoch+Math.floor(value)*86400000).toISOString().slice(0,10);}
+function employeeNormalizeExcelDate(value){
+  if(value===null||value===undefined||value==='')return'';if(typeof value==='number')return employeeExcelSerialToIso(value);
+  const raw=employeeBlankToEmpty(value);if(!raw)return'';const digits=raw.replace(/\D/g,'');
+  if(/^\d{8}$/.test(digits))return`${digits.slice(0,4)}-${digits.slice(4,6)}-${digits.slice(6,8)}`;
+  if(/^\d{6}$/.test(digits)){const yy=Number(digits.slice(0,2));return`${yy>=50?'19':'20'}${digits.slice(0,2)}-${digits.slice(2,4)}-${digits.slice(4,6)}`;}
+  const m=raw.match(/^(\d{2,4})[.\/-](\d{1,2})[.\/-](\d{1,2})/);if(m){let y=m[1];if(y.length===2)y=(Number(y)>=50?'19':'20')+y;return`${y}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;}
+  return'';
+}
+function employeeLeavePeriodStart(value){const raw=employeeBlankToEmpty(value);if(!raw)return'';return employeeNormalizeExcelDate(raw.split(/[~～]/)[0]);}
+function employeeSheetType(name){const n=employeeNormalizeHeader(name);if(n.includes('휴직자명단'))return'leave';if(n==='퇴직자현황'||n.startsWith('퇴직자현황'))return'retired';if(n.includes('입사예정'))return'upcoming';if(n.includes('사원명부')&&!n.includes('퇴직')&&!n.includes('휴직'))return'active';return'';}
+function employeeRowsFromSheet(sheet){
+  const type=employeeSheetType(sheet.name);if(!type)return[];const headerIndex=employeeFindHeaderRow(sheet.rows);if(headerIndex<0)return[];const map=employeeHeaderMap(sheet.rows[headerIndex]);const status={active:'재직중',leave:'휴직',retired:'퇴사',upcoming:'입사예정'}[type];const rows=[];
+  for(let i=headerIndex+1;i<sheet.rows.length;i++){
+    const row=sheet.rows[i]||[];const empNo=employeeNormalizeNo(employeeRowValue(row,map,['사원번호','사번']));const name=employeeBlankToEmpty(employeeRowValue(row,map,['성명','이름']));if(!empNo||!name||name==='#N/A')continue;
+    let team=employeeBlankToEmpty(employeeRowValue(row,map,type==='retired'?['소속','팀']:['팀','소속']));let groupName=employeeBlankToEmpty(employeeRowValue(row,map,['그룹']));
+    if(team.includes('그룹')&&groupName.includes('팀')){const temp=team;team=groupName;groupName=temp;}
+    const position=employeeBlankToEmpty(employeeRowValue(row,map,['직책']))||employeeBlankToEmpty(employeeRowValue(row,map,['직책/직무','직책직무']));
+    rows.push({sourceSheet:sheet.name,sourceRow:i+1,empNo,name,team,groupName,product:employeeBlankToEmpty(employeeRowValue(row,map,['제품','근무/제품','근무제품'])),part:employeeBlankToEmpty(employeeRowValue(row,map,['파트'])),rank:employeeBlankToEmpty(employeeRowValue(row,map,['직급'])),position,hireDate:employeeNormalizeExcelDate(employeeRowValue(row,map,['입사일'])),leaveDate:employeeNormalizeExcelDate(employeeRowValue(row,map,['퇴사일'])),leaveStartDate:type==='leave'?employeeLeavePeriodStart(employeeRowValue(row,map,['휴직기간','휴직일'])):'',status,school:employeeBlankToEmpty(employeeRowValue(row,map,['최종학교','출신학교','학교'])),major:employeeBlankToEmpty(employeeRowValue(row,map,['전공'])),education:employeeBlankToEmpty(employeeRowValue(row,map,['최종학력'])),promotionDate:employeeNormalizeExcelDate(employeeRowValue(row,map,['승격일'])),recruitType:employeeBlankToEmpty(employeeRowValue(row,map,['입사경위'])),recruitChannel:employeeBlankToEmpty(employeeRowValue(row,map,['채용채널','입사루트']))});
+  }
+  return rows;
+}
+function employeeExcelCurrentMap(){const map=new Map();employees.forEach(e=>{const no=employeeNormalizeNo(e.empNo);if(!no)return;if(!map.has(no))map.set(no,[]);map.get(no).push(e);});return map;}
+function employeeExcelFieldCurrent(employee,key){if(key==='team')return employeeBlankToEmpty(employee.team||employee.department);if(key==='position')return employeeBlankToEmpty(employee.position||employee.role);return employeeBlankToEmpty(employee[key]);}
+function employeeExcelBuildRows(records,meta={}){
+  const currentMap=employeeExcelCurrentMap(),sourceCounts=new Map(),sourceNos=new Set();records.forEach(r=>{const no=employeeNormalizeNo(r.empNo);if(no){sourceCounts.set(no,(sourceCounts.get(no)||0)+1);sourceNos.add(no);}});
+  const rows=records.map((record,index)=>{
+    const row={key:`excel-${index}`,record,status:'error',reason:'',employee:null,changes:[]};const no=employeeNormalizeNo(record.empNo);record.empNo=no;
+    if(!no){row.reason='사번이 비어 있습니다.';return row;}if(!record.name){row.reason='성명이 비어 있습니다.';return row;}if((sourceCounts.get(no)||0)>1){row.reason='엑셀 원본에 같은 사번이 중복되어 있습니다.';return row;}
+    const matches=currentMap.get(no)||[];if(matches.length>1){row.reason='ERP 사원명부에 같은 사번이 중복되어 있습니다.';return row;}if(!matches.length){row.status='new';row.reason='ERP에 없는 신규 사원입니다.';return row;}
+    const employee=matches[0];row.employee=employee;if(employeeNormalizeName(employee.name)!==employeeNormalizeName(record.name)){row.reason=`사번은 같지만 이름이 다릅니다. ERP ${employee.name} / 엑셀 ${record.name}`;return row;}
+    EMPLOYEE_EXCEL_COMPARE_FIELDS.forEach(field=>{const incoming=employeeBlankToEmpty(record[field.key]);if(!incoming)return;const current=employeeExcelFieldCurrent(employee,field.key);if(current!==incoming)row.changes.push({field:field.key,label:field.label,from:current,to:incoming});});
+    if(record.status==='휴직'&&employeeBlankToEmpty(record.leaveStartDate)){const current=employeeBlankToEmpty(employee.leaveStartDate);if(current!==record.leaveStartDate)row.changes.push({field:'leaveStartDate',label:'휴직 시작일',from:current,to:record.leaveStartDate});}
+    row.status=row.changes.some(c=>c.field==='status')?'statusMismatch':row.changes.length?'changed':'same';row.reason=row.changes.length?`${row.changes.length}개 항목 변경`:'모든 비교 항목이 동일합니다.';return row;
+  });
+  if(meta.isFullRoster){employees.forEach(employee=>{const no=employeeNormalizeNo(employee.empNo);if(no&&!sourceNos.has(no))rows.push({key:`erp-only-${employee.id}`,record:null,status:'erpOnly',reason:'전체 엑셀 명단에는 없지만 ERP에 존재합니다.',employee,changes:[]});});}
+  return rows;
+}
+function employeeExcelStatusLabel(status){return {new:'신규',changed:'변경',statusMismatch:'상태 불일치',same:'동일',erpOnly:'ERP에만 존재',error:'오류'}[status]||status;}
+function employeeExcelStatusClass(status){return`is-${status.replace(/[A-Z]/g,m=>'-'+m.toLowerCase())}`;}
+function employeeExcelCounts(){const counts={total:0,new:0,changed:0,statusMismatch:0,same:0,erpOnly:0,error:0};employeeExcelCompareState.rows.forEach(r=>{if(r.record)counts.total++;if(Object.prototype.hasOwnProperty.call(counts,r.status))counts[r.status]++;});return counts;}
+function employeeExcelFilteredRows(){const filter=employeeExcelCompareState.filter;if(filter==='all')return employeeExcelCompareState.rows.slice();if(filter==='actionable')return employeeExcelCompareState.rows.filter(row=>['new','changed','statusMismatch'].includes(row.status));return employeeExcelCompareState.rows.filter(row=>row.status===filter);}
+function employeeExcelToken(rowKey,field){return`${rowKey}:${field}`;}
+function employeeExcelSelectedForRow(row){if(row.status==='new')return employeeExcelCompareState.selected.has(employeeExcelToken(row.key,'__create__'));return row.changes.filter(c=>employeeExcelCompareState.selected.has(employeeExcelToken(row.key,c.field)));}
+function employeeExcelToggleRow(row,checked){if(row.status==='new'){const token=employeeExcelToken(row.key,'__create__');if(checked)employeeExcelCompareState.selected.add(token);else employeeExcelCompareState.selected.delete(token);return;}row.changes.forEach(c=>{const token=employeeExcelToken(row.key,c.field);if(checked)employeeExcelCompareState.selected.add(token);else employeeExcelCompareState.selected.delete(token);});}
+function employeeExcelSelectionSummary(){let newCount=0,fieldCount=0;employeeExcelCompareState.rows.forEach(row=>{if(row.status==='new'&&employeeExcelCompareState.selected.has(employeeExcelToken(row.key,'__create__')))newCount++;else fieldCount+=row.changes.filter(c=>employeeExcelCompareState.selected.has(employeeExcelToken(row.key,c.field))).length;});return{newCount,fieldCount,total:newCount+fieldCount};}
+function employeeExcelUpdateApplyState(){const selected=employeeExcelSelectionSummary();setText('employeeExcelSelectedCount',`신규 ${selected.newCount}명 · 변경 ${selected.fieldCount}개`);const confirmed=!!$('employeeExcelConfirm')?.checked;const btn=$('btnApplyEmployeeExcelCompare');if(btn){btn.disabled=!selected.total||!confirmed;btn.textContent=selected.total?`신규 ${selected.newCount}명 · 변경 ${selected.fieldCount}개 반영`:'선택 변경 반영';}}
+function employeeExcelRecordSummary(record){if(!record)return'-';return [record.team,record.groupName,record.product,record.part].filter(Boolean).join(' › ')||'조직 미입력';}
+function employeeExcelSourceLabel(name){const text=employeeSafeText(name);const key=employeeNormalizeHeader(text);if(key.includes('휴직자명단'))return'휴직자 명단';if(key.startsWith('퇴직자현황'))return'퇴직자 명부';if(key.includes('사원명부'))return'재직자 명부';if(key.includes('조직정보'))return'조직정보 JSON';return text||'ERP';}
+function employeeExcelEmployeeSummary(employee){if(!employee)return'-';return `${employeeOrgPrimary(employee)}${employeeOrgSecondary(employee)?' › '+employeeOrgSecondary(employee).replace(/ · /g,' › '):''}`;}
+function renderEmployeeExcelCompare(){
+  const counts=employeeExcelCounts();setText('employeeExcelTotal',counts.total);setText('employeeExcelNew',counts.new);setText('employeeExcelChanged',counts.changed);setText('employeeExcelStatusMismatch',counts.statusMismatch);setText('employeeExcelSame',counts.same);setText('employeeExcelErpOnly',counts.erpOnly);setText('employeeExcelError',counts.error);
+  setText('employeeExcelFileName',employeeExcelCompareState.fileName||'파일을 선택해 주세요.');const meta=employeeExcelCompareState.meta||{};setText('employeeExcelFileMeta',employeeExcelCompareState.fileName?`${meta.sheetSummary||'명단 데이터'} · 비교 ${counts.total}명 · ${meta.isFullRoster?'전체 명단':'부분 명단'}`:'재직자·휴직자·퇴직자 시트를 자동 인식합니다.');
+  document.querySelectorAll('#employeeExcelTabs [data-employee-excel-filter]').forEach(btn=>btn.classList.toggle('active',btn.dataset.employeeExcelFilter===employeeExcelCompareState.filter));
+  const filtered=employeeExcelFilteredRows(),pages=Math.max(1,Math.ceil(filtered.length/employeeExcelCompareState.pageSize));if(employeeExcelCompareState.page>pages)employeeExcelCompareState.page=pages;const start=(employeeExcelCompareState.page-1)*employeeExcelCompareState.pageSize,visible=filtered.slice(start,start+employeeExcelCompareState.pageSize);const body=$('employeeExcelCompareBody');
+  if(body){if(!employeeExcelCompareState.rows.length)body.innerHTML='<tr><td class="empty" colspan="7">사원명부 엑셀 파일을 선택해 주세요.</td></tr>';else if(!visible.length)body.innerHTML='<tr><td class="empty" colspan="7">선택한 분류에 해당하는 행이 없습니다.</td></tr>';else body.innerHTML=visible.map(row=>{
+    const actionable=['new','changed','statusMismatch'].includes(row.status);const selected=employeeExcelSelectedForRow(row);const rowChecked=row.status==='new'?!!selected:selected.length===row.changes.length&&row.changes.length>0;const rowIndeterminate=row.status!=='new'&&selected.length>0&&selected.length<row.changes.length;const person=row.record||row.employee||{};
+    const changes=row.status==='new'?`<span class="employee-excel-new-note">신규 사원으로 등록할 전체 비교 항목</span>`:row.changes.length?row.changes.map(c=>`<label class="employee-excel-change"><input type="checkbox" data-employee-excel-field="${esc(c.field)}" data-employee-excel-row="${esc(row.key)}" ${employeeExcelCompareState.selected.has(employeeExcelToken(row.key,c.field))?'checked':''}/><span><b>${esc(c.label)}</b><em>${esc(c.from||'미입력')}</em><i>→</i><strong>${esc(c.to)}</strong></span></label>`).join(''):`<span class="muted">${esc(row.reason)}</span>`;
+    return `<tr class="employee-excel-row ${employeeExcelStatusClass(row.status)}"><td data-label="선택"><input type="checkbox" data-employee-excel-row-select="${esc(row.key)}" ${rowChecked?'checked':''} ${rowIndeterminate?'data-indeterminate="true"':''} ${actionable?'':'disabled'}/></td><td data-label="분류"><span class="employee-excel-status ${employeeExcelStatusClass(row.status)}">${esc(employeeExcelStatusLabel(row.status))}</span><small>${esc(row.reason)}</small></td><td data-label="원본"><strong>${esc(employeeExcelSourceLabel(row.record?.sourceSheet||'ERP'))}</strong><small>${row.record?.sourceRow?`${row.record.sourceRow}행`:''}</small></td><td data-label="사번·성명"><strong>${esc(person.empNo||'-')}</strong><small>${esc(person.name||'-')}</small></td><td data-label="현재 ERP">${row.employee?`<strong>${esc(employeeExcelEmployeeSummary(row.employee))}</strong><small>${esc(employeeStatusLabel(row.employee.status))} · ${esc(row.employee.rank||'-')} · ${esc(row.employee.school||'-')}</small>`:'-'}</td><td data-label="엑셀">${row.record?`<strong>${esc(employeeExcelRecordSummary(row.record))}</strong><small>${esc(employeeStatusLabel(row.record.status))} · ${esc(row.record.rank||'-')} · ${esc(row.record.school||'-')}</small>`:'-'}</td><td data-label="변경 항목"><div class="employee-excel-changes">${changes}</div></td></tr>`;
+  }).join('');body.querySelectorAll('[data-indeterminate="true"]').forEach(box=>box.indeterminate=true);}
+  setText('employeeExcelSummary',employeeExcelCompareState.rows.length?`신규 ${counts.new}명 · 변경 ${counts.changed}명 · 상태 불일치 ${counts.statusMismatch}명 · 동일 ${counts.same}명 · ERP에만 존재 ${counts.erpOnly}명 · 오류 ${counts.error}명`:'파일을 선택하면 비교 결과가 표시됩니다.');setText('employeeExcelPageInfo',filtered.length?`${start+1}-${Math.min(start+visible.length,filtered.length)} / ${filtered.length}건`:'0건');
+  const pager=$('employeeExcelPager');if(pager)pager.innerHTML=pages<=1?'':`<button class="mini" data-employee-excel-page="${Math.max(1,employeeExcelCompareState.page-1)}" ${employeeExcelCompareState.page===1?'disabled':''}>이전</button><span>${employeeExcelCompareState.page} / ${pages}</span><button class="mini" data-employee-excel-page="${Math.min(pages,employeeExcelCompareState.page+1)}" ${employeeExcelCompareState.page===pages?'disabled':''}>다음</button>`;
+  const undo=$('btnUndoEmployeeExcelApply');if(undo)undo.hidden=!readEmployeeExcelUndo();employeeExcelUpdateApplyState();
+}
+function openEmployeeExcelCompare(){if(typeof isCompanyLocalMode==='function'&&isCompanyLocalMode()){alert('회사 모드에서는 사원명부 파일을 업로드하거나 반영할 수 없습니다. 집 모드로 전환한 뒤 진행하세요.');return false;}const modal=$('employeeExcelCompareModal');if(!modal)return false;modal.classList.add('show');modal.setAttribute('aria-hidden','false');renderEmployeeExcelCompare();return true;}
+function closeEmployeeExcelCompare(){const modal=$('employeeExcelCompareModal');if(modal){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}if($('employeeExcelConfirm'))$('employeeExcelConfirm').checked=false;employeeExcelUpdateApplyState();}
+function employeeExcelPickFile(){if(!openEmployeeExcelCompare())return;const input=$('employeeExcelCompareFile');if(input){input.value='';input.click();}}
+async function employeeExcelParseFile(file){
+  const lower=file.name.toLowerCase();if(lower.endsWith('.xlsx')){const sheets=await employeeReadXlsx(file);const recognized=sheets.filter(s=>employeeSheetType(s.name));if(!recognized.length)throw new Error('사원명부·휴직자·퇴직자 시트를 찾지 못했습니다.');const records=recognized.flatMap(employeeRowsFromSheet);const types=new Set(recognized.map(s=>employeeSheetType(s.name)));return{records,meta:{sheetSummary:recognized.map(s=>`${s.name} ${employeeRowsFromSheet(s).length}명`).join(' · '),isFullRoster:types.has('active')&&types.has('leave')&&types.has('retired'),sourceType:'xlsx'}};}
+  if(lower.endsWith('.json')){const parsed=JSON.parse(await file.text());if(parsed&&parsed.format===EMPLOYEE_ORG_IMPORT_FORMAT&&Array.isArray(parsed.rows))return{records:parsed.rows.map((r,i)=>({...r,sourceSheet:r.source||'조직정보 JSON',sourceRow:i+1,status:''})),meta:{sheetSummary:`조직정보 전용 JSON ${parsed.rows.length}명`,isFullRoster:false,sourceType:'org-json'}};if(parsed&&parsed.format==='recruit-erp-backup')throw new Error('이 파일은 ERP 백업 JSON입니다. 시스템 → 백업/내보내기에서 사용해주세요.');const list=Array.isArray(parsed)?parsed:Array.isArray(parsed?.employees)?parsed.employees:[];if(!list.length)throw new Error('사원 데이터가 없는 JSON입니다.');return{records:list.map((r,i)=>({...normalizeEmployee(r),sourceSheet:'사원 JSON',sourceRow:i+1})),meta:{sheetSummary:`사원 JSON ${list.length}명`,isFullRoster:false,sourceType:'employee-json'}};}
+  throw new Error('현재는 .xlsx 또는 사원 JSON 파일만 지원합니다.');
+}
+async function employeeExcelReadFile(file){
+  if(!file)return;if(typeof isCompanyLocalMode==='function'&&isCompanyLocalMode()){alert('회사 모드에서는 파일을 불러올 수 없습니다.');return;}if(file.size>20*1024*1024){alert('20MB 이하의 파일만 사용할 수 있습니다.');return;}
+  const result=$('employeeExcelResult');if(result){result.className='employee-excel-result is-loading';result.innerHTML='<strong>파일 분석 중</strong><span>시트와 행을 읽고 사번 기준 비교를 진행합니다.</span>';}
+  try{const parsed=await employeeExcelParseFile(file);if(!parsed.records.length)throw new Error('비교할 사원 행이 없습니다.');const rows=employeeExcelBuildRows(parsed.records,parsed.meta);employeeExcelCompareState={fileName:file.name,meta:parsed.meta,rows,filter:'actionable',page:1,pageSize:35,selected:new Set(),lastResult:null};if($('employeeExcelConfirm'))$('employeeExcelConfirm').checked=false;if(result){result.className='employee-excel-result is-ready';result.innerHTML='<strong>비교 완료</strong><span>자동 반영하지 않습니다. 신규 사원과 변경 필드를 선택해주세요.</span>';}openEmployeeExcelCompare();renderEmployeeExcelCompare();}
+  catch(err){employeeExcelCompareState={fileName:'',meta:null,rows:[],filter:'actionable',page:1,pageSize:35,selected:new Set(),lastResult:null};if(result){result.className='employee-excel-result is-error';result.innerHTML=`<strong>파일 검사 실패</strong><span>${esc(err.message||err)}</span>`;}renderEmployeeExcelCompare();alert(`사원명부 파일 검사 실패\n\n${err.message||err}`);}
+}
+function employeeExcelSelectActionable(){employeeExcelCompareState.rows.forEach(row=>{if(['new','changed','statusMismatch'].includes(row.status))employeeExcelToggleRow(row,true);});renderEmployeeExcelCompare();}
+function employeeExcelClearSelection(){employeeExcelCompareState.selected.clear();renderEmployeeExcelCompare();}
+function employeeExcelModalClick(event){const filter=event.target.closest('[data-employee-excel-filter]');if(filter){employeeExcelCompareState.filter=filter.dataset.employeeExcelFilter||'actionable';employeeExcelCompareState.page=1;renderEmployeeExcelCompare();return;}const page=event.target.closest('[data-employee-excel-page]');if(page&&!page.disabled){employeeExcelCompareState.page=Math.max(1,Number(page.dataset.employeeExcelPage)||1);renderEmployeeExcelCompare();}}
+function employeeExcelModalChange(event){const rowBox=event.target.closest('[data-employee-excel-row-select]');if(rowBox){const row=employeeExcelCompareState.rows.find(r=>r.key===rowBox.dataset.employeeExcelRowSelect);if(row)employeeExcelToggleRow(row,rowBox.checked);renderEmployeeExcelCompare();return;}const fieldBox=event.target.closest('[data-employee-excel-field]');if(fieldBox){const token=employeeExcelToken(fieldBox.dataset.employeeExcelRow,fieldBox.dataset.employeeExcelField);if(fieldBox.checked)employeeExcelCompareState.selected.add(token);else employeeExcelCompareState.selected.delete(token);renderEmployeeExcelCompare();return;}if(event.target.id==='employeeExcelConfirm')employeeExcelUpdateApplyState();}
+function employeeExcelSafetyBackup(){if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup('사원명부 엑셀 선택 반영 직전');if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function')return window.erpBackupCenter.exportFull();const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.18',createdAt:new Date().toISOString(),employees};download(`사원명부_엑셀반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');return payload;}
+function readEmployeeExcelUndo(){try{const data=JSON.parse(localStorage.getItem(EMPLOYEE_EXCEL_UNDO_KEY)||'null');return data&&Array.isArray(data.before)&&Array.isArray(data.newIds)?data:null;}catch{return null;}}
+function writeEmployeeExcelUndo(data){localStorage.setItem(EMPLOYEE_EXCEL_UNDO_KEY,JSON.stringify(data));}
+function employeeExcelApplyValidation(){const errors=[];employeeExcelCompareState.rows.forEach(row=>{if(row.status==='new'&&employeeExcelCompareState.selected.has(employeeExcelToken(row.key,'__create__'))){const candidate=normalizeEmployee({...row.record,status:row.record.status||'재직중'});const state=validateEmployeeStatusState(candidate,candidate.status);if(state.errors.length)errors.push(`${row.record.name}(${row.record.empNo}): ${state.errors.join(' / ')}`);}else if(row.employee){const selected=row.changes.filter(c=>employeeExcelCompareState.selected.has(employeeExcelToken(row.key,c.field)));if(!selected.length)return;const patch={};selected.forEach(c=>patch[c.field]=c.to);const candidate=normalizeEmployee({...row.employee,...patch});const transition=validateEmployeeStatusTransition(row.employee.status,candidate.status,candidate);if(transition.errors.length)errors.push(`${row.employee.name}(${row.employee.empNo}): ${transition.errors.join(' / ')}`);}});return errors;}
+function applyEmployeeExcelCompare(){
+  if(typeof isCompanyLocalMode==='function'&&isCompanyLocalMode()){alert('회사 모드에서는 엑셀 비교 결과를 반영할 수 없습니다.');return;}const summary=employeeExcelSelectionSummary();if(!summary.total){alert('반영할 신규 사원 또는 변경 항목을 선택해주세요.');return;}if(!$('employeeExcelConfirm')?.checked){alert('선택 항목을 확인했다는 항목에 체크해주세요.');return;}const validation=employeeExcelApplyValidation();if(validation.length){alert(`선택한 변경 중 상태·날짜 규칙을 통과하지 못한 항목이 있습니다.\n\n${validation.slice(0,10).join('\n')}${validation.length>10?'\n외 '+(validation.length-10)+'건':''}`);return;}
+  if(!confirm(`신규 ${summary.newCount}명과 변경 ${summary.fieldCount}개 항목을 반영할까요?\n\n빈 엑셀 칸은 기존 값을 지우지 않으며, 적용 직전 전체 ERP JSON이 자동 다운로드됩니다.`))return;
+  employeeExcelSafetyBackup();const before=[];const newIds=[];const affected=[];const now=new Date().toISOString();let newCount=0,updatedCount=0,fieldCount=0;
+  employeeExcelCompareState.rows.forEach(row=>{
+    if(row.status==='new'&&employeeExcelCompareState.selected.has(employeeExcelToken(row.key,'__create__'))){const created=normalizeEmployee({empNo:row.record.empNo,name:row.record.name,...Object.fromEntries(EMPLOYEE_EXCEL_COMPARE_FIELDS.map(f=>[f.key,employeeBlankToEmpty(row.record[f.key])])),leaveStartDate:employeeBlankToEmpty(row.record.leaveStartDate),department:row.record.team||'',role:row.record.position||'',id:uid(),createdAt:now,updatedAt:now});employees.unshift(created);newIds.push(created.id);affected.push(created);newCount++;return;}
+    if(!row.employee)return;const selected=row.changes.filter(c=>employeeExcelCompareState.selected.has(employeeExcelToken(row.key,c.field)));if(!selected.length)return;before.push({id:row.employee.id,data:row.employee});const patch={updatedAt:now};selected.forEach(c=>{patch[c.field]=c.to;if(c.field==='team')patch.department=c.to;if(c.field==='position')patch.role=c.to;fieldCount++;});const updated=normalizeEmployee({...row.employee,...patch,id:row.employee.id});employees=employees.map(e=>e.id===updated.id?updated:e);affected.push(updated);updatedCount++;
+  });
+  writeEmployeeExcelUndo({at:now,fileName:employeeExcelCompareState.fileName,before,newIds});saveEmployees(affected);employeeExcelCompareState.selected.clear();employeeExcelCompareState.lastResult={newCount,updatedCount,fieldCount};if($('employeeExcelConfirm'))$('employeeExcelConfirm').checked=false;const records=employeeExcelCompareState.rows.filter(r=>r.record).map(r=>r.record);employeeExcelCompareState.rows=employeeExcelBuildRows(records,employeeExcelCompareState.meta||{});renderEmployeeExcelCompare();const result=$('employeeExcelResult');if(result){result.className='employee-excel-result is-ready';result.innerHTML=`<strong>반영 완료</strong><span>신규 ${newCount}명 · 수정 ${updatedCount}명 · 변경 필드 ${fieldCount}개를 저장했습니다. 직전 반영은 실행 취소할 수 있습니다.</span>`;}alert(`사원명부 반영 완료\n\n신규 ${newCount}명\n수정 ${updatedCount}명\n변경 필드 ${fieldCount}개\n\n로컬 저장을 완료했고 로그인 상태이면 Supabase 저장도 시도했습니다.`);
+}
+function undoEmployeeExcelApply(){const undo=readEmployeeExcelUndo();if(!undo){alert('실행 취소할 직전 반영 기록이 없습니다.');return;}if(!confirm(`직전 사원명부 반영을 취소할까요?\n\n파일: ${undo.fileName||'-'}\n기존 복원 ${undo.before.length}명 · 신규 제거 ${undo.newIds.length}명`))return;const beforeMap=new Map(undo.before.map(x=>[x.id,normalizeEmployee(x.data)]));employees=employees.filter(e=>!undo.newIds.includes(e.id)).map(e=>beforeMap.has(e.id)?beforeMap.get(e.id):e);undo.newIds.forEach(id=>supabaseDeleteEmployee(id));saveEmployees(Array.from(beforeMap.values()));localStorage.removeItem(EMPLOYEE_EXCEL_UNDO_KEY);if(employeeExcelCompareState.rows.length){const records=employeeExcelCompareState.rows.filter(r=>r.record).map(r=>r.record);employeeExcelCompareState.rows=employeeExcelBuildRows(records,employeeExcelCompareState.meta||{});}renderEmployeeExcelCompare();if(typeof uxToast==='function')uxToast('직전 사원명부 엑셀 반영을 취소했습니다.');}
