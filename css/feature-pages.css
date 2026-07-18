@@ -636,3 +636,26 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 @media(min-width:1301px){
   #applicants .applicant-table{min-width:100%!important;max-width:100%!important;}
 }
+
+/* ===== v10.40.11 APPLICANT_LIST_FINAL_RESTORE =====
+   v10.40.10에서 관리 셀을 table-cell로 복원한 뒤 기존 버튼 width:100%가
+   남아 상세/수정/삭제가 셀 밖으로 밀려난 회귀를 바로잡습니다. */
+@media(min-width:761px){
+  #applicants .applicant-table td.applicant-actions{
+    display:table-cell!important;
+    text-align:center!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+  #applicants .applicant-table td.applicant-actions>button{
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    width:auto!important;
+    min-width:48px!important;
+    max-width:none!important;
+    height:32px!important;
+    margin:0 2px!important;
+    padding:0 10px!important;
+  }
+}
