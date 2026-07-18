@@ -353,7 +353,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&$('excelRowPasteModal')?.classList.contains('show'))closeExcelRowPaste();
 });
 
-/* v10.40.18 · 사원 상태관리 / 엑셀 비교 */
+/* v10.40.19 · 사원 상태관리 / 엑셀 비교 */
 bind('btnEmployeeStatusAudit','click',openEmployeeStatusAudit);
 bind('btnEmployeeStatusAuditList','click',openEmployeeStatusAudit);
 bind('btnEmployeeIssueOnly','click',()=>toggleEmployeeIssueOnly());
