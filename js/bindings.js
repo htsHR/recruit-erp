@@ -152,7 +152,20 @@ bind('employeeJsonImport','change',e=>{
   r.onload=()=>{
     try{
       const parsed=JSON.parse(r.result);
+      if(parsed&&parsed.format==='recruit-erp-employee-org-import'){
+        alert('이 파일은 사원 조직정보 반영용 JSON입니다.\n\n사원명부 상단의 “엑셀 조직정보 반영” 메뉴에서 사용해주세요.');
+        return;
+      }
+      if(parsed&&parsed.format==='recruit-erp-backup'){
+        alert('이 파일은 ERP 백업 JSON입니다.\n\n시스템 → 백업/내보내기 → 회사 JSON 검사 및 적용 메뉴에서 사용해주세요.');
+        return;
+      }
+      if(Array.isArray(parsed?.applicants)||(Array.isArray(parsed)&&parsed.some(row=>row&&('applyDate'in row||'phone'in row)))){
+        alert('이 파일은 지원자 전용 JSON입니다. 사원명부에 가져올 수 없습니다.');
+        return;
+      }
       const data=Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.employees) ? parsed.employees : []);
+      if(!data.length){alert('사원명부 JSON 형식이 아니거나 사원 데이터가 없습니다.');return;}
       if(!confirm(`직원 ${data.length}명을 가져올까요? 사번이 같으면 정보가 갱신되고, 새 사번이면 추가됩니다.`)) return;
       importEmployeesJson(data);
     }catch{ alert('직원명부 JSON 파일을 확인해주세요.'); }
@@ -173,6 +186,14 @@ document.querySelectorAll('#employeeViewTabs [data-empview]').forEach(b=>b.addEv
 }));
 bind('btnEmployeeSearch','click',applyEmployeeSearch);
 ['empSearchName','empSearchNo','empSearchSchool'].forEach(id=>bind(id,'keydown',e=>{if(e.key==='Enter')applyEmployeeSearch();}));
+bind('empTeamFilter','change',()=>handleEmployeeOrgFilterChange('team'));
+bind('empGroupFilter','change',()=>handleEmployeeOrgFilterChange('group'));
+bind('empProductFilter','change',()=>handleEmployeeOrgFilterChange('product'));
+bind('empPartFilter','change',()=>renderEmployeeOrgFilterPreview());
+bind('btnEmployeeSaveFilter','click',saveEmployeeCurrentFilter);
+bind('btnEmployeeApplySavedFilter','click',applyEmployeeSavedFilter);
+bind('btnEmployeeDeleteSavedFilter','click',deleteEmployeeSavedFilter);
+bind('empSavedFilterSelect','change',e=>{if(e.target.value)applyEmployeeSavedFilter();});
 bind('btnEmployeeResetFilters','click',resetEmployeeFilters);
 bind('btnCsvEmployees','click',csvEmployees);
 bind('btnEmployeeAddFromList','click',()=>{resetEmployeeForm();const d=$('employeeEntryDetails');if(d){d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'});}setTimeout(()=>$('empName')?.focus(),250);});

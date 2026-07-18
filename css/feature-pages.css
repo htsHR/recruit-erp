@@ -660,8 +660,23 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
   }
 }
 
-/* v10.40.14 사원명부 요약 카드 — 공용 6열 규칙보다 우선 */
+/* v10.40.16 사원명부 요약 카드 — 공용 6열 규칙보다 우선 */
 #employeesSummaryGrid{grid-template-columns:repeat(5,minmax(0,1fr))!important;}
 @media(max-width:1180px){#employeesSummaryGrid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}}
 @media(max-width:860px){#employeesSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}}
 @media(max-width:640px){#employeesSummaryGrid{grid-template-columns:1fr 1fr!important;}#employeesSummaryGrid .emp-stat:last-child{grid-column:1/-1;}}
+
+/* =========================================================
+   v10.40.16 · JSON 파일 유형 안전 판별
+   ========================================================= */
+.backup-file-summary{grid-template-columns:repeat(6,minmax(0,1fr))}
+.backup-file-meta small{display:block;margin-top:5px;color:#7c899a;font-size:10px;line-height:1.4}
+.backup-file-meta.backup-file-type{border-color:#b9cdf2;background:#f3f7ff}
+.backup-file-meta.backup-file-type strong{color:#164a94}
+.backup-json-route-guard{display:flex;align-items:flex-start;gap:14px;margin-top:16px;padding:17px 18px;border:1px solid #f0c687;border-radius:14px;background:#fff9ec;color:#6f4b00}
+.backup-json-route-icon{display:grid;place-items:center;flex:0 0 auto;width:38px;height:38px;border-radius:12px;background:#ffe9bd;color:#8a5a00;font-size:20px;font-weight:1000}
+.backup-json-route-guard strong{display:block;margin-bottom:4px;color:#704800;font-size:14px}
+.backup-json-route-guard p{margin:0 0 7px;color:#775b24;font-size:12px;line-height:1.55}
+.backup-json-route-guard span{display:inline-flex;padding:5px 8px;border-radius:8px;background:#fff;color:#714d00;font-size:11px;font-weight:900}
+@media(max-width:1180px){.backup-file-summary{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:720px){.backup-file-summary{grid-template-columns:1fr 1fr}.backup-json-route-guard{padding:14px}.backup-json-route-guard span{display:block}}

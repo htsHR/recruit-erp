@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.40.14 — 사원명부 UI + 상세/등록/수정 최종화
+   Recruit ERP v10.40.16 — 사원명부 UI + 상세/등록/수정 최종화
    - 기존 employees/localStorage 구조와 레거시 필드를 그대로 호환
    - 신규 인사 필드는 모두 선택값이며, 기존 데이터에 없어도 정상 동작
    - 주민번호·주소·개인 연락처·개인 이메일은 저장/표시하지 않음
@@ -140,7 +140,10 @@ function supabaseEmployeesSyncOnLoad(){
 let employeeStatusFilter='all';
 let employeeSearchName='';
 let employeeSearchNo='';
-let employeeDeptFilter='all';
+let employeeTeamFilter='all';
+let employeeGroupFilter='all';
+let employeeProductFilter='all';
+let employeePartFilter='all';
 let employeeRankFilter='all';
 let employeeSchoolSearch='';
 let employeeHireFrom='';
@@ -148,6 +151,7 @@ let employeeHireTo='';
 let employeePage=1;
 let employeePageSize=20;
 let employeeViewMode='list';
+const EMPLOYEE_SAVED_FILTERS_KEY='recruit_erp_employee_saved_filters_v1';
 
 function employeeFieldValue(id){return ($(id)?.value||'').trim();}
 function getEmployeeForm(){
@@ -269,8 +273,10 @@ function deleteEditingEmployee(){if(editingEmployeeId)deleteEmployee(editingEmpl
 function employeeOrgPrimary(e){return e.team||e.department||'소속 미입력';}
 function employeeOrgSecondary(e){return [e.groupName,e.product,e.part].filter(Boolean).join(' · ');}
 function employeeRankDisplay(e){return e.rank||e.position||e.role||'-';}
-function employeeDeptList(){return Array.from(new Set(employees.map(employeeOrgPrimary).filter(x=>x&&x!=='소속 미입력'))).sort();}
-function employeeRankList(){return Array.from(new Set(employees.map(employeeRankDisplay).filter(x=>x&&x!=='-'))).sort();}
+function employeeUniqueValues(rows,getter){
+  return Array.from(new Set((Array.isArray(rows)?rows:[]).map(getter).map(v=>String(v||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ko'));
+}
+function employeeRankList(){return employeeUniqueValues(employees,employeeRankDisplay).filter(x=>x!=='-');}
 function employeeStatusBadgeClass(status){
   if(status==='재직중')return'good';
   if(status==='휴직')return'missed';
@@ -281,7 +287,10 @@ function employeeMatchesFilter(e){
   if(employeeStatusFilter!=='all'&&e.status!==employeeStatusFilter)return false;
   if(employeeSearchName&&!e.name.toLowerCase().includes(employeeSearchName.toLowerCase()))return false;
   if(employeeSearchNo&&!e.empNo.toLowerCase().includes(employeeSearchNo.toLowerCase()))return false;
-  if(employeeDeptFilter!=='all'&&employeeOrgPrimary(e)!==employeeDeptFilter)return false;
+  if(employeeTeamFilter!=='all'&&employeeOrgPrimary(e)!==employeeTeamFilter)return false;
+  if(employeeGroupFilter!=='all'&&e.groupName!==employeeGroupFilter)return false;
+  if(employeeProductFilter!=='all'&&e.product!==employeeProductFilter)return false;
+  if(employeePartFilter!=='all'&&e.part!==employeePartFilter)return false;
   if(employeeRankFilter!=='all'&&employeeRankDisplay(e)!==employeeRankFilter)return false;
   if(employeeHireFrom&&(!e.hireDate||e.hireDate<employeeHireFrom))return false;
   if(employeeHireTo&&(!e.hireDate||e.hireDate>employeeHireTo))return false;
@@ -294,21 +303,94 @@ function employeeMatchesFilter(e){
   }
   return true;
 }
+function employeeSetSelectOptions(id,values,desired){
+  const sel=$(id);if(!sel)return'all';
+  const clean=employeeUniqueValues(values,v=>v);
+  const target=desired&&clean.includes(desired)?desired:'all';
+  sel.innerHTML='<option value="all">전체</option>'+clean.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  sel.value=target;
+  return target;
+}
+function employeeFilterDomValue(id,fallback='all'){
+  const el=$(id);return el?(el.value||'all'):(fallback||'all');
+}
+function populateEmployeeSavedFilterOptions(){
+  const sel=$('empSavedFilterSelect');if(!sel)return;
+  const current=sel.value;
+  const items=readEmployeeSavedFilters();
+  sel.innerHTML='<option value="">저장된 조건 선택</option>'+items.map(item=>`<option value="${esc(item.id)}">${esc(item.name)}</option>`).join('');
+  if(items.some(item=>item.id===current))sel.value=current;
+}
+function populateEmployeeFilterOptions(){
+  let team=employeeFilterDomValue('empTeamFilter',employeeTeamFilter);
+  let groupName=employeeFilterDomValue('empGroupFilter',employeeGroupFilter);
+  let product=employeeFilterDomValue('empProductFilter',employeeProductFilter);
+  let part=employeeFilterDomValue('empPartFilter',employeePartFilter);
+
+  team=employeeSetSelectOptions('empTeamFilter',employeeUniqueValues(employees,employeeOrgPrimary).filter(x=>x!=='소속 미입력'),team);
+  const groupRows=employees.filter(e=>team==='all'||employeeOrgPrimary(e)===team);
+  groupName=employeeSetSelectOptions('empGroupFilter',employeeUniqueValues(groupRows,e=>e.groupName),groupName);
+  const productRows=groupRows.filter(e=>groupName==='all'||e.groupName===groupName);
+  product=employeeSetSelectOptions('empProductFilter',employeeUniqueValues(productRows,e=>e.product),product);
+  const partRows=productRows.filter(e=>product==='all'||e.product===product);
+  part=employeeSetSelectOptions('empPartFilter',employeeUniqueValues(partRows,e=>e.part),part);
+
+  const rankSel=$('empRankFilter');
+  if(rankSel){
+    const desired=rankSel.value||employeeRankFilter;
+    employeeSetSelectOptions('empRankFilter',employeeRankList(),desired);
+  }
+  if($('empStatusFilter'))$('empStatusFilter').value=employeeStatusFilter;
+  populateEmployeeSavedFilterOptions();
+}
+function handleEmployeeOrgFilterChange(level){
+  if(level==='team'){
+    if($('empGroupFilter'))$('empGroupFilter').value='all';
+    if($('empProductFilter'))$('empProductFilter').value='all';
+    if($('empPartFilter'))$('empPartFilter').value='all';
+  }else if(level==='group'){
+    if($('empProductFilter'))$('empProductFilter').value='all';
+    if($('empPartFilter'))$('empPartFilter').value='all';
+  }else if(level==='product'){
+    if($('empPartFilter'))$('empPartFilter').value='all';
+  }
+  populateEmployeeFilterOptions();
+  renderEmployeeOrgFilterPreview();
+}
+function employeeFilterFormValues(){
+  return {
+    searchName:employeeFieldValue('empSearchName'),
+    searchNo:employeeFieldValue('empSearchNo'),
+    team:$('empTeamFilter')?.value||'all',
+    groupName:$('empGroupFilter')?.value||'all',
+    product:$('empProductFilter')?.value||'all',
+    part:$('empPartFilter')?.value||'all',
+    rank:$('empRankFilter')?.value||'all',
+    status:$('empStatusFilter')?.value||'all',
+    school:employeeFieldValue('empSearchSchool'),
+    hireFrom:$('empHireFrom')?.value||'',
+    hireTo:$('empHireTo')?.value||''
+  };
+}
 function applyEmployeeSearch(){
-  employeeSearchName=employeeFieldValue('empSearchName');
-  employeeSearchNo=employeeFieldValue('empSearchNo');
-  employeeDeptFilter=$('empDeptFilter')?.value||'all';
-  employeeRankFilter=$('empRankFilter')?.value||'all';
-  employeeStatusFilter=$('empStatusFilter')?.value||employeeStatusFilter||'all';
-  employeeSchoolSearch=employeeFieldValue('empSearchSchool');
-  employeeHireFrom=$('empHireFrom')?.value||'';
-  employeeHireTo=$('empHireTo')?.value||'';
+  const values=employeeFilterFormValues();
+  employeeSearchName=values.searchName;
+  employeeSearchNo=values.searchNo;
+  employeeTeamFilter=values.team;
+  employeeGroupFilter=values.groupName;
+  employeeProductFilter=values.product;
+  employeePartFilter=values.part;
+  employeeRankFilter=values.rank;
+  employeeStatusFilter=values.status||employeeStatusFilter||'all';
+  employeeSchoolSearch=values.school;
+  employeeHireFrom=values.hireFrom;
+  employeeHireTo=values.hireTo;
   employeePage=1;renderEmployees();
 }
 function resetEmployeeFilters(){
-  employeeStatusFilter='all';employeeSearchName='';employeeSearchNo='';employeeDeptFilter='all';employeeRankFilter='all';employeeSchoolSearch='';employeeHireFrom='';employeeHireTo='';employeePage=1;
+  employeeStatusFilter='all';employeeSearchName='';employeeSearchNo='';employeeTeamFilter='all';employeeGroupFilter='all';employeeProductFilter='all';employeePartFilter='all';employeeRankFilter='all';employeeSchoolSearch='';employeeHireFrom='';employeeHireTo='';employeePage=1;
   ['empSearchName','empSearchNo','empSearchSchool','empHireFrom','empHireTo'].forEach(id=>{if($(id))$(id).value='';});
-  ['empDeptFilter','empRankFilter','empStatusFilter'].forEach(id=>{if($(id))$(id).value='all';});
+  ['empTeamFilter','empGroupFilter','empProductFilter','empPartFilter','empRankFilter','empStatusFilter'].forEach(id=>{if($(id))$(id).value='all';});
   renderEmployees();
 }
 function setEmployeeStatusFilter(status){
@@ -316,22 +398,75 @@ function setEmployeeStatusFilter(status){
   if($('empStatusFilter'))$('empStatusFilter').value=employeeStatusFilter;
   renderEmployees();
 }
-function populateEmployeeFilterOptions(){
-  const deptSel=$('empDeptFilter');
-  if(deptSel){
-    const cur=deptSel.value||employeeDeptFilter;
-    const values=employeeDeptList();
-    deptSel.innerHTML='<option value="all">전체</option>'+values.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join('');
-    deptSel.value=values.includes(cur)?cur:'all';
-  }
-  const rankSel=$('empRankFilter');
-  if(rankSel){
-    const cur=rankSel.value||employeeRankFilter;
-    const values=employeeRankList();
-    rankSel.innerHTML='<option value="all">전체</option>'+values.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join('');
-    rankSel.value=values.includes(cur)?cur:'all';
-  }
-  if($('empStatusFilter'))$('empStatusFilter').value=employeeStatusFilter;
+function readEmployeeSavedFilters(){
+  try{
+    const data=JSON.parse(localStorage.getItem(EMPLOYEE_SAVED_FILTERS_KEY)||'[]');
+    return Array.isArray(data)?data.filter(x=>x&&x.id&&x.name&&x.filters):[];
+  }catch{return[];}
+}
+function writeEmployeeSavedFilters(items){
+  localStorage.setItem(EMPLOYEE_SAVED_FILTERS_KEY,JSON.stringify((Array.isArray(items)?items:[]).slice(0,12)));
+  populateEmployeeSavedFilterOptions();
+}
+function saveEmployeeCurrentFilter(){
+  const filters=employeeFilterFormValues();
+  const meaningful=Object.entries(filters).some(([key,value])=>!['team','groupName','product','part','rank','status'].includes(key)?!!value:value!=='all');
+  if(!meaningful){alert('저장할 검색 또는 필터 조건이 없습니다.');return;}
+  const raw=prompt('저장할 조건 이름을 입력하세요.','자주 쓰는 조직 조건');
+  const name=String(raw||'').trim();if(!name)return;
+  const items=readEmployeeSavedFilters();
+  const existing=items.find(x=>x.name===name);
+  const item={id:existing?existing.id:`emp-filter-${Date.now()}`,name,filters,updatedAt:new Date().toISOString()};
+  const next=[item,...items.filter(x=>x.id!==item.id)];
+  writeEmployeeSavedFilters(next);
+  if($('empSavedFilterSelect'))$('empSavedFilterSelect').value=item.id;
+  if(typeof uxToast==='function')uxToast(`사원명부 조건 "${name}"을 저장했습니다.`);
+}
+function applyEmployeeSavedFilter(){
+  const id=$('empSavedFilterSelect')?.value||'';
+  const item=readEmployeeSavedFilters().find(x=>x.id===id);
+  if(!item){alert('불러올 저장 조건을 선택해주세요.');return;}
+  const f=item.filters||{};
+  if($('empSearchName'))$('empSearchName').value=f.searchName||'';
+  if($('empSearchNo'))$('empSearchNo').value=f.searchNo||'';
+  if($('empSearchSchool'))$('empSearchSchool').value=f.school||'';
+  if($('empHireFrom'))$('empHireFrom').value=f.hireFrom||'';
+  if($('empHireTo'))$('empHireTo').value=f.hireTo||'';
+  if($('empStatusFilter'))$('empStatusFilter').value=f.status||'all';
+  if($('empRankFilter'))$('empRankFilter').value=f.rank||'all';
+
+  populateEmployeeFilterOptions();
+  if($('empTeamFilter'))$('empTeamFilter').value=f.team||'all';
+  populateEmployeeFilterOptions();
+  if($('empGroupFilter'))$('empGroupFilter').value=f.groupName||'all';
+  populateEmployeeFilterOptions();
+  if($('empProductFilter'))$('empProductFilter').value=f.product||'all';
+  populateEmployeeFilterOptions();
+  if($('empPartFilter'))$('empPartFilter').value=f.part||'all';
+  applyEmployeeSearch();
+}
+function deleteEmployeeSavedFilter(){
+  const id=$('empSavedFilterSelect')?.value||'';
+  const items=readEmployeeSavedFilters();
+  const item=items.find(x=>x.id===id);
+  if(!item){alert('삭제할 저장 조건을 선택해주세요.');return;}
+  if(!confirm(`저장된 조건 "${item.name}"을 삭제할까요?`))return;
+  writeEmployeeSavedFilters(items.filter(x=>x.id!==id));
+}
+function renderEmployeeOrgFilterPreview(filteredRows){
+  const el=$('employeeOrgFilterSummary');if(!el)return;
+  const rows=Array.isArray(filteredRows)?filteredRows:employees.filter(e=>{
+    const team=$('empTeamFilter')?.value||'all';
+    const groupName=$('empGroupFilter')?.value||'all';
+    const product=$('empProductFilter')?.value||'all';
+    const part=$('empPartFilter')?.value||'all';
+    return (team==='all'||employeeOrgPrimary(e)===team)
+      &&(groupName==='all'||e.groupName===groupName)
+      &&(product==='all'||e.product===product)
+      &&(part==='all'||e.part===part);
+  });
+  const count=(getter)=>employeeUniqueValues(rows,getter).length;
+  el.innerHTML=`<span class="is-result">현재 결과 <strong>${rows.length}명</strong></span><span>팀 <strong>${count(employeeOrgPrimary)}</strong></span><span>그룹 <strong>${count(e=>e.groupName)}</strong></span><span>제품 <strong>${count(e=>e.product)}</strong></span><span>파트 <strong>${count(e=>e.part)}</strong></span>`;
 }
 function goEmployeePage(p){employeePage=p;renderEmployees();}
 function renderEmployeePagination(totalPages,totalCount){
@@ -428,8 +563,9 @@ function renderEmployees(){
   setText('employeesLeaveCount',employees.filter(e=>e.status==='휴직').length);
   setText('employeesLeftCount',employees.filter(e=>e.status==='퇴사').length);
   setText('employeesUpcomingCount',employees.filter(e=>e.status==='입사예정').length);
-  const activeFilterCount=[employeeStatusFilter!=='all',employeeSearchName,employeeSearchNo,employeeDeptFilter!=='all',employeeRankFilter!=='all',employeeSchoolSearch,employeeHireFrom,employeeHireTo].filter(Boolean).length;
+  const activeFilterCount=[employeeStatusFilter!=='all',employeeSearchName,employeeSearchNo,employeeTeamFilter!=='all',employeeGroupFilter!=='all',employeeProductFilter!=='all',employeePartFilter!=='all',employeeRankFilter!=='all',employeeSchoolSearch,employeeHireFrom,employeeHireTo].filter(Boolean).length;
   setText('employeeListSummary',activeFilterCount?`${all.length}명 / 전체 ${employees.length}명`:`${all.length}명 표시`);
+  renderEmployeeOrgFilterPreview(all);
   const totalPages=Math.max(1,Math.ceil(all.length/employeePageSize));if(employeePage>totalPages)employeePage=totalPages;
   const rows=all.slice((employeePage-1)*employeePageSize,employeePage*employeePageSize);
   renderEmployeePagination(totalPages,all.length);renderEmployeeDeptView();
@@ -479,7 +615,7 @@ function formatBirthDisplay(v){
 }
 
 /* =========================================================
-   Recruit ERP v10.40.14 — 기존 사원 조직정보 일괄 보강
+   Recruit ERP v10.40.16 — 기존 사원 조직정보 일괄 보강
    - 엑셀 원본에서 별도 생성한 조직정보 전용 JSON만 사용
    - 사번 기준 연결 + 이름 교차검증
    - 팀/그룹/제품/파트만 선택 반영
@@ -670,7 +806,12 @@ function employeeOrgImportPickFile(){
 }
 function validateEmployeeOrgImportPayload(parsed){
   if(!parsed||typeof parsed!=='object')throw new Error('JSON 객체 형식이 아닙니다.');
-  if(parsed.format!==EMPLOYEE_ORG_IMPORT_FORMAT)throw new Error('Recruit ERP 조직정보 전용 파일이 아닙니다.');
+  if(parsed.format!==EMPLOYEE_ORG_IMPORT_FORMAT){
+    if(parsed.format==='recruit-erp-backup')throw new Error('이 파일은 ERP 백업 JSON입니다. 시스템 → 백업/내보내기 → 회사 JSON 검사 및 적용 메뉴에서 사용해주세요.');
+    if(Array.isArray(parsed.applicants)||(Array.isArray(parsed)&&parsed.some(row=>row&&('applyDate'in row||'phone'in row))))throw new Error('이 파일은 지원자 전용 JSON입니다. 사원 조직정보 반영 메뉴에서는 사용할 수 없습니다.');
+    if(Array.isArray(parsed.employees))throw new Error('이 파일은 사원명부 데이터 JSON입니다. 사원명부의 JSON 가져오기 메뉴에서 사용해주세요.');
+    throw new Error('Recruit ERP 사원 조직정보 전용 파일이 아닙니다.');
+  }
   if(Number(parsed.schemaVersion)!==EMPLOYEE_ORG_IMPORT_SCHEMA)throw new Error(`지원하지 않는 파일 스키마입니다. 현재 지원: ${EMPLOYEE_ORG_IMPORT_SCHEMA}`);
   if(!Array.isArray(parsed.rows)||!parsed.rows.length)throw new Error('조직정보 행이 없거나 비어 있습니다.');
   if(parsed.rows.length>5000)throw new Error('행이 5,000건을 초과해 안전상 적용할 수 없습니다.');
@@ -730,7 +871,7 @@ function employeeOrgImportSafetyBackup(){
   if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function'){
     window.erpBackupCenter.exportFull();return;
   }
-  const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.14',createdAt:new Date().toISOString(),employees};
+  const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.16',createdAt:new Date().toISOString(),employees};
   download(`사원조직정보_반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
 }
 function applyEmployeeOrgImport(){
