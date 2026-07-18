@@ -1,4 +1,4 @@
-/* Recruit ERP v10.40.8 BACKUP_CENTER_FINAL
+/* Recruit ERP v10.40.9 DATA_HEALTH_FINAL
  * 회사: 퇴근 전 전체 JSON 다운로드 전용
  * 집: 회사 JSON 검사/비교/병합/전체교체 + 검증된 Supabase 저장 확인
  * 기존 핵심 저장키와 데이터 필드 구조는 변경하지 않습니다.
@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='10.40.8';
+  const BC_VERSION='10.40.9';
   const BC_FORMAT='recruit-erp-backup';
   const BC_SCHEMA=2;
   const BC_LAST_FULL_KEY='recruit_erp_last_full_backup_at';
@@ -134,11 +134,13 @@
     const all=currentData();const data={};keys.forEach(k=>data[k]=deepClone(all[k]||[]));
     const integrityDatasets={};keys.forEach(k=>integrityDatasets[k]=datasetFingerprint(k,data[k]).digest);
     const createdAt=new Date().toISOString();
+    let excelApplicantIds=[];
+    try{excelApplicantIds=keys.includes('applicants')&&typeof window.erpGetExcelApplicantIds==='function'?window.erpGetExcelApplicantIds():[];}catch{excelApplicantIds=[];}
     const pack={
       format:BC_FORMAT,schemaVersion:BC_SCHEMA,appVersion:BC_VERSION,
       backupType:keys.length===DATASETS.length?'full':keys[0],createdAt,
       environment:environment(),environmentLabel:environmentLabel(environment()),reason,
-      counts:countsOf(data),integrity:{algorithm:'fnv1a32-stable-json',datasets:integrityDatasets},data
+      counts:countsOf(data),metadata:{excelApplicantIds},integrity:{algorithm:'fnv1a32-stable-json',datasets:integrityDatasets},data
     };
     pack.integrity.packageDigest=hashString(keys.slice().sort().map(k=>`${k}:${integrityDatasets[k]}`).join('|'));
     return pack;
@@ -199,7 +201,7 @@
       meta={format:'legacy-array',schemaVersion:0,appVersion:'확인 불가',backupType:key,createdAt:'',environment:'unknown'};
     }else if(parsed&&typeof parsed==='object'){
       if(parsed.format===BC_FORMAT&&parsed.data&&typeof parsed.data==='object'){
-        meta={format:parsed.format,schemaVersion:Number(parsed.schemaVersion||0),appVersion:parsed.appVersion||'확인 불가',backupType:parsed.backupType||'unknown',createdAt:parsed.createdAt||'',environment:parsed.environment||'unknown'};
+        meta={format:parsed.format,schemaVersion:Number(parsed.schemaVersion||0),appVersion:parsed.appVersion||'확인 불가',backupType:parsed.backupType||'unknown',createdAt:parsed.createdAt||'',environment:parsed.environment||'unknown',excelApplicantIds:Array.isArray(parsed.metadata?.excelApplicantIds)?parsed.metadata.excelApplicantIds.map(String):[]};
         DATASETS.forEach(d=>{if(Object.prototype.hasOwnProperty.call(parsed.data,d.key)){data[d.key]=parsed.data[d.key];included.push(d.key);}});
       }else{
         legacy=true;
@@ -362,6 +364,10 @@
       const next={};const results=[];const now=currentData();
       c.included.forEach(k=>{const merged=mergeDataset(k,now[k]||[],normalizeRows(k,c.data[k]));next[k]=merged.rows;results.push(`${datasetInfo(k).label}: 신규 ${merged.added} · 갱신 ${merged.updated} · 유지 ${merged.kept}`);});
       const finalCounts=writeDatasets(next);
+      if(c.included.includes('applicants')&&typeof window.erpSetExcelApplicantIds==='function'){
+        const currentIds=typeof window.erpGetExcelApplicantIds==='function'?window.erpGetExcelApplicantIds():[];
+        window.erpSetExcelApplicantIds([...currentIds,...(c.meta.excelApplicantIds||[])]);
+      }
       recordHistory('데이터 병합 가져오기',results.join(' / '));
       setPendingCloud({mode,included:c.included});
       alert(`로컬 병합 완료\n\n${results.join('\n')}\n\n현재 브라우저에 반영했습니다. 백업센터의 클라우드 저장 상태에서 Supabase 저장을 확인하세요.`);
@@ -376,6 +382,7 @@
       backupCurrentBeforeChange(`${title} 직전`);
       const next={};keys.forEach(k=>next[k]=c.data[k]||[]);
       const finalCounts=writeDatasets(next);
+      if(keys.includes('applicants')&&typeof window.erpSetExcelApplicantIds==='function')window.erpSetExcelApplicantIds(c.meta.excelApplicantIds||[]);
       recordHistory(title,targets.replace(/\n/g,' / '));
       setPendingCloud({mode,included:keys});
       alert(`${title} 로컬 적용을 완료했습니다.\n\nSupabase에는 아직 자동 삭제·교체하지 않았습니다. 백업센터의 클라우드 저장 상태에서 전체 일치 저장을 직접 확인하세요.`);

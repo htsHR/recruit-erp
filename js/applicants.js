@@ -820,6 +820,7 @@ function registerExcelPasteBatch(){
   const created=selected.map((item,index)=>normalize({...item.data,id:uid(),createdAt:new Date(base-index).toISOString(),updatedAt:''}));
   excelPasteBatchRegisteredIds=created.map(x=>x.id);
   applicants=[...created,...applicants];
+  if(typeof window.erpMarkExcelApplicants==='function')window.erpMarkExcelApplicants(excelPasteBatchRegisteredIds);
   save();
   excelPasteBatchRows.forEach(item=>{if(item.selected)item.registered=true;item.selected=false;});
   const result=$('excelBatchResult');
@@ -833,7 +834,9 @@ function registerExcelPasteBatch(){
 function undoExcelPasteBatch(){
   if(!excelPasteBatchRegisteredIds.length)return;
   if(!confirm(`방금 등록한 지원자 ${excelPasteBatchRegisteredIds.length}명을 모두 취소할까요?`))return;
-  const ids=new Set(excelPasteBatchRegisteredIds);applicants=applicants.filter(a=>!ids.has(a.id));save();
+  const removedIds=[...excelPasteBatchRegisteredIds];const ids=new Set(removedIds);applicants=applicants.filter(a=>!ids.has(a.id));
+  if(typeof window.erpUnmarkExcelApplicants==='function')window.erpUnmarkExcelApplicants(removedIds);
+  save();
   const count=excelPasteBatchRegisteredIds.length;excelPasteBatchRegisteredIds=[];
   excelPasteBatchRows.forEach(item=>{item.registered=false;item.selected=item.state==='ready';});
   if($('btnUndoExcelBatch'))$('btnUndoExcelBatch').hidden=true;
@@ -1117,6 +1120,7 @@ ${value}`:value;
     if(field==='workplace'&&value&&target.tagName==='SELECT'&&![...target.options].some(o=>o.value===value))target.add(new Option(value,value));
     target.value=value; target.dispatchEvent(new Event('input',{bubbles:true})); target.dispatchEvent(new Event('change',{bubbles:true}));
   });
+  window.__erpExcelPastePendingApplicant=current?String(current.id):'__new__';
   updateScorePreview(); checkDuplicate(); updateFormMode(); closeExcelRowPaste();
   if(typeof uxToast==='function')uxToast(current?'선택한 엑셀 값을 수정 폼에 적용했습니다. 저장 버튼을 눌러 확정하세요.':'검증된 엑셀 값을 신규 지원자 폼에 적용했습니다. 내용을 확인한 뒤 등록하세요.');
   setTimeout(()=>$('name')?.focus(),0);

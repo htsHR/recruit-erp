@@ -19,8 +19,12 @@ bind('applicantForm','submit',e=>{
   const fPhone=normalizePhone(f.phone);
   const dup=applicants.find(a=>a.id!==f.editId&&((fPhone&&fPhone.length>=8&&normalizePhone(a.phone)===fPhone)||(f.email&&a.email===f.email)));
   if(dup&&!confirm(`중복 가능성이 있습니다: ${dup.name}\n그래도 저장할까요?`)) return;
+  const excelPending=String(window.__erpExcelPastePendingApplicant||'');
+  let savedId=f.editId||'';
   if(f.editId){ applicants=applicants.map(a=>a.id===f.editId?normalize({...a,...f,id:f.editId,updatedAt:new Date().toISOString()}):a); }
-  else { applicants.unshift(normalize({...f,id:uid(),createdAt:new Date().toISOString()})); }
+  else { savedId=uid(); applicants.unshift(normalize({...f,id:savedId,createdAt:new Date().toISOString()})); }
+  if(typeof window.erpMarkExcelApplicants==='function'&&((f.editId&&excelPending===String(f.editId))||(!f.editId&&excelPending==='__new__')))window.erpMarkExcelApplicants(savedId);
+  window.__erpExcelPastePendingApplicant='';
   resetForm(); save(); setPage('applicants');
 });
 bind('btnResetForm','click', resetForm);
