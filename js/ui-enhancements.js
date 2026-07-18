@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='10.40.13';
+const UX_VERSION='10.40.14';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';

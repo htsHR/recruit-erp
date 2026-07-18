@@ -660,7 +660,7 @@
 
 
 
-/* v10.40.13 사원명부 요약 카드 5종 */
+/* v10.40.14 사원명부 요약 카드 5종 */
 #employeesSummaryGrid{grid-template-columns:repeat(5,minmax(0,1fr));}
 @media(max-width:1180px){#employeesSummaryGrid{grid-template-columns:repeat(3,minmax(0,1fr));}}
 @media(max-width:860px){#employeesSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr));}}

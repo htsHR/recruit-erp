@@ -132,6 +132,18 @@ bind('schoolHrStatsImport','change',e=>{
 });
 bind('school','input', renderSchoolSimilarHint);
 bind('btnAddEmployee','click', submitEmployeeForm);
+bind('btnOpenEmployeeOrgImport','click',()=>{if(employeeOrgImportState.rows.length)openEmployeeOrgImport();else employeeOrgImportPickFile();});
+bind('btnEmployeeOrgChooseFile','click',employeeOrgImportPickFile);
+bind('employeeOrgImportFile','change',e=>{const file=e.target.files&&e.target.files[0];employeeOrgImportReadFile(file);e.target.value='';});
+bind('btnCloseEmployeeOrgImport','click',closeEmployeeOrgImport);
+bind('btnCancelEmployeeOrgImport','click',closeEmployeeOrgImport);
+bind('employeeOrgImportBackdrop','click',closeEmployeeOrgImport);
+bind('btnEmployeeOrgSelectAll','click',employeeOrgImportSelectAll);
+bind('btnEmployeeOrgClearSelection','click',employeeOrgImportClearSelection);
+bind('btnApplyEmployeeOrgImport','click',applyEmployeeOrgImport);
+$('employeeOrgImportModal')?.addEventListener('click',employeeOrgImportModalClick);
+$('employeeOrgImportModal')?.addEventListener('change',employeeOrgImportModalChange);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('employeeOrgImportModal')?.classList.contains('show'))closeEmployeeOrgImport();});
 bind('empSchool','input', ()=>renderSchoolSimilarHintFor('empSchool','empSchoolSimilarHint'));
 bind('employeeJsonImport','change',e=>{
   const file=e.target.files[0];

@@ -931,7 +931,7 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 
 
 /* =========================================================
-   Recruit ERP v10.40.13 — EMPLOYEE UI / DETAIL FINAL
+   Recruit ERP v10.40.14 — EMPLOYEE UI / DETAIL FINAL
    사원명부 전용 범위. 지원자·학교·공용 목록 레이아웃에는 영향 없음.
    ========================================================= */
 #employees{--employee-line:#dbe5f2;--employee-soft:#f6f9ff;--employee-ink:#0f172a}
@@ -1056,4 +1056,97 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
   #employeeDetailModal .employee-detail-quick-grid{grid-template-columns:1fr}
   #employeeDetailModal .employee-detail-footer{align-items:stretch;flex-direction:column}
   #employeeDetailModal .employee-detail-status-control{margin-right:0;justify-content:space-between}
+}
+
+/* =========================================================
+   v10.40.14 · 사원 조직정보 안전 비교/반영
+   ========================================================= */
+#employees .employee-org-import-launch{border-color:#b9cdf4;background:#eef5ff;color:#1554b8}
+#employeeOrgImportModal{z-index:5200!important}
+#employeeOrgImportModal .employee-org-import-modal-card{width:min(1500px,calc(100vw - 48px));max-width:none;height:min(900px,calc(100vh - 36px));display:flex;flex-direction:column;overflow:hidden}
+#employeeOrgImportModal .modal-head{flex:0 0 auto;align-items:flex-start}
+#employeeOrgImportModal .employee-org-import-subtitle{margin:5px 0 0;color:#64748b;font-size:12px;line-height:1.55}
+#employeeOrgImportModal .employee-org-import-body{display:flex;flex:1 1 auto;min-height:0;flex-direction:column;gap:12px;padding:14px 18px 10px;overflow:hidden;background:#f7f9fd}
+#employeeOrgImportModal .employee-org-import-notice{display:flex;gap:12px;align-items:flex-start;padding:11px 13px;border:1px solid #f2d48b;border-radius:12px;background:#fff9e8;color:#6d4b00}
+#employeeOrgImportModal .employee-org-import-notice strong{white-space:nowrap;font-size:12px}
+#employeeOrgImportModal .employee-org-import-notice span{font-size:11px;line-height:1.55}
+#employeeOrgImportModal .employee-org-import-filebar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border:1px solid #d9e3f2;border-radius:14px;background:#fff}
+#employeeOrgImportModal .employee-org-import-filebar>div{display:grid;gap:3px;min-width:0}
+#employeeOrgImportModal .employee-org-import-filebar span{color:#64748b;font-size:10px;font-weight:900}
+#employeeOrgImportModal .employee-org-import-filebar strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#0f2d5f;font-size:13px}
+#employeeOrgImportModal .employee-org-import-filebar small{color:#7b8799;font-size:10px;line-height:1.45}
+#employeeOrgImportModal .employee-org-import-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+#employeeOrgImportModal .employee-org-import-kpis>div{display:flex;min-height:62px;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;border:1px solid #dfe7f2;border-radius:13px;background:#fff}
+#employeeOrgImportModal .employee-org-import-kpis span{color:#66758b;font-size:10px;font-weight:900}
+#employeeOrgImportModal .employee-org-import-kpis strong{color:#0f2d5f;font-size:21px;line-height:1}
+#employeeOrgImportModal .employee-org-import-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+#employeeOrgImportModal .employee-org-import-tabs,#employeeOrgImportModal .employee-org-import-selection{display:flex;flex-wrap:wrap;gap:6px}
+#employeeOrgImportModal .employee-org-import-tabs .chip{min-height:31px}
+#employeeOrgImportModal .employee-org-import-summary{padding:9px 12px;border:1px solid #dce6f4;border-radius:10px;background:#edf4ff;color:#234b84;font-size:11px;font-weight:850}
+#employeeOrgImportModal .employee-org-import-table-wrap{flex:1 1 auto;min-height:220px;overflow:auto;border:1px solid #dce4ef;border-radius:14px;background:#fff}
+#employeeOrgImportModal .employee-org-import-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0;table-layout:fixed}
+#employeeOrgImportModal .employee-org-import-table th{position:sticky;top:0;z-index:2;padding:10px 9px;border-bottom:1px solid #dbe5f1;background:#f3f6fb;color:#516176;font-size:10px;font-weight:950;text-align:left}
+#employeeOrgImportModal .employee-org-import-table th:nth-child(1){width:54px;text-align:center}
+#employeeOrgImportModal .employee-org-import-table th:nth-child(2){width:96px}
+#employeeOrgImportModal .employee-org-import-table th:nth-child(3){width:82px}
+#employeeOrgImportModal .employee-org-import-table th:nth-child(4){width:145px}
+#employeeOrgImportModal .employee-org-import-table th:nth-child(5),#employeeOrgImportModal .employee-org-import-table th:nth-child(6){width:235px}
+#employeeOrgImportModal .employee-org-import-table th:nth-child(7){width:auto}
+#employeeOrgImportModal .employee-org-import-table td{padding:10px 9px;border-bottom:1px solid #edf1f6;color:#25364d;font-size:10px;line-height:1.45;vertical-align:top;word-break:keep-all}
+#employeeOrgImportModal .employee-org-import-table td:first-child{text-align:center}
+#employeeOrgImportModal .employee-org-import-table tr:last-child td{border-bottom:0}
+#employeeOrgImportModal .employee-org-import-table tr.is-changed{background:#fbfdff}
+#employeeOrgImportModal .employee-org-import-table tr.is-mismatch,#employeeOrgImportModal .employee-org-import-table tr.is-error{background:#fff8f7}
+#employeeOrgImportModal .employee-org-import-table tr.is-missing{background:#fffaf0}
+#employeeOrgImportModal .employee-org-import-table td strong{display:block;color:#102b53;font-size:11px}
+#employeeOrgImportModal .employee-org-import-table td small{display:block;margin-top:2px;color:#718096;font-size:9px}
+#employeeOrgImportModal .employee-org-import-status{display:inline-flex;align-items:center;min-height:24px;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:950;white-space:nowrap}
+#employeeOrgImportModal .employee-org-import-status.is-changed{background:#e5f0ff;color:#1454b8}
+#employeeOrgImportModal .employee-org-import-status.is-same{background:#e9f8ef;color:#167447}
+#employeeOrgImportModal .employee-org-import-status.is-mismatch,#employeeOrgImportModal .employee-org-import-status.is-error{background:#ffe7e4;color:#b42318}
+#employeeOrgImportModal .employee-org-import-status.is-missing{background:#fff1cf;color:#8b5a00}
+#employeeOrgImportModal .employee-org-import-changes{display:grid;gap:4px}
+#employeeOrgImportModal .employee-org-import-changes span{display:block}
+#employeeOrgImportModal .employee-org-import-changes b{display:inline-block;min-width:35px;color:#245aa9}
+#employeeOrgImportModal .employee-org-import-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#65758a;font-size:10px}
+#employeeOrgImportModal .employee-org-import-pagination>div{display:flex;align-items:center;gap:8px}
+#employeeOrgImportModal .employee-org-import-cloud{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border:1px solid #dce5f1;border-radius:11px;background:#fff;color:#526176}
+#employeeOrgImportModal .employee-org-import-cloud strong{white-space:nowrap;color:#183f77;font-size:10px}
+#employeeOrgImportModal .employee-org-import-cloud span{font-size:10px;line-height:1.5}
+#employeeOrgImportModal .employee-org-import-cloud.is-ready{border-color:#bce5cf;background:#f1fbf5}
+#employeeOrgImportModal .employee-org-import-cloud.is-warning,#employeeOrgImportModal .employee-org-import-cloud.is-blocked{border-color:#f0c8bd;background:#fff5f2}
+#employeeOrgImportModal .employee-org-import-footer{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:12px 18px;background:#fff;border-top:1px solid #dfe7f2}
+#employeeOrgImportModal .employee-org-import-confirm{display:flex;align-items:center;gap:7px;margin-right:auto;color:#46566c;font-size:10px;font-weight:850}
+#employeeOrgImportModal .employee-org-import-selected{color:#1e5cb5;font-size:11px;font-weight:950}
+#employeeOrgImportModal input[type="checkbox"]{width:16px;height:16px;accent-color:#1967d2}
+@media(max-width:980px){
+  #employeeOrgImportModal .employee-org-import-modal-card{width:calc(100vw - 20px);height:calc(100vh - 20px)}
+  #employeeOrgImportModal .employee-org-import-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #employeeOrgImportModal .employee-org-import-toolbar{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:640px){
+  #employees .employee-primary-actions{grid-template-columns:1fr 1fr}
+  #employees .employee-primary-actions .employee-org-import-launch{grid-column:1/-1}
+  #employeeOrgImportModal .employee-org-import-modal-card{width:100vw;height:100vh;max-height:none;border-radius:0}
+  #employeeOrgImportModal .employee-org-import-body{padding:10px;gap:9px}
+  #employeeOrgImportModal .employee-org-import-notice,#employeeOrgImportModal .employee-org-import-filebar{align-items:stretch;flex-direction:column}
+  #employeeOrgImportModal .employee-org-import-kpis{grid-template-columns:1fr 1fr;gap:7px}
+  #employeeOrgImportModal .employee-org-import-kpis>div{min-height:54px}
+  #employeeOrgImportModal .employee-org-import-kpis>div:first-child{grid-column:1/-1}
+  #employeeOrgImportModal .employee-org-import-table{min-width:0;display:block}
+  #employeeOrgImportModal .employee-org-import-table thead{display:none}
+  #employeeOrgImportModal .employee-org-import-table tbody{display:grid;gap:9px;padding:8px;background:#f5f8fc}
+  #employeeOrgImportModal .employee-org-import-table tr{display:grid;grid-template-columns:1fr 1fr;border:1px solid #dbe5f2;border-radius:13px;background:#fff;overflow:hidden}
+  #employeeOrgImportModal .employee-org-import-table td{display:flex;min-width:0;flex-direction:column;align-items:flex-start;padding:9px;border-bottom:1px solid #edf2f7}
+  #employeeOrgImportModal .employee-org-import-table td::before{content:attr(data-label);display:block;margin-bottom:3px;color:#8692a4;font-size:8px;font-weight:950}
+  #employeeOrgImportModal .employee-org-import-table td:nth-child(4),#employeeOrgImportModal .employee-org-import-table td:nth-child(5),#employeeOrgImportModal .employee-org-import-table td:nth-child(6),#employeeOrgImportModal .employee-org-import-table td:nth-child(7){grid-column:1/-1}
+  #employeeOrgImportModal .employee-org-import-table td:first-child{align-items:flex-start;text-align:left}
+  #employeeOrgImportModal .employee-org-import-footer{align-items:stretch;flex-wrap:wrap;padding:10px}
+  #employeeOrgImportModal .employee-org-import-confirm{width:100%;margin-right:0}
+  #employeeOrgImportModal .employee-org-import-selected{margin-right:auto}
+}
+#employeeOrgImportModal .employee-org-import-confirm{flex-direction:row!important;align-items:center!important}
+@media(max-width:640px){
+  #employeeOrgImportModal .employee-org-import-confirm{display:grid!important;grid-template-columns:18px minmax(0,1fr);align-items:center!important;column-gap:8px;text-align:left}
+  #employeeOrgImportModal .employee-org-import-confirm input{margin:0}
 }

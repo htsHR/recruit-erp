@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.40.13 — 사원명부 UI + 상세/등록/수정 최종화
+   Recruit ERP v10.40.14 — 사원명부 UI + 상세/등록/수정 최종화
    - 기존 employees/localStorage 구조와 레거시 필드를 그대로 호환
    - 신규 인사 필드는 모두 선택값이며, 기존 데이터에 없어도 정상 동작
    - 주민번호·주소·개인 연락처·개인 이메일은 저장/표시하지 않음
@@ -77,27 +77,32 @@ function employeeCloudRow(employee,legacy=false){
   const fields=legacy?EMPLOYEE_LEGACY_CLOUD_FIELDS:EMPLOYEE_CLOUD_FIELDS;
   return fields.reduce((row,key)=>{row[key]=normalized[key]??'';return row;},{});
 }
-function saveEmployees(){
+function saveEmployees(syncList){
   localStorage.setItem(EMPLOYEES_KEY,JSON.stringify(employees));
-  supabaseSyncEmployees(employees);
+  supabaseSyncEmployees(Array.isArray(syncList)?syncList:employees);
   renderEmployees();
   renderSchools();
 }
 function supabaseSyncEmployees(list){
-  if(!canUseCloud()) return;
-  const useLegacy=employeeExtendedCloudUnsupported;
-  const payload=list.map(e=>employeeCloudRow(e,useLegacy));
-  window.sb.from('employees').upsert(payload).then(function(res){
-    if(!res||!res.error) return;
-    if(!useLegacy){
-      employeeExtendedCloudUnsupported=true;
-      console.warn('사원 확장필드용 Supabase 컬럼이 없어 기존 필드만 클라우드에 저장합니다. v10.40.13 마이그레이션 SQL 실행 후 새로고침하면 확장필드도 동기화됩니다.',res.error.message);
-      return window.sb.from('employees').upsert(list.map(e=>employeeCloudRow(e,true))).then(function(fallback){
-        if(fallback&&fallback.error) console.warn('직원명부 Supabase 저장 실패(로컬에는 정상 저장됨):',fallback.error.message);
-      });
+  if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
+  const targets=Array.isArray(list)?list.filter(Boolean):[];
+  if(!targets.length) return Promise.resolve({skipped:true,count:0});
+  const CHUNK_SIZE=250;
+  return (async function(){
+    let useLegacy=employeeExtendedCloudUnsupported,saved=0;
+    for(let start=0;start<targets.length;start+=CHUNK_SIZE){
+      const chunk=targets.slice(start,start+CHUNK_SIZE);
+      let res=await window.sb.from('employees').upsert(chunk.map(e=>employeeCloudRow(e,useLegacy)));
+      if(res&&res.error&&!useLegacy){
+        employeeExtendedCloudUnsupported=true;useLegacy=true;
+        console.warn('사원 확장필드용 Supabase 컬럼이 없어 기존 필드만 클라우드에 저장합니다. v10.40.13 마이그레이션 SQL 실행 후 새로고침하면 확장필드도 동기화됩니다.',res.error.message);
+        res=await window.sb.from('employees').upsert(chunk.map(e=>employeeCloudRow(e,true)));
+      }
+      if(res&&res.error) throw new Error(res.error.message||'사원명부 Supabase 저장 실패');
+      saved+=chunk.length;
     }
-    console.warn('직원명부 Supabase 저장 실패(로컬에는 정상 저장됨):',res.error.message);
-  }).catch(function(e){console.warn('직원명부 Supabase 저장 실패(로컬에는 정상 저장됨):',e);});
+    return {saved,count:targets.length,legacy:useLegacy};
+  })().catch(function(e){console.warn('직원명부 Supabase 저장 실패(로컬에는 정상 저장됨):',e);return {error:e,count:targets.length};});
 }
 function supabaseDeleteEmployee(id){
   if(!canUseCloud()) return;
@@ -471,4 +476,289 @@ function formatBirthDisplay(v){
   const ymd=raw.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);if(ymd)return`${ymd[1]}.${ymd[2].padStart(2,'0')}.${ymd[3].padStart(2,'0')}`;
   const shortYmd=raw.match(/^(\d{2})[-./](\d{1,2})[-./](\d{1,2})$/);if(shortYmd)return`${shortYmd[1]}.${shortYmd[2].padStart(2,'0')}.${shortYmd[3].padStart(2,'0')}`;
   return raw.replaceAll('-','.').replaceAll('/','.');
+}
+
+/* =========================================================
+   Recruit ERP v10.40.14 — 기존 사원 조직정보 일괄 보강
+   - 엑셀 원본에서 별도 생성한 조직정보 전용 JSON만 사용
+   - 사번 기준 연결 + 이름 교차검증
+   - 팀/그룹/제품/파트만 선택 반영
+   - 빈칸과 '-'는 기존 값을 지우지 않음
+   ========================================================= */
+const EMPLOYEE_ORG_IMPORT_FORMAT='recruit-erp-employee-org-import';
+const EMPLOYEE_ORG_IMPORT_SCHEMA=1;
+const EMPLOYEE_ORG_IMPORT_FIELDS=[
+  {key:'team',label:'팀'},
+  {key:'groupName',label:'그룹'},
+  {key:'product',label:'제품'},
+  {key:'part',label:'파트'}
+];
+const EMPLOYEE_ORG_IMPORT_HISTORY_KEY='recruit_erp_employee_org_import_last';
+let employeeOrgImportState={fileName:'',meta:null,rows:[],filter:'changed',page:1,pageSize:50,selected:new Set()};
+
+function normalizeEmployeeOrgImportValue(value){
+  const text=String(value??'').normalize('NFKC').trim();
+  return ['-','–','—'].includes(text)?'':text;
+}
+function normalizeEmployeeOrgImportName(value){
+  return String(value??'').normalize('NFKC').replace(/\s+/g,'').trim().toLowerCase();
+}
+function normalizeEmployeeOrgImportNo(value){
+  return String(value??'').normalize('NFKC').replace(/\s+/g,'').trim().toUpperCase();
+}
+function employeeOrgImportStatusLabel(status){
+  return {changed:'변경 가능',same:'동일',mismatch:'이름 불일치',missing:'사번 없음',error:'오류'}[status]||status;
+}
+function employeeOrgImportStatusClass(status){
+  return {changed:'is-changed',same:'is-same',mismatch:'is-mismatch',missing:'is-missing',error:'is-error'}[status]||'';
+}
+function employeeOrgImportOrgText(org={}){
+  const values=EMPLOYEE_ORG_IMPORT_FIELDS.map(f=>normalizeEmployeeOrgImportValue(org[f.key])).filter(Boolean);
+  return values.length?values.join(' › '):'미입력';
+}
+function employeeOrgImportCurrentMap(){
+  const map=new Map();
+  (Array.isArray(employees)?employees:[]).forEach(e=>{
+    const no=normalizeEmployeeOrgImportNo(e.empNo);
+    if(!no)return;
+    if(!map.has(no))map.set(no,[]);
+    map.get(no).push(e);
+  });
+  return map;
+}
+function buildEmployeeOrgImportRows(records){
+  const currentMap=employeeOrgImportCurrentMap();
+  const sourceNoCount=new Map();
+  records.forEach(raw=>{
+    const no=normalizeEmployeeOrgImportNo(raw&&raw.empNo);
+    if(no)sourceNoCount.set(no,(sourceNoCount.get(no)||0)+1);
+  });
+  return records.map((raw,index)=>{
+    const record={
+      empNo:normalizeEmployeeOrgImportNo(raw&&raw.empNo),
+      name:normalizeEmployeeOrgImportValue(raw&&raw.name),
+      source:normalizeEmployeeOrgImportValue(raw&&raw.source)||'원본',
+      team:normalizeEmployeeOrgImportValue(raw&&raw.team),
+      groupName:normalizeEmployeeOrgImportValue(raw&&raw.groupName),
+      product:normalizeEmployeeOrgImportValue(raw&&raw.product),
+      part:normalizeEmployeeOrgImportValue(raw&&raw.part)
+    };
+    const result={key:`org-${index}`,index,record,status:'error',reason:'',employee:null,changes:[]};
+    if(!record.empNo){result.reason='사번이 비어 있습니다.';return result;}
+    if(!record.name){result.reason='성명이 비어 있습니다.';return result;}
+    if((sourceNoCount.get(record.empNo)||0)>1){result.reason='원본 파일에 같은 사번이 중복되어 있습니다.';return result;}
+    const matches=currentMap.get(record.empNo)||[];
+    if(!matches.length){result.status='missing';result.reason='현재 ERP 사원명부에서 사번을 찾지 못했습니다.';return result;}
+    if(matches.length>1){result.reason='현재 ERP 사원명부에 같은 사번이 중복되어 있습니다.';return result;}
+    const employee=matches[0];result.employee=employee;
+    if(normalizeEmployeeOrgImportName(employee.name)!==normalizeEmployeeOrgImportName(record.name)){
+      result.status='mismatch';result.reason=`ERP 성명: ${employee.name||'-'} / 원본 성명: ${record.name||'-'}`;return result;
+    }
+    EMPLOYEE_ORG_IMPORT_FIELDS.forEach(field=>{
+      const incoming=record[field.key];
+      if(!incoming)return;
+      const current=normalizeEmployeeOrgImportValue(employee[field.key]||(field.key==='team'?employee.department:''));
+      if(current!==incoming)result.changes.push({field:field.key,label:field.label,from:current,to:incoming});
+    });
+    result.status=result.changes.length?'changed':'same';
+    result.reason=result.changes.length?`${result.changes.length}개 항목 변경`:'반영할 차이가 없습니다.';
+    return result;
+  });
+}
+function employeeOrgImportCounts(){
+  const counts={total:employeeOrgImportState.rows.length,changed:0,same:0,mismatch:0,missing:0,error:0};
+  employeeOrgImportState.rows.forEach(r=>{if(Object.prototype.hasOwnProperty.call(counts,r.status))counts[r.status]++;});
+  return counts;
+}
+function employeeOrgImportFilteredRows(){
+  const filter=employeeOrgImportState.filter;
+  return employeeOrgImportState.rows.filter(r=>filter==='all'||r.status===filter);
+}
+function employeeOrgImportSetText(id,value){const el=$(id);if(el)el.textContent=String(value);}
+function employeeOrgImportUpdateApplyState(){
+  const count=employeeOrgImportState.selected.size;
+  employeeOrgImportSetText('employeeOrgImportSelectedCount',`${count}명 선택`);
+  const btn=$('btnApplyEmployeeOrgImport');
+  const confirmed=!!$('employeeOrgImportConfirm')?.checked;
+  if(btn){btn.disabled=!count||!confirmed;btn.textContent=count?`선택 ${count}명 조직정보 반영`:'선택 조직정보 반영';}
+}
+function employeeOrgImportCloudMessage(){
+  const box=$('employeeOrgImportCloudState');if(!box)return;
+  if(typeof isCompanyLocalMode==='function'&&isCompanyLocalMode()){
+    box.className='employee-org-import-cloud is-blocked';
+    box.innerHTML='<strong>회사 모드 적용 차단</strong><span>회사에서는 파일 업로드와 일괄 반영을 실행하지 않습니다. 집 모드에서 회사 JSON을 복원한 뒤 진행하세요.</span>';return;
+  }
+  if(typeof canUseCloud==='function'&&canUseCloud()){
+    if(employeeExtendedCloudUnsupported){
+      box.className='employee-org-import-cloud is-warning';
+      box.innerHTML='<strong>Supabase 확장 컬럼 확인 필요</strong><span>v10.40.13 사원 확장필드 SQL을 먼저 실행해야 조직정보가 클라우드에도 저장됩니다. 로컬 반영은 가능합니다.</span>';
+    }else{
+      box.className='employee-org-import-cloud is-ready';
+      box.innerHTML='<strong>로컬 + Supabase 저장 시도</strong><span>반영 후 로컬 저장을 완료하고, 현재 로그인된 Supabase에도 자동 저장을 시도합니다.</span>';
+    }
+  }else{
+    box.className='employee-org-import-cloud is-local';
+    box.innerHTML='<strong>로컬 저장 모드</strong><span>현재 Supabase 로그인이 확인되지 않아 브라우저 로컬에만 반영됩니다. 저장 후 전체 JSON 백업을 보관하세요.</span>';
+  }
+}
+function renderEmployeeOrgImport(){
+  const counts=employeeOrgImportCounts();
+  employeeOrgImportSetText('employeeOrgImportTotal',counts.total);
+  employeeOrgImportSetText('employeeOrgImportChanged',counts.changed);
+  employeeOrgImportSetText('employeeOrgImportSame',counts.same);
+  employeeOrgImportSetText('employeeOrgImportMismatch',counts.mismatch);
+  employeeOrgImportSetText('employeeOrgImportMissing',counts.missing);
+  const meta=employeeOrgImportState.meta||{};
+  employeeOrgImportSetText('employeeOrgImportFileName',employeeOrgImportState.fileName||'파일을 선택해 주세요.');
+  const sourceCounts=meta.counts&&typeof meta.counts==='object'?Object.entries(meta.counts).map(([k,v])=>`${k} ${v}명`).join(' · '):'';
+  employeeOrgImportSetText('employeeOrgImportFileMeta',employeeOrgImportState.fileName?`${meta.sourceFile||'엑셀 원본'} · ${sourceCounts||counts.total+'명'} · 생성 ${meta.generatedAt?formatEmployeeDateTime(meta.generatedAt):'일시 미상'}`:'집 모드에서 전용 JSON 파일을 불러오세요.');
+  document.querySelectorAll('#employeeOrgImportTabs [data-org-import-filter]').forEach(btn=>btn.classList.toggle('active',btn.dataset.orgImportFilter===employeeOrgImportState.filter));
+  const filtered=employeeOrgImportFilteredRows();
+  const totalPages=Math.max(1,Math.ceil(filtered.length/employeeOrgImportState.pageSize));
+  if(employeeOrgImportState.page>totalPages)employeeOrgImportState.page=totalPages;
+  const start=(employeeOrgImportState.page-1)*employeeOrgImportState.pageSize;
+  const visible=filtered.slice(start,start+employeeOrgImportState.pageSize);
+  const body=$('employeeOrgImportBody');
+  if(body){
+    if(!employeeOrgImportState.rows.length)body.innerHTML='<tr><td class="empty" colspan="7">조직정보 전용 파일을 선택해 주세요.</td></tr>';
+    else if(!visible.length)body.innerHTML='<tr><td class="empty" colspan="7">선택한 분류에 해당하는 행이 없습니다.</td></tr>';
+    else body.innerHTML=visible.map(row=>{
+      const selectable=row.status==='changed';
+      const checked=employeeOrgImportState.selected.has(row.key);
+      const current=row.employee?employeeOrgImportOrgText(row.employee):'-';
+      const incoming=employeeOrgImportOrgText(row.record);
+      const changes=row.changes.length?row.changes.map(c=>`<span><b>${esc(c.label)}</b> ${esc(c.from||'미입력')} → ${esc(c.to)}</span>`).join(''):`<span class="muted">${esc(row.reason)}</span>`;
+      return `<tr class="employee-org-import-row ${employeeOrgImportStatusClass(row.status)}">
+        <td data-label="선택"><input aria-label="${esc(row.record.name)} 선택" data-org-import-select="${esc(row.key)}" type="checkbox" ${checked?'checked':''} ${selectable?'':'disabled'}/></td>
+        <td data-label="상태"><span class="employee-org-import-status ${employeeOrgImportStatusClass(row.status)}">${esc(employeeOrgImportStatusLabel(row.status))}</span></td>
+        <td data-label="원본">${esc(row.record.source)}</td>
+        <td data-label="사번·성명"><strong>${esc(row.record.empNo||'-')}</strong><small>${esc(row.record.name||'-')}</small></td>
+        <td data-label="현재 조직">${esc(current)}</td>
+        <td data-label="엑셀 조직">${esc(incoming)}</td>
+        <td data-label="변경 항목"><div class="employee-org-import-changes">${changes}</div></td>
+      </tr>`;
+    }).join('');
+  }
+  employeeOrgImportSetText('employeeOrgImportSummary',employeeOrgImportState.rows.length?`변경 가능 ${counts.changed}명 · 동일 ${counts.same}명 · 이름 불일치 ${counts.mismatch}명 · 사번 없음 ${counts.missing}명 · 오류 ${counts.error}명`:'파일을 불러오면 비교 결과가 표시됩니다.');
+  employeeOrgImportSetText('employeeOrgImportPageInfo',filtered.length?`${start+1}-${Math.min(start+visible.length,filtered.length)} / ${filtered.length}건`:'0건');
+  const pager=$('employeeOrgImportPager');
+  if(pager){
+    if(totalPages<=1)pager.innerHTML='';
+    else pager.innerHTML=`<button class="mini" data-org-import-page="${Math.max(1,employeeOrgImportState.page-1)}" ${employeeOrgImportState.page===1?'disabled':''}>이전</button><span>${employeeOrgImportState.page} / ${totalPages}</span><button class="mini" data-org-import-page="${Math.min(totalPages,employeeOrgImportState.page+1)}" ${employeeOrgImportState.page===totalPages?'disabled':''}>다음</button>`;
+  }
+  employeeOrgImportCloudMessage();
+  employeeOrgImportUpdateApplyState();
+}
+function openEmployeeOrgImport(){
+  if(typeof isCompanyLocalMode==='function'&&isCompanyLocalMode()){
+    alert('회사 모드에서는 조직정보 파일을 업로드하거나 일괄 반영할 수 없습니다. 집 모드로 전환한 뒤 진행하세요.');return false;
+  }
+  const modal=$('employeeOrgImportModal');if(!modal)return false;
+  modal.classList.add('show');modal.setAttribute('aria-hidden','false');
+  employeeOrgImportCloudMessage();
+  return true;
+}
+function closeEmployeeOrgImport(){
+  const modal=$('employeeOrgImportModal');if(!modal)return;
+  modal.classList.remove('show');modal.setAttribute('aria-hidden','true');
+  if($('employeeOrgImportConfirm'))$('employeeOrgImportConfirm').checked=false;
+  employeeOrgImportUpdateApplyState();
+}
+function employeeOrgImportPickFile(){
+  if(!openEmployeeOrgImport())return;
+  const input=$('employeeOrgImportFile');if(input){input.value='';input.click();}
+}
+function validateEmployeeOrgImportPayload(parsed){
+  if(!parsed||typeof parsed!=='object')throw new Error('JSON 객체 형식이 아닙니다.');
+  if(parsed.format!==EMPLOYEE_ORG_IMPORT_FORMAT)throw new Error('Recruit ERP 조직정보 전용 파일이 아닙니다.');
+  if(Number(parsed.schemaVersion)!==EMPLOYEE_ORG_IMPORT_SCHEMA)throw new Error(`지원하지 않는 파일 스키마입니다. 현재 지원: ${EMPLOYEE_ORG_IMPORT_SCHEMA}`);
+  if(!Array.isArray(parsed.rows)||!parsed.rows.length)throw new Error('조직정보 행이 없거나 비어 있습니다.');
+  if(parsed.rows.length>5000)throw new Error('행이 5,000건을 초과해 안전상 적용할 수 없습니다.');
+  if(parsed.counts&&Number(parsed.counts['전체']||parsed.counts.total||0)&&Number(parsed.counts['전체']||parsed.counts.total)!==parsed.rows.length)throw new Error('파일의 전체 건수와 실제 행 수가 일치하지 않습니다.');
+  const forbidden=/resident|rrn|phone|mobile|email|address|주민|연락처|이메일|주소/i;
+  const allowedKeys=new Set(['empNo','name','source','team','groupName','product','part']);
+  for(const row of parsed.rows){
+    if(!row||typeof row!=='object')throw new Error('행 데이터 형식이 올바르지 않습니다.');
+    const keys=Object.keys(row);
+    const badKey=keys.find(k=>forbidden.test(k));
+    if(badKey)throw new Error(`민감정보 항목(${badKey})이 포함되어 있어 파일을 거부했습니다.`);
+    const unknownKey=keys.find(k=>!allowedKeys.has(k));
+    if(unknownKey)throw new Error(`허용되지 않은 항목(${unknownKey})이 포함되어 있습니다. 조직정보 전용 파일을 사용해주세요.`);
+  }
+  return parsed;
+}
+function employeeOrgImportReadFile(file){
+  if(!file)return;
+  if(typeof isCompanyLocalMode==='function'&&isCompanyLocalMode()){
+    alert('회사 모드에서는 파일을 불러올 수 없습니다.');return;
+  }
+  if(file.size>5*1024*1024){alert('조직정보 파일은 5MB 이하만 사용할 수 있습니다.');return;}
+  const reader=new FileReader();
+  reader.onerror=()=>alert('파일을 읽지 못했습니다. 다시 선택해주세요.');
+  reader.onload=()=>{
+    try{
+      const parsed=validateEmployeeOrgImportPayload(JSON.parse(String(reader.result||'')));
+      const rows=buildEmployeeOrgImportRows(parsed.rows);
+      const selected=new Set(rows.filter(r=>r.status==='changed').map(r=>r.key));
+      employeeOrgImportState={fileName:file.name,meta:parsed,rows,filter:'changed',page:1,pageSize:50,selected};
+      if($('employeeOrgImportConfirm'))$('employeeOrgImportConfirm').checked=false;
+      openEmployeeOrgImport();renderEmployeeOrgImport();
+    }catch(err){
+      employeeOrgImportState={fileName:'',meta:null,rows:[],filter:'changed',page:1,pageSize:50,selected:new Set()};
+      renderEmployeeOrgImport();alert(`조직정보 파일 검사 실패\n\n${err.message||err}`);
+    }
+  };
+  reader.readAsText(file,'utf-8');
+}
+function employeeOrgImportSelectAll(){
+  employeeOrgImportState.rows.filter(r=>r.status==='changed').forEach(r=>employeeOrgImportState.selected.add(r.key));
+  renderEmployeeOrgImport();
+}
+function employeeOrgImportClearSelection(){employeeOrgImportState.selected.clear();renderEmployeeOrgImport();}
+function employeeOrgImportModalClick(event){
+  const filterBtn=event.target.closest('[data-org-import-filter]');
+  if(filterBtn){employeeOrgImportState.filter=filterBtn.dataset.orgImportFilter||'changed';employeeOrgImportState.page=1;renderEmployeeOrgImport();return;}
+  const pageBtn=event.target.closest('[data-org-import-page]');
+  if(pageBtn&&!pageBtn.disabled){employeeOrgImportState.page=Math.max(1,Number(pageBtn.dataset.orgImportPage)||1);renderEmployeeOrgImport();}
+}
+function employeeOrgImportModalChange(event){
+  const box=event.target.closest('[data-org-import-select]');
+  if(box){const key=box.dataset.orgImportSelect;if(box.checked)employeeOrgImportState.selected.add(key);else employeeOrgImportState.selected.delete(key);employeeOrgImportUpdateApplyState();return;}
+  if(event.target.id==='employeeOrgImportConfirm')employeeOrgImportUpdateApplyState();
+}
+function employeeOrgImportSafetyBackup(){
+  if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function'){
+    window.erpBackupCenter.exportFull();return;
+  }
+  const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.14',createdAt:new Date().toISOString(),employees};
+  download(`사원조직정보_반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+}
+function applyEmployeeOrgImport(){
+  if(typeof isCompanyLocalMode==='function'&&isCompanyLocalMode()){
+    alert('회사 모드에서는 조직정보를 일괄 반영할 수 없습니다.');return;
+  }
+  const selectedRows=employeeOrgImportState.rows.filter(r=>r.status==='changed'&&employeeOrgImportState.selected.has(r.key));
+  if(!selectedRows.length){alert('반영할 사원을 선택해주세요.');return;}
+  if(!$('employeeOrgImportConfirm')?.checked){alert('선택 인원과 변경 내용을 확인했다는 항목에 체크해주세요.');return;}
+  const fieldCounts={};
+  selectedRows.forEach(r=>r.changes.forEach(c=>{fieldCounts[c.label]=(fieldCounts[c.label]||0)+1;}));
+  const detail=Object.entries(fieldCounts).map(([k,v])=>`${k} ${v}건`).join(' · ');
+  if(!confirm(`선택한 ${selectedRows.length}명의 조직정보를 반영할까요?\n\n${detail}\n\n반영 전에 ERP 전체 JSON 안전 백업이 자동 다운로드됩니다.`))return;
+  employeeOrgImportSafetyBackup();
+  const byId=new Map(selectedRows.map(r=>[r.employee.id,r]));
+  const now=new Date().toISOString();
+  employees=employees.map(employee=>{
+    const row=byId.get(employee.id);if(!row)return employee;
+    const patch={updatedAt:now};
+    row.changes.forEach(change=>{patch[change.field]=change.to;if(change.field==='team')patch.department=change.to;});
+    return normalizeEmployee({...employee,...patch,id:employee.id});
+  });
+  localStorage.setItem(EMPLOYEE_ORG_IMPORT_HISTORY_KEY,JSON.stringify({at:now,fileName:employeeOrgImportState.fileName,sourceFile:employeeOrgImportState.meta&&employeeOrgImportState.meta.sourceFile||'',applied:selectedRows.length,fieldCounts}));
+  saveEmployees(employees.filter(employee=>byId.has(employee.id)));
+  const records=(employeeOrgImportState.meta&&Array.isArray(employeeOrgImportState.meta.rows))?employeeOrgImportState.meta.rows:[];
+  const rows=buildEmployeeOrgImportRows(records);
+  employeeOrgImportState={...employeeOrgImportState,rows,selected:new Set(),filter:'changed',page:1};
+  if($('employeeOrgImportConfirm'))$('employeeOrgImportConfirm').checked=false;
+  renderEmployeeOrgImport();
+  alert(`조직정보 반영 완료\n\n대상 ${selectedRows.length}명\n${detail}\n\n로컬 저장을 완료했고, 로그인 상태이면 Supabase 저장도 자동 시도했습니다.`);
 }
