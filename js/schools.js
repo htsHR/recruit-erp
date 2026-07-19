@@ -423,17 +423,12 @@ function renderSchoolManageKpis(){
   setText('schoolKpiCollege', schools.filter(s=>normalizeSchoolType(s.type)==='전문대').length);
   setText('schoolKpiUniv', schools.filter(s=>normalizeSchoolType(s.type)==='대학교').length);
   setText('schoolKpiEtc', schools.filter(s=>normalizeSchoolType(s.type)==='기타').length);
-  setText('schoolKpiMou', schools.filter(s=>String(s.mouDate||'').trim()).length);
-  setText('schoolKpiNeedsAttention', schools.filter(schoolNeedsAttention).length);
 }
 function applySchoolKpiFilter(kpi){
   document.querySelectorAll('#schoolManageKpiGrid .school-kpi-card').forEach(b=>b.classList.toggle('active', b.dataset.kpi===kpi));
-  schoolManagePage=1; schoolManageTypeFilter='all'; schoolManageMouFilter='all'; schoolManageMissingHistory=false;
+  schoolManagePage=1;
+  schoolManageTypeFilter='all';
   if(['고등학교','전문대','대학교','기타'].includes(kpi)) schoolManageTypeFilter=kpi;
-  if(kpi==='mou') schoolManageMouFilter='yes';
-  if(kpi==='needs-attention') schoolManageMissingHistory=true;
-  if($('schoolManageMou')) $('schoolManageMou').value=schoolManageMouFilter;
-  if($('schoolManageMissingHistory')) $('schoolManageMissingHistory').checked=schoolManageMissingHistory;
   document.querySelectorAll('#schoolManageTypeTabs .tab').forEach(x=>x.classList.toggle('active', x.dataset.schoolmanagetype===schoolManageTypeFilter));
   renderSchoolManage();
 }

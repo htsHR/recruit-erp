@@ -1,5 +1,5 @@
-/* Recruit ERP v10.40.9 DATA_HEALTH_FINAL
- * 지원자·학교 연결·사원명부 데이터의 누락/형식/상태 불일치를 읽기 전용으로 점검합니다.
+/* Recruit ERP v10.40.26 SCHOOL_DATA_HEALTH
+ * 지원자·협력학교·학교 연결·사원명부 데이터의 누락/중복 의심/형식/상태 불일치를 읽기 전용으로 점검합니다.
  * 자동 수정·자동 병합·자동 삭제는 수행하지 않습니다.
  */
 (function(){
@@ -86,6 +86,54 @@ function workplaceKnown(v){return ['천안','평택','기타'].includes(String(v
 function dormKnown(v){return ['기숙사','출퇴근'].includes(typeof normalizeDorm==='function'?normalizeDorm(v):String(v||'').trim());}
 function statusOf(v){return typeof normalizeStatus==='function'?normalizeStatus(v):String(v||'').trim();}
 
+function schoolConnectionStatsById(id){
+  return {
+    applicants:(Array.isArray(applicants)?applicants:[]).filter(a=>String(a.schoolId||'')===String(id)).length,
+    employees:(Array.isArray(employees)?employees:[]).filter(e=>String(e.schoolId||'')===String(id)).length
+  };
+}
+function inspectSchoolMaster(){
+  const idSeen=new Map();
+  const normalizedNameMap=new Map();
+  const compactNameMap=new Map();
+  const list=Array.isArray(schools)?schools:[];
+  list.forEach(s=>{
+    const id=String(s.id||'').trim();
+    const rawName=String(s.name||'').trim();
+    const exactName=rawName.toLowerCase();
+    const compactName=compact(rawName);
+    const normalizedType=typeof normalizeSchoolType==='function'?normalizeSchoolType(s.type):String(s.type||'').trim();
+    const links=schoolConnectionStatsById(id);
+    if(!id) addIssue('error','school-id-empty','school','학교 ID 누락','학교 ID가 비어 있습니다.',s,'school');
+    else if(idSeen.has(id)) addIssue('error','school-id-duplicate','school','동일 학교 ID 중복',`학교 ID “${id}”가 둘 이상 존재합니다.`,s,'school',{duplicateWith:idSeen.get(id)?.id||''});
+    else idSeen.set(id,s);
+    if(!rawName) addIssue('error','school-name-empty-master','school','학교명 누락','학교명 없이 등록된 학교입니다.',s,'school');
+    if(!String(s.region||'').trim()) addIssue('warning','school-region-missing','school','지역 누락',`“${rawName||id||'이름 없는 학교'}”의 지역 정보가 비어 있습니다.`,s,'school');
+    if(!String(s.type||'').trim()) addIssue('warning','school-type-missing','school','학교 구분 누락',`“${rawName||id||'이름 없는 학교'}”의 학교 구분이 비어 있습니다.`,s,'school');
+    else if(!normalizedType) addIssue('warning','school-type-nonstandard','school','학교 구분 비표준값',`“${rawName||id||'이름 없는 학교'}”의 학교 구분 “${s.type}”은 표준값(고등학교/전문대/대학교/기타)이 아닙니다.`,s,'school');
+    if(!exactName){ return; }
+    if(!normalizedNameMap.has(exactName)) normalizedNameMap.set(exactName, []);
+    normalizedNameMap.get(exactName).push(s);
+    if(compactName){
+      if(!compactNameMap.has(compactName)) compactNameMap.set(compactName, []);
+      compactNameMap.get(compactName).push(s);
+    }
+    if((links.applicants||links.employees) && !rawName) addIssue('warning','school-linked-name-empty','school','연결된 학교의 학교명 누락',`지원자 ${links.applicants}명 · 사원 ${links.employees}명과 연결된 학교인데 학교명이 비어 있습니다.`,s,'school');
+  });
+  normalizedNameMap.forEach(group=>{
+    if(group.length<2) return;
+    const ids=group.map(x=>String(x.id||'')).join(', ');
+    group.forEach(s=>addIssue('warning','school-name-duplicate','school','동일 학교명인데 다른 ID',`학교명 “${s.name}”이(가) 여러 ID로 등록되어 있습니다. 관련 ID: ${ids}`,s,'school',{relatedSchoolIds:group.map(x=>x.id)}));
+  });
+  compactNameMap.forEach(group=>{
+    if(group.length<2) return;
+    const uniqueNames=[...new Set(group.map(x=>String(x.name||'').trim()))].filter(Boolean);
+    if(uniqueNames.length<2) return;
+    const ids=group.map(x=>String(x.id||'')).join(', ');
+    group.forEach(s=>addIssue('review','school-name-variant','school','띄어쓰기·특수문자 차이 중복 의심',`비슷한 학교명이 여러 건 등록되어 있습니다: ${uniqueNames.join(' / ')} · 관련 ID: ${ids}`,s,'school',{relatedSchoolIds:group.map(x=>x.id)}));
+  });
+}
+
 function inspectSchoolLink(entity,entityType){
   const school=String(entity.school||'').trim(),schoolId=entity.schoolId;
   if(!school&&!schoolId)return;
@@ -123,6 +171,7 @@ function buildHealthIssues(){
   const todayValue=typeof today==='function'?today():new Date().toISOString().slice(0,10);
   const dupMembership=new Map();
   buildDuplicateGroups().forEach(g=>g.members.forEach(a=>dupMembership.set(String(a.id),true)));
+  inspectSchoolMaster();
 
   (Array.isArray(applicants)?applicants:[]).forEach(a=>{
     const status=statusOf(a.status);
@@ -211,7 +260,7 @@ function buildDuplicateGroups(){
 }
 
 function severityLabel(v){return v==='error'?'오류':v==='warning'?'주의':'확인 필요';}
-function categoryLabel(v){return v==='school'?'학교 연결':v==='employee'?'사원':'지원자';}
+function categoryLabel(v){return v==='school'?'협력학교/학교 연결':v==='employee'?'사원':'지원자';}
 function issueEntityLabel(x){return x.entityType==='employee'?'사원':x.entityType==='school'?'학교':'지원자';}
 function filteredHealthIssues(){
   const q=compact(byId('healthSearch')?.value);
@@ -229,7 +278,7 @@ function renderHealth(rebuild=true){
   const kpi=byId('healthKpiGrid');if(kpi)kpi.innerHTML=`<article><span>전체 문제</span><strong>${healthIssues.length}</strong></article><article class="error"><span>오류</span><strong>${counts.error}</strong></article><article class="warning"><span>주의</span><strong>${counts.warning}</strong></article><article class="review"><span>확인 필요</span><strong>${counts.review}</strong></article><article><span>영향 데이터</span><strong>${unique}</strong></article>`;
   const filtered=filteredHealthIssues();
   const excelCount=healthIssues.filter(x=>x.source==='excel').length;
-  const summary=byId('healthSummary');if(summary)summary.innerHTML=`<span>총 <strong>${healthIssues.length}</strong>건 중 <strong>${filtered.length}</strong>건 표시</span><span>지원자 ${healthIssues.filter(x=>x.category==='applicant').length} · 학교 연결 ${healthIssues.filter(x=>x.category==='school').length} · 사원 ${healthIssues.filter(x=>x.category==='employee').length}</span><span>엑셀 추적 문제 ${excelCount}건 · 자동 수정 없음</span>`;
+  const summary=byId('healthSummary');if(summary)summary.innerHTML=`<span>총 <strong>${healthIssues.length}</strong>건 중 <strong>${filtered.length}</strong>건 표시</span><span>지원자 ${healthIssues.filter(x=>x.category==='applicant').length} · 협력학교/학교 연결 ${healthIssues.filter(x=>x.category==='school').length} · 사원 ${healthIssues.filter(x=>x.category==='employee').length}</span><span>엑셀 추적 문제 ${excelCount}건 · 자동 수정 없음</span>`;
   const list=byId('healthIssueList');if(!list)return;
   list.innerHTML=filtered.length?filtered.map(x=>`<article class="health-issue ${x.severity}" data-health-issue-id="${safe(x.id)}">
     <div class="issue-severity"><span>${severityLabel(x.severity)}</span><small>${categoryLabel(x.category)}</small></div>
