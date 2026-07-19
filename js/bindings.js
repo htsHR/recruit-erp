@@ -58,9 +58,11 @@ function saveNavCollapsed(state){ localStorage.setItem(NAV_COLLAPSE_KEY, JSON.st
 document.querySelectorAll('#schoolSubTabs .tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#schoolSubTabs .tab').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
-  const isManage = b.dataset.schooltab==='manage';
-  if($('schoolRankView')) $('schoolRankView').style.display = isManage ? 'none' : '';
-  if($('schoolManageView')) $('schoolManageView').style.display = isManage ? '' : 'none';
+  const tab=b.dataset.schooltab||'rank';
+  if($('schoolRankView')) $('schoolRankView').style.display = tab==='rank' ? '' : 'none';
+  if($('schoolManageView')) $('schoolManageView').style.display = tab==='manage' ? '' : 'none';
+  if($('schoolAnalyticsView')) $('schoolAnalyticsView').style.display = tab==='analytics' ? '' : 'none';
+  if(tab==='analytics'&&typeof renderSchoolAnalytics==='function') renderSchoolAnalytics();
 }));
 document.querySelectorAll('#schoolRankTypeTabs .tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#schoolRankTypeTabs .tab').forEach(x=>x.classList.remove('active'));
