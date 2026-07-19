@@ -79,6 +79,9 @@ bind('schoolManageMou','change',e=>{ schoolManageMouFilter=e.target.value; schoo
 bind('schoolManageStatus','change',e=>{ schoolManageStatusFilter=e.target.value; schoolManagePage=1; renderSchoolManage(); });
 bind('schoolManageHasApplicants','change',e=>{ schoolManageHasApplicants=e.target.checked; schoolManagePage=1; renderSchoolManage(); });
 bind('schoolManageHasEmployees','change',e=>{ schoolManageHasEmployees=e.target.checked; schoolManagePage=1; renderSchoolManage(); });
+bind('schoolManageRecentHistory','change',e=>{ window.schoolManageRecentHistory=e.target.checked; schoolManagePage=1; renderSchoolManage(); });
+bind('schoolManageBrokenLinks','change',e=>{ window.schoolManageBrokenLinks=e.target.checked; schoolManagePage=1; renderSchoolManage(); });
+bind('schoolManageDuplicates','change',e=>{ window.schoolManageDuplicates=e.target.checked; schoolManagePage=1; renderSchoolManage(); });
 bind('schoolManageMissingHistory','change',e=>{ schoolManageMissingHistory=e.target.checked; schoolManagePage=1; renderSchoolManage(); });
 bind('schoolManageUnclassified','change',e=>{ schoolManageUnclassifiedFilter=e.target.checked; schoolManagePage=1; renderSchoolManage(); });
 bind('btnResetSchoolManageFilters','click',resetSchoolManageFilters);
@@ -391,7 +394,7 @@ document.addEventListener('keydown',e=>{
 });
 
 
-/* v10.40.24 · 사원 학교/지원자 연결 관리 */
+/* v10.40.25 · 사원 학교/지원자 연결 관리 */
 bind('btnOpenEmployeeRelations','click',()=>openEmployeeRelations('school'));
 bind('btnCloseEmployeeRelations','click',closeEmployeeRelations);
 bind('btnCancelEmployeeRelations','click',closeEmployeeRelations);

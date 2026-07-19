@@ -681,7 +681,7 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 @media(max-width:1180px){.backup-file-summary{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){.backup-file-summary{grid-template-columns:1fr 1fr}.backup-json-route-guard{padding:14px}.backup-json-route-guard span{display:block}}
 /* =========================================================
-   Recruit ERP v10.40.24 · UI SYSTEM UNIFICATION
+   Recruit ERP v10.40.25 · UI SYSTEM UNIFICATION
    목록형 화면 공통 UI/UX/타이포그래피 기준
    ========================================================= */
 :root{
@@ -725,7 +725,7 @@ body{font-size:15px;line-height:1.5;letter-spacing:-.012em}.main{padding:22px 24
 @media(max-width:430px){#backup.ui-system-v20 .backup-count-grid{grid-template-columns:1fr!important}}
 
 
-/* v10.40.24 final visual QA corrections */
+/* v10.40.25 final visual QA corrections */
 .ui-system-v20 input[type="checkbox"],.ui-system-v20 input[type="radio"]{
   width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
   padding:0!important;border-radius:4px!important;accent-color:#1768d4;
@@ -747,7 +747,7 @@ body{font-size:15px;line-height:1.5;letter-spacing:-.012em}.main{padding:22px 24
   #applicants.ui-system-v20 .list-interaction-hint{display:none!important;}
   #schools.ui-system-v20 .school-filter-panel{padding:14px!important;}
 }
-/* v10.40.24 final readability corrections */
+/* v10.40.25 final readability corrections */
 #employees.ui-system-v20 .employee-entry-summary small{
   color:#718096!important;font-size:12px!important;line-height:1.4!important;font-weight:650!important;
 }
@@ -760,7 +760,7 @@ body{font-size:15px;line-height:1.5;letter-spacing:-.012em}.main{padding:22px 24
 
 
 /* =========================================================
-   v10.40.24 · 사원 연결 관리 안정화
+   v10.40.25 · 사원 연결 관리 안정화
    ========================================================= */
 .employee-relation-modal{z-index:5200}
 .employee-relation-card{width:min(1500px,calc(100vw - 32px));height:min(920px,calc(100vh - 24px));max-width:none;display:flex;flex-direction:column;overflow:hidden}

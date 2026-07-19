@@ -147,6 +147,9 @@ let schoolManageUnclassifiedFilter=false;
 let schoolManagePage=1;
 let schoolManagePageSize=30;
 let schoolManageFiltersCollapsed=false;
+window.schoolManageRecentHistory=false;
+window.schoolManageBrokenLinks=false;
+window.schoolManageDuplicates=false;
 function renderSchools(){
   const body=$('schoolsBody');
   if(!body) return;
