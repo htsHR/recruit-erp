@@ -7,13 +7,15 @@
 let applicantEmployeeIdCloudUnsupported=false;
 function applicantForCloud(a,legacy=false){
   var row={...a};
-  if(legacy) delete row.employeeId;
+  if(legacy){ ['employeeId','failureReason','withdrawalReason','lastContactDate','nextContactDate','progressHistory','lastChangedBy','lastChangedAt'].forEach(function(k){delete row[k];}); }
   return row;
 }
 function applicantEmployeeIdColumnError(error){
   var msg=String(error&&error.message||error||'').toLowerCase();
-  return msg.includes('employeeid')&&(msg.includes('column')||msg.includes('schema')||msg.includes('not found')||msg.includes('does not exist'));
+  var fields=['employeeid','failurereason','withdrawalreason','lastcontactdate','nextcontactdate','progresshistory','lastchangedby','lastchangedat'];
+  return fields.some(function(f){return msg.includes(f);})&&(msg.includes('column')||msg.includes('schema')||msg.includes('not found')||msg.includes('does not exist'));
 }
+
 function supabaseSyncAll(list){
   if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
   var targets=Array.isArray(list)?list.filter(Boolean):[];
@@ -26,7 +28,7 @@ function supabaseSyncAll(list){
       var res=await window.sb.from('applicants').upsert(chunk.map(function(a){return applicantForCloud(a,useLegacy);}));
       if(res&&res.error&&!useLegacy&&applicantEmployeeIdColumnError(res.error)){
         applicantEmployeeIdCloudUnsupported=true;useLegacy=true;
-        console.warn('지원자 employeeId용 Supabase 컬럼이 없어 기존 필드만 클라우드에 저장합니다. v10.40.24 관계 필드 SQL 실행 후 새로고침하면 양방향 연결도 동기화됩니다.',res.error.message);
+        console.warn('지원자 확장 필드용 Supabase 컬럼이 없어 기존 필드만 클라우드에 저장합니다. v10.46.0 SQL 실행 후 새로고침하면 진행 이력도 동기화됩니다.',res.error.message);
         res=await window.sb.from('applicants').upsert(chunk.map(function(a){return applicantForCloud(a,true);}));
       }
       if(res&&res.error) throw new Error(res.error.message||'지원자 Supabase 저장 실패');

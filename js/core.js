@@ -65,7 +65,11 @@ function normalize(a){ return {
   careerType:a.careerType||'', jobFitCategory:a.jobFitCategory||'', checkNeeds:a.checkNeeds||'', selfIntroKeywords:a.selfIntroKeywords||'',
   interviewDate:a.interviewDate||'', interviewTime:a.interviewTime||'', hireDate:a.hireDate||'',
     finalDecision:a.finalDecision||'', decisionReason:a.decisionReason||'', consult:a.consult||'',
-    memo:a.memo||'', employeeId:a.employeeId||''
+    memo:a.memo||'', employeeId:a.employeeId||'',
+    failureReason:a.failureReason||'', withdrawalReason:a.withdrawalReason||'',
+    lastContactDate:a.lastContactDate||'', nextContactDate:a.nextContactDate||'',
+    progressHistory:Array.isArray(a.progressHistory)?a.progressHistory:[],
+    lastChangedBy:a.lastChangedBy||'', lastChangedAt:a.lastChangedAt||''
 }; }
 function looksLikeApplicantRow(x){
   return x && typeof x === 'object' && (x.name || x.phone || x.email || x.applyDate || x.workplace || x.interviewDate);
