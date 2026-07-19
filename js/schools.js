@@ -26,6 +26,12 @@ function normalizeSchool(s){
     managementStatus: s.managementStatus||'',
     lastContactDate: s.lastContactDate||'', nextContactDate: s.nextContactDate||'', lastRequestNote: s.lastRequestNote||'',
     memoHistory: Array.isArray(s.memoHistory)?s.memoHistory:[], contacts: Array.isArray(s.contacts)?s.contacts:[], activities: Array.isArray(s.activities)?s.activities:[],
+    recommendationRequests: Array.isArray(s.recommendationRequests)?s.recommendationRequests:[],
+    departments: Array.isArray(s.departments)?s.departments:[],
+    mouInfo: s.mouInfo && typeof s.mouInfo==='object' ? {
+      status:s.mouInfo.status||'', signedDate:s.mouInfo.signedDate||s.mouDate||'', expireDate:s.mouInfo.expireDate||'',
+      type:s.mouInfo.type||'', department:s.mouInfo.department||'', owner:s.mouInfo.owner||'', note:s.mouInfo.note||''
+    } : {status:s.mouDate?'체결':'',signedDate:s.mouDate||'',expireDate:'',type:'',department:'',owner:'',note:''},
     hrStats: s.hrStats ? {
       activeCount: s.hrStats.activeCount||0, retiredCount: s.hrStats.retiredCount||0,
       avgTenureMonths: s.hrStats.avgTenureMonths ?? null, under12MonthRate: s.hrStats.under12MonthRate ?? null,
@@ -54,9 +60,15 @@ function supabaseSyncSchools(list){
   window.sb.from('schools').upsert(list).then(function(res){
     if(!res || !res.error) return;
     const msg=String(res.error.message||'');
-    if(msg.includes('managementStatus')){
-      const safeList=list.map(({managementStatus, ...rest})=>rest);
-      console.warn('Supabase schools 테이블에 managementStatus 컬럼이 없어 관리상태를 제외하고 재저장합니다. 로컬에는 정상 보존됩니다. v10.32.0 SQL 파일을 적용하면 클라우드에도 동기화됩니다.');
+    const relationshipColumns=['managementStatus','memoHistory','contacts','activities','recommendationRequests','departments','mouInfo'];
+    const missingRelationshipColumn=relationshipColumns.some(col=>msg.includes(col));
+    if(missingRelationshipColumn){
+      const safeList=list.map(s=>{
+        const copy={...s};
+        relationshipColumns.forEach(k=>delete copy[k]);
+        return copy;
+      });
+      console.warn('Supabase schools 확장 컬럼이 없어 관계관리 확장정보를 제외하고 재저장합니다. 로컬에는 전체 정보가 보존됩니다. v10.42.0 SQL을 적용하면 클라우드에도 저장됩니다.');
       return window.sb.from('schools').upsert(safeList).then(function(retry){
         if(retry && retry.error) console.warn('학교마스터 Supabase 저장 실패(로컬엔 정상 저장됨):', retry.error.message);
       });
@@ -770,6 +782,15 @@ function schoolLatestActivityInfo(s){
   return null;
 }
 function schoolRequestStatusInfo(s){
+  const requests=Array.isArray(s?.recommendationRequests)?s.recommendationRequests:[];
+  const latest=[...requests].sort((a,b)=>String(b.requestDate||b.createdAt||'').localeCompare(String(a.requestDate||a.createdAt||'')))[0]||null;
+  if(latest){
+    const status=String(latest.status||'요청').trim();
+    if(['미회신','회신대기'].includes(status)) return {label:'미회신',className:'pending',detail:latest.requestDate?`요청 ${formatSchoolDate(latest.requestDate)}`:'회신 대기'};
+    if(['진행중','요청','협의중'].includes(status)) return {label:'진행중',className:'open',detail:latest.workplace||latest.department||'추천 요청 진행'};
+    if(['회신완료','완료','종료'].includes(status)) return {label:'회신완료',className:'history',detail:`추천 ${Number(latest.recommendedCount||0)}명`};
+    return {label:status||'기록 있음',className:'history',detail:latest.note||'추천 요청 기록'};
+  }
   const hasRequest=!!String(s?.lastRequestNote||'').trim() || (Array.isArray(s?.activities)&&s.activities.some(a=>String(a?.type||'').includes('추천')));
   if(!hasRequest) return {label:'없음', className:'neutral', detail:'추천 요청 기록 없음'};
   const next=s?.nextContactDate||'';
