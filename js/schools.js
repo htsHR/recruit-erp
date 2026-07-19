@@ -310,23 +310,116 @@ function deleteSchool(id){
   if(!confirm(`"${s.name}" 학교를 삭제할까요?\n연결 데이터가 없는 학교만 삭제됩니다.`))return;
   schools=schools.filter(x=>x.id!==id); supabaseDeleteSchool(id); if(editingSchoolId===id)resetSchoolForm(); saveSchools();
 }
+function schoolLinkTextKey(text){ return String(text||'').trim().toLocaleLowerCase('ko-KR'); }
+function schoolHasValidId(entity){ return !!schools.find(s=>String(s.id)===String(entity?.schoolId||'')); }
+function schoolExactLinkIndexes(){
+  const names=new Map(), aliases=new Map();
+  schools.forEach(s=>{
+    const nk=schoolLinkTextKey(s.name);
+    if(nk){ if(!names.has(nk)) names.set(nk,[]); names.get(nk).push(s); }
+    (Array.isArray(s.aliases)?s.aliases:[]).forEach(alias=>{
+      const ak=schoolLinkTextKey(alias);
+      if(ak){ if(!aliases.has(ak)) aliases.set(ak,[]); aliases.get(ak).push(s); }
+    });
+  });
+  return {names,aliases};
+}
+function resolveExactSchoolLink(text,indexes=schoolExactLinkIndexes()){
+  const key=schoolLinkTextKey(text); if(!key)return {status:'none'};
+  const exact=indexes.names.get(key)||[];
+  if(exact.length===1)return {status:'exact-name',school:exact[0]};
+  if(exact.length>1)return {status:'ambiguous',schools:exact};
+  const alias=indexes.aliases.get(key)||[];
+  const unique=[...new Map(alias.map(s=>[String(s.id),s])).values()];
+  if(unique.length===1)return {status:'exact-alias',school:unique[0]};
+  if(unique.length>1)return {status:'ambiguous',schools:unique};
+  return {status:'none'};
+}
+function schoolUnlinkedEntities(){
+  const rows=[];
+  (Array.isArray(applicants)?applicants:[]).forEach(a=>{if(String(a.school||'').trim()&&!schoolHasValidId(a))rows.push({entityType:'applicant',entity:a});});
+  (Array.isArray(employees)?employees:[]).forEach(e=>{if(String(e.school||'').trim()&&!schoolHasValidId(e))rows.push({entityType:'employee',entity:e});});
+  return rows;
+}
 function unmatchedSchoolTexts(){
   const map={};
-  applicants.forEach(a=>{
-    const text=String(a.school||'').trim();
-    if(!text) return;
-    if(findSchoolByText(text)) return;
-    if(!map[text]) map[text]=0;
+  schoolUnlinkedEntities().forEach(({entity})=>{
+    const text=String(entity.school||'').trim();
+    if(!map[text])map[text]=0;
     map[text]++;
   });
-  employees.forEach(e=>{
-    const text=String(e.school||'').trim();
-    if(!text) return;
-    if(findSchoolByText(text)) return;
-    if(!map[text]) map[text]=0;
-    map[text]++;
+  return Object.keys(map).sort((a,b)=>map[b]-map[a]||a.localeCompare(b,'ko')).map(text=>({text,count:map[text]}));
+}
+function buildSchoolAutoLinkCandidates(){
+  const indexes=schoolExactLinkIndexes(), grouped=new Map(), review=new Set();
+  schoolUnlinkedEntities().forEach(row=>{
+    const text=String(row.entity.school||'').trim();
+    const match=resolveExactSchoolLink(text,indexes);
+    if(!['exact-name','exact-alias'].includes(match.status)){review.add(text);return;}
+    const key=`${row.entityType}:${row.entity.id}:${match.school.id}`;
+    grouped.set(key,{key,entityType:row.entityType,entityId:String(row.entity.id),entityName:String(row.entity.name||row.entity.empNo||'이름 없음'),schoolText:text,targetId:String(match.school.id),targetName:String(match.school.name||''),matchType:match.status});
   });
-  return Object.keys(map).sort((a,b)=>map[b]-map[a]).map(text=>({text, count:map[text]}));
+  return {candidates:[...grouped.values()],reviewCount:review.size};
+}
+let schoolAutoLinkState={candidates:[],selected:new Set(),reviewCount:0,busy:false};
+function schoolAutoLinkSafetyBackup(){
+  if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup('확실한 학교 자동 연결 적용 직전');
+  const payload={format:'recruit-erp-backup',appVersion:'10.40.29',createdAt:new Date().toISOString(),reason:'확실한 학교 자동 연결 적용 직전',applicants,schools,employees,calendarEvents};
+  download(`Recruit_ERP_학교자동연결전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
+  return payload;
+}
+function openSchoolAutoLink(){
+  const built=buildSchoolAutoLinkCandidates();
+  schoolAutoLinkState={candidates:built.candidates,selected:new Set(built.candidates.map(x=>x.key)),reviewCount:built.reviewCount,busy:false};
+  if($('schoolAutoLinkConfirm'))$('schoolAutoLinkConfirm').checked=false;
+  renderSchoolAutoLink();
+  const modal=$('schoolAutoLinkModal'); if(modal){modal.classList.add('show');modal.setAttribute('aria-hidden','false');}
+}
+function closeSchoolAutoLink(){
+  if(schoolAutoLinkState.busy)return;
+  const modal=$('schoolAutoLinkModal'); if(modal){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
+}
+function renderSchoolAutoLink(){
+  const c=schoolAutoLinkState.candidates, selected=schoolAutoLinkState.selected;
+  const selectedRows=c.filter(x=>selected.has(x.key));
+  setText('schoolAutoLinkCandidateCount',`${c.length}건`);
+  setText('schoolAutoLinkApplicantCount',`${c.filter(x=>x.entityType==='applicant').length}명`);
+  setText('schoolAutoLinkEmployeeCount',`${c.filter(x=>x.entityType==='employee').length}명`);
+  setText('schoolAutoLinkReviewCount',`${schoolAutoLinkState.reviewCount}종`);
+  setText('schoolAutoLinkSelectedSummary',`${selectedRows.length}건 선택`);
+  const list=$('schoolAutoLinkList');
+  if(list)list.innerHTML=c.length?c.map(x=>`<label class="school-auto-link-row"><input type="checkbox" data-school-auto-key="${esc(x.key)}" ${selected.has(x.key)?'checked':''}/><div><strong>${esc(x.entityName)}</strong><span>${x.entityType==='applicant'?'지원자':'사원'} · 입력 학교명: ${esc(x.schoolText)}</span></div><b>→</b><div><strong>${esc(x.targetName)}</strong><span>${x.matchType==='exact-name'?'학교명 정확 일치':'유일 별칭 정확 일치'}</span></div></label>`).join(''):'<div class="empty"><strong>자동 연결 가능한 항목이 없습니다.</strong><span>남은 항목은 직접 확인해 연결해 주세요.</span></div>';
+  const apply=$('btnApplySchoolAutoLink');
+  if(apply)apply.disabled=!selectedRows.length||!$('schoolAutoLinkConfirm')?.checked||schoolAutoLinkState.busy;
+}
+function setSchoolAutoLinkSelection(mode){
+  schoolAutoLinkState.selected=mode==='all'?new Set(schoolAutoLinkState.candidates.map(x=>x.key)):new Set();
+  renderSchoolAutoLink();
+}
+function applySchoolAutoLink(){
+  if(schoolAutoLinkState.busy)return;
+  const selected=schoolAutoLinkState.candidates.filter(x=>schoolAutoLinkState.selected.has(x.key));
+  if(!selected.length||!$('schoolAutoLinkConfirm')?.checked)return;
+  if(!confirm(`선택한 ${selected.length}건을 정확 일치 기준으로 연결할까요?
+적용 직전 전체 JSON 안전백업을 다운로드합니다.`))return;
+  schoolAutoLinkState.busy=true; const btn=$('btnApplySchoolAutoLink'); if(btn){btn.disabled=true;btn.textContent='연결 중...';}
+  try{
+    schoolAutoLinkSafetyBackup();
+    const appMap=new Map(selected.filter(x=>x.entityType==='applicant').map(x=>[x.entityId,x]));
+    const empMap=new Map(selected.filter(x=>x.entityType==='employee').map(x=>[x.entityId,x]));
+    applicants=applicants.map(a=>{const row=appMap.get(String(a.id));return row&&!schoolHasValidId(a)?{...a,schoolId:row.targetId}:a;});
+    employees=employees.map(e=>{const row=empMap.get(String(e.id));return row&&!schoolHasValidId(e)?{...e,schoolId:row.targetId}:e;});
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(applicants));
+    localStorage.setItem(EMPLOYEES_KEY,JSON.stringify(employees));
+    if(canUseCloud()){supabaseSyncAll(applicants);supabaseSyncEmployees(employees);}
+    renderTable();renderEmployees();renderSchoolManage();renderSchoolUnmatched();
+    alert(`학교 연결 완료
+지원자 ${appMap.size}명 · 사원 ${empMap.size}명`);
+    schoolAutoLinkState.busy=false;
+    closeSchoolAutoLink();
+  }catch(e){console.error('학교 자동 연결 실패',e);alert(`학교 연결 중 오류가 발생했습니다.
+${e.message||e}`);}
+  finally{schoolAutoLinkState.busy=false;if(btn)btn.textContent='안전백업 후 선택 연결';}
 }
 function schoolOptionsHtml(){
   return schools.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('');
@@ -335,9 +428,9 @@ function renderSchoolUnmatched(){
   const el=$('schoolUnmatchedList');
   if(!el) return;
   const empWithSchool=employees.filter(e=>String(e.school||'').trim());
-  const empConnected=empWithSchool.filter(e=>e.schoolId).length;
+  const empConnected=empWithSchool.filter(schoolHasValidId).length;
   const appWithSchool=applicants.filter(a=>String(a.school||'').trim());
-  const appConnected=appWithSchool.filter(a=>a.schoolId).length;
+  const appConnected=appWithSchool.filter(schoolHasValidId).length;
   const rows=unmatchedSchoolTexts();
   setText('schoolCoverageStat', `미연결 표기 ${rows.length}종 · 직원 ${empConnected}/${empWithSchool.length}명 · 지원자 ${appConnected}/${appWithSchool.length}명`);
   const toggle=$('btnToggleSchoolUnmatched');

@@ -1,4 +1,4 @@
-/* Recruit ERP v10.40.28 SCHOOL_FILTER_CLEANUP_FIX
+/* Recruit ERP v10.40.29 SCHOOL_EXACT_AUTO_LINK
  * 기준 학교 ID를 유지하고 사용자가 선택한 통합 대상 학교의 연결만 안전하게 이동합니다.
  * 자동 병합·자동 선택·자동 삭제를 수행하지 않습니다.
  */
@@ -94,7 +94,7 @@ function renderSchoolMergePreview(){
 function schoolMergeSafetyBackup(){
   if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup('중복 학교 통합 직전');
   if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function')return window.erpBackupCenter.exportFull();
-  const payload={format:'recruit-erp-backup',appVersion:'10.40.28',createdAt:new Date().toISOString(),reason:'중복 학교 통합 직전',applicants,schools,employees,calendarEvents};
+  const payload={format:'recruit-erp-backup',appVersion:'10.40.29',createdAt:new Date().toISOString(),reason:'중복 학교 통합 직전',applicants,schools,employees,calendarEvents};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Recruit_ERP_학교통합전_안전백업_${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return payload;
 }
 async function applySchoolMerge(){

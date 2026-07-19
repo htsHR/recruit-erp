@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.40.28 SCHOOL_FILTER_CLEANUP_FIX — 역할별 파일 분리 빌드
+// [HOME_DEV] Recruit ERP v10.40.29 SCHOOL_EXACT_AUTO_LINK — 역할별 파일 분리 빌드
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
@@ -60,7 +60,7 @@ function normalize(a){ return {
   batch:a.batch||'',
   name:a.name||'', phone:formatPhoneDisplay(a.phone||''), email:a.email||'', gender:normalizeGender(a.gender), birthYear:formatBirthDisplay(a.birthYear||''),
     age:a.age||'', region:a.region||'', commute:a.commute||'', dormUse:normalizeDorm(a.dormUse),
-  education:a.education||'', finalEducation:a.finalEducation||'', school:a.school||'', schoolId:a.schoolId||resolveSchoolId(a.school||''), major:a.major||'', gradePoint:a.gradePoint||'', languageEtc:a.languageEtc||'',
+  education:a.education||'', finalEducation:a.finalEducation||'', school:a.school||'', schoolId:(a.schoolId!==undefined&&a.schoolId!==null&&a.schoolId!=='')?String(a.schoolId).trim():'', major:a.major||'', gradePoint:a.gradePoint||'', languageEtc:a.languageEtc||'',
   certs:a.certs||'', career:a.career||'', lastCompany:a.lastCompany||'', duties:a.duties||'', leaveReason:a.leaveReason||'',
   careerType:a.careerType||'', jobFitCategory:a.jobFitCategory||'', checkNeeds:a.checkNeeds||'', selfIntroKeywords:a.selfIntroKeywords||'',
   interviewDate:a.interviewDate||'', interviewTime:a.interviewTime||'', hireDate:a.hireDate||'',

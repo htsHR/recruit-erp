@@ -394,7 +394,7 @@ document.addEventListener('keydown',e=>{
 });
 
 
-/* v10.40.28 · 사원 학교/지원자 연결 관리 */
+/* v10.40.29 · 사원 학교/지원자 연결 관리 */
 bind('btnOpenEmployeeRelations','click',()=>openEmployeeRelations('school'));
 bind('btnCloseEmployeeRelations','click',closeEmployeeRelations);
 bind('btnCancelEmployeeRelations','click',closeEmployeeRelations);
@@ -411,3 +411,14 @@ $('employeeRelationModal')?.addEventListener('change',employeeRelationModalChang
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('employeeRelationModal')?.classList.contains('show'))closeEmployeeRelations();});
 
 bind('btnToggleSchoolUnmatched','click',toggleSchoolUnmatchedPanel);
+
+bind('btnOpenSchoolAutoLink','click',openSchoolAutoLink);
+bind('btnCloseSchoolAutoLink','click',closeSchoolAutoLink);
+bind('btnCancelSchoolAutoLink','click',closeSchoolAutoLink);
+bind('schoolAutoLinkBackdrop','click',closeSchoolAutoLink);
+bind('btnSchoolAutoLinkSelectAll','click',()=>setSchoolAutoLinkSelection('all'));
+bind('btnSchoolAutoLinkClear','click',()=>setSchoolAutoLinkSelection('none'));
+bind('schoolAutoLinkConfirm','change',renderSchoolAutoLink);
+bind('btnApplySchoolAutoLink','click',applySchoolAutoLink);
+$('schoolAutoLinkList')?.addEventListener('change',e=>{const cb=e.target.closest('[data-school-auto-key]');if(!cb)return;cb.checked?schoolAutoLinkState.selected.add(cb.dataset.schoolAutoKey):schoolAutoLinkState.selected.delete(cb.dataset.schoolAutoKey);renderSchoolAutoLink();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('schoolAutoLinkModal')?.classList.contains('show'))closeSchoolAutoLink();});
