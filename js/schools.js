@@ -338,20 +338,37 @@ function renderSchoolUnmatched(){
   const empConnected=empWithSchool.filter(e=>e.schoolId).length;
   const appWithSchool=applicants.filter(a=>String(a.school||'').trim());
   const appConnected=appWithSchool.filter(a=>a.schoolId).length;
-  setText('schoolCoverageStat', `직원 연결 ${empConnected}/${empWithSchool.length}명 · 지원자 연결 ${appConnected}/${appWithSchool.length}명`);
   const rows=unmatchedSchoolTexts();
-  if(!rows.length){ el.innerHTML=`<div class="empty">정리할 항목이 없습니다. 모든 지원자의 출신학교가 등록된 학교와 매칭돼 있어요.</div>`; return; }
+  setText('schoolCoverageStat', `미연결 표기 ${rows.length}종 · 직원 ${empConnected}/${empWithSchool.length}명 · 지원자 ${appConnected}/${appWithSchool.length}명`);
+  const toggle=$('btnToggleSchoolUnmatched');
+  if(toggle){
+    toggle.textContent=rows.length ? `연결 대상 보기 (${rows.length}) ▾` : '연결 대상 없음';
+    toggle.disabled=!rows.length;
+  }
+  if(!rows.length){ el.innerHTML=`<div class="empty"><strong>학교 연결이 완료되었습니다.</strong><span>학교명이 입력된 지원자와 사원이 등록 학교에 연결되어 있습니다.</span></div>`; return; }
   el.innerHTML=rows.map(r=>`<div class="person-card compact-person-card">
-    <div><strong>${esc(r.text)}</strong><small>${r.count}명이 이렇게 적었어요</small></div>
+    <div><strong>${esc(r.text)}</strong><small>${r.count}명의 학교명이 아직 schoolId와 연결되지 않았습니다.</small></div>
     <div class="row-actions">
       <select class="wide-select" id="mergeTarget_${esc(uidSafe(r.text))}">
-        <option value="">기존 학교에 합치기…</option>
+        <option value="">연결할 기존 학교 선택…</option>
         ${schoolOptionsHtml()}
       </select>
-      <button class="mini" onclick="mergeUnmatchedText('${escJs(r.text)}')">합치기</button>
-      <button class="mini" onclick="createSchoolFromText('${escJs(r.text)}')">새 학교로 등록</button>
+      <button class="mini" onclick="mergeUnmatchedText('${escJs(r.text)}')">기존 학교에 연결</button>
+      <button class="mini" onclick="createSchoolFromText('${escJs(r.text)}')">새 학교 등록</button>
     </div>
   </div>`).join('');
+}
+function toggleSchoolUnmatchedPanel(){
+  const body=$('schoolUnmatchedBody');
+  const btn=$('btnToggleSchoolUnmatched');
+  if(!body) return;
+  const open=body.hidden;
+  body.hidden=!open;
+  if(btn){
+    const count=unmatchedSchoolTexts().length;
+    btn.setAttribute('aria-expanded',String(open));
+    btn.textContent=open?`연결 대상 접기 (${count}) ▴`:`연결 대상 보기 (${count}) ▾`;
+  }
 }
 function uidSafe(text){ return String(text).replace(/[^a-zA-Z0-9가-힣]/g,'_'); }
 function escJs(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
@@ -517,7 +534,7 @@ function renderSchoolManage(){
       const hay=[s.name, ...(s.aliases||[])].join(' ').toLowerCase();
       if(!hay.includes(q)) return false;
     }
-    if(schoolManageTypeFilter!=='all' && schoolTypeGroup(s.type)!==schoolManageTypeFilter) return false;
+    if(schoolManageTypeFilter!=='all' && normalizeSchoolType(s.type)!==schoolManageTypeFilter) return false;
     if(schoolManageRegionFilter!=='all' && String(s.region||'').trim()!==schoolManageRegionFilter) return false;
     const hasContact=!!String(s.contact||'').trim();
     if(schoolManageContactFilter==='yes' && !hasContact) return false;

@@ -394,7 +394,7 @@ document.addEventListener('keydown',e=>{
 });
 
 
-/* v10.40.27 · 사원 학교/지원자 연결 관리 */
+/* v10.40.28 · 사원 학교/지원자 연결 관리 */
 bind('btnOpenEmployeeRelations','click',()=>openEmployeeRelations('school'));
 bind('btnCloseEmployeeRelations','click',closeEmployeeRelations);
 bind('btnCancelEmployeeRelations','click',closeEmployeeRelations);
@@ -409,3 +409,5 @@ bind('employeeApplicantLinkSearch','input',e=>{employeeApplicantLinkState.search
 $('employeeRelationModal')?.addEventListener('click',employeeRelationModalClick);
 $('employeeRelationModal')?.addEventListener('change',employeeRelationModalChange);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('employeeRelationModal')?.classList.contains('show'))closeEmployeeRelations();});
+
+bind('btnToggleSchoolUnmatched','click',toggleSchoolUnmatchedPanel);
