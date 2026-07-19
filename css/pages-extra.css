@@ -2620,15 +2620,18 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 .school-report-table thead th{position:sticky;top:0;z-index:2;background:#f8fafc;}
 .school-report-print-area{display:none;}
 @media print{
-  body *{visibility:hidden!important;}
-  #schoolReportPrintArea,#schoolReportPrintArea *{visibility:visible!important;}
-  #schoolReportPrintArea{display:block!important;position:absolute;left:0;top:0;width:100%;padding:12mm;background:#fff;color:#000;}
-  #schoolReportPrintArea h1{margin:0 0 8px;font-size:22px;}
-  #schoolReportPrintArea p{margin:4px 0;font-size:11px;}
-  #schoolReportPrintArea table{width:100%;border-collapse:collapse;margin-top:14px;font-size:10px;}
-  #schoolReportPrintArea th,#schoolReportPrintArea td{border:1px solid #999;padding:6px;text-align:left;vertical-align:top;}
-  #schoolReportPrintArea th{background:#eee;}
-  @page{size:landscape;margin:10mm;}
+  /* v10.46.2: 학교 보고서 인쇄 중일 때만 화면 숨김 규칙을 적용한다.
+     일반 화면·면접 명단표·지원자 상세 인쇄에는 절대 영향을 주지 않는다. */
+  body.school-report-printing *{visibility:hidden!important;}
+  body.school-report-printing #schoolReportPrintArea,
+  body.school-report-printing #schoolReportPrintArea *{visibility:visible!important;}
+  body.school-report-printing #schoolReportPrintArea{display:block!important;position:absolute;left:0;top:0;width:100%;padding:12mm;background:#fff;color:#000;box-sizing:border-box;}
+  body.school-report-printing #schoolReportPrintArea h1{margin:0 0 8px;font-size:22px;}
+  body.school-report-printing #schoolReportPrintArea p{margin:4px 0;font-size:11px;}
+  body.school-report-printing #schoolReportPrintArea table{width:100%;border-collapse:collapse;margin-top:14px;font-size:10px;}
+  body.school-report-printing #schoolReportPrintArea th,
+  body.school-report-printing #schoolReportPrintArea td{border:1px solid #999;padding:6px;text-align:left;vertical-align:top;}
+  body.school-report-printing #schoolReportPrintArea th{background:#eee;}
 }
 @media(max-width:1200px){.school-report-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.school-report-summary{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:720px){.school-report-hero{flex-direction:column;padding:20px;}.school-report-actions{justify-content:flex-start;width:100%;}.school-report-filter-grid,.school-report-summary{grid-template-columns:1fr;}.school-report-filter-footer .primary{margin-left:0;width:100%;}}
@@ -2645,7 +2648,7 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 @media(max-width:620px){.applicant-history-summary,.history-entry-grid{grid-template-columns:1fr}.history-entry-grid .wide{grid-column:auto}.applicant-history-card{padding:15px}.history-copy time{width:100%;margin-left:0}}
 
 /* =========================================================
-   v10.46.1 DAILY_WORKFLOW_IMPROVEMENT
+   v10.46.2 PRINT_SCOPE_FIX
    ========================================================= */
 .daily-workflow-page{display:none;gap:16px}
 .daily-workflow-page.active{display:flex;flex-direction:column}

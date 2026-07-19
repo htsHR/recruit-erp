@@ -86,6 +86,7 @@ function openRosterPrint(){
   const list=applicants.filter(a=>a.interviewDate===dateStr);
   if(!list.length && !confirm('선택하신 날짜에 면접 일정이 등록된 지원자가 없습니다. 빈 양식으로 출력할까요?')) return;
   $('rosterPrintArea').innerHTML=buildRosterHtml(dateStr);
+  document.body.classList.remove('school-report-printing');
   document.body.classList.add('roster-printing');
   // v10.11.1: innerHTML 반영 직후 바로 print()를 부르면 브라우저가 아직 화면을
   // 다 그리기 전이라 미리보기가 흰 화면으로 뜨는 경우가 있어, 두 번의 화면
