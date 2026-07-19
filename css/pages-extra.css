@@ -2593,3 +2593,42 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 .school-control-guide-grid span{color:#64748b;font-size:13px;line-height:1.45;}
 @media(max-width:1100px){.school-control-kpis,.school-control-guide-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.school-control-toolbar{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:720px){.school-control-hero{flex-direction:column;padding:22px 20px;}.school-control-hero h3{font-size:25px;}.school-control-actions{width:100%;justify-content:flex-start;}.school-control-kpis,.school-control-guide-grid,.school-control-toolbar{grid-template-columns:1fr;}.school-control-safe{align-items:flex-start;flex-direction:column;}}
+
+/* v10.45.0 SCHOOL_REPORT_PACK */
+.school-report-shell{display:flex;flex-direction:column;gap:18px;}
+.school-report-hero{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;padding:24px 26px;border-radius:22px;background:linear-gradient(135deg,#102f72,#1f5ed6);color:#fff;box-shadow:0 18px 42px rgba(30,64,175,.18);}
+.school-report-kicker{margin:0 0 8px;font-size:12px;font-weight:900;letter-spacing:.14em;color:#bfdbfe;}
+.school-report-hero h3{margin:0;font-size:30px;}
+.school-report-hero p{margin:10px 0 0;max-width:760px;color:#dbeafe;line-height:1.55;}
+.school-report-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.school-report-actions .ghost{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.28);color:#fff;}
+.school-report-filter-panel{padding:20px;}
+.school-report-filter-grid{display:grid;grid-template-columns:1.25fr repeat(5,minmax(140px,1fr));gap:12px;align-items:end;}
+.school-report-filter-grid label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:800;color:#475569;}
+.school-report-filter-footer{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;}
+.school-report-filter-footer .primary{margin-left:auto;}
+.school-report-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+.school-report-summary>div{padding:18px;border:1px solid #dbe4f2;border-radius:16px;background:#fff;box-shadow:0 10px 22px rgba(15,23,42,.04);}
+.school-report-summary span{display:block;font-size:12px;color:#64748b;margin-bottom:7px;}
+.school-report-summary strong{font-size:26px;color:#0f172a;}
+.school-report-result-panel{overflow:hidden;}
+.school-report-result-panel .panel-head{padding:18px 20px;border-bottom:1px solid #e2e8f0;}
+.school-report-result-panel .panel-head h3{margin:0 0 5px;}
+.school-report-result-panel .panel-head span:not(.task-label){color:#64748b;font-size:12px;}
+.school-report-table-wrap{max-height:620px;overflow:auto;}
+.school-report-table{min-width:1050px;}
+.school-report-table thead th{position:sticky;top:0;z-index:2;background:#f8fafc;}
+.school-report-print-area{display:none;}
+@media print{
+  body *{visibility:hidden!important;}
+  #schoolReportPrintArea,#schoolReportPrintArea *{visibility:visible!important;}
+  #schoolReportPrintArea{display:block!important;position:absolute;left:0;top:0;width:100%;padding:12mm;background:#fff;color:#000;}
+  #schoolReportPrintArea h1{margin:0 0 8px;font-size:22px;}
+  #schoolReportPrintArea p{margin:4px 0;font-size:11px;}
+  #schoolReportPrintArea table{width:100%;border-collapse:collapse;margin-top:14px;font-size:10px;}
+  #schoolReportPrintArea th,#schoolReportPrintArea td{border:1px solid #999;padding:6px;text-align:left;vertical-align:top;}
+  #schoolReportPrintArea th{background:#eee;}
+  @page{size:landscape;margin:10mm;}
+}
+@media(max-width:1200px){.school-report-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.school-report-summary{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:720px){.school-report-hero{flex-direction:column;padding:20px;}.school-report-actions{justify-content:flex-start;width:100%;}.school-report-filter-grid,.school-report-summary{grid-template-columns:1fr;}.school-report-filter-footer .primary{margin-left:0;width:100%;}}

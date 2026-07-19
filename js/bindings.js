@@ -63,8 +63,10 @@ document.querySelectorAll('#schoolSubTabs .tab').forEach(b=>b.addEventListener('
   if($('schoolManageView')) $('schoolManageView').style.display = tab==='manage' ? '' : 'none';
   if($('schoolAnalyticsView')) $('schoolAnalyticsView').style.display = tab==='analytics' ? '' : 'none';
   if($('schoolControlView')) $('schoolControlView').style.display = tab==='control' ? '' : 'none';
+  if($('schoolReportView')) $('schoolReportView').style.display = tab==='report' ? '' : 'none';
   if(tab==='analytics'&&typeof renderSchoolAnalytics==='function') renderSchoolAnalytics();
   if(tab==='control'&&typeof renderSchoolDataControl==='function') renderSchoolDataControl();
+  if(tab==='report'&&typeof renderSchoolReport==='function') renderSchoolReport();
 }));
 document.querySelectorAll('#schoolRankTypeTabs .tab').forEach(b=>b.addEventListener('click',()=>{
   document.querySelectorAll('#schoolRankTypeTabs .tab').forEach(x=>x.classList.remove('active'));
