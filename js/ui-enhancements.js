@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='10.40.25';
+const UX_VERSION='10.40.27';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -376,11 +376,6 @@ renderSchoolManage=function(){
     if(nameBtn && !nameCell.querySelector('.school-favorite-btn')){
       const star=document.createElement('button'); star.type='button'; star.className='school-favorite-btn'; star.setAttribute('aria-label','중요 학교 표시'); star.textContent=fav.has(id)?'★':'☆'; star.onclick=e=>{e.stopPropagation();uxToggleSchoolFavorite(id);}; nameBtn.before(star);
     }
-    const issues=uxSchoolIssues(s);
-    let issueWrap=nameCell.querySelector('.school-issue-tags');
-    if(!issueWrap){ issueWrap=document.createElement('div'); issueWrap.className='school-issue-tags'; nameCell.appendChild(issueWrap); }
-    issueWrap.innerHTML=issues.slice(0,3).map(x=>`<span>${esc(x)}</span>`).join('');
-    if(issues.length>3) issueWrap.innerHTML+=`<span>+${issues.length-3}</span>`;
   });
 };
 window.renderSchoolManage=renderSchoolManage;

@@ -555,7 +555,7 @@ function renderSchoolManage(){
     const schoolAlias=(s.aliases||[]).filter(Boolean).slice(0,2).join(' · ');
     const alerts=[schoolHasBrokenLinks(s)?'연결 누락':'',schoolIsDuplicateSuspect(s)?'중복 의심':''].filter(Boolean);
     return `<tr class="school-manage-row clickable-data-row" tabindex="0" onclick="if(!event.target.closest('button,a,input,label')) openSchoolDetail('${s.id}')">
-      <td class="sticky-col sticky-left school-name-cell" data-label="학교명"><button class="link-like school-name-link" onclick="openSchoolDetail('${s.id}')">${esc(s.name)}</button><small class="school-name-sub">ID ${esc(s.id)}${schoolAlias?` · ${esc(schoolAlias)}`:''}</small>${alerts.length?`<span class="school-row-warning">${alerts.join(' · ')}</span>`:''}</td>
+      <td class="sticky-col sticky-left school-name-cell" data-label="학교명"><button class="link-like school-name-link" onclick="openSchoolDetail('${s.id}')">${esc(s.name)}</button></td>
       <td data-label="지역">${esc(s.region)||'-'}</td><td data-label="구분">${schoolTypeBadge(s.type)}</td><td data-label="MOU">${s.mouDate?`<span class="school-mou-badge yes">체결</span><small>${formatSchoolDate(s.mouDate)}</small>`:'<span class="school-mou-badge no">미체결</span>'}</td>
       <td data-label="담당자"><div class="school-inline-stack"><strong>${esc(s.contact)||'미등록'}</strong><small>${esc(s.contactPhone)||'연락처 없음'}</small></div></td>
       <td data-label="지원자"><button class="count-pill" onclick="viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
