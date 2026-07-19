@@ -2549,3 +2549,47 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 @media(max-width:1280px){.school-analytics-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.school-analytics-summary{grid-template-columns:repeat(3,minmax(0,1fr));}}
 @media(max-width:900px){.school-analytics-grid.two-col{grid-template-columns:1fr;}.school-analytics-hero{flex-direction:column;}.school-analytics-filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:640px){.school-analytics-filter-grid,.school-analytics-summary{grid-template-columns:1fr;}.school-analytics-hero{padding:22px 20px;}.school-analytics-hero h3{font-size:24px;}.sa-bar-row{grid-template-columns:1fr 46px;}.sa-bar-track{grid-column:1/-1;grid-row:2;}}
+
+/* v10.44.0 SCHOOL_DATA_CONTROL_PACK */
+.school-control-shell{display:flex;flex-direction:column;gap:18px;}
+.school-control-hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:26px 28px;border-radius:24px;background:linear-gradient(135deg,#102f73,#1d4ed8);color:#fff;box-shadow:0 18px 40px rgba(30,64,175,.22);}
+.school-control-hero h3{margin:4px 0 8px;font-size:30px;}
+.school-control-hero p{margin:0;max-width:780px;color:#dbeafe;line-height:1.55;}
+.school-control-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+.school-control-hero .ghost{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3);color:#fff;}
+.school-control-hero .primary{background:#fff;color:#1d4ed8;border-color:#fff;}
+.school-control-safe{display:flex;gap:12px;align-items:center;padding:14px 18px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:16px;}
+.school-control-safe strong{color:#1d4ed8;white-space:nowrap;}
+.school-control-safe span{color:#475569;line-height:1.45;}
+.school-control-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+.school-control-kpi{display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:18px;border:1px solid #e2e8f0;background:#fff;border-radius:18px;box-shadow:0 10px 24px rgba(15,23,42,.05);}
+.school-control-kpi span{font-size:13px;color:#64748b;font-weight:800;}
+.school-control-kpi strong{font-size:30px;color:#0f172a;}
+.school-control-kpi small{font-size:11px;color:#94a3b8;}
+.school-control-kpi.critical{border-color:#fecaca;background:#fff7f7;}
+.school-control-kpi.critical strong{color:#dc2626;}
+.school-control-kpi.warning{border-color:#fde68a;background:#fffbeb;}
+.school-control-kpi.warning strong{color:#d97706;}
+.school-control-kpi.info{border-color:#bfdbfe;background:#eff6ff;}
+.school-control-kpi.info strong{color:#2563eb;}
+.school-control-panel{padding:0;overflow:hidden;}
+.school-control-toolbar{display:grid;grid-template-columns:180px 160px minmax(240px,1fr) auto;gap:12px;align-items:end;padding:18px 20px;border-bottom:1px solid #e5e7eb;background:#fbfdff;}
+.school-control-toolbar label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:800;color:#475569;}
+.school-control-toolbar select,.school-control-toolbar input{height:40px;}
+.school-control-summary{display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px;border-bottom:1px solid #e5e7eb;}
+.school-control-summary button{display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;border:1px solid #dbe4f2;background:#f8fafc;color:#475569;}
+.school-control-summary button strong{color:#1d4ed8;}
+.school-control-table-wrap{max-height:640px;}
+.school-control-table th,.school-control-table td{vertical-align:top;}
+.school-control-table td:nth-child(3){min-width:180px;}
+.school-control-table td:nth-child(4),.school-control-table td:nth-child(5),.school-control-table td:nth-child(6){min-width:210px;line-height:1.45;}
+.school-control-severity{display:inline-flex;align-items:center;justify-content:center;min-width:52px;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:900;}
+.school-control-severity.critical{background:#fee2e2;color:#b91c1c;}
+.school-control-severity.warning{background:#fef3c7;color:#b45309;}
+.school-control-severity.info{background:#dbeafe;color:#1d4ed8;}
+.school-control-guide-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.school-control-guide-grid>div{display:flex;flex-direction:column;gap:6px;padding:16px;border:1px solid #e2e8f0;border-radius:16px;background:#fbfdff;}
+.school-control-guide-grid strong{color:#1d4ed8;}
+.school-control-guide-grid span{color:#64748b;font-size:13px;line-height:1.45;}
+@media(max-width:1100px){.school-control-kpis,.school-control-guide-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.school-control-toolbar{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:720px){.school-control-hero{flex-direction:column;padding:22px 20px;}.school-control-hero h3{font-size:25px;}.school-control-actions{width:100%;justify-content:flex-start;}.school-control-kpis,.school-control-guide-grid,.school-control-toolbar{grid-template-columns:1fr;}.school-control-safe{align-items:flex-start;flex-direction:column;}}
