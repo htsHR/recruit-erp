@@ -25,6 +25,7 @@ function normalizeSchool(s){
     region: s.region||'', contact: s.contact||'', contactPhone: s.contactPhone||'', mouDate: s.mouDate||'', notes: s.notes||'',
     managementStatus: s.managementStatus||'',
     lastContactDate: s.lastContactDate||'', nextContactDate: s.nextContactDate||'', lastRequestNote: s.lastRequestNote||'',
+    memoHistory: Array.isArray(s.memoHistory)?s.memoHistory:[], contacts: Array.isArray(s.contacts)?s.contacts:[], activities: Array.isArray(s.activities)?s.activities:[],
     hrStats: s.hrStats ? {
       activeCount: s.hrStats.activeCount||0, retiredCount: s.hrStats.retiredCount||0,
       avgTenureMonths: s.hrStats.avgTenureMonths ?? null, under12MonthRate: s.hrStats.under12MonthRate ?? null,
@@ -160,7 +161,7 @@ function schoolApplicantCount(schoolId){ return applicants.filter(a=>a.schoolId=
 function schoolEmployeeCount(schoolId){ return employees.filter(e=>e.schoolId===schoolId).length; }
 function schoolActiveEmployeeCount(schoolId){ return employees.filter(e=>e.schoolId===schoolId && ['재직','재직중','휴직'].includes(String(e.status||'').trim())).length; }
 function schoolCumulativeHireCount(schoolId){ return employees.filter(e=>e.schoolId===schoolId).length; }
-function schoolLastManagedDate(s){ return [s.lastContactDate,s.updatedAt,s.createdAt].filter(Boolean).sort().reverse()[0]||''; }
+function schoolLastManagedDate(s){ const activityDates=(Array.isArray(s.activities)?s.activities:[]).map(x=>x.date||x.createdAt||''); const memoDates=(Array.isArray(s.memoHistory)?s.memoHistory:[]).map(x=>x.createdAt||''); return [s.lastContactDate,...activityDates,...memoDates,s.updatedAt,s.createdAt].filter(Boolean).sort().reverse()[0]||''; }
 function schoolIsRecentlyManaged(s,days=180){ const d=schoolLastManagedDate(s); if(!d)return false; const t=new Date(d); return Number.isFinite(t.getTime()) && (Date.now()-t.getTime())<=days*86400000; }
 function schoolHasBrokenLinks(s){
   const byText=[...applicants,...employees].some(x=>!x.schoolId && String(x.school||'').trim() && findSchoolByText(x.school)?.id===s.id);
