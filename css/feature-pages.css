@@ -681,7 +681,7 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 @media(max-width:1180px){.backup-file-summary{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:720px){.backup-file-summary{grid-template-columns:1fr 1fr}.backup-json-route-guard{padding:14px}.backup-json-route-guard span{display:block}}
 /* =========================================================
-   Recruit ERP v10.40.21 · UI SYSTEM UNIFICATION
+   Recruit ERP v10.40.23 · UI SYSTEM UNIFICATION
    목록형 화면 공통 UI/UX/타이포그래피 기준
    ========================================================= */
 :root{
@@ -725,7 +725,7 @@ body{font-size:15px;line-height:1.5;letter-spacing:-.012em}.main{padding:22px 24
 @media(max-width:430px){#backup.ui-system-v20 .backup-count-grid{grid-template-columns:1fr!important}}
 
 
-/* v10.40.21 final visual QA corrections */
+/* v10.40.23 final visual QA corrections */
 .ui-system-v20 input[type="checkbox"],.ui-system-v20 input[type="radio"]{
   width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;
   padding:0!important;border-radius:4px!important;accent-color:#1768d4;
@@ -747,7 +747,7 @@ body{font-size:15px;line-height:1.5;letter-spacing:-.012em}.main{padding:22px 24
   #applicants.ui-system-v20 .list-interaction-hint{display:none!important;}
   #schools.ui-system-v20 .school-filter-panel{padding:14px!important;}
 }
-/* v10.40.21 final readability corrections */
+/* v10.40.23 final readability corrections */
 #employees.ui-system-v20 .employee-entry-summary small{
   color:#718096!important;font-size:12px!important;line-height:1.4!important;font-weight:650!important;
 }
@@ -757,3 +757,36 @@ body{font-size:15px;line-height:1.5;letter-spacing:-.012em}.main{padding:22px 24
 #schools.ui-system-v20 .school-filter-reset{
   color:#526176!important;opacity:1!important;background:#fff!important;border-color:#cbd8e7!important;
 }
+
+
+/* =========================================================
+   v10.40.23 · 사원 연결 관리 (학교 / 지원자)
+   ========================================================= */
+.employee-relation-modal{z-index:5200}
+.employee-relation-card{width:min(1480px,calc(100vw - 36px));height:min(900px,calc(100vh - 28px));max-width:none;display:flex;flex-direction:column;overflow:hidden}
+.employee-relation-card>.modal-head{flex:0 0 auto}
+.employee-relation-tabs{display:flex;gap:8px;padding:12px 24px;border-bottom:1px solid var(--line,#dbe5f2);background:#f8fbff}
+.employee-relation-tabs button{min-height:40px;padding:0 18px;border:1px solid #cfdbea;border-radius:10px;background:#fff;color:#42556f;font-size:14px;font-weight:800}
+.employee-relation-tabs button.active{border-color:#1f6feb;background:#eaf3ff;color:#0b57d0;box-shadow:0 0 0 2px rgba(31,111,235,.08)}
+.employee-relation-body{flex:1;min-height:0;overflow:hidden;background:#f5f8fc}
+.employee-relation-pane{display:none;height:100%;overflow:auto;padding:18px 22px 24px}
+.employee-relation-pane.active{display:block}
+.employee-relation-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.employee-relation-kpis>div{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:72px;padding:13px 16px;border:1px solid #dce5f0;border-radius:14px;background:#fff}
+.employee-relation-kpis span{font-size:13px;font-weight:750;color:#617089}.employee-relation-kpis strong{font-size:26px;line-height:1;color:#10233f}
+.employee-relation-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px;border:1px solid #dce5f0;border-radius:14px 14px 0 0;background:#fff}
+.employee-relation-filter-tabs{display:flex;gap:6px;flex-wrap:wrap}.employee-relation-filter-tabs button{min-height:34px;padding:0 12px;border:1px solid #d5dfeb;border-radius:999px;background:#fff;color:#506079;font-size:13px;font-weight:750}.employee-relation-filter-tabs button.active{border-color:#1669e8!important;background:#1669e8!important;color:#fff!important}
+.employee-relation-search{display:flex;gap:7px;align-items:center}.employee-relation-search input{width:250px;min-height:38px;padding:0 12px;border:1px solid #cdd9e8;border-radius:9px;background:#fff;font-size:14px}
+.employee-relation-summary{padding:10px 14px;border-inline:1px solid #dce5f0;border-bottom:1px solid #e6edf5;background:#f9fbfe;color:#57667d;font-size:13px}.employee-relation-summary strong{color:#0d2a50}
+.employee-relation-list{border:1px solid #dce5f0;border-top:0;background:#fff}
+.employee-relation-row{display:grid;grid-template-columns:34px minmax(150px,.75fr) minmax(210px,1.15fr) minmax(340px,1.7fr) minmax(110px,.55fr);gap:12px;align-items:center;padding:13px 14px;border-bottom:1px solid #e7edf4;min-height:98px}
+.employee-relation-row:last-child{border-bottom:0}.employee-relation-row.is-warning{background:#fffaf2}.employee-relation-row.is-candidate{background:#fbfdff}.employee-relation-row.is-ok{background:#f8fcf9}
+.employee-relation-check{display:flex;justify-content:center}.employee-relation-check input{width:18px;height:18px}
+.employee-relation-person,.employee-relation-source,.employee-relation-candidate{display:flex;flex-direction:column;gap:4px;min-width:0}.employee-relation-person>span,.employee-relation-source>span{font-size:12px;font-weight:800;color:#7b899c}.employee-relation-person strong,.employee-relation-source strong{font-size:14px;color:#10233f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.employee-relation-person small,.employee-relation-source small,.employee-relation-candidate small{font-size:12px;line-height:1.45;color:#6c7a8d}
+.employee-relation-candidate select{width:100%;min-height:38px;border:1px solid #cbd7e6;border-radius:9px;background:#fff;padding:0 10px;font-size:13px;color:#1d304d}
+.employee-relation-status{align-self:flex-start;display:inline-flex;align-items:center;min-height:25px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:850}.employee-relation-status.is-ok{background:#dcf7e5;color:#087a37}.employee-relation-status.is-candidate{background:#e6f0ff;color:#155bc4}.employee-relation-status.is-warning{background:#fff0d8;color:#a85400}.employee-relation-status.is-muted{background:#eef2f6;color:#66758a}
+.employee-relation-none{font-size:13px;color:#77859a}.employee-relation-actions{display:flex;flex-direction:column;gap:7px}.employee-relation-actions button{width:100%;min-height:34px}
+.employee-relation-pagination{display:flex;justify-content:center;gap:5px;padding:12px}.employee-relation-pagination button{min-width:36px;min-height:34px;border:1px solid #d3deeb;border-radius:8px;background:#fff;font-size:13px}.employee-relation-pagination button.active{background:#1669e8!important;color:#fff!important;border-color:#1669e8!important}.employee-relation-pagination button:disabled{opacity:.4}
+.employee-relation-footer{flex:0 0 auto;justify-content:flex-end;gap:10px;border-top:1px solid #dce5f0;background:#fff}.employee-relation-footer>div:first-child{margin-right:auto;display:flex;flex-direction:column;gap:2px}.employee-relation-footer>div:first-child strong{font-size:14px;color:#153150}.employee-relation-footer>div:first-child span{font-size:12px;color:#6a788b}
+@media(max-width:1100px){.employee-relation-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.employee-relation-toolbar{align-items:stretch;flex-direction:column}.employee-relation-search{width:100%}.employee-relation-search input{flex:1;width:auto}.employee-relation-row{grid-template-columns:30px minmax(140px,.8fr) minmax(180px,1fr) minmax(280px,1.5fr) 100px}}
+@media(max-width:760px){.employee-relation-card{width:100vw;height:100vh;max-height:none;border-radius:0}.employee-relation-tabs{padding:10px 12px}.employee-relation-tabs button{flex:1;padding:0 8px}.employee-relation-pane{padding:12px}.employee-relation-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.employee-relation-kpis>div{min-height:58px;padding:10px}.employee-relation-kpis strong{font-size:22px}.employee-relation-search{display:grid;grid-template-columns:1fr 1fr}.employee-relation-search input{grid-column:1/-1}.employee-relation-row{grid-template-columns:26px 1fr;padding:12px;gap:8px}.employee-relation-person,.employee-relation-source,.employee-relation-candidate,.employee-relation-actions{grid-column:2}.employee-relation-actions{flex-direction:row}.employee-relation-footer{display:grid;grid-template-columns:1fr 1fr;padding:12px}.employee-relation-footer>div:first-child{grid-column:1/-1}.employee-relation-footer button{width:100%}}

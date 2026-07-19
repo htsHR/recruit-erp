@@ -60,6 +60,7 @@ function renderSchoolDetail(){
   const activeCount=hr?.activeCount||0;
   const totalHeadcount=hr?.totalHeadcount||0;
   const retiredCount=hr?.retiredCount||0;
+  const leaveCount=hr?.leaveCount||0;
   $('schoolDetailTitle').textContent=`${s.name} · 학교 상세`;
   const identitySub=[s.region,schoolTypeGroupDetail(s.type),schoolManagementStatusLabel(s.managementStatus)].filter(Boolean).join(' · ')||'학교 기본정보';
   const basicRows=[
@@ -81,8 +82,9 @@ function renderSchoolDetail(){
     schoolKpiItem('최근 지원일', rec.latestApply||'-'),
   ].join('');
   const hrRows = hr ? [
-    schoolKpiItem('총 배출인원', totalHeadcount+'명', `closeSchoolDetail(true);viewSchoolEmployees('${s.id}','${escJs(s.name)}')`, `퇴사 ${retiredCount}명 포함`),
+    schoolKpiItem('누적 입사자', totalHeadcount+'명', `closeSchoolDetail(true);viewSchoolEmployees('${s.id}','${escJs(s.name)}')`, `휴직 ${leaveCount}명 · 퇴직 ${retiredCount}명`),
     schoolKpiItem('현재 재직', activeCount+'명', `closeSchoolDetail(true);viewSchoolEmployees('${s.id}','${escJs(s.name)}')`, '사원명부 연결 기준'),
+    schoolKpiItem('현재 휴직', leaveCount+'명', `closeSchoolDetail(true);viewSchoolEmployees('${s.id}','${escJs(s.name)}')`, '휴직 상태 연결 기준'),
     schoolKpiItem('평균근속', hr.avgTenureMonths!=null ? Math.round(hr.avgTenureMonths)+'개월' : '-', '', '재직·퇴사 전체 기준'),
     schoolKpiItem('무사고율', hr.disciplineRate!=null ? Math.round(100-hr.disciplineRate)+'%' : '-', '', '상벌 기록 기준'),
   ].join('') : '';
@@ -199,11 +201,15 @@ function renderEmployeeDetail(){
       ? `<div class="detail-item wide-row"><span>지원자 기록</span><strong><button class="link-like" type="button" onclick="openEmployeeLinkedApplicant('${linked.id}')">${esc(linked.name)} · ${esc(linked.applyDate||'지원일 미입력')} · ${esc(linked.workplace||'근무지 미입력')}</button></strong></div>`
       : detailRow('지원자 기록','연결되지 않음','wide-row'),
   ].join('');
+  const linkedSchool=e.schoolId&&typeof schools!=='undefined'?schools.find(s=>String(s.id)===String(e.schoolId)):null;
+  const schoolLinkValue=linkedSchool
+    ? `<button class="link-like" type="button" onclick="closeEmployeeDetail();openSchoolDetail('${linkedSchool.id}')">${esc(linkedSchool.name)} · ${esc(normalizeSchoolType(linkedSchool.type)||'구분 미확인')}</button>`
+    : (e.schoolId?'존재하지 않는 학교 ID':'미연결');
   const educationRows=[
     detailRow('최종학력',employeeDetailValue(e.education)),
     detailRow('출신학교',employeeDetailValue(e.school)),
     detailRow('전공',employeeDetailValue(e.major)),
-    detailRow('학교 연결 상태',e.schoolId?'협력학교 데이터와 연결됨':'미연결'),
+    `<div class="detail-item"><span>학교 연결 상태</span><strong>${schoolLinkValue}</strong></div>`,
   ].join('');
   const otherRows=[
     detailRow('상벌 건수',`${Number(e.disciplineCount||0)}건`),

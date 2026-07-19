@@ -26,7 +26,9 @@ function schoolEmployeeStats(schoolId){
   const list = employees.filter(e=>e.schoolId===schoolId);
   if(!list.length) return null;
   const activeCount = list.filter(e=>e.status==='재직중').length;
+  const leaveCount = list.filter(e=>e.status==='휴직').length;
   const retiredCount = list.filter(e=>e.status==='퇴사').length;
+  const upcomingCount = list.filter(e=>e.status==='입사예정').length;
   const now = new Date();
   let tenureSum=0, tenureN=0;
   list.forEach(e=>{
@@ -35,16 +37,16 @@ function schoolEmployeeStats(schoolId){
     if(isNaN(hire)) return;
     let endDate=null;
     if(e.status==='퇴사' && e.leaveDate){ endDate=new Date(e.leaveDate); if(isNaN(endDate)) endDate=null; }
-    else if(e.status==='재직중'){ endDate=now; }
+    else if(['재직중','휴직'].includes(e.status)){ endDate=now; }
     if(!endDate) return;
     const months=(endDate.getFullYear()-hire.getFullYear())*12+(endDate.getMonth()-hire.getMonth());
     if(months<0) return;
     tenureSum+=months; tenureN++;
   });
   const disciplined = list.filter(e=>e.disciplineCount>0).length;
-  const totalHeadcount = activeCount + retiredCount;
+  const totalHeadcount = activeCount + leaveCount + retiredCount;
   return {
-    activeCount, retiredCount, totalHeadcount,
+    activeCount, leaveCount, retiredCount, upcomingCount, totalHeadcount,
     avgTenureMonths: tenureN ? Math.round(tenureSum/tenureN*10)/10 : null,
     disciplineRate: list.length ? Math.round(disciplined/list.length*1000)/10 : null,
     updatedAt: new Date().toISOString()

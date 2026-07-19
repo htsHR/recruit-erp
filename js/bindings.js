@@ -389,3 +389,20 @@ document.addEventListener('keydown',e=>{
   else if($('employeeStatusAuditModal')?.classList.contains('show'))closeEmployeeStatusAudit();
   else if($('employeeExcelCompareModal')?.classList.contains('show'))closeEmployeeExcelCompare();
 });
+
+
+/* v10.40.23 · 사원 학교/지원자 연결 관리 */
+bind('btnOpenEmployeeRelations','click',()=>openEmployeeRelations('school'));
+bind('btnCloseEmployeeRelations','click',closeEmployeeRelations);
+bind('btnCancelEmployeeRelations','click',closeEmployeeRelations);
+bind('employeeRelationBackdrop','click',closeEmployeeRelations);
+bind('btnApplyEmployeeRelations','click',applyEmployeeRelations);
+bind('btnEmployeeSchoolSelectExact','click',employeeSchoolSelectExact);
+bind('btnEmployeeSchoolClearSelection','click',employeeSchoolClearSelection);
+bind('btnEmployeeApplicantSelectStrong','click',employeeApplicantSelectStrong);
+bind('btnEmployeeApplicantClearSelection','click',employeeApplicantClearSelection);
+bind('employeeSchoolLinkSearch','input',e=>{employeeSchoolLinkState.search=e.target.value||'';employeeSchoolLinkState.page=1;renderEmployeeSchoolLink();});
+bind('employeeApplicantLinkSearch','input',e=>{employeeApplicantLinkState.search=e.target.value||'';employeeApplicantLinkState.page=1;renderEmployeeApplicantLink();});
+$('employeeRelationModal')?.addEventListener('click',employeeRelationModalClick);
+$('employeeRelationModal')?.addEventListener('change',employeeRelationModalChange);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('employeeRelationModal')?.classList.contains('show'))closeEmployeeRelations();});
