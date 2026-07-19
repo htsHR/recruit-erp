@@ -22,8 +22,7 @@
     {key:'applicants',label:'지원자',storage:'recruit_erp_applicants_stable',cloudTable:'applicants',critical:true},
     {key:'schools',label:'협력학교',storage:'recruit_erp_schools',cloudTable:'schools',critical:true},
     {key:'employees',label:'사원명부',storage:'recruit_erp_employees',cloudTable:'employees',critical:true},
-    {key:'calendarEvents',label:'수동 일정',storage:'recruit_erp_calendar_events',cloudTable:'',critical:false},
-    {key:'interviewSessions',label:'면접 회차',storage:'recruit_erp_interview_sessions_v1',cloudTable:'',critical:false}
+    {key:'calendarEvents',label:'수동 일정',storage:'recruit_erp_calendar_events',cloudTable:'',critical:false}
   ];
 
   let inspected=null;
@@ -61,8 +60,7 @@
       applicants:Array.isArray(applicants)?applicants:[],
       schools:Array.isArray(schools)?schools:[],
       employees:Array.isArray(employees)?employees:[],
-      calendarEvents:Array.isArray(calendarEvents)?calendarEvents:[],
-      interviewSessions:(()=>{try{const v=JSON.parse(localStorage.getItem('recruit_erp_interview_sessions_v1')||'[]');return Array.isArray(v)?v:[];}catch{return [];}})()
+      calendarEvents:Array.isArray(calendarEvents)?calendarEvents:[]
     };
   }
   function countsOf(data){const out={};DATASETS.forEach(d=>out[d.key]=Array.isArray(data&&data[d.key])?data[d.key].length:0);return out;}
@@ -82,7 +80,6 @@
     if(id)return `id:${id}`;
     if(key==='schools')return `school:${safeText(row&&row.name).trim().toLowerCase()||index}`;
     if(key==='employees')return `employee:${safeText(row&&row.empNo).trim()||`${safeText(row&&row.name).trim()}|${safeText(row&&row.hireDate).trim()}`||index}`;
-    if(key==='interviewSessions')return `interview:${safeText(row&&row.id).trim()||safeText(row&&row.name).trim()}|${safeText(row&&row.date).trim()}|${index}`;
     if(key==='calendarEvents')return `calendar:${safeText(row&&row.title).trim()}|${safeText(row&&row.date).trim()}|${index}`;
     const phone=safeText(row&&row.phone).replace(/\D/g,'');
     const email=safeText(row&&row.email).trim().toLowerCase();
@@ -150,7 +147,7 @@
     return pack;
   }
   function fileName(type,prefix='recruit_erp'){
-    const names={full:'full_backup',applicants:'applicants',schools:'schools',employees:'employees',calendarEvents:'manual_calendar',interviewSessions:'interview_sessions'};
+    const names={full:'full_backup',applicants:'applicants',schools:'schools',employees:'employees',calendarEvents:'manual_calendar'};
     return `${prefix}_${names[type]||type}_${localIso()}.json`;
   }
   function recordHistory(action,detail){
@@ -404,14 +401,12 @@
         if(key==='schools')return typeof normalizeSchool==='function'?normalizeSchool(row):row;
         if(key==='employees')return typeof normalizeEmployee==='function'?normalizeEmployee(row):row;
         if(key==='calendarEvents')return typeof normalizeCalendarEvent==='function'?normalizeCalendarEvent(row):row;
-        if(key==='interviewSessions')return row;
         return row;
       }catch(err){console.warn(`Backup normalize failed: ${key}`,err,row);return null;}
     }).filter(Boolean).filter(row=>{
       if(key==='schools')return !!row.name;
       if(key==='employees')return !!(row.name||row.empNo);
       if(key==='calendarEvents')return !!(row.title&&row.date);
-      if(key==='interviewSessions')return !!(row.id&&row.date);
       return true;
     });
   }
@@ -420,7 +415,6 @@
     if(Object.prototype.hasOwnProperty.call(next,'schools')){schools=normalizeRows('schools',next.schools);localStorage.setItem('recruit_erp_schools',JSON.stringify(schools));}
     if(Object.prototype.hasOwnProperty.call(next,'employees')){employees=normalizeRows('employees',next.employees);localStorage.setItem('recruit_erp_employees',JSON.stringify(employees));}
     if(Object.prototype.hasOwnProperty.call(next,'calendarEvents')){calendarEvents=normalizeRows('calendarEvents',next.calendarEvents);localStorage.setItem('recruit_erp_calendar_events',JSON.stringify(calendarEvents));}
-    if(Object.prototype.hasOwnProperty.call(next,'interviewSessions')){const rows=normalizeRows('interviewSessions',next.interviewSessions);localStorage.setItem('recruit_erp_interview_sessions_v1',JSON.stringify(rows));if(typeof window.reloadInterviewOperations==='function')window.reloadInterviewOperations();}
     if(typeof renderAll==='function')renderAll();
     if(typeof updateStorageNote==='function')updateStorageNote();
     refreshCounts();
@@ -536,7 +530,7 @@
 
   function refreshCounts(){
     applyEnvironmentUi();
-    const c=countsOf(currentData());const map={applicants:'bcCurrentApplicants',schools:'bcCurrentSchools',employees:'bcCurrentEmployees',calendarEvents:'bcCurrentEvents',interviewSessions:'bcCurrentInterviews'};
+    const c=countsOf(currentData());const map={applicants:'bcCurrentApplicants',schools:'bcCurrentSchools',employees:'bcCurrentEmployees',calendarEvents:'bcCurrentEvents'};
     Object.keys(map).forEach(k=>{const el=bcEl(map[k]);if(el)el.textContent=`${c[k].toLocaleString()}건`;});
     const env=bcEl('bcCurrentEnvironment');if(env)env.textContent=environment()==='company'?'회사 모드':'집 모드';
     const last=bcEl('bcLastFullBackup');if(last)last.textContent=formatDate(localStorage.getItem(BC_LAST_FULL_KEY));

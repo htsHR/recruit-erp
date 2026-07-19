@@ -111,14 +111,13 @@ function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 function setPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',interviews:'면접 운영',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'고급검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업/내보내기'};
+  const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'고급검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업/내보내기'};
   const descMap = {
     home:'오늘의 채용 업무와 주요 현황을 확인합니다.',
     applicants:'지원자 진행상태와 면접·입사 일정을 관리합니다.',
     form:'새 지원자의 기본정보와 전형정보를 등록합니다.',
     today:'오늘 우선 처리할 채용 업무를 확인합니다.',
     calendar:'면접·입사·관리 일정을 한눈에 확인합니다.',
-    interviews:'면접 회차·참석·평가·결과를 통합 관리합니다.',
     stats:'채용 흐름과 주요 성과지표를 분석합니다.',
     schools:'협력학교 현황과 지원자·직원 배출 정보를 관리합니다.',
     employees:'재직·휴직·퇴사 현황과 출신학교 정보를 확인합니다.',
