@@ -1,4 +1,4 @@
-/* Recruit ERP v10.40.29 SCHOOL_EXACT_AUTO_LINK
+/* Recruit ERP v10.40.30 APPLICANT_FORM_SIMPLIFICATION_PILOT
  * 지원자·협력학교·학교 연결·사원명부 데이터의 누락/중복 의심/형식/상태 불일치를 읽기 전용으로 점검합니다.
  * 자동 수정·자동 병합·자동 삭제는 수행하지 않습니다.
  */

@@ -1,4 +1,4 @@
-/* Recruit ERP v10.40.29 SCHOOL_EXACT_AUTO_LINK
+/* Recruit ERP v10.40.30 APPLICANT_FORM_SIMPLIFICATION_PILOT
  * 기준 학교 ID를 유지하고 사용자가 선택한 통합 대상 학교의 연결만 안전하게 이동합니다.
  * 자동 병합·자동 선택·자동 삭제를 수행하지 않습니다.
  */
