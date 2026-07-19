@@ -394,7 +394,7 @@ document.addEventListener('keydown',e=>{
 });
 
 
-/* v10.40.30 · 사원 학교/지원자 연결 관리 */
+/* v10.40.29 · 사원 학교/지원자 연결 관리 */
 bind('btnOpenEmployeeRelations','click',()=>openEmployeeRelations('school'));
 bind('btnCloseEmployeeRelations','click',closeEmployeeRelations);
 bind('btnCancelEmployeeRelations','click',closeEmployeeRelations);

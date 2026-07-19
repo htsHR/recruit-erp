@@ -486,20 +486,3 @@ try{ uxInit(); }catch(err){ console.error('Recruit ERP ENV_MODE init error',err)
 
 ;
 
-
-
-/* v10.40.30 applicant form simplification pilot */
-(function(){
-  const extraIds=['gender','birthYear','age','email','region','careerType','source','education','major','certs','languageEtc','career','dormUse','consult'];
-  function updateApplicantExtraCount(){
-    const count=extraIds.filter(id=>{const el=document.getElementById(id);return el&&String(el.value||'').trim();}).length;
-    const badge=document.getElementById('applicantExtraCount');
-    if(badge) badge.textContent=count?`추가 정보 ${count}개 입력됨`:'입력된 항목 없음';
-  }
-  document.addEventListener('input',e=>{if(extraIds.includes(e.target?.id))updateApplicantExtraCount();});
-  document.addEventListener('change',e=>{if(extraIds.includes(e.target?.id))updateApplicantExtraCount();});
-  window.updateApplicantExtraCount=updateApplicantExtraCount;
-  const baseUpdate=window.updateFormMode;
-  if(typeof baseUpdate==='function') window.updateFormMode=function(){const r=baseUpdate.apply(this,arguments);setTimeout(updateApplicantExtraCount,0);return r;};
-  document.addEventListener('DOMContentLoaded',updateApplicantExtraCount);
-})();
