@@ -243,14 +243,17 @@ function viewApplicant(id){
   const summaryItem=(label,value,cls='')=>`<div class="applicant-detail-summary-item ${cls}"><span>${label}</span><strong>${esc(String(value||'-'))}</strong></div>`;
 
   const profile=`<section class="applicant-detail-identity ${statusToneClass(a)}">
-    <div>
-      <p class="eyebrow">APPLICANT PROFILE</p>
-      <h2 class="detail-name ${genderClass(a)}">${esc(a.name||'이름없음')}</h2>
-      <p>${esc(profileSub)}</p>
+    <div class="applicant-detail-profile-main">
+      <div class="applicant-detail-avatar" aria-hidden="true">${esc(String(a.name||'?').trim().slice(0,1)||'?')}</div>
+      <div class="applicant-detail-profile-copy">
+        <p class="eyebrow">APPLICANT PROFILE</p>
+        <h2 class="detail-name ${genderClass(a)}">${esc(a.name||'이름없음')}</h2>
+        <p>${esc(profileSub)}</p>
+      </div>
     </div>
     <div class="applicant-detail-contact-line">
-      <span>${esc(a.phone||'연락처 미등록')}</span>
-      <span>${esc(a.email||'이메일 미등록')}</span>
+      <span><small>연락처</small><b>${esc(a.phone||'미등록')}</b></span>
+      <span><small>이메일</small><b>${esc(a.email||'미등록')}</b></span>
     </div>
   </section>`;
 
@@ -307,5 +310,17 @@ function viewApplicant(id){
       </aside>
     </div>`;
   $('detailModal').classList.add('show');
+  $('detailModal')?.setAttribute('aria-hidden','false');
+  setTimeout(()=>$('btnCloseDetail')?.focus({preventScroll:true}),0);
 }
-function closeDetail(){ $('detailModal').classList.remove('show'); detailCurrentId=''; }
+function closeDetail(force=false){
+  const composer=$('aphQuickComposer');
+  const note=$('aphNote');
+  if(!force && composer && !composer.hidden && String(note?.value||'').trim()){
+    if(!confirm('작성 중인 진행 기록이 저장되지 않았습니다. 닫을까요?')) return false;
+  }
+  $('detailModal').classList.remove('show');
+  $('detailModal')?.setAttribute('aria-hidden','true');
+  detailCurrentId='';
+  return true;
+}

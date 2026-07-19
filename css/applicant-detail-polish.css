@@ -1,0 +1,548 @@
+/* =========================================================
+   Recruit ERP v10.46.3.1 · APPLICANT_DETAIL_UI_POLISH
+   지원자 상세 팝업·지원자 목록 가시성 보정 전용
+   - 기능/저장 구조 변경 없음
+   ========================================================= */
+
+/* ---------- 상세 모달 프레임: 화면 상단 잘림 방지 ---------- */
+#detailModal.applicant-detail-modal-v104631.show{
+  position:fixed!important;
+  inset:0!important;
+  z-index:10050!important;
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  padding:12px 16px!important;
+  overflow:hidden!important;
+}
+#detailModal.applicant-detail-modal-v104631 .modal-backdrop{
+  position:absolute!important;
+  inset:0!important;
+  background:rgba(10,25,52,.66)!important;
+  backdrop-filter:blur(3px);
+}
+#detailModal .applicant-detail-modal-card-v104631{
+  position:relative!important;
+  z-index:1!important;
+  width:min(1120px,calc(100vw - 32px))!important;
+  max-width:1120px!important;
+  height:auto!important;
+  max-height:calc(100dvh - 24px)!important;
+  margin:0!important;
+  border:1px solid rgba(203,216,234,.9)!important;
+  border-radius:22px!important;
+  background:#f4f7fb!important;
+  box-shadow:0 30px 90px rgba(5,20,48,.32)!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:hidden!important;
+}
+
+/* ---------- 고정 상단 작업바 ---------- */
+#detailModal .applicant-detail-toolbar-v104631{
+  flex:0 0 auto!important;
+  min-height:68px!important;
+  margin:0!important;
+  padding:12px 16px 12px 20px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:18px!important;
+  border-bottom:1px solid #d9e3ef!important;
+  background:linear-gradient(180deg,#fff 0%,#f7faff 100%)!important;
+}
+.applicant-detail-toolbar-title{min-width:0;flex:1 1 auto;}
+.applicant-detail-toolbar-title .eyebrow{margin:0 0 2px;color:#5172a8;font-size:10px;letter-spacing:.08em;}
+#detailModal .applicant-detail-toolbar-title h3{
+  margin:0!important;
+  color:#11233f!important;
+  font-size:20px!important;
+  line-height:1.25!important;
+  letter-spacing:-.035em!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#detailModal .applicant-detail-toolbar-actions{
+  flex:0 0 auto!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:7px!important;
+  padding:0!important;
+  margin:0!important;
+}
+#detailModal .applicant-detail-status-control{
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  gap:7px!important;
+  margin:0 3px 0 0!important;
+  color:#52637a!important;
+  font-size:11px!important;
+  font-weight:900!important;
+}
+#detailModal .applicant-detail-status-control span{white-space:nowrap;}
+#detailModal .applicant-detail-status-control select{
+  width:142px!important;
+  min-width:142px!important;
+  height:36px!important;
+  padding:0 30px 0 10px!important;
+  border:1px solid #c9d6e7!important;
+  border-radius:9px!important;
+  background-color:#fff!important;
+  color:#172a46!important;
+  font-size:12px!important;
+  font-weight:850!important;
+}
+#detailModal .applicant-detail-toolbar-actions>button:not(.applicant-detail-close){
+  min-height:36px!important;
+  height:36px!important;
+  padding:0 12px!important;
+  border-radius:9px!important;
+  font-size:12px!important;
+}
+#detailModal .applicant-detail-close{
+  width:36px!important;
+  height:36px!important;
+  flex:0 0 36px!important;
+  display:grid!important;
+  place-items:center!important;
+  padding:0!important;
+  border:1px solid #cfdae8!important;
+  border-radius:10px!important;
+  background:#fff!important;
+  color:#3d506a!important;
+  font-size:24px!important;
+  font-weight:500!important;
+  line-height:1!important;
+  cursor:pointer!important;
+}
+#detailModal .applicant-detail-close:hover{background:#f1f5f9!important;color:#b42335!important;border-color:#e6b8c0!important;}
+
+/* ---------- 본문/하단바 ---------- */
+#detailModal .detail-body{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  padding:14px 16px 20px!important;
+  background:#f4f7fb!important;
+  scrollbar-gutter:stable;
+}
+#detailModal .applicant-detail-footer-v104631{
+  flex:0 0 auto!important;
+  min-height:58px!important;
+  margin:0!important;
+  padding:10px 16px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:8px!important;
+  border-top:1px solid #d9e3ef!important;
+  background:#fff!important;
+  box-shadow:0 -6px 18px rgba(15,23,42,.035)!important;
+}
+.applicant-detail-footer-hint{
+  margin-right:auto;
+  color:#6b7a8e;
+  font-size:11px;
+  line-height:1.35;
+}
+#detailModal .applicant-detail-footer-v104631 button{min-height:36px;padding:0 13px;border-radius:9px;font-size:12px;}
+
+/* ---------- 프로필: 글자 대비·정보 밀도 ---------- */
+#detailModal .applicant-detail-identity{
+  min-height:92px!important;
+  padding:16px 18px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:18px!important;
+  border-radius:16px!important;
+  background:linear-gradient(135deg,#12346f 0%,#1d54ae 100%)!important;
+  color:#fff!important;
+  box-shadow:0 10px 24px rgba(26,72,146,.15)!important;
+}
+.applicant-detail-profile-main{display:flex;align-items:center;gap:13px;min-width:0;}
+.applicant-detail-avatar{
+  width:48px;
+  height:48px;
+  flex:0 0 48px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.32);
+  border-radius:15px;
+  background:rgba(255,255,255,.16);
+  color:#fff;
+  font-size:20px;
+  font-weight:950;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+}
+.applicant-detail-profile-copy{min-width:0;}
+#detailModal .applicant-detail-profile-copy .eyebrow{margin:0 0 3px;color:#ccddff!important;font-size:10px;}
+#detailModal .applicant-detail-profile-copy .detail-name,
+#detailModal .applicant-detail-profile-copy .detail-name[class]{
+  margin:0!important;
+  color:#fff!important;
+  -webkit-text-fill-color:#fff!important;
+  font-size:25px!important;
+  line-height:1.15!important;
+  letter-spacing:-.04em!important;
+  text-shadow:0 1px 1px rgba(0,0,0,.08);
+}
+#detailModal .applicant-detail-profile-copy p:last-child{
+  margin:5px 0 0!important;
+  max-width:610px;
+  color:#e5edff!important;
+  font-size:12px!important;
+  line-height:1.4!important;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#detailModal .applicant-detail-contact-line{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(150px,1fr))!important;
+  gap:7px!important;
+  justify-content:end!important;
+  max-width:440px;
+}
+#detailModal .applicant-detail-contact-line span{
+  min-height:48px!important;
+  padding:8px 10px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  justify-content:center!important;
+  gap:2px!important;
+  border:1px solid rgba(255,255,255,.28)!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.11)!important;
+  color:#fff!important;
+}
+#detailModal .applicant-detail-contact-line small{color:#c9d9fa;font-size:9.5px;font-weight:850;}
+#detailModal .applicant-detail-contact-line b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff;font-size:12px;font-weight:900;}
+
+/* ---------- 핵심 요약: 색상 남용 제거 ---------- */
+#detailModal .applicant-detail-summary-section{margin-top:9px!important;}
+#detailModal .applicant-detail-summary-grid{gap:7px!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;}
+#detailModal .applicant-detail-summary-item{
+  min-height:66px!important;
+  padding:10px 11px!important;
+  border:1px solid #d8e2ee!important;
+  border-top:1px solid #d8e2ee!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+#detailModal .applicant-detail-summary-item span{margin-bottom:4px!important;color:#66768b!important;font-size:10px!important;font-weight:900!important;}
+#detailModal .applicant-detail-summary-item strong{color:#17283f!important;font-size:13px!important;line-height:1.35!important;}
+#detailModal .applicant-detail-summary-item.status{background:#f7faff!important;border-color:#bdd1ee!important;}
+#detailModal .applicant-detail-summary-item.interview{background:#fffaf3!important;border-color:#ead6b8!important;}
+#detailModal .applicant-detail-summary-item.hire{background:#f8fcfa!important;border-color:#c9dfd3!important;}
+
+/* ---------- 연락/진행 이력: 기본 높이 축소 ---------- */
+#detailModal .applicant-history-v104631{
+  margin-top:9px!important;
+  padding:13px!important;
+  display:grid!important;
+  gap:10px!important;
+  border:1px solid #dce5ef!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+#detailModal .applicant-history-v104631 .applicant-history-head{
+  min-height:0!important;
+  padding:0 0 9px!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  border-bottom:1px solid #edf1f6!important;
+}
+#detailModal .applicant-history-v104631 .applicant-history-head .eyebrow{font-size:9px!important;margin-bottom:2px!important;}
+#detailModal .applicant-history-v104631 .applicant-history-head h4{margin:0!important;color:#17283f!important;font-size:16px!important;line-height:1.25!important;}
+#detailModal .applicant-history-v104631 .applicant-history-head>div>span{display:block;margin-top:3px;color:#718095;font-size:11px;}
+#detailModal .applicant-history-v104631 .applicant-history-meta{display:flex!important;align-items:center!important;gap:6px!important;flex-wrap:wrap!important;justify-content:flex-end!important;}
+#detailModal .applicant-history-v104631 .applicant-history-meta span{padding:5px 7px!important;border:1px solid #e1e8f1!important;border-radius:8px!important;background:#f8fafc!important;color:#657489!important;font-size:10px!important;}
+#detailModal .applicant-history-v104631 .applicant-history-meta strong{color:#2a5ca8!important;}
+#detailModal .applicant-contact-focus{
+  display:grid!important;
+  grid-template-columns:minmax(150px,.72fr) minmax(170px,.82fr) minmax(265px,1.25fr)!important;
+  gap:7px!important;
+}
+#detailModal .contact-focus-card,
+#detailModal .applicant-quick-log-actions{
+  min-height:66px!important;
+  padding:9px 10px!important;
+  border:1px solid #dce5ef!important;
+  border-radius:11px!important;
+  background:#fafcff!important;
+}
+#detailModal .contact-focus-card span,
+#detailModal .applicant-quick-log-actions>span{margin-bottom:3px!important;color:#6b798d!important;font-size:9.5px!important;}
+#detailModal .contact-focus-card strong{font-size:13px!important;line-height:1.25!important;}
+#detailModal .contact-focus-card small{margin-top:3px!important;color:#7b8798!important;font-size:9.5px!important;line-height:1.3!important;}
+#detailModal .contact-focus-card.is-overdue{border-color:#e8b9bf!important;background:#fff7f8!important;}
+#detailModal .contact-focus-card.is-overdue strong,
+#detailModal .contact-focus-card.is-overdue small{color:#a72c3d!important;}
+#detailModal .applicant-quick-log-actions>div{display:flex!important;gap:6px!important;flex-wrap:nowrap!important;}
+#detailModal .quick-log{
+  min-width:64px!important;
+  min-height:31px!important;
+  padding:0 10px!important;
+  border-radius:8px!important;
+  font-size:11px!important;
+  transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease!important;
+}
+#detailModal .quick-log:hover{transform:translateY(-1px);box-shadow:0 4px 10px rgba(15,23,42,.07);}
+#detailModal .quick-log.is-active{outline:2px solid #2d6bd2!important;outline-offset:1px!important;box-shadow:0 0 0 3px rgba(45,107,210,.10)!important;}
+
+/* ---------- 빠른 기록 입력: 두 줄 압축 ---------- */
+#detailModal .applicant-quick-log-composer{
+  padding:11px!important;
+  border:1px solid #bfd1e7!important;
+  border-radius:12px!important;
+  background:#f7faff!important;
+}
+#detailModal .quick-log-composer-head{margin-bottom:8px!important;align-items:center!important;}
+#detailModal .quick-log-composer-head strong{font-size:13px!important;}
+#detailModal .quick-log-composer-head span{margin-top:2px!important;font-size:10px!important;}
+#detailModal .quick-log-composer-head .mini{min-height:29px!important;padding:0 9px!important;font-size:10px!important;border-radius:8px!important;}
+#detailModal .quick-log-grid{
+  display:grid!important;
+  grid-template-columns:150px 180px minmax(150px,190px) minmax(240px,1fr) auto!important;
+  gap:7px!important;
+  align-items:end!important;
+}
+#detailModal .quick-log-grid label{gap:4px!important;color:#58697f!important;font-size:9.5px!important;}
+#detailModal .quick-log-grid input,
+#detailModal .quick-log-grid textarea{
+  min-height:35px!important;
+  height:35px!important;
+  padding:7px 9px!important;
+  border-radius:8px!important;
+  font-size:11px!important;
+}
+#detailModal .quick-log-grid label.wide{grid-column:1/5!important;}
+#detailModal .quick-log-grid textarea{height:42px!important;min-height:42px!important;max-height:82px!important;resize:vertical!important;}
+#detailModal .quick-log-save{
+  grid-column:5!important;
+  min-width:82px!important;
+  height:42px!important;
+  padding:0 12px!important;
+  border-radius:9px!important;
+  font-size:11px!important;
+}
+
+/* ---------- 사유/타임라인 접기 ---------- */
+#detailModal .applicant-reason-summary{gap:7px!important;}
+#detailModal .applicant-reason-summary>div{padding:9px 10px!important;border-radius:10px!important;}
+#detailModal .applicant-history-disclosure{
+  overflow:hidden;
+  border:1px solid #dde6f0;
+  border-radius:11px;
+  background:#fbfcfe;
+}
+#detailModal .applicant-history-disclosure>summary{
+  min-height:42px;
+  padding:9px 11px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  list-style:none;
+  cursor:pointer;
+  color:#263a55;
+  font-size:11px;
+  font-weight:900;
+}
+#detailModal .applicant-history-disclosure>summary::-webkit-details-marker{display:none;}
+#detailModal .applicant-history-disclosure>summary::after{content:'펼치기';flex:0 0 auto;color:#2a61b2;font-size:10px;}
+#detailModal .applicant-history-disclosure[open]>summary::after{content:'접기';}
+#detailModal .applicant-history-disclosure>summary small{margin-left:auto;color:#7a8798;font-size:9.5px;font-weight:700;}
+#detailModal .applicant-history-disclosure[open]>summary{border-bottom:1px solid #e2e9f2;background:#f6f9fd;}
+#detailModal .applicant-history-timeline{padding:9px!important;display:grid!important;gap:7px!important;}
+#detailModal .applicant-history-item .history-copy{padding:9px 10px!important;border-radius:9px!important;}
+#detailModal .history-copy-head{gap:6px!important;}
+#detailModal .history-copy-head strong{font-size:11px!important;}
+#detailModal .history-copy-head time{margin-left:auto;color:#738197;font-size:9.5px!important;}
+#detailModal .history-change-pair{margin:6px 0 4px!important;gap:6px!important;}
+#detailModal .history-change-pair span{padding:4px 7px!important;border-radius:7px!important;font-size:10px!important;}
+#detailModal .history-reason-line{margin:5px 0!important;padding:6px 7px!important;font-size:10px!important;}
+#detailModal .applicant-history-empty{padding:12px!important;font-size:11px!important;}
+
+/* ---------- 상세정보: 폭 활용·세로 길이 축소 ---------- */
+#detailModal .applicant-detail-content-grid{
+  grid-template-columns:minmax(0,1.35fr) minmax(330px,.85fr)!important;
+  gap:10px!important;
+  margin-top:10px!important;
+}
+#detailModal .applicant-detail-content-main,
+#detailModal .applicant-detail-content-side{gap:9px!important;}
+#detailModal .applicant-detail-section,
+#detailModal .applicant-detail-long{
+  padding:13px!important;
+  border:1px solid #dce5ef!important;
+  border-radius:13px!important;
+  box-shadow:none!important;
+}
+#detailModal .applicant-detail-section .detail-section-title,
+#detailModal .applicant-detail-long .detail-section-title{padding-bottom:7px!important;margin-bottom:8px!important;}
+#detailModal .applicant-detail-section .detail-section-title h4,
+#detailModal .applicant-detail-long .detail-section-title h4{font-size:13px!important;color:#1b2b43!important;}
+#detailModal .detail-grid-v108{gap:7px!important;}
+#detailModal .detail-row{
+  min-height:40px!important;
+  grid-template-columns:105px minmax(0,1fr)!important;
+  gap:8px!important;
+  padding:8px 9px!important;
+  border-radius:9px!important;
+  background:#f8fafc!important;
+}
+#detailModal .detail-row span{font-size:10px!important;color:#617086!important;}
+#detailModal .detail-row strong{font-size:11px!important;color:#15263e!important;line-height:1.4!important;}
+#detailModal .applicant-detail-memo-stack{gap:9px!important;}
+#detailModal .applicant-detail-long p{margin:0!important;color:#35465c!important;font-size:11px!important;line-height:1.55!important;}
+#detailModal .applicant-detail-decision-card{gap:7px!important;padding:10px!important;border-radius:13px!important;}
+#detailModal .applicant-detail-decision-card>div{padding:9px!important;border-radius:9px!important;}
+#detailModal .applicant-detail-decision-card span{font-size:9.5px!important;}
+#detailModal .applicant-detail-decision-card strong{font-size:12px!important;}
+#detailModal .applicant-detail-score-details{border-radius:12px!important;}
+#detailModal .applicant-detail-score-details summary{padding:10px 11px!important;font-size:11px!important;}
+#detailModal .applicant-detail-score-details summary strong{font-size:14px!important;}
+#detailModal .applicant-detail-score-details .detail-score-grid{padding:0 10px 10px!important;gap:7px!important;}
+
+/* ---------- 지원자 목록: 필터·보조정보 가시성 ---------- */
+#applicants .list-top-card{
+  padding:10px 12px!important;
+  border-color:#bfd0e7!important;
+  border-radius:16px!important;
+}
+#applicants .compact-list-controls{gap:8px!important;align-items:center!important;}
+#applicants #workplaceTabs .tab,
+#applicants #quickFilters .chip{
+  min-height:34px!important;
+  padding:0 12px!important;
+  border:1px solid #cbd7e6!important;
+  background:#fff!important;
+  color:#34465e!important;
+  opacity:1!important;
+  font-size:11px!important;
+  font-weight:900!important;
+  box-shadow:none!important;
+}
+#applicants #workplaceTabs .tab:hover,
+#applicants #quickFilters .chip:hover{border-color:#86a8d4!important;background:#f3f7fd!important;color:#1f4f95!important;}
+#applicants #workplaceTabs .tab.active,
+#applicants #quickFilters .chip.active{
+  border-color:#1f5fbd!important;
+  background:#1f5fbd!important;
+  color:#fff!important;
+  box-shadow:0 4px 10px rgba(31,95,189,.16)!important;
+}
+#applicants #searchInput,
+#applicants #sortSelect,
+#applicants .advanced-filter-inline,
+#applicants .bulk-mode-button{min-height:36px!important;height:36px!important;border-radius:9px!important;font-size:11px!important;}
+#applicants #searchInput{padding:0 11px!important;color:#1f2f45!important;}
+#applicants #searchInput::placeholder{color:#6d7b8d!important;opacity:1!important;}
+#applicants .check-inline{color:#43536a!important;font-size:11px!important;font-weight:800!important;}
+#applicants #quickFilters{margin:7px 0 0!important;padding-top:7px!important;gap:6px!important;}
+#applicants .reset-filter-btn{min-height:32px!important;height:32px!important;color:#44566e!important;background:#f4f7fb!important;border-color:#ccd8e7!important;}
+#applicants #listSummary{
+  min-height:42px!important;
+  margin:8px 0!important;
+  padding:8px 12px!important;
+  border-radius:12px!important;
+  color:#3f5067!important;
+}
+#applicants .applicant-table td small,
+#applicants .applicant-name-cell small,
+#applicants .schedule-cell small,
+#applicants .decision-cell small,
+#applicants .muted-schedule{color:#627187!important;opacity:1!important;}
+#applicants .applicant-table td{color:#1e2d42!important;}
+#applicants .name-button{color:#10223d!important;}
+
+/* ---------- 반응형 ---------- */
+@media(max-width:1080px){
+  #detailModal .applicant-detail-toolbar-v104631{align-items:flex-start!important;}
+  #detailModal .applicant-detail-toolbar-actions{flex-wrap:wrap!important;}
+  #detailModal .applicant-detail-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+  #detailModal .applicant-contact-focus{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  #detailModal .applicant-quick-log-actions{grid-column:1/-1!important;}
+  #detailModal .quick-log-grid{grid-template-columns:repeat(3,minmax(0,1fr)) auto!important;}
+  #detailModal .quick-log-grid label.wide{grid-column:1/4!important;}
+  #detailModal .quick-log-save{grid-column:4!important;}
+  #detailModal .applicant-detail-content-grid{grid-template-columns:1fr!important;}
+}
+@media(max-width:760px){
+  #detailModal.applicant-detail-modal-v104631.show{padding:6px!important;}
+  #detailModal .applicant-detail-modal-card-v104631{width:calc(100vw - 12px)!important;max-height:calc(100dvh - 12px)!important;border-radius:16px!important;}
+  #detailModal .applicant-detail-toolbar-v104631{padding:10px 11px!important;gap:8px!important;}
+  .applicant-detail-toolbar-title{display:none!important;}
+  #detailModal .applicant-detail-toolbar-actions{width:100%!important;justify-content:flex-start!important;flex-wrap:wrap!important;}
+  #detailModal .applicant-detail-status-control{flex:1 1 145px!important;}
+  #detailModal .applicant-detail-status-control select{width:100%!important;min-width:0!important;}
+  #detailModal .applicant-detail-toolbar-actions>button:not(.applicant-detail-close){padding:0 9px!important;}
+  #detailModal #btnDetailEditTop{display:inline-flex!important;}
+  #detailModal .applicant-detail-close{margin-left:auto!important;}
+  #detailModal .detail-body{padding:9px!important;}
+  #detailModal .applicant-detail-identity{align-items:flex-start!important;flex-direction:column!important;padding:13px!important;}
+  #detailModal .applicant-detail-contact-line{width:100%!important;max-width:none!important;grid-template-columns:1fr!important;}
+  #detailModal .applicant-detail-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  #detailModal .applicant-detail-summary-item.status{grid-column:1/-1!important;}
+  #detailModal .applicant-history-v104631 .applicant-history-head{align-items:flex-start!important;flex-direction:column!important;}
+  #detailModal .applicant-history-v104631 .applicant-history-meta{justify-content:flex-start!important;}
+  #detailModal .applicant-contact-focus{grid-template-columns:1fr!important;}
+  #detailModal .applicant-quick-log-actions{grid-column:auto!important;}
+  #detailModal .quick-log-grid{grid-template-columns:1fr!important;}
+  #detailModal .quick-log-grid label.wide,
+  #detailModal .quick-log-save{grid-column:auto!important;}
+  #detailModal .quick-log-save{width:100%!important;}
+  #detailModal .applicant-detail-memo-stack,
+  #detailModal .applicant-reason-summary{grid-template-columns:1fr!important;}
+  #detailModal .applicant-detail-footer-v104631{padding:8px 9px!important;}
+  .applicant-detail-footer-hint{display:none!important;}
+  #detailModal .applicant-detail-footer-v104631 button{flex:1!important;}
+}
+
+/* 인쇄 시 상세 화면 본문만 유지하고 작업 UI는 숨김 */
+@media print{
+  #detailModal .applicant-detail-toolbar-v104631,
+  #detailModal .applicant-detail-footer-v104631,
+  #detailModal .applicant-quick-log-composer,
+  #detailModal .applicant-quick-log-actions{display:none!important;}
+}
+
+/* v10.46.3.1 mobile toolbar final compaction */
+@media(max-width:760px){
+  #detailModal .applicant-detail-toolbar-actions{
+    display:grid!important;
+    grid-template-columns:1fr 1fr 1.25fr 40px!important;
+    grid-template-rows:36px 36px!important;
+    gap:6px!important;
+    flex-direction:row!important;
+    align-items:stretch!important;
+  }
+  #detailModal .applicant-detail-status-control{
+    grid-column:1/4!important;
+    grid-row:1!important;
+    min-width:0!important;
+    width:100%!important;
+  }
+  #detailModal .applicant-detail-close{
+    grid-column:4!important;
+    grid-row:1!important;
+    width:40px!important;
+    height:36px!important;
+    margin:0!important;
+  }
+  #detailModal #btnDetailTemplate{grid-column:1!important;grid-row:2!important;}
+  #detailModal #btnDetailPrint{grid-column:2!important;grid-row:2!important;}
+  #detailModal #btnDetailEditTop{grid-column:3/5!important;grid-row:2!important;}
+}

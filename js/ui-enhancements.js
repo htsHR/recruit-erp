@@ -342,7 +342,7 @@ function uxSyncTemplateApplicant(){
   uxGenerateTemplate(false);
 }
 function uxOpenTemplateForApplicant(id){
-  closeDetail(); setPage('templates');
+  if(closeDetail()===false)return; setPage('templates');
   setTimeout(()=>{ uxTemplateApplicants(); if(uxEl('templateApplicant')) uxEl('templateApplicant').value=id; uxSyncTemplateApplicant(); },20);
 }
 window.uxOpenTemplateForApplicant=uxOpenTemplateForApplicant;

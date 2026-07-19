@@ -290,7 +290,13 @@ bind('btnClearAll','click',()=>{
 });
 bind('btnCloseDetail','click', closeDetail);
 bind('detailBackdrop','click', closeDetail);
-const openApplicantEditFromDetail=()=>{ const id=detailCurrentId; window.__erpApplicantDetailEditPending=true; closeDetail(); try{ if(id) editApplicant(id); } finally{ window.__erpApplicantDetailEditPending=false; } };
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&$('detailModal')?.classList.contains('show')){
+    e.preventDefault();
+    closeDetail();
+  }
+});
+const openApplicantEditFromDetail=()=>{ const id=detailCurrentId; window.__erpApplicantDetailEditPending=true; closeDetail(true); try{ if(id) editApplicant(id); } finally{ window.__erpApplicantDetailEditPending=false; } };
 bind('btnDetailEdit','click',openApplicantEditFromDetail);
 bind('btnDetailEditTop','click',openApplicantEditFromDetail);
 bind('btnCloseSchoolDetail','click', closeSchoolDetail);

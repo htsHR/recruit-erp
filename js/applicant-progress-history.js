@@ -1,4 +1,4 @@
-/* Recruit ERP v10.46.3 APPLICANT_DETAIL_WORKFLOW */
+/* Recruit ERP v10.46.3.1 APPLICANT_DETAIL_UI_POLISH */
 (function(){
   const MANAGER_KEY='recruit_erp_applicant_manager_assignments';
   const tracked=[
@@ -74,7 +74,9 @@
   function formatDateTime(v){
     if(!v)return '-';
     const d=new Date(v);
-    return Number.isFinite(d.getTime())?d.toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):String(v);
+    if(!Number.isFinite(d.getTime()))return String(v);
+    const pad=n=>String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
   function typeLabel(t){return ({status:'상태·사유',manager:'담당자',contact:'연락',schedule:'일정',memo:'메모',reason:'사유',created:'등록'})[t]||'기록';}
   function isOverdue(date){return !!date&&date<new Date().toISOString().slice(0,10);}
@@ -94,38 +96,41 @@
   }
   function renderHistoryPanel(a){
     const history=[...normalizeHistory(a)].sort((x,y)=>String(y.createdAt||'').localeCompare(String(x.createdAt||'')));
-    const manager=managerMap()[a.id]||'미지정';
     const nextClass=isOverdue(a.nextContactDate)?'is-overdue':(a.nextContactDate?'is-scheduled':'is-empty');
     const reasonCards=[
       a.failureReason?`<div><span>불합격 사유</span><strong>${safe(a.failureReason)}</strong></div>`:'',
       a.withdrawalReason?`<div><span>입사포기 사유</span><strong>${safe(a.withdrawalReason)}</strong></div>`:''
     ].filter(Boolean).join('');
-    return `<section class="applicant-history-card applicant-history-v10463">
+    const timeline=history.length?history.map(historyItem).join(''):'<div class="empty applicant-history-empty">아직 등록된 진행 이력이 없습니다.</div>';
+    return `<section class="applicant-history-card applicant-history-v10463 applicant-history-v104631">
       <div class="applicant-history-head">
-        <div><p class="eyebrow">PROGRESS HISTORY</p><h4>진행 이력</h4><span>전화·문자·메모와 주요 변경사항을 최신순으로 확인합니다.</span></div>
-        <div class="applicant-history-meta"><span>담당자 <strong>${safe(manager)}</strong></span><span>마지막 변경 <strong>${safe(formatDateTime(a.lastChangedAt||a.updatedAt))}</strong></span></div>
+        <div><p class="eyebrow">CONTACT & HISTORY</p><h4>연락 및 진행 이력</h4><span>최근 연락과 다음 처리일을 확인하고 필요한 기록만 빠르게 남깁니다.</span></div>
+        <div class="applicant-history-meta"><span>기록 <strong>${history.length}건</strong></span><span>마지막 변경 <strong>${safe(formatDateTime(a.lastChangedAt||a.updatedAt))}</strong></span></div>
       </div>
       <div class="applicant-contact-focus">
-        <div class="contact-focus-card ${a.lastContactDate?'is-done':'is-empty'}"><span>마지막 연락일</span><strong>${safe(a.lastContactDate||'기록 없음')}</strong><small>${a.lastContactDate?'최근 연락 기준':'연락 기록을 추가해 주세요'}</small></div>
-        <div class="contact-focus-card ${nextClass}"><span>다음 연락 예정일</span><strong>${safe(a.nextContactDate||'미정')}</strong><small>${isOverdue(a.nextContactDate)?'연락 예정일이 지났습니다':(a.nextContactDate?'예정일 기준으로 오늘 할 일에 표시':'필요하면 기록 시 함께 지정')}</small></div>
+        <div class="contact-focus-card ${a.lastContactDate?'is-done':'is-empty'}"><span>마지막 연락일</span><strong>${safe(a.lastContactDate||'기록 없음')}</strong><small>${a.lastContactDate?'최근 연락 기준':'빠른 기록에서 추가할 수 있습니다'}</small></div>
+        <div class="contact-focus-card ${nextClass}"><span>다음 연락 예정일</span><strong>${safe(a.nextContactDate||'미정')}</strong><small>${isOverdue(a.nextContactDate)?'예정일 경과 · 확인 필요':(a.nextContactDate?'오늘 할 일에 자동 표시됩니다':'필요한 경우 기록과 함께 지정')}</small></div>
         <div class="applicant-quick-log-actions">
           <span>빠른 기록</span>
-          <div><button type="button" class="quick-log phone" onclick="openApplicantQuickLog('${a.id}','phone')">전화 기록</button><button type="button" class="quick-log sms" onclick="openApplicantQuickLog('${a.id}','sms')">문자 기록</button><button type="button" class="quick-log memo" onclick="openApplicantQuickLog('${a.id}','memo')">메모 추가</button></div>
+          <div><button type="button" class="quick-log phone" data-quick-log-type="phone" onclick="openApplicantQuickLog('${a.id}','phone')">전화</button><button type="button" class="quick-log sms" data-quick-log-type="sms" onclick="openApplicantQuickLog('${a.id}','sms')">문자</button><button type="button" class="quick-log memo" data-quick-log-type="memo" onclick="openApplicantQuickLog('${a.id}','memo')">메모</button></div>
         </div>
       </div>
       <div class="applicant-quick-log-composer" id="aphQuickComposer" hidden>
-        <div class="quick-log-composer-head"><div><strong id="aphQuickTitle">진행 기록 추가</strong><span id="aphQuickHelp">처리 결과와 다음 액션을 간단히 남겨주세요.</span></div><button type="button" class="mini" onclick="closeApplicantQuickLog()">닫기</button></div>
+        <div class="quick-log-composer-head"><div><strong id="aphQuickTitle">진행 기록 추가</strong><span id="aphQuickHelp">처리 결과와 다음 액션을 간단히 남겨주세요.</span></div><button type="button" class="mini" onclick="closeApplicantQuickLog()">입력 닫기</button></div>
         <input id="aphType" type="hidden" value="memo">
         <div class="quick-log-grid">
           <label>처리일<input id="aphDate" type="date" value="${new Date().toISOString().slice(0,10)}"></label>
           <label>다음 연락 예정일<input id="aphNextDate" type="date" value="${safe(a.nextContactDate||'')}"></label>
           <label>변경 담당자<input id="aphActor" value="${safe(currentActor(a))}" placeholder="담당자명"></label>
-          <label class="wide">처리 내용<textarea id="aphNote" rows="3" placeholder="처리 결과와 다음 액션을 입력"></textarea></label>
+          <label class="wide">처리 내용<textarea id="aphNote" rows="2" placeholder="처리 결과와 다음 액션을 입력"></textarea></label>
+          <button type="button" class="primary quick-log-save" onclick="saveApplicantQuickLog('${a.id}')">기록 저장</button>
         </div>
-        <div class="quick-log-footer"><button type="button" class="primary" onclick="saveApplicantQuickLog('${a.id}')">기록 저장</button></div>
       </div>
       ${reasonCards?`<div class="applicant-reason-summary">${reasonCards}</div>`:''}
-      <div class="applicant-history-timeline">${history.length?history.map(historyItem).join(''):'<div class="empty">아직 등록된 진행 이력이 없습니다.</div>'}</div>
+      <details class="applicant-history-disclosure">
+        <summary><span>진행 이력 ${history.length}건</span><small>${history.length?'접어서 기본정보를 빠르게 볼 수 있습니다':'등록된 이력이 없습니다'}</small></summary>
+        <div class="applicant-history-timeline">${timeline}</div>
+      </details>
     </section>`;
   }
   const quickConfig={
@@ -141,11 +146,15 @@
     document.getElementById('aphQuickTitle').textContent=cfg.title;
     document.getElementById('aphQuickHelp').textContent=cfg.help;
     const note=document.getElementById('aphNote');note.placeholder=cfg.placeholder;note.value='';
+    document.querySelectorAll('[data-quick-log-type]').forEach(btn=>btn.classList.toggle('is-active',btn.dataset.quickLogType===type));
     composer.hidden=false;
-    composer.scrollIntoView({behavior:'smooth',block:'nearest'});
-    setTimeout(()=>note.focus(),120);
+    setTimeout(()=>note.focus({preventScroll:true}),80);
   };
-  window.closeApplicantQuickLog=function(){const composer=document.getElementById('aphQuickComposer');if(composer)composer.hidden=true;};
+  window.closeApplicantQuickLog=function(){
+    const composer=document.getElementById('aphQuickComposer');
+    if(composer)composer.hidden=true;
+    document.querySelectorAll('[data-quick-log-type]').forEach(btn=>btn.classList.remove('is-active'));
+  };
   window.saveApplicantQuickLog=function(id){
     const a=(applicants||[]).find(x=>String(x.id)===String(id));if(!a)return;
     const type=document.getElementById('aphType')?.value||'memo';
