@@ -423,3 +423,8 @@ bind('schoolAutoLinkConfirm','change',renderSchoolAutoLink);
 bind('btnApplySchoolAutoLink','click',applySchoolAutoLink);
 $('schoolAutoLinkList')?.addEventListener('change',e=>{const cb=e.target.closest('[data-school-auto-key]');if(!cb)return;cb.checked?schoolAutoLinkState.selected.add(cb.dataset.schoolAutoKey):schoolAutoLinkState.selected.delete(cb.dataset.schoolAutoKey);renderSchoolAutoLink();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('schoolAutoLinkModal')?.classList.contains('show'))closeSchoolAutoLink();});
+
+/* v10.41.1 SCHOOL_MANAGEMENT_UX_REDESIGN */
+bind('btnOpenSchoolMergeManagerTop','click',()=>openSchoolMergeManager());
+document.querySelectorAll('#schoolManageQueue .school-queue-card').forEach(b=>b.addEventListener('click',()=>applySchoolQueueFilter(b.dataset.queue)));
+document.querySelectorAll('#schoolFocusTabs [data-school-focus-tab]').forEach(b=>b.addEventListener('click',()=>setSchoolManageFocusTab(b.dataset.schoolFocusTab)));

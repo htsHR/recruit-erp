@@ -2264,3 +2264,87 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 .school-auto-link-row:hover{border-color:#93c5fd;background:#f8fbff}.school-auto-link-row>div{display:grid;gap:3px}.school-auto-link-row span{font-size:12px;color:#64748b}.school-auto-link-row>b{color:#2563eb}
 .school-auto-link-footer{align-items:center}.school-auto-link-footer label{margin-right:auto;display:flex;gap:8px;align-items:center;font-size:13px}
 @media(max-width:700px){.school-cleanup-actions{flex-wrap:wrap}.school-auto-link-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.school-auto-link-row{grid-template-columns:auto 1fr}.school-auto-link-row>b{display:none}.school-auto-link-row>div:last-child{grid-column:2}.school-auto-link-notice{display:grid}.school-auto-link-footer{flex-wrap:wrap}.school-auto-link-footer label{width:100%}}
+
+/* =========================================================
+   v10.41.1 SCHOOL_MANAGEMENT_UX_REDESIGN
+   ========================================================= */
+.school-hero-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.school-kpi-grid{grid-template-columns:repeat(7,minmax(0,1fr));}
+.school-kpi-card{padding:18px 16px;min-height:108px;align-items:flex-start;justify-content:flex-start;}
+.school-kpi-card > div{display:flex;flex-direction:column;gap:6px;align-items:flex-start;}
+.school-kpi-card strong{font-size:30px;line-height:1.1;}
+.school-kpi-card small{font-size:12px;color:#6b7280;line-height:1.35;}
+.school-kpi-card.active small{color:#1d4ed8;}
+.school-work-queue{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0 20px;}
+.school-queue-card{border:1px solid #dbe4f2;background:#fff;border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;box-shadow:0 8px 20px rgba(15,23,42,.04);}
+.school-queue-card strong{font-size:15px;color:#0f172a;}
+.school-queue-card span{font-size:24px;font-weight:900;color:#1d4ed8;}
+.school-queue-card small{color:#64748b;line-height:1.4;}
+.school-queue-card:hover{border-color:#bfdbfe;transform:translateY(-1px);box-shadow:0 12px 24px rgba(37,99,235,.10);}
+.school-manage-row.is-practical{cursor:pointer;}
+.school-manage-row.is-practical.is-selected{background:#eff6ff;}
+.school-manage-row.is-practical.is-selected td{background:#eff6ff;}
+.school-name-stack{display:flex;flex-direction:column;gap:4px;}
+.school-name-stack small{color:#64748b;font-size:12px;line-height:1.35;}
+.school-inline-pill{display:inline-flex;align-items:center;justify-content:center;min-width:56px;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid transparent;}
+.school-inline-pill.neutral{background:#f3f4f6;border-color:#e5e7eb;color:#6b7280;}
+.school-inline-pill.upcoming{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;}
+.school-inline-pill.today{background:#ecfeff;border-color:#a5f3fc;color:#0f766e;}
+.school-inline-pill.overdue{background:#fff1f2;border-color:#fecdd3;color:#dc2626;}
+.school-request-badge{display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;border:1px solid transparent;white-space:nowrap;}
+.school-request-badge.open{background:#ecfdf5;border-color:#bbf7d0;color:#15803d;}
+.school-request-badge.pending{background:#fff1f2;border-color:#fecdd3;color:#dc2626;}
+.school-request-badge.history{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;}
+.school-request-badge.neutral{background:#f3f4f6;border-color:#e5e7eb;color:#6b7280;}
+.school-focus-panel{margin-top:18px;border:1px solid #dbe4f2;border-radius:20px;background:#fff;box-shadow:0 14px 30px rgba(15,23,42,.05);padding:18px 20px;}
+.school-focus-empty{padding:18px;border:1px dashed #cbd5e1;border-radius:16px;background:#f8fafc;color:#64748b;text-align:center;}
+.school-focus-content{display:flex;flex-direction:column;gap:18px;}
+.school-focus-summary{display:flex;flex-direction:column;gap:16px;}
+.school-focus-identity{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;}
+.school-focus-badge{display:inline-flex;padding:5px 10px;border-radius:999px;background:#dbeafe;color:#1d4ed8;font-size:11px;font-weight:800;margin-bottom:10px;}
+.school-focus-identity h3{margin:0 0 6px;font-size:28px;color:#0f172a;}
+.school-focus-identity p{margin:0;color:#64748b;}
+.school-focus-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.school-focus-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;}
+.school-focus-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;}
+.school-focus-metrics > div{border:1px solid #e2e8f0;border-radius:16px;padding:16px;background:#fbfdff;display:flex;flex-direction:column;gap:6px;}
+.school-focus-metrics span{font-size:12px;color:#64748b;}
+.school-focus-metrics strong{font-size:24px;color:#0f172a;line-height:1.1;}
+.school-focus-metrics small{font-size:12px;color:#475569;line-height:1.35;}
+.school-focus-tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid #e5e7eb;padding-bottom:10px;}
+.school-focus-tabs .tab{height:38px;padding:0 14px;border-radius:999px;border:1px solid #dbe4f2;background:#f8fafc;color:#475569;font-weight:800;}
+.school-focus-tabs .tab.active{background:#1d4ed8;color:#fff;border-color:#1d4ed8;box-shadow:0 8px 18px rgba(37,99,235,.18);}
+.school-focus-tab-body{min-height:120px;}
+.school-focus-list{display:grid;gap:12px;}
+.school-focus-list article{border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;}
+.school-focus-list article.important{background:#fffbeb;border-color:#fde68a;}
+.school-focus-list-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.school-focus-list-head.split{justify-content:space-between;}
+.school-focus-list p{margin:0;color:#0f172a;line-height:1.5;}
+.school-focus-list small{display:block;margin-top:6px;color:#64748b;}
+.school-focus-contact-grid,.school-focus-related-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.school-focus-contact-grid article,.school-focus-related-grid section{border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;}
+.school-focus-contact-grid strong em{font-style:normal;color:#1d4ed8;font-size:12px;font-weight:900;}
+.school-focus-contact-grid p{margin:8px 0 6px;color:#475569;}
+.school-focus-contact-grid small{display:block;color:#64748b;}
+.school-focus-related-grid ul{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:8px;}
+.school-focus-related-grid li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px dashed #e2e8f0;}
+.school-focus-related-grid li:last-child{border-bottom:0;padding-bottom:0;}
+.school-focus-related-grid li span{color:#64748b;font-size:12px;white-space:nowrap;}
+.school-action-btn.ghost{background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;}
+@media (max-width: 1280px){
+  .school-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
+  .school-focus-metrics{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width: 920px){
+  .school-work-queue,.school-focus-metrics,.school-focus-contact-grid,.school-focus-related-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .school-focus-identity{flex-direction:column;}
+  .school-focus-actions{justify-content:flex-start;}
+}
+@media (max-width: 720px){
+  .school-hero-actions,.school-focus-actions{width:100%;}
+  .school-kpi-grid,.school-work-queue,.school-focus-metrics,.school-focus-contact-grid,.school-focus-related-grid{grid-template-columns:1fr;}
+  .school-kpi-card strong{font-size:24px;}
+  .school-focus-identity h3{font-size:24px;}
+  .school-focus-panel{padding:16px;}
+}

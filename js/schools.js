@@ -523,7 +523,7 @@ function schoolTypeBadge(type){
   return `<span class="school-type-badge ${schoolTypeBadgeClass(type)}">${esc(t || '미분류')}</span>`;
 }
 function schoolNeedsAttention(s){
-  const next=s.nextContactDate?daysUntil(s.nextContactDate):null;
+  const next=s.nextContactDate?schoolManageDaysUntil(s.nextContactDate):null;
   return !normalizeSchoolType(s.type) || !String(s.contact||'').trim() || !String(s.contactPhone||'').trim() || schoolManagementStatusLabel(s.managementStatus)==='미지정' || !schoolHasManagementHistory(s) || (next!==null&&next<0) || schoolHasBrokenLinks(s) || schoolIsDuplicateSuspect(s);
 }
 
@@ -739,3 +739,283 @@ function viewSchoolEmployees(schoolId, fallbackText){
   setPage('employees');
 }
 function schoolTypeGroupDetail(type){ return normalizeSchoolType(type); }
+
+/* =========================================================
+   v10.41.1 SCHOOL_MANAGEMENT_UX_REDESIGN
+   - 학교관리 화면을 실무 현황판 형태로 재구성
+   - 목록 가시성 개선, 실무 큐, 선택 학교 요약 패널 추가
+   - 학교 ID / 지원자 schoolId / 사원 schoolId 구조는 유지
+   ========================================================= */
+let schoolManageKpiMode='all';
+let schoolManageSelectedId='';
+let schoolManageFocusTab='activity';
+function schoolManageDaysUntil(dateStr){ if(!dateStr) return null; const today=new Date(); today.setHours(0,0,0,0); const target=new Date(dateStr); if(!Number.isFinite(target.getTime())) return null; target.setHours(0,0,0,0); return Math.round((target.getTime()-today.getTime())/86400000); }
+
+function schoolPrimaryContact(s){
+  const contacts=Array.isArray(s?.contacts)?s.contacts:[];
+  const primary=contacts.find(c=>c&&c.primary)||contacts[0]||null;
+  return {
+    name:String(primary?.name||s?.contact||'').trim(),
+    phone:String(primary?.phone||s?.contactPhone||'').trim(),
+    department:String(primary?.department||'').trim(),
+    email:String(primary?.email||'').trim()
+  };
+}
+function schoolLatestActivityInfo(s){
+  const activities=Array.isArray(s?.activities)?s.activities.filter(Boolean):[];
+  const latest=activities.sort((a,b)=>String(b.date||b.createdAt||'').localeCompare(String(a.date||a.createdAt||'')))[0]||null;
+  if(latest) return {type:latest.type||'활동',date:(latest.date||latest.createdAt||'').slice(0,10),note:latest.note||''};
+  const last=schoolLastManagedDate(s);
+  if(last) return {type:'관리기록',date:String(last).slice(0,10),note:s.lastRequestNote||s.notes||''};
+  return null;
+}
+function schoolRequestStatusInfo(s){
+  const hasRequest=!!String(s?.lastRequestNote||'').trim() || (Array.isArray(s?.activities)&&s.activities.some(a=>String(a?.type||'').includes('추천')));
+  if(!hasRequest) return {label:'없음', className:'neutral', detail:'추천 요청 기록 없음'};
+  const next=s?.nextContactDate||'';
+  const d=next?schoolManageDaysUntil(next):null;
+  if(d!==null && d<0) return {label:'미회신', className:'pending', detail:`예정일 ${formatSchoolDate(next)}`};
+  if(d!==null && d<=7) return {label:'진행중', className:'open', detail:`다음 연락 ${formatSchoolDate(next)}`};
+  return {label:'기록 있음', className:'history', detail:String(s?.lastRequestNote||'').trim()||'최근 요청 기록'};
+}
+function schoolNextContactPill(date){
+  if(!date) return '<span class="school-inline-pill neutral">미등록</span>';
+  const d=schoolManageDaysUntil(date);
+  if(d===null) return '<span class="school-inline-pill neutral">미등록</span>';
+  if(d<0) return `<span class="school-inline-pill overdue">D+${Math.abs(d)}</span>`;
+  if(d===0) return '<span class="school-inline-pill today">오늘</span>';
+  return `<span class="school-inline-pill upcoming">D-${d}</span>`;
+}
+function schoolManageKpiMatch(s){
+  const contact=schoolPrimaryContact(s);
+  const request=schoolRequestStatusInfo(s);
+  switch(schoolManageKpiMode){
+    case 'managed-core': return String(s.managementStatus||'')==='협력 중';
+    case 'request-open': return ['진행중','기록 있음'].includes(request.label);
+    case 'request-pending': return request.label==='미회신';
+    case 'overdue': return !!s.nextContactDate && schoolManageDaysUntil(s.nextContactDate)<0;
+    case 'stale': return !schoolIsRecentlyManaged(s,30);
+    case 'missing-contact': return !contact.name;
+    default: return true;
+  }
+}
+function renderSchoolManageKpis(){
+  const counts={
+    total:schools.length,
+    core:schools.filter(s=>String(s.managementStatus||'')==='협력 중').length,
+    request:schools.filter(s=>['진행중','기록 있음'].includes(schoolRequestStatusInfo(s).label)).length,
+    pending:schools.filter(s=>schoolRequestStatusInfo(s).label==='미회신').length,
+    overdue:schools.filter(s=>s.nextContactDate && schoolManageDaysUntil(s.nextContactDate)<0).length,
+    stale:schools.filter(s=>!schoolIsRecentlyManaged(s,30)).length,
+    missing:schools.filter(s=>!schoolPrimaryContact(s).name).length,
+    today:schools.filter(s=>s.nextContactDate && schoolManageDaysUntil(s.nextContactDate)===0).length,
+  };
+  setText('schoolKpiTotal', counts.total);
+  setText('schoolKpiCore', counts.core);
+  setText('schoolKpiRequest', counts.request);
+  setText('schoolKpiPending', counts.pending);
+  setText('schoolKpiOverdue', counts.overdue);
+  setText('schoolKpiStale', counts.stale);
+  setText('schoolKpiMissingContact', counts.missing);
+  setText('schoolQueueToday', `${counts.today}개교`);
+  setText('schoolQueueOverdue', `${counts.overdue}개교`);
+  setText('schoolQueueStale', `${counts.stale}개교`);
+  setText('schoolQueueMissing', `${counts.missing}개교`);
+  document.querySelectorAll('#schoolManageKpiGrid .school-kpi-card').forEach(b=>b.classList.toggle('active', b.dataset.kpi===schoolManageKpiMode));
+}
+function applySchoolKpiFilter(kpi){ schoolManageKpiMode=kpi||'all'; schoolManagePage=1; renderSchoolManage(); }
+function applySchoolQueueFilter(mode){
+  schoolManageKpiMode='all';
+  if(mode==='overdue') schoolManageKpiMode='overdue';
+  else if(mode==='stale') schoolManageKpiMode='stale';
+  else if(mode==='missing') schoolManageKpiMode='missing-contact';
+  schoolManagePage=1;
+  if(mode==='today'){
+    resetSchoolManageFilters();
+    schoolManagePage=1;
+    schoolManageKpiMode='all';
+    if($('schoolManageSearch')) $('schoolManageSearch').focus();
+    // today queue is a subfilter only inside render
+    window.schoolManageTodayOnly=true;
+  }else{
+    window.schoolManageTodayOnly=false;
+  }
+  renderSchoolManage();
+}
+function selectSchoolManage(id,opts={}){
+  schoolManageSelectedId=id||'';
+  if(opts.tab) schoolManageFocusTab=opts.tab;
+  renderSchoolManage();
+  if(opts.openDetail) openSchoolDetail(id);
+}
+function setSchoolManageFocusTab(tab){ schoolManageFocusTab=tab||'activity'; renderSchoolManageFocus(); }
+function schoolFocusRelatedApplicants(s){ return applicants.filter(a=>a.schoolId===s.id).slice(0,5); }
+function schoolFocusRelatedEmployees(s){ return employees.filter(e=>e.schoolId===s.id).slice(0,5); }
+function renderSchoolManageFocus(){
+  const empty=$('schoolFocusEmpty'), content=$('schoolFocusContent'), summary=$('schoolFocusSummary'), body=$('schoolFocusTabBody');
+  if(!empty||!content||!summary||!body) return;
+  const s=schools.find(x=>x.id===schoolManageSelectedId);
+  if(!s){ empty.hidden=false; content.hidden=true; return; }
+  empty.hidden=true; content.hidden=false;
+  document.querySelectorAll('#schoolFocusTabs [data-school-focus-tab]').forEach(btn=>btn.classList.toggle('active', btn.dataset.schoolFocusTab===schoolManageFocusTab));
+  const rec=typeof schoolRecruitStats==='function'?schoolRecruitStats(s.id):{total:schoolApplicantCount(s.id),interview:0,hireConfirmed:0};
+  const primary=schoolPrimaryContact(s);
+  const latest=schoolLatestActivityInfo(s);
+  const request=schoolRequestStatusInfo(s);
+  const activeEmployees=schoolActiveEmployeeCount(s.id);
+  const totalEmployees=schoolCumulativeHireCount(s.id);
+  summary.innerHTML=`
+    <div class="school-focus-identity">
+      <div>
+        <span class="school-focus-badge">선택 학교</span>
+        <h3>${esc(s.name)}</h3>
+        <p>${[s.region||'지역 미등록', normalizeSchoolType(s.type)||'미분류', schoolManagementStatusLabel(s.managementStatus)].filter(Boolean).join(' · ')}</p>
+        <div class="school-focus-tags">
+          ${schoolManagementStatusBadge(s.managementStatus)}
+          ${s.mouDate?'<span class="school-mou-badge yes">MOU 체결</span>':'<span class="school-mou-badge no">MOU 미체결</span>'}
+          <span class="school-request-badge ${request.className}">${request.label}</span>
+        </div>
+      </div>
+      <div class="school-focus-actions">
+        <button type="button" class="ghost" onclick="openSchoolManagementCore('${s.id}')">관계관리</button>
+        <button type="button" class="ghost" onclick="editSchoolPrompt('${s.id}')">수정</button>
+        <button type="button" class="primary" onclick="openSchoolDetail('${s.id}')">상세</button>
+      </div>
+    </div>
+    <div class="school-focus-metrics">
+      <div><span>주 담당자</span><strong>${esc(primary.name||'미등록')}</strong><small>${esc(primary.phone||primary.department||'연락처 없음')}</small></div>
+      <div><span>최근 활동</span><strong>${esc(latest?latest.type:'기록 없음')}</strong><small>${esc(latest?latest.date:'관리 이력 없음')}</small></div>
+      <div><span>다음 연락 예정</span><strong>${formatSchoolDate(s.nextContactDate)}</strong><small>${s.nextContactDate?schoolNextContactPill(s.nextContactDate):'미등록'}</small></div>
+      <div><span>지원자</span><strong>${rec.total}명</strong><small>면접 ${rec.interview||0}명 · 입사확정 ${rec.hireConfirmed||0}명</small></div>
+      <div><span>누적 입사</span><strong>${totalEmployees}명</strong><small>현재 재직 ${activeEmployees}명</small></div>
+    </div>`;
+  if(schoolManageFocusTab==='activity'){
+    const list=(Array.isArray(s.activities)?[...s.activities]:[]).sort((a,b)=>String(b.date||b.createdAt||'').localeCompare(String(a.date||a.createdAt||'')));
+    body.innerHTML=list.length?`<div class="school-focus-list timeline">${list.slice(0,8).map(a=>`<article><div class="school-focus-list-head"><span class="school-request-badge history">${esc(a.type||'활동')}</span><strong>${esc((a.date||a.createdAt||'').slice(0,16).replace('T',' '))}</strong></div><p>${esc(a.note||'-')}</p>${a.nextDate?`<small>다음 연락 ${esc(a.nextDate)}</small>`:''}</article>`).join('')}</div>`:'<div class="empty">등록된 활동 이력이 없습니다.</div>';
+  }else if(schoolManageFocusTab==='memo'){
+    const list=(Array.isArray(s.memoHistory)?[...s.memoHistory]:[]).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    body.innerHTML=list.length?`<div class="school-focus-list">${list.slice(0,8).map(m=>`<article${m.important?' class="important"':''}><div class="school-focus-list-head"><span class="school-request-badge ${m.important?'pending':'neutral'}">${m.important?'중요':'메모'}</span><strong>${esc((m.createdAt||'').slice(0,16).replace('T',' '))}</strong></div><p>${esc(m.text||'-')}</p></article>`).join('')}</div>`:'<div class="empty">등록된 메모가 없습니다.</div>';
+  }else if(schoolManageFocusTab==='contact'){
+    const list=(Array.isArray(s.contacts)?[...s.contacts]:[]);
+    const merged=list.length?list:[{name:s.contact,phone:s.contactPhone,primary:true,department:''}].filter(x=>x.name||x.phone);
+    body.innerHTML=merged.length?`<div class="school-focus-contact-grid">${merged.map(c=>`<article><strong>${esc(c.name||'담당자 미등록')} ${c.primary?'<em>주 담당자</em>':''}</strong><p>${esc(c.department||'부서 미등록')}</p><small>${esc(c.phone||'연락처 없음')}</small>${c.email?`<small>${esc(c.email)}</small>`:''}</article>`).join('')}</div>`:'<div class="empty">등록된 담당자가 없습니다.</div>';
+  }else{
+    const applicantList=schoolFocusRelatedApplicants(s);
+    const employeeList=schoolFocusRelatedEmployees(s);
+    body.innerHTML=`<div class="school-focus-related-grid"><section><div class="school-focus-list-head split"><strong>지원자</strong><button type="button" class="mini" onclick="viewSchoolApplicants('${s.id}')">전체 보기</button></div>${applicantList.length?`<ul>${applicantList.map(a=>`<li><strong>${esc(a.name||'-')}</strong><span>${esc(a.status||'-')}</span></li>`).join('')}</ul>`:'<div class="empty small">연결된 지원자가 없습니다.</div>'}</section><section><div class="school-focus-list-head split"><strong>사원</strong><button type="button" class="mini" onclick="viewSchoolEmployees('${s.id}','${escJs(s.name)}')">전체 보기</button></div>${employeeList.length?`<ul>${employeeList.map(e=>`<li><strong>${esc(e.name||'-')}</strong><span>${esc(e.status||'-')}</span></li>`).join('')}</ul>`:'<div class="empty small">연결된 사원이 없습니다.</div>'}</section></div>`;
+  }
+}
+function renderSchoolManage(){
+  refreshSchoolManageRegionOptions();
+  renderSchoolManageKpis();
+  const body=$('schoolManageBody');
+  if(!body) return;
+  const q=String(schoolManageSearch||'').trim().toLowerCase();
+  let list=[...schools].filter(s=>{
+    if(q){
+      const hay=[s.name, ...(s.aliases||[])].join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    if(schoolManageTypeFilter!=='all' && normalizeSchoolType(s.type)!==schoolManageTypeFilter) return false;
+    if(schoolManageRegionFilter!=='all' && String(s.region||'').trim()!==schoolManageRegionFilter) return false;
+    const hasContact=!!schoolPrimaryContact(s).name;
+    if(schoolManageContactFilter==='yes' && !hasContact) return false;
+    if(schoolManageContactFilter==='no' && hasContact) return false;
+    const hasMou=!!String(s.mouDate||'').trim();
+    if(schoolManageMouFilter==='yes' && !hasMou) return false;
+    if(schoolManageMouFilter==='no' && hasMou) return false;
+    if(schoolManageStatusFilter!=='all' && String(s.managementStatus||'')!==schoolManageStatusFilter) return false;
+    if(schoolManageHasApplicants && schoolApplicantCount(s.id)<1) return false;
+    if(schoolManageHasEmployees && schoolActiveEmployeeCount(s.id)<1) return false;
+    if(window.schoolManageRecentHistory && !schoolIsRecentlyManaged(s)) return false;
+    if(window.schoolManageBrokenLinks && !schoolHasBrokenLinks(s)) return false;
+    if(window.schoolManageDuplicates && !schoolIsDuplicateSuspect(s)) return false;
+    if(schoolManageMissingHistory && schoolHasManagementHistory(s)) return false;
+    if(schoolManageUnclassifiedFilter && normalizeSchoolType(s.type)) return false;
+    if(window.schoolManageTodayOnly && !(s.nextContactDate && schoolManageDaysUntil(s.nextContactDate)===0)) return false;
+    if(!schoolManageKpiMatch(s)) return false;
+    return true;
+  });
+  list.sort(schoolManageCompare);
+  const totalFiltered=list.length;
+  const totalPages=Math.max(1,Math.ceil(totalFiltered/schoolManagePageSize));
+  if(schoolManagePage>totalPages) schoolManagePage=totalPages;
+  const startIndex=(schoolManagePage-1)*schoolManagePageSize;
+  const pageList=list.slice(startIndex,startIndex+schoolManagePageSize);
+  const filterLabels=schoolManageFilterSummary();
+  if(window.schoolManageTodayOnly) filterLabels.push('오늘 연락 예정');
+  if(schoolManageKpiMode!=='all'){
+    const labelMap={'managed-core':'협력 중','request-open':'추천 요청 진행','request-pending':'미회신 학교','overdue':'연락기한 경과','stale':'최근 30일 활동 없음','missing-contact':'담당자 미등록'};
+    filterLabels.push(`상단 카드 ${labelMap[schoolManageKpiMode]||schoolManageKpiMode}`);
+  }
+  setText('schoolManageCount', `${totalFiltered}개교${filterLabels.length?` / 전체 ${schools.length}개교`:''}`);
+  const summaryEl=$('schoolManageFilterSummary');
+  if(summaryEl){
+    summaryEl.innerHTML=filterLabels.length ? `<span class="school-filter-summary-label">적용 중 ${filterLabels.length}개</span>${filterLabels.map(x=>`<span class="school-filter-chip">${esc(x)}</span>`).join('')}` : '<span class="muted">검색 조건 없이 전체 학교를 표시하고 있습니다.</span>';
+  }
+  const thead=$('schoolManageHead');
+  if(thead) thead.innerHTML=`<tr><th class="sticky-col sticky-left">학교명</th><th>지역</th><th>학교구분</th><th>관리상태</th><th>주 담당자</th><th>최근 활동</th><th>다음 연락 예정</th><th>추천 요청</th><th>지원자</th><th>누적 입사</th><th>재직자</th><th class="sticky-col sticky-right">관리</th></tr>`;
+  if(!schoolManageSelectedId || !list.some(s=>s.id===schoolManageSelectedId)) schoolManageSelectedId=pageList[0]?.id||'';
+  body.innerHTML = pageList.length ? pageList.map(s=>{
+    const primary=schoolPrimaryContact(s);
+    const latest=schoolLatestActivityInfo(s);
+    const request=schoolRequestStatusInfo(s);
+    const alias=(s.aliases||[]).filter(Boolean).slice(0,2).join(' · ');
+    return `<tr class="school-manage-row is-practical ${schoolManageSelectedId===s.id?'is-selected':''}" tabindex="0" onclick="selectSchoolManage('${s.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectSchoolManage('${s.id}');}">
+      <td class="sticky-col sticky-left school-name-cell" data-label="학교명"><div class="school-name-stack"><button class="link-like school-name-link" onclick="event.stopPropagation();openSchoolDetail('${s.id}')">${esc(s.name)}</button>${alias?`<small>${esc(alias)}</small>`:''}</div></td>
+      <td data-label="지역">${esc(s.region)||'-'}</td>
+      <td data-label="학교구분">${schoolTypeBadge(s.type)}</td>
+      <td data-label="관리상태">${schoolManagementStatusBadge(s.managementStatus)}</td>
+      <td data-label="주 담당자"><div class="school-inline-stack"><strong>${esc(primary.name)||'미등록'}</strong><small>${esc(primary.phone||primary.department||'연락처 없음')}</small></div></td>
+      <td data-label="최근 활동"><div class="school-inline-stack"><strong>${esc(latest?latest.type:'기록 없음')}</strong><small>${esc(latest?latest.date:'관리 이력 없음')}</small></div></td>
+      <td data-label="다음 연락 예정"><div class="school-inline-stack"><strong>${formatSchoolDate(s.nextContactDate)}</strong><small>${schoolNextContactPill(s.nextContactDate)}</small></div></td>
+      <td data-label="추천 요청"><div class="school-inline-stack"><span class="school-request-badge ${request.className}">${esc(request.label)}</span><small>${esc(request.detail)}</small></div></td>
+      <td data-label="지원자"><button class="count-pill" onclick="event.stopPropagation();viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
+      <td data-label="누적 입사">${schoolCumulativeHireCount(s.id)}명</td>
+      <td data-label="재직자"><button class="count-pill employee" onclick="event.stopPropagation();viewSchoolEmployees('${s.id}','${escJs(s.name)}')">${schoolActiveEmployeeCount(s.id)}명</button></td>
+      <td class="row-actions sticky-col sticky-right school-row-actions" data-label="관리"><button class="school-action-btn detail" onclick="event.stopPropagation();openSchoolDetail('${s.id}')">상세</button><button class="school-action-btn edit" onclick="event.stopPropagation();editSchoolPrompt('${s.id}')">수정</button><button class="school-action-btn ghost" onclick="event.stopPropagation();openSchoolManagementCore('${s.id}')">관계</button></td></tr>`;
+  }).join('') : `<tr><td colspan="12" class="empty school-empty-state"><strong>조건에 맞는 학교가 없습니다.</strong><span>검색어 또는 필터를 바꾸거나 검색조건을 초기화해 주세요.</span><button type="button" class="ghost" onclick="resetSchoolManageFilters()">검색조건 초기화</button></td></tr>`;
+  const pager=$('schoolManagePagination');
+  if(pager){
+    const first=totalFiltered?startIndex+1:0;
+    const last=Math.min(startIndex+schoolManagePageSize,totalFiltered);
+    pager.innerHTML=`<div class="school-page-summary">${first}-${last} / ${totalFiltered}개교</div><div class="school-page-controls"><button type="button" ${schoolManagePage<=1?'disabled':''} onclick="setSchoolManagePage(1)">처음</button><button type="button" ${schoolManagePage<=1?'disabled':''} onclick="setSchoolManagePage(${schoolManagePage-1})">이전</button><span><strong>${schoolManagePage}</strong> / ${totalPages}</span><button type="button" ${schoolManagePage>=totalPages?'disabled':''} onclick="setSchoolManagePage(${schoolManagePage+1})">다음</button><button type="button" ${schoolManagePage>=totalPages?'disabled':''} onclick="setSchoolManagePage(${totalPages})">마지막</button></div>`;
+  }
+  const panel=$('schoolFilterContent');
+  const btn=$('btnToggleSchoolFilters');
+  if(panel) panel.hidden=schoolManageFiltersCollapsed;
+  if(btn){ btn.setAttribute('aria-expanded',String(!schoolManageFiltersCollapsed)); btn.innerHTML=schoolManageFiltersCollapsed?'필터 펼치기 ▾':'필터 접기 ▴'; }
+  renderSchoolManageFocus();
+  renderSchoolUnmatched();
+}
+function resetSchoolManageFilters(){
+  schoolManageSearch='';
+  schoolManageRegionFilter='all';
+  schoolManageTypeFilter='all';
+  schoolManageContactFilter='all';
+  schoolManageMouFilter='all';
+  schoolManageStatusFilter='all';
+  schoolManageHasApplicants=false;
+  schoolManageHasEmployees=false;
+  schoolManageMissingHistory=false;
+  schoolManageUnclassifiedFilter=false;
+  schoolManageKpiMode='all';
+  window.schoolManageRecentHistory=false; window.schoolManageBrokenLinks=false; window.schoolManageDuplicates=false; window.schoolManageTodayOnly=false;
+  schoolManagePage=1;
+  if($('schoolManageSearch')) $('schoolManageSearch').value='';
+  if($('schoolManageRegion')) $('schoolManageRegion').value='all';
+  if($('schoolManageContact')) $('schoolManageContact').value='all';
+  if($('schoolManageMou')) $('schoolManageMou').value='all';
+  if($('schoolManageStatus')) $('schoolManageStatus').value='all';
+  if($('schoolManageHasApplicants')) $('schoolManageHasApplicants').checked=false;
+  if($('schoolManageHasEmployees')) $('schoolManageHasEmployees').checked=false;
+  if($('schoolManageMissingHistory')) $('schoolManageMissingHistory').checked=false;
+  if($('schoolManageUnclassified')) $('schoolManageUnclassified').checked=false;
+  ['schoolManageRecentHistory','schoolManageBrokenLinks','schoolManageDuplicates'].forEach(id=>{if($(id))$(id).checked=false;});
+  document.querySelectorAll('#schoolManageTypeTabs .tab').forEach(x=>x.classList.toggle('active', x.dataset.schoolmanagetype==='all'));
+  document.querySelectorAll('#schoolManageKpiGrid .school-kpi-card').forEach(b=>b.classList.toggle('active', b.dataset.kpi==='all'));
+  renderSchoolManage();
+}
+window.applySchoolQueueFilter=applySchoolQueueFilter;
+window.selectSchoolManage=selectSchoolManage;
+window.setSchoolManageFocusTab=setSchoolManageFocusTab;
