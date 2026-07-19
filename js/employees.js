@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.40.23 — 사원명부 UI + 상세/등록/수정 최종화
+   Recruit ERP v10.40.24 — 사원명부 UI + 상세/등록/수정 최종화
    - 기존 employees/localStorage 구조와 레거시 필드를 그대로 호환
    - 신규 인사 필드는 모두 선택값이며, 기존 데이터에 없어도 정상 동작
    - 주민번호·주소·개인 연락처·개인 이메일은 저장/표시하지 않음
@@ -618,7 +618,7 @@ function formatBirthDisplay(v){
 }
 
 /* =========================================================
-   Recruit ERP v10.40.23 — 기존 사원 조직정보 일괄 보강
+   Recruit ERP v10.40.24 — 기존 사원 조직정보 일괄 보강
    - 엑셀 원본에서 별도 생성한 조직정보 전용 JSON만 사용
    - 사번 기준 연결 + 이름 교차검증
    - 팀/그룹/제품/파트만 선택 반영
@@ -874,7 +874,7 @@ function employeeOrgImportSafetyBackup(){
   if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function'){
     window.erpBackupCenter.exportFull();return;
   }
-  const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.23',createdAt:new Date().toISOString(),employees};
+  const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.24',createdAt:new Date().toISOString(),employees};
   download(`사원조직정보_반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');
 }
 function applyEmployeeOrgImport(){
@@ -908,7 +908,7 @@ function applyEmployeeOrgImport(){
 }
 
 /* =========================================================
-   Recruit ERP v10.40.23 — EMPLOYEE STATUS + EXCEL COMPARE
+   Recruit ERP v10.40.24 — EMPLOYEE STATUS + EXCEL COMPARE
    - 재직상태 전환을 날짜 규칙과 함께 검증
    - 사원명부 XLSX를 브라우저에서 직접 읽어 사번 기준 비교
    - 변경 필드만 선택 반영, 빈 셀 기존값 보호, 적용 전 전체 안전 백업
@@ -1205,7 +1205,7 @@ function employeeExcelSelectActionable(){employeeExcelCompareState.rows.forEach(
 function employeeExcelClearSelection(){employeeExcelCompareState.selected.clear();renderEmployeeExcelCompare();}
 function employeeExcelModalClick(event){const filter=event.target.closest('[data-employee-excel-filter]');if(filter){employeeExcelCompareState.filter=filter.dataset.employeeExcelFilter||'actionable';employeeExcelCompareState.page=1;renderEmployeeExcelCompare();return;}const page=event.target.closest('[data-employee-excel-page]');if(page&&!page.disabled){employeeExcelCompareState.page=Math.max(1,Number(page.dataset.employeeExcelPage)||1);renderEmployeeExcelCompare();}}
 function employeeExcelModalChange(event){const rowBox=event.target.closest('[data-employee-excel-row-select]');if(rowBox){const row=employeeExcelCompareState.rows.find(r=>r.key===rowBox.dataset.employeeExcelRowSelect);if(row)employeeExcelToggleRow(row,rowBox.checked);renderEmployeeExcelCompare();return;}const fieldBox=event.target.closest('[data-employee-excel-field]');if(fieldBox){const token=employeeExcelToken(fieldBox.dataset.employeeExcelRow,fieldBox.dataset.employeeExcelField);if(fieldBox.checked)employeeExcelCompareState.selected.add(token);else employeeExcelCompareState.selected.delete(token);renderEmployeeExcelCompare();return;}if(event.target.id==='employeeExcelConfirm')employeeExcelUpdateApplyState();}
-function employeeExcelSafetyBackup(){if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup('사원명부 엑셀 선택 반영 직전');if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function')return window.erpBackupCenter.exportFull();const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.23',createdAt:new Date().toISOString(),employees};download(`사원명부_엑셀반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');return payload;}
+function employeeExcelSafetyBackup(){if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup('사원명부 엑셀 선택 반영 직전');if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function')return window.erpBackupCenter.exportFull();const payload={format:'recruit-erp-employees-safety-backup',appVersion:'10.40.24',createdAt:new Date().toISOString(),employees};download(`사원명부_엑셀반영전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');return payload;}
 function readEmployeeExcelUndo(){try{const data=JSON.parse(localStorage.getItem(EMPLOYEE_EXCEL_UNDO_KEY)||'null');return data&&Array.isArray(data.before)&&Array.isArray(data.newIds)?data:null;}catch{return null;}}
 function writeEmployeeExcelUndo(data){localStorage.setItem(EMPLOYEE_EXCEL_UNDO_KEY,JSON.stringify(data));}
 function employeeExcelApplyValidation(){const errors=[];employeeExcelCompareState.rows.forEach(row=>{if(row.status==='new'&&employeeExcelCompareState.selected.has(employeeExcelToken(row.key,'__create__'))){const candidate=normalizeEmployee({...row.record,status:row.record.status||'재직중'});const state=validateEmployeeStatusState(candidate,candidate.status);if(state.errors.length)errors.push(`${row.record.name}(${row.record.empNo}): ${state.errors.join(' / ')}`);}else if(row.employee){const selected=row.changes.filter(c=>employeeExcelCompareState.selected.has(employeeExcelToken(row.key,c.field)));if(!selected.length)return;const patch={};selected.forEach(c=>patch[c.field]=c.to);const candidate=normalizeEmployee({...row.employee,...patch});const transition=validateEmployeeStatusTransition(row.employee.status,candidate.status,candidate);if(transition.errors.length)errors.push(`${row.employee.name}(${row.employee.empNo}): ${transition.errors.join(' / ')}`);}});return errors;}
@@ -1223,16 +1223,18 @@ function undoEmployeeExcelApply(){const undo=readEmployeeExcelUndo();if(!undo){a
 
 
 /* =========================================================
-   Recruit ERP v10.40.23 — 사원-학교 / 사원-지원자 연결 관리
+   Recruit ERP v10.40.24 — 사원 연결 회귀검증·안정화
    - 자동 연결·자동 덮어쓰기 금지
-   - 후보 비교 후 선택한 연결만 반영
+   - 학교/지원자 후보 근거를 읽기 쉬운 비교 카드로 표시
+   - 연결 완료·미연결·확인 필요 필터 및 선택 수 고정 표시
    - 연결/해제 직전 전체 ERP JSON 안전백업
-   - 학교명·지원자·사원 원본 정보는 변경하지 않고 ID 연결값만 관리
+   - 사원 applicantId + 지원자 employeeId 양방향 저장 및 클라우드 결과 표시
    ========================================================= */
 const EMPLOYEE_RELATION_PAGE_SIZE=24;
 let employeeRelationActiveTab='school';
-let employeeSchoolLinkState={rows:[],filter:'actionable',search:'',page:1,selected:new Set(),choices:new Map()};
-let employeeApplicantLinkState={rows:[],filter:'actionable',search:'',page:1,selected:new Set(),choices:new Map()};
+let employeeRelationBusy=false;
+let employeeSchoolLinkState={rows:[],filter:'review',search:'',page:1,selected:new Set(),choices:new Map()};
+let employeeApplicantLinkState={rows:[],filter:'review',search:'',page:1,selected:new Set(),choices:new Map()};
 
 function employeeRelationNormalizeText(value){
   return String(value||'').normalize('NFKC').toLowerCase().replace(/[\s\u00a0·ㆍ.,()\[\]{}\-_/\\]/g,'');
@@ -1249,22 +1251,34 @@ function employeeRelationBirthKey(row){
   const full=employeeRelationDate(row?.birthDate||row?.birthday||row?.birth||'');if(full)return full;
   const year=employeeRelationDigits(row?.birthYear||'');return year.length>=4?year.slice(0,4):year;
 }
-function employeeRelationPhoneKey(row){return employeeRelationDigits(row?.phone||row?.mobile||row?.contact||'');}
-function employeeRelationSchoolTextMatch(a,b){
-  const ak=employeeRelationNormalizeText(a),bk=employeeRelationNormalizeText(b);if(!ak||!bk)return false;if(ak===bk)return true;
-  const sa=typeof findSchoolByText==='function'?findSchoolByText(a):null;const sb=typeof findSchoolByText==='function'?findSchoolByText(b):null;
-  return !!(sa&&sb&&sa.id===sb.id);
-}
+function employeeRelationPhoneKey(row){return employeeRelationDigits(row?.phone||row?.mobile||row?.tel||'');}
+function employeeRelationSchoolTextMatch(a,b){const x=employeeRelationNormalizeText(a),y=employeeRelationNormalizeText(b);return !!x&&!!y&&(x===y||x.replace(/학교$/,'')===y.replace(/학교$/,''));}
 function employeeRelationLevenshtein(a,b){
-  const x=employeeRelationNormalizeText(a),y=employeeRelationNormalizeText(b);if(!x||!y)return Math.max(x.length,y.length);const prev=Array(y.length+1).fill(0).map((_,i)=>i),cur=Array(y.length+1).fill(0);
+  const x=String(a||''),y=String(b||'');if(!x)return y.length;if(!y)return x.length;const prev=Array.from({length:y.length+1},(_,i)=>i),cur=new Array(y.length+1);
   for(let i=1;i<=x.length;i++){cur[0]=i;for(let j=1;j<=y.length;j++)cur[j]=Math.min(cur[j-1]+1,prev[j]+1,prev[j-1]+(x[i-1]===y[j-1]?0:1));for(let j=0;j<=y.length;j++)prev[j]=cur[j];}
   return prev[y.length];
 }
 function employeeRelationSimilarity(a,b){
   const x=employeeRelationNormalizeText(a),y=employeeRelationNormalizeText(b);if(!x||!y)return 0;if(x===y)return 1;const max=Math.max(x.length,y.length);let score=1-employeeRelationLevenshtein(x,y)/max;if((x.includes(y)||y.includes(x))&&Math.min(x.length,y.length)>=3)score=Math.max(score,Math.min(x.length,y.length)/max*.92+.06);return Math.max(0,Math.min(1,score));
 }
+function employeeRelationEvidenceHtml(items=[],tone='info'){
+  const list=(Array.isArray(items)?items:[]).filter(Boolean);if(!list.length)return'<span class="employee-relation-evidence-empty">근거 없음</span>';
+  return`<div class="employee-relation-evidence ${tone}">${list.map(item=>`<span>${esc(item)}</span>`).join('')}</div>`;
+}
+function employeeRelationIssueHtml(items=[]){
+  const list=(Array.isArray(items)?items:[]).filter(Boolean);if(!list.length)return'<span class="employee-relation-clean">연결 이상 없음</span>';
+  return`<div class="employee-relation-issues">${list.map(item=>`<span>${esc(item)}</span>`).join('')}</div>`;
+}
+function employeeRelationSetCloudState(text,tone='idle'){
+  const el=$('employeeRelationCloudText');if(!el)return;el.textContent=text;el.className=`employee-relation-cloud is-${tone}`;
+}
+function employeeRelationSetBusy(busy,message=''){
+  employeeRelationBusy=!!busy;const modal=$('employeeRelationModal');modal?.classList.toggle('is-busy',employeeRelationBusy);
+  if(message)employeeRelationSetCloudState(message,'syncing');
+  employeeRelationUpdateApplyState();
+}
 function employeeExpectedSchoolType(e){
-  const edu=String(e?.education||'');const school=String(e?.school||'');
+  const edu=String(e?.education||''),school=String(e?.school||'');
   if(/고졸|고등학교|고교/.test(edu)||/고등학교$/.test(school))return'고등학교';
   if(/전졸|전문|폴리텍/.test(edu)||/전문대|폴리텍|기능대/.test(school))return'전문대';
   if(/대졸|학사|4년|대학교/.test(edu)||/대학교$/.test(school))return'대학교';
@@ -1274,17 +1288,18 @@ function employeeSchoolCandidateScore(e,school){
   const names=[school.name,...(school.aliases||[])].filter(Boolean);let score=0,matchedName='';
   names.forEach(name=>{const s=employeeRelationSimilarity(e.school,name);if(s>score){score=s;matchedName=name;}});
   const expected=employeeExpectedSchoolType(e),type=typeof normalizeSchoolType==='function'?normalizeSchoolType(school.type):String(school.type||'');if(expected&&type===expected)score=Math.min(1,score+.06);
-  return{school,score,matchedName,reason:score>=.999?'정확 일치':`유사도 ${Math.round(score*100)}%${expected&&type===expected?' · 유형 일치':''}`};
+  const evidence=[];if(score>=.999)evidence.push('학교명 정확 일치');else evidence.push(`학교명 유사도 ${Math.round(score*100)}%`);if(expected&&type===expected)evidence.push(`${expected} 유형 일치`);if(matchedName&&matchedName!==school.name)evidence.push(`별칭: ${matchedName}`);
+  return{school,score,matchedName,reason:evidence.join(' · '),evidence};
 }
 function employeeSchoolCandidates(e){
-  if(!String(e.school||'').trim())return[];const exact=typeof findSchoolByText==='function'?findSchoolByText(e.school):null;if(exact)return[{school:exact,score:1,matchedName:exact.name,reason:'학교명 또는 별칭 정확 일치'}];
+  if(!String(e.school||'').trim())return[];const exact=typeof findSchoolByText==='function'?findSchoolByText(e.school):null;if(exact)return[{school:exact,score:1,matchedName:exact.name,reason:'학교명 또는 별칭 정확 일치',evidence:['학교명 정확 일치']}];
   const min=employeeRelationNormalizeText(e.school).length<=3?.72:.56;
   return (Array.isArray(schools)?schools:[]).map(s=>employeeSchoolCandidateScore(e,s)).filter(x=>x.score>=min).sort((a,b)=>b.score-a.score||String(a.school.name).localeCompare(String(b.school.name),'ko')).slice(0,4);
 }
 function employeeSchoolLinkRows(){
   const schoolMap=new Map((Array.isArray(schools)?schools:[]).map(s=>[String(s.id),s]));
   return (Array.isArray(employees)?employees:[]).map(e=>{
-    const current=e.schoolId?schoolMap.get(String(e.schoolId)):null;const candidates=employeeSchoolCandidates(e);let status='unmatched';
+    const current=e.schoolId?schoolMap.get(String(e.schoolId)):null,candidates=employeeSchoolCandidates(e);let status='unmatched';
     if(e.schoolId&&!current)status='invalid';
     else if(current){const textOk=String(e.school||'').trim()&&(employeeRelationSchoolTextMatch(e.school,current.name)||(current.aliases||[]).some(a=>employeeRelationSchoolTextMatch(e.school,a)));status=textOk?'linked':'mismatch';}
     else if(!String(e.school||'').trim())status='missingSchool';
@@ -1294,13 +1309,18 @@ function employeeSchoolLinkRows(){
   });
 }
 function employeeSchoolLinkFilteredRows(){
-  const st=employeeSchoolLinkState;const q=employeeRelationNormalizeText(st.search);return st.rows.filter(row=>{
+  const st=employeeSchoolLinkState,q=employeeRelationNormalizeText(st.search);return st.rows.filter(row=>{
     const match=!q||[row.employee.empNo,row.employee.name,row.employee.school,row.current?.name].some(v=>employeeRelationNormalizeText(v).includes(q));if(!match)return false;
-    if(st.filter==='all')return true;if(st.filter==='actionable')return['exact','similar','invalid','mismatch'].includes(row.status);if(st.filter==='linked')return row.status==='linked';if(st.filter==='unmatched')return['unmatched','missingSchool'].includes(row.status);return row.status===st.filter;
+    if(st.filter==='all')return true;
+    if(st.filter==='review'||st.filter==='actionable')return['similar','invalid','mismatch'].includes(row.status);
+    if(st.filter==='unlinked')return['exact','similar','unmatched','missingSchool'].includes(row.status);
+    if(st.filter==='linked')return row.status==='linked';
+    if(st.filter==='invalid')return['invalid','mismatch'].includes(row.status);
+    return row.status===st.filter;
   });
 }
-function employeeSchoolStatusLabel(status){return({linked:'연결 완료',exact:'정확 후보',similar:'유사 후보',invalid:'잘못된 ID',mismatch:'학교명 불일치',unmatched:'후보 없음',missingSchool:'학교명 없음'})[status]||status;}
-function employeeSchoolStatusClass(status){return['linked'].includes(status)?'is-ok':['exact','similar'].includes(status)?'is-candidate':['invalid','mismatch'].includes(status)?'is-warning':'is-muted';}
+function employeeSchoolStatusLabel(status){return({linked:'연결 완료',exact:'정확 후보',similar:'유사 후보',invalid:'존재하지 않는 ID',mismatch:'학교명 불일치',unmatched:'후보 없음',missingSchool:'학교명 없음'})[status]||status;}
+function employeeSchoolStatusClass(status){return status==='linked'?'is-ok':['exact','similar'].includes(status)?'is-candidate':['invalid','mismatch'].includes(status)?'is-warning':'is-muted';}
 function employeeSchoolStatsSummary(schoolId){
   const stats=typeof schoolEmployeeStats==='function'?schoolEmployeeStats(schoolId):null;if(!stats)return'연결 사원 없음';
   const avg=stats.avgTenureMonths!=null?`${Math.round(stats.avgTenureMonths)}개월`:'-';return`재직 ${stats.activeCount||0} · 휴직 ${stats.leaveCount||0} · 퇴직 ${stats.retiredCount||0} · 누적 ${stats.totalHeadcount||0} · 평균근속 ${avg}`;
@@ -1311,11 +1331,19 @@ function renderEmployeeSchoolLink(){
   setText('employeeSchoolLinkConnected',counts.linked);setText('employeeSchoolLinkExact',counts.exact);setText('employeeSchoolLinkSimilar',counts.similar);setText('employeeSchoolLinkInvalid',counts.invalid);setText('employeeSchoolLinkUnmatched',counts.unmatched);
   document.querySelectorAll('[data-school-link-filter]').forEach(b=>b.classList.toggle('active',b.dataset.schoolLinkFilter===employeeSchoolLinkState.filter));
   const filtered=employeeSchoolLinkFilteredRows(),pages=Math.max(1,Math.ceil(filtered.length/EMPLOYEE_RELATION_PAGE_SIZE));employeeSchoolLinkState.page=Math.min(employeeSchoolLinkState.page,pages);const start=(employeeSchoolLinkState.page-1)*EMPLOYEE_RELATION_PAGE_SIZE,pageRows=filtered.slice(start,start+EMPLOYEE_RELATION_PAGE_SIZE);
-  const summary=$('employeeSchoolLinkSummary');if(summary)summary.innerHTML=`전체 사원 <strong>${rows.length}명</strong> · 현재 조건 <strong>${filtered.length}명</strong> · 선택 <strong>${employeeSchoolLinkState.selected.size}명</strong>`;
+  const summary=$('employeeSchoolLinkSummary');if(summary)summary.innerHTML=`<span>전체 <strong>${rows.length.toLocaleString()}명</strong></span><span>현재 조건 <strong>${filtered.length.toLocaleString()}명</strong></span><span class="is-selected">선택 <strong>${employeeSchoolLinkState.selected.size.toLocaleString()}명</strong></span>`;
   const list=$('employeeSchoolLinkList');if(list)list.innerHTML=pageRows.length?pageRows.map(row=>{
     const choice=employeeSchoolChoice(row),candidate=row.candidates.find(c=>String(c.school.id)===String(choice));const canSelect=row.candidates.length>0&&!['linked','missingSchool','unmatched'].includes(row.status);
     const options=row.candidates.map(c=>`<option value="${esc(c.school.id)}" ${String(c.school.id)===String(choice)?'selected':''}>${esc(c.school.name)} · ${esc(normalizeSchoolType(c.school.type)||'구분 미확인')} · ${Math.round(c.score*100)}%</option>`).join('');
-    return`<article class="employee-relation-row ${employeeSchoolStatusClass(row.status)}"><label class="employee-relation-check"><input type="checkbox" data-school-link-select="${esc(row.key)}" ${employeeSchoolLinkState.selected.has(row.key)?'checked':''} ${canSelect?'':'disabled'}/></label><div class="employee-relation-person"><strong>${esc(row.employee.name||'-')}</strong><span>${esc(row.employee.empNo||'사번 없음')} · ${esc(row.employee.status||'-')}</span></div><div class="employee-relation-source"><span>사원명부 학교</span><strong>${esc(row.employee.school||'미입력')}</strong><small>현재 연결: ${esc(row.current?.name||(row.employee.schoolId?'존재하지 않는 학교 ID':'미연결'))}</small></div><div class="employee-relation-candidate"><span class="employee-relation-status ${employeeSchoolStatusClass(row.status)}">${esc(employeeSchoolStatusLabel(row.status))}</span>${options?`<select data-school-link-choice="${esc(row.key)}">${options}</select><small>${esc(candidate?.reason||'후보를 선택하세요')} · ${esc(candidate?employeeSchoolStatsSummary(candidate.school.id):'')}</small>`:'<strong class="employee-relation-none">연결 후보 없음</strong>'}</div><div class="employee-relation-actions"><button class="mini" type="button" data-employee-detail-id="${esc(row.employee.id)}">상세</button>${row.employee.schoolId?`<button class="ghost" type="button" data-school-link-unlink="${esc(row.employee.id)}">연결 해제</button>`:''}</div></article>`;
+    const currentText=row.current?.name||(row.employee.schoolId?'존재하지 않는 학교 ID':'미연결');
+    const schoolEvidence=candidate?.evidence||[];
+    return`<article class="employee-relation-row employee-school-relation-row ${employeeSchoolStatusClass(row.status)}">
+      <label class="employee-relation-check" title="반영할 항목 선택"><input type="checkbox" data-school-link-select="${esc(row.key)}" ${employeeSchoolLinkState.selected.has(row.key)?'checked':''} ${canSelect&&!employeeRelationBusy?'':'disabled'}/></label>
+      <div class="employee-relation-person"><span>사원</span><strong>${esc(row.employee.name||'-')}</strong><small>${esc(row.employee.empNo||'사번 없음')} · ${esc(row.employee.status||'-')}</small></div>
+      <div class="employee-relation-source"><span>현재 출신학교</span><strong>${esc(row.employee.school||'미입력')}</strong><small>연결값: ${esc(currentText)}</small>${['invalid','mismatch'].includes(row.status)?employeeRelationIssueHtml([employeeSchoolStatusLabel(row.status)]):''}</div>
+      <div class="employee-relation-candidate"><div class="employee-relation-candidate-head"><span class="employee-relation-status ${employeeSchoolStatusClass(row.status)}">${esc(employeeSchoolStatusLabel(row.status))}</span>${candidate?`<b class="employee-relation-score">${Math.round(candidate.score*100)}%</b>`:''}</div>${options?`<select data-school-link-choice="${esc(row.key)}" ${employeeRelationBusy?'disabled':''}>${options}</select>${employeeRelationEvidenceHtml(schoolEvidence)}<small class="employee-relation-stats">${esc(candidate?employeeSchoolStatsSummary(candidate.school.id):'')}</small>`:'<strong class="employee-relation-none">연결 후보 없음</strong>'}</div>
+      <div class="employee-relation-actions"><button class="mini" type="button" data-employee-detail-id="${esc(row.employee.id)}">상세</button>${row.employee.schoolId?`<button class="danger-outline" type="button" data-school-link-unlink="${esc(row.employee.id)}" ${employeeRelationBusy?'disabled':''}>연결 해제</button>`:''}</div>
+    </article>`;
   }).join(''):'<div class="empty">현재 조건에 해당하는 사원이 없습니다.</div>';
   renderEmployeeRelationPagination('employeeSchoolLinkPagination',employeeSchoolLinkState.page,pages,'school');employeeRelationUpdateApplyState();
 }
@@ -1347,9 +1375,9 @@ function employeeApplicantLinkRows(){
   const rows=(employees||[]).map(e=>{
     const linked=e.applicantId?appMap.get(String(e.applicantId)):null,candidates=employeeApplicantCandidatesForEmployee(e);let status='unlinked',issues=[];
     if(e.applicantId&&!linked){status='conflict';issues.push('존재하지 않는 지원자 ID');}
-    else if(linked){const reciprocal=String(linked.employeeId||'')===String(e.id);if(!reciprocal){status='conflict';issues.push(linked.employeeId?'지원자가 다른 사원에 연결됨':'지원자 쪽 연결값 없음');}else{issues=employeeApplicantLinkedIssues(e,linked);status=issues.length?'mismatch':'linked';}if((empRefs.get(String(linked.id))||[]).length>1){status='conflict';issues.push('동일 지원자가 여러 사원에 연결됨');}}
+    else if(linked){const reciprocal=String(linked.employeeId||'')===String(e.id);if(!reciprocal){status='conflict';issues.push(linked.employeeId?'지원자가 다른 사원에 연결됨':'지원자 쪽 연결값 없음');}else{issues=employeeApplicantLinkedIssues(e,linked);status=issues.length?'mismatch':'linked';}if((empRefs.get(String(linked.id))||[]).length>1){status='conflict';issues.push('동일 지원자가 여러 사원에 연결됨');}if((appRefs.get(String(e.id))||[]).length>1){status='conflict';issues.push('한 사원에 여러 지원자가 연결됨');}}
     else if(candidates.length)status=candidates[0].score>=80?'strong':'weak';
-    const reapply=candidates.some(c=>e.status==='퇴사'&&e.leaveDate&&c.applicant.applyDate&&c.applicant.applyDate>e.leaveDate);if(reapply)issues.push('퇴직 후 재지원 후보');
+    const reapply=candidates.some(c=>normalizeEmployeeStatus(e.status,e.leaveDate)==='퇴사'&&e.leaveDate&&c.applicant.applyDate&&c.applicant.applyDate>e.leaveDate);if(reapply)issues.push('퇴직 후 재지원 후보');
     return{key:`employee:${e.id}`,kind:'employee',employee:e,linked,candidates,status,issues,reapply};
   });
   const linkedApplicantIds=new Set(rows.filter(r=>r.linked).map(r=>String(r.linked.id)));
@@ -1363,46 +1391,85 @@ function employeeApplicantLinkRows(){
   return rows;
 }
 function employeeApplicantChoice(row){const saved=employeeApplicantLinkState.choices.get(row.key);if(saved)return saved;if(row.kind==='employee')return row.candidates[0]?.applicant.id||'';return row.candidates[0]?.employee.id||'';}
-function employeeApplicantLinkFilteredRows(){const st=employeeApplicantLinkState,q=employeeRelationNormalizeText(st.search);return st.rows.filter(row=>{const e=row.employee,a=row.applicant||row.linked;const match=!q||[e?.empNo,e?.name,a?.name,a?.applyDate,a?.hireDate].some(v=>employeeRelationNormalizeText(v).includes(q));if(!match)return false;if(st.filter==='all')return true;if(st.filter==='actionable')return['strong','weak','mismatch','conflict','missing'].includes(row.status);if(st.filter==='candidate')return['strong','weak'].includes(row.status);if(st.filter==='unlinked')return row.kind==='employee'&&row.status==='unlinked';return row.status===st.filter;});}
+function employeeApplicantLinkFilteredRows(){
+  const st=employeeApplicantLinkState,q=employeeRelationNormalizeText(st.search);return st.rows.filter(row=>{
+    const e=row.employee,a=row.applicant||row.linked;const match=!q||[e?.empNo,e?.name,a?.name,a?.applyDate,a?.hireDate].some(v=>employeeRelationNormalizeText(v).includes(q));if(!match)return false;
+    if(st.filter==='all')return true;
+    if(st.filter==='review'||st.filter==='actionable')return['weak','mismatch','conflict','missing'].includes(row.status)||row.reapply;
+    if(st.filter==='unlinked')return['strong','weak','missing','unlinked'].includes(row.status);
+    if(st.filter==='candidate')return['strong','weak'].includes(row.status);
+    if(st.filter==='reapply')return !!row.reapply;
+    return row.status===st.filter;
+  });
+}
 function employeeApplicantStatusLabel(status){return({linked:'연결 완료',strong:'강한 후보',weak:'검토 후보',mismatch:'정보 불일치',conflict:'연결 충돌',missing:'입사완료 누락',unlinked:'지원기록 없음'})[status]||status;}
 function employeeApplicantStatusClass(status){return status==='linked'?'is-ok':['strong','weak'].includes(status)?'is-candidate':['mismatch','conflict','missing'].includes(status)?'is-warning':'is-muted';}
 function employeeApplicantCandidateUnavailable(row,targetId){
   if(row.kind==='employee'){const a=(applicants||[]).find(x=>String(x.id)===String(targetId));return !!(a?.employeeId&&String(a.employeeId)!==String(row.employee.id)&&String(a.employeeId)!=='수동처리');}
   const e=(employees||[]).find(x=>String(x.id)===String(targetId));return !!(e?.applicantId&&String(e.applicantId)!==String(row.applicant.id));
 }
+function employeeApplicantCandidateMeta(row,choice){
+  if(!choice)return null;if(row.kind==='employee'){const c=row.candidates.find(x=>String(x.applicant.id)===String(choice));if(!c)return null;return{id:c.applicant.id,label:`${c.applicant.name} · 지원 ${c.applicant.applyDate||'-'} · 입사 ${c.applicant.hireDate||'-'}`,score:c.score,evidence:c.evidence,person:c.applicant};}
+  const c=row.candidates.find(x=>String(x.employee.id)===String(choice));if(!c)return null;return{id:c.employee.id,label:`${c.employee.name} · ${c.employee.empNo||'사번 없음'} · 입사 ${c.employee.hireDate||'-'}`,score:c.score,evidence:c.evidence,person:c.employee};
+}
 function renderEmployeeApplicantLink(){
   const rows=employeeApplicantLinkState.rows=employeeApplicantLinkRows(),counts={linked:0,candidate:0,mismatch:0,conflict:0,missing:0};rows.forEach(r=>{if(r.status==='linked')counts.linked++;else if(['strong','weak'].includes(r.status))counts.candidate++;else if(r.status==='mismatch')counts.mismatch++;else if(r.status==='conflict')counts.conflict++;else if(r.status==='missing')counts.missing++;});
   setText('employeeApplicantLinkConnected',counts.linked);setText('employeeApplicantLinkCandidates',counts.candidate);setText('employeeApplicantLinkMismatch',counts.mismatch);setText('employeeApplicantLinkConflict',counts.conflict);setText('employeeApplicantLinkMissing',counts.missing);document.querySelectorAll('[data-applicant-link-filter]').forEach(b=>b.classList.toggle('active',b.dataset.applicantLinkFilter===employeeApplicantLinkState.filter));
-  const filtered=employeeApplicantLinkFilteredRows(),pages=Math.max(1,Math.ceil(filtered.length/EMPLOYEE_RELATION_PAGE_SIZE));employeeApplicantLinkState.page=Math.min(employeeApplicantLinkState.page,pages);const start=(employeeApplicantLinkState.page-1)*EMPLOYEE_RELATION_PAGE_SIZE,pageRows=filtered.slice(start,start+EMPLOYEE_RELATION_PAGE_SIZE);const summary=$('employeeApplicantLinkSummary');if(summary)summary.innerHTML=`전체 검토 <strong>${rows.length}건</strong> · 현재 조건 <strong>${filtered.length}건</strong> · 선택 <strong>${employeeApplicantLinkState.selected.size}건</strong>`;
+  const filtered=employeeApplicantLinkFilteredRows(),pages=Math.max(1,Math.ceil(filtered.length/EMPLOYEE_RELATION_PAGE_SIZE));employeeApplicantLinkState.page=Math.min(employeeApplicantLinkState.page,pages);const start=(employeeApplicantLinkState.page-1)*EMPLOYEE_RELATION_PAGE_SIZE,pageRows=filtered.slice(start,start+EMPLOYEE_RELATION_PAGE_SIZE);const summary=$('employeeApplicantLinkSummary');if(summary)summary.innerHTML=`<span>전체 검토 <strong>${rows.length.toLocaleString()}건</strong></span><span>현재 조건 <strong>${filtered.length.toLocaleString()}건</strong></span><span class="is-selected">선택 <strong>${employeeApplicantLinkState.selected.size.toLocaleString()}건</strong></span>`;
   const list=$('employeeApplicantLinkList');if(list)list.innerHTML=pageRows.length?pageRows.map(row=>{
-    const choice=employeeApplicantChoice(row),choices=row.kind==='employee'?row.candidates.map(c=>({id:c.applicant.id,label:`${c.applicant.name} · ${c.applicant.applyDate||'지원일 없음'} · ${c.applicant.hireDate||'입사일 없음'}`,score:c.score,evidence:c.evidence})):row.candidates.map(c=>({id:c.employee.id,label:`${c.employee.name} · ${c.employee.empNo||'사번 없음'} · ${c.employee.hireDate||'입사일 없음'}`,score:c.score,evidence:c.evidence}));const selected=choices.find(c=>String(c.id)===String(choice)),blocked=selected&&employeeApplicantCandidateUnavailable(row,selected.id);const canSelect=choices.length>0&&!['linked','conflict','mismatch'].includes(row.status)&&!blocked;
-    const person=row.kind==='employee'?row.employee:row.applicant;const sourceTitle=row.kind==='employee'?'사원명부':'입사완료 지원자';const sourceMeta=row.kind==='employee'?`${row.employee.empNo||'사번 없음'} · 입사 ${row.employee.hireDate||'-'}`:`지원 ${row.applicant.applyDate||'-'} · 입사 ${row.applicant.hireDate||'-'}`;const current=row.kind==='employee'?(row.linked?`${row.linked.name} · ${row.linked.applyDate||'-'}`:(row.employee.applicantId?'존재하지 않는 지원자 ID':'미연결')):(row.linked?`${row.linked.name} · ${row.linked.empNo||'-'}`:(row.applicant.employeeId?'존재하지 않는 사원 ID':'미연결'));
-    const options=choices.map(c=>`<option value="${esc(c.id)}" ${String(c.id)===String(choice)?'selected':''} ${employeeApplicantCandidateUnavailable(row,c.id)?'disabled':''}>${esc(c.label)} · ${c.score}점${employeeApplicantCandidateUnavailable(row,c.id)?' · 다른 기록 연결됨':''}</option>`).join('');
-    return`<article class="employee-relation-row ${employeeApplicantStatusClass(row.status)}"><label class="employee-relation-check"><input type="checkbox" data-applicant-link-select="${esc(row.key)}" ${employeeApplicantLinkState.selected.has(row.key)?'checked':''} ${canSelect?'':'disabled'}/></label><div class="employee-relation-person"><span>${sourceTitle}</span><strong>${esc(person?.name||'-')}</strong><small>${esc(sourceMeta)}</small></div><div class="employee-relation-source"><span>현재 연결</span><strong>${esc(current)}</strong><small>${esc((row.issues||[]).join(' · ')||'연결 이상 없음')}</small></div><div class="employee-relation-candidate"><span class="employee-relation-status ${employeeApplicantStatusClass(row.status)}">${esc(employeeApplicantStatusLabel(row.status))}</span>${options?`<select data-applicant-link-choice="${esc(row.key)}">${options}</select><small>${esc(selected?.evidence?.join(' · ')||'후보 근거 없음')}${blocked?' · 기존 연결을 먼저 해제하세요.':''}</small>`:'<strong class="employee-relation-none">연결 후보 없음</strong>'}</div><div class="employee-relation-actions">${row.kind==='employee'?`<button class="mini" data-employee-detail-id="${esc(row.employee.id)}" type="button">사원 상세</button>`:`<button class="mini" data-applicant-detail-id="${esc(row.applicant.id)}" type="button">지원자 상세</button>`}${(row.kind==='employee'&&row.employee.applicantId)||(row.kind==='applicant'&&row.applicant.employeeId&&String(row.applicant.employeeId)!=='수동처리')?`<button class="ghost" data-applicant-link-unlink="${esc(row.key)}" type="button">연결 해제</button>`:''}</div></article>`;
+    const choice=employeeApplicantChoice(row),selected=employeeApplicantCandidateMeta(row,choice),blocked=selected&&employeeApplicantCandidateUnavailable(row,selected.id);const allChoices=row.kind==='employee'?row.candidates.map(c=>({id:c.applicant.id,label:`${c.applicant.name} · 지원 ${c.applicant.applyDate||'-'} · 입사 ${c.applicant.hireDate||'-'}`,score:c.score})):row.candidates.map(c=>({id:c.employee.id,label:`${c.employee.name} · ${c.employee.empNo||'사번 없음'} · 입사 ${c.employee.hireDate||'-'}`,score:c.score}));const canSelect=allChoices.length>0&&!['linked','conflict','mismatch'].includes(row.status)&&!blocked;
+    const person=row.kind==='employee'?row.employee:row.applicant;const sourceTitle=row.kind==='employee'?'사원명부':'입사완료 지원자';const sourceMeta=row.kind==='employee'?`${row.employee.empNo||'사번 없음'} · 입사 ${row.employee.hireDate||'-'} · ${row.employee.school||'학교 미입력'}`:`지원 ${row.applicant.applyDate||'-'} · 입사 ${row.applicant.hireDate||'-'} · ${row.applicant.school||'학교 미입력'}`;const current=row.kind==='employee'?(row.linked?`${row.linked.name} · 지원 ${row.linked.applyDate||'-'}`:(row.employee.applicantId?'존재하지 않는 지원자 ID':'미연결')):(row.linked?`${row.linked.name} · ${row.linked.empNo||'-'}`:(row.applicant.employeeId?'존재하지 않는 사원 ID':'미연결'));
+    const options=allChoices.map(c=>`<option value="${esc(c.id)}" ${String(c.id)===String(choice)?'selected':''} ${employeeApplicantCandidateUnavailable(row,c.id)?'disabled':''}>${esc(c.label)} · ${c.score}점${employeeApplicantCandidateUnavailable(row,c.id)?' · 다른 기록 연결됨':''}</option>`).join('');
+    const issues=[...(row.issues||[])];if(blocked)issues.push('선택 후보가 다른 기록에 연결됨');
+    return`<article class="employee-relation-row employee-applicant-relation-row ${employeeApplicantStatusClass(row.status)}">
+      <label class="employee-relation-check" title="반영할 항목 선택"><input type="checkbox" data-applicant-link-select="${esc(row.key)}" ${employeeApplicantLinkState.selected.has(row.key)?'checked':''} ${canSelect&&!employeeRelationBusy?'':'disabled'}/></label>
+      <div class="employee-relation-person"><span>${sourceTitle}</span><strong>${esc(person?.name||'-')}</strong><small>${esc(sourceMeta)}</small>${row.reapply?'<b class="employee-relation-reapply">퇴직 후 재지원 후보</b>':''}</div>
+      <div class="employee-relation-source"><span>현재 연결</span><strong>${esc(current)}</strong>${employeeRelationIssueHtml(issues)}</div>
+      <div class="employee-relation-candidate"><div class="employee-relation-candidate-head"><span class="employee-relation-status ${employeeApplicantStatusClass(row.status)}">${esc(employeeApplicantStatusLabel(row.status))}</span>${selected?`<b class="employee-relation-score">${selected.score}점</b>`:''}</div>${options?`<select data-applicant-link-choice="${esc(row.key)}" ${employeeRelationBusy?'disabled':''}>${options}</select>${employeeRelationEvidenceHtml(selected?.evidence||[],selected?.score>=80?'success':'info')}`:'<strong class="employee-relation-none">연결 후보 없음</strong>'}</div>
+      <div class="employee-relation-actions">${row.kind==='employee'?`<button class="mini" data-employee-detail-id="${esc(row.employee.id)}" type="button">사원 상세</button>`:`<button class="mini" data-applicant-detail-id="${esc(row.applicant.id)}" type="button">지원자 상세</button>`}${(row.kind==='employee'&&row.employee.applicantId)||(row.kind==='applicant'&&row.applicant.employeeId&&String(row.applicant.employeeId)!=='수동처리')?`<button class="danger-outline" data-applicant-link-unlink="${esc(row.key)}" type="button" ${employeeRelationBusy?'disabled':''}>연결 해제</button>`:''}</div>
+    </article>`;
   }).join(''):'<div class="empty">현재 조건에 해당하는 연결 항목이 없습니다.</div>';
   renderEmployeeRelationPagination('employeeApplicantLinkPagination',employeeApplicantLinkState.page,pages,'applicant');employeeRelationUpdateApplyState();
 }
-function employeeRelationSafetyBackup(reason){if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup(reason);if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function')return window.erpBackupCenter.exportFull();const payload={format:'recruit-erp-backup',appVersion:'10.40.23',createdAt:new Date().toISOString(),reason,applicants,schools,employees,calendarEvents};download(`Recruit_ERP_연결변경전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');return payload;}
-function employeeRelationPersist(changedEmployees=[],applicantsChanged=false){
-  localStorage.setItem(EMPLOYEES_KEY,JSON.stringify(employees));if(changedEmployees.length)supabaseSyncEmployees(changedEmployees);if(applicantsChanged){localStorage.setItem(STORAGE_KEY,JSON.stringify(applicants));if(canUseCloud())supabaseSyncAll(applicants);}renderAll();
+function employeeRelationSafetyBackup(reason){if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup(reason);if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function')return window.erpBackupCenter.exportFull();const payload={format:'recruit-erp-backup',appVersion:'10.40.24',createdAt:new Date().toISOString(),reason,applicants,schools,employees,calendarEvents};download(`Recruit_ERP_연결변경전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');return payload;}
+async function employeeRelationPersist(changedEmployees=[],applicantsChanged=false){
+  localStorage.setItem(EMPLOYEES_KEY,JSON.stringify(employees));if(applicantsChanged)localStorage.setItem(STORAGE_KEY,JSON.stringify(applicants));
+  const result={local:true,employeeCloud:{skipped:true},applicantCloud:{skipped:true}};
+  if(changedEmployees.length)result.employeeCloud=await supabaseSyncEmployees(changedEmployees);
+  if(applicantsChanged&&canUseCloud())result.applicantCloud=await supabaseSyncAll(applicants);
+  renderAll();return result;
 }
-function employeeRelationUpdateApplyState(){const count=employeeRelationActiveTab==='school'?employeeSchoolLinkState.selected.size:employeeApplicantLinkState.selected.size;const text=$('employeeRelationSelectionText');if(text)text.textContent=count?`${count}건 선택됨`:'선택된 변경 없음';const btn=$('btnApplyEmployeeRelations');if(btn){btn.disabled=count===0;btn.textContent=employeeRelationActiveTab==='school'?'선택 학교 연결 반영':'선택 지원자 연결 반영';}}
-function openEmployeeRelations(tab='school'){$('employeeRelationModal')?.classList.add('show');employeeRelationActiveTab=tab==='applicant'?'applicant':'school';renderEmployeeRelations();}
-function closeEmployeeRelations(){$('employeeRelationModal')?.classList.remove('show');}
+function employeeRelationCloudResultText(result){
+  if(!canUseCloud())return{tone:'local',text:'로컬 저장 완료 · 현재 환경에서는 Supabase 저장을 건너뜁니다.'};
+  const errors=[];if(result?.employeeCloud?.error)errors.push('사원 저장 실패');if(result?.applicantCloud?.error)errors.push('지원자 저장 실패');if(errors.length)return{tone:'error',text:`로컬 저장 완료 · ${errors.join(' / ')} (콘솔과 로그인 상태 확인)`};
+  const legacy=result?.employeeCloud?.legacy||result?.applicantCloud?.legacy;if(legacy)return{tone:'warning',text:'로컬 저장 완료 · Supabase는 구형 컬럼으로 저장됨. v10.40.24 관계 필드 SQL을 확인하세요.'};
+  return{tone:'ok',text:'로컬 및 Supabase 저장 확인 완료'};
+}
+function employeeRelationUpdateApplyState(){
+  const count=employeeRelationActiveTab==='school'?employeeSchoolLinkState.selected.size:employeeApplicantLinkState.selected.size;const text=$('employeeRelationSelectionText');if(text)text.innerHTML=count?`<b>${count.toLocaleString()}</b>건 선택됨`:'선택된 변경 없음';const countEl=$('employeeRelationSelectionCount');if(countEl)countEl.textContent=count.toLocaleString();const btn=$('btnApplyEmployeeRelations');if(btn){btn.disabled=count===0||employeeRelationBusy;btn.textContent=employeeRelationBusy?'저장 중...':employeeRelationActiveTab==='school'?`선택 학교 연결 반영 (${count})`:`선택 지원자 연결 반영 (${count})`;}
+}
+function openEmployeeRelations(tab='school'){$('employeeRelationModal')?.classList.add('show');employeeRelationActiveTab=tab==='applicant'?'applicant':'school';employeeRelationSetCloudState(canUseCloud()?'연결 반영 시 로컬과 Supabase에 함께 저장합니다.':'현재 환경은 로컬 저장만 사용합니다.','idle');renderEmployeeRelations();}
+function closeEmployeeRelations(){if(employeeRelationBusy)return;$('employeeRelationModal')?.classList.remove('show');}
 function renderEmployeeRelations(){document.querySelectorAll('[data-employee-relation-tab]').forEach(b=>b.classList.toggle('active',b.dataset.employeeRelationTab===employeeRelationActiveTab));document.querySelectorAll('[data-employee-relation-pane]').forEach(p=>p.classList.toggle('active',p.dataset.employeeRelationPane===employeeRelationActiveTab));if(employeeRelationActiveTab==='school')renderEmployeeSchoolLink();else renderEmployeeApplicantLink();}
-function applyEmployeeSchoolLinks(){
-  const keys=[...employeeSchoolLinkState.selected];if(!keys.length)return;const rows=employeeSchoolLinkRows().filter(r=>keys.includes(r.key));const changes=[];for(const row of rows){const schoolId=employeeSchoolChoice(row),school=(schools||[]).find(s=>String(s.id)===String(schoolId));if(!school){alert(`${row.employee.name}님의 학교 후보를 다시 선택해주세요.`);return;}changes.push({row,school});}
-  if(!confirm(`선택한 ${changes.length}명의 출신학교 연결을 반영할까요?\n\n학교명 텍스트는 바꾸지 않고 schoolId 연결값만 저장합니다.`))return;employeeRelationSafetyBackup('사원-학교 연결 반영 직전');const now=new Date().toISOString(),changed=[];changes.forEach(({row,school})=>{const updated=normalizeEmployee({...row.employee,schoolId:school.id,updatedAt:now});employees=employees.map(e=>e.id===updated.id?updated:e);changed.push(updated);});employeeSchoolLinkState.selected.clear();employeeRelationPersist(changed,false);renderEmployeeSchoolLink();if(typeof uxToast==='function')uxToast(`${changed.length}명의 학교 연결을 반영했습니다.`);
+async function applyEmployeeSchoolLinks(){
+  const keys=[...employeeSchoolLinkState.selected];if(!keys.length||employeeRelationBusy)return;const rows=employeeSchoolLinkRows().filter(r=>keys.includes(r.key));const changes=[];for(const row of rows){const schoolId=employeeSchoolChoice(row),school=(schools||[]).find(s=>String(s.id)===String(schoolId));if(!school){alert(`${row.employee.name}님의 학교 후보를 다시 선택해주세요.`);return;}changes.push({row,school});}
+  if(!confirm(`선택한 ${changes.length}명의 출신학교 연결을 반영할까요?\n\n학교명 텍스트는 바꾸지 않고 schoolId 연결값만 저장합니다.`))return;employeeRelationSafetyBackup('사원-학교 연결 반영 직전');employeeRelationSetBusy(true,'학교 연결 저장 중...');try{const now=new Date().toISOString(),changed=[];changes.forEach(({row,school})=>{const updated=normalizeEmployee({...row.employee,schoolId:school.id,updatedAt:now});employees=employees.map(e=>e.id===updated.id?updated:e);changed.push(updated);});const result=await employeeRelationPersist(changed,false);employeeSchoolLinkState.selected.clear();const cloud=employeeRelationCloudResultText(result);employeeRelationSetCloudState(cloud.text,cloud.tone);renderEmployeeSchoolLink();if(typeof uxToast==='function')uxToast(`${changed.length}명의 학교 연결을 반영했습니다.`);}finally{employeeRelationSetBusy(false);}
 }
-function unlinkEmployeeSchool(employeeId){const e=employees.find(x=>x.id===employeeId);if(!e||!e.schoolId)return;const school=(schools||[]).find(s=>String(s.id)===String(e.schoolId));if(!confirm(`${e.name}님의 학교 연결을 해제할까요?\n\n출신학교 텍스트(${e.school||'-'})는 유지됩니다.`))return;employeeRelationSafetyBackup('사원-학교 연결 해제 직전');const updated=normalizeEmployee({...e,schoolId:'',updatedAt:new Date().toISOString()});employees=employees.map(x=>x.id===e.id?updated:x);employeeRelationPersist([updated],false);renderEmployeeSchoolLink();if(typeof uxToast==='function')uxToast(`${school?.name||'학교'} 연결을 해제했습니다.`);}
-function validateEmployeeApplicantSelections(rows){const errors=[],empIds=new Set(),appIds=new Set();rows.forEach(row=>{const target=employeeApplicantChoice(row);const eId=row.kind==='employee'?row.employee.id:target,aId=row.kind==='employee'?target:row.applicant.id;if(!eId||!aId){errors.push('후보가 선택되지 않은 항목이 있습니다.');return;}if(empIds.has(String(eId))||appIds.has(String(aId)))errors.push('한 사원 또는 지원자가 두 번 이상 선택되었습니다.');empIds.add(String(eId));appIds.add(String(aId));const e=employees.find(x=>String(x.id)===String(eId)),a=applicants.find(x=>String(x.id)===String(aId));if(!e||!a){errors.push('연결 대상이 존재하지 않습니다.');return;}if(e.applicantId&&String(e.applicantId)!==String(a.id))errors.push(`${e.name}: 기존 지원자 연결을 먼저 해제해야 합니다.`);if(a.employeeId&&String(a.employeeId)!==String(e.id)&&String(a.employeeId)!=='수동처리')errors.push(`${a.name}: 다른 사원 연결을 먼저 해제해야 합니다.`);});return[...new Set(errors)];}
-function applyEmployeeApplicantLinks(){
-  const keys=[...employeeApplicantLinkState.selected];if(!keys.length)return;const rows=employeeApplicantLinkRows().filter(r=>keys.includes(r.key)),errors=validateEmployeeApplicantSelections(rows);if(errors.length){alert(`연결을 반영할 수 없습니다.\n\n${errors.slice(0,10).join('\n')}`);return;}if(!confirm(`선택한 ${rows.length}건의 사원-지원자 연결을 반영할까요?\n\n사원 applicantId와 지원자 employeeId를 함께 저장합니다.`))return;employeeRelationSafetyBackup('사원-지원자 연결 반영 직전');const now=new Date().toISOString(),changed=[];rows.forEach(row=>{const target=employeeApplicantChoice(row),eId=row.kind==='employee'?row.employee.id:target,aId=row.kind==='employee'?target:row.applicant.id;const e=employees.find(x=>String(x.id)===String(eId)),a=applicants.find(x=>String(x.id)===String(aId));const updatedE=normalizeEmployee({...e,applicantId:a.id,updatedAt:now});employees=employees.map(x=>x.id===e.id?updatedE:x);applicants=applicants.map(x=>x.id===a.id?{...x,employeeId:e.id,updatedAt:now}:x);changed.push(updatedE);});employeeApplicantLinkState.selected.clear();employeeRelationPersist(changed,true);renderEmployeeApplicantLink();if(typeof uxToast==='function')uxToast(`${rows.length}건의 사원-지원자 연결을 반영했습니다.`);
+async function unlinkEmployeeSchool(employeeId){
+  if(employeeRelationBusy)return;const e=employees.find(x=>x.id===employeeId);if(!e||!e.schoolId)return;const school=(schools||[]).find(s=>String(s.id)===String(e.schoolId));if(!confirm(`${e.name}님의 학교 연결을 해제할까요?\n\n출신학교 텍스트(${e.school||'-'})는 유지됩니다.`))return;employeeRelationSafetyBackup('사원-학교 연결 해제 직전');employeeRelationSetBusy(true,'학교 연결 해제 저장 중...');try{const updated=normalizeEmployee({...e,schoolId:'',updatedAt:new Date().toISOString()});employees=employees.map(x=>x.id===e.id?updated:x);const result=await employeeRelationPersist([updated],false);const cloud=employeeRelationCloudResultText(result);employeeRelationSetCloudState(cloud.text,cloud.tone);renderEmployeeSchoolLink();if(typeof uxToast==='function')uxToast(`${school?.name||'학교'} 연결을 해제했습니다.`);}finally{employeeRelationSetBusy(false);}
 }
-function unlinkEmployeeApplicant(key){const row=employeeApplicantLinkRows().find(r=>r.key===key);if(!row)return;let e=null,a=null;if(row.kind==='employee'){e=row.employee;a=row.linked||applicants.find(x=>String(x.id)===String(e.applicantId));}else{a=row.applicant;e=row.linked||employees.find(x=>String(x.id)===String(a.employeeId));}if(!e&&!a)return;if(!confirm(`${e?.name||a?.name||'선택 기록'}의 사원-지원자 연결을 해제할까요?`))return;employeeRelationSafetyBackup('사원-지원자 연결 해제 직전');const now=new Date().toISOString(),changed=[];if(e){const updated=normalizeEmployee({...e,applicantId:'',updatedAt:now});employees=employees.map(x=>x.id===e.id?updated:x);changed.push(updated);}if(a)applicants=applicants.map(x=>x.id===a.id?{...x,employeeId:'',updatedAt:now}:x);employeeRelationPersist(changed,!!a);renderEmployeeApplicantLink();if(typeof uxToast==='function')uxToast('사원-지원자 연결을 해제했습니다.');}
-function applyEmployeeRelations(){if(employeeRelationActiveTab==='school')applyEmployeeSchoolLinks();else applyEmployeeApplicantLinks();}
+function validateEmployeeApplicantSelections(rows){
+  const errors=[],empIds=new Set(),appIds=new Set();rows.forEach(row=>{const target=employeeApplicantChoice(row);const eId=row.kind==='employee'?row.employee.id:target,aId=row.kind==='employee'?target:row.applicant.id;if(!eId||!aId){errors.push('후보가 선택되지 않은 항목이 있습니다.');return;}if(empIds.has(String(eId))||appIds.has(String(aId)))errors.push('한 사원 또는 지원자가 두 번 이상 선택되었습니다.');empIds.add(String(eId));appIds.add(String(aId));const e=employees.find(x=>String(x.id)===String(eId)),a=applicants.find(x=>String(x.id)===String(aId));if(!e||!a){errors.push('연결 대상이 존재하지 않습니다.');return;}if(e.applicantId&&String(e.applicantId)!==String(a.id))errors.push(`${e.name}: 기존 지원자 연결을 먼저 해제해야 합니다.`);if(a.employeeId&&String(a.employeeId)!==String(e.id)&&String(a.employeeId)!=='수동처리')errors.push(`${a.name}: 다른 사원 연결을 먼저 해제해야 합니다.`);});return[...new Set(errors)];
+}
+async function applyEmployeeApplicantLinks(){
+  const keys=[...employeeApplicantLinkState.selected];if(!keys.length||employeeRelationBusy)return;const rows=employeeApplicantLinkRows().filter(r=>keys.includes(r.key)),errors=validateEmployeeApplicantSelections(rows);if(errors.length){alert(`연결을 반영할 수 없습니다.\n\n${errors.slice(0,10).join('\n')}`);return;}if(!confirm(`선택한 ${rows.length}건의 사원-지원자 연결을 반영할까요?\n\n사원 applicantId와 지원자 employeeId를 함께 저장합니다.`))return;employeeRelationSafetyBackup('사원-지원자 연결 반영 직전');employeeRelationSetBusy(true,'양방향 연결 저장 중...');try{const now=new Date().toISOString(),changed=[];rows.forEach(row=>{const target=employeeApplicantChoice(row),eId=row.kind==='employee'?row.employee.id:target,aId=row.kind==='employee'?target:row.applicant.id;const e=employees.find(x=>String(x.id)===String(eId)),a=applicants.find(x=>String(x.id)===String(aId));const updatedE=normalizeEmployee({...e,applicantId:a.id,updatedAt:now});employees=employees.map(x=>x.id===e.id?updatedE:x);applicants=applicants.map(x=>x.id===a.id?normalize({...x,employeeId:e.id,updatedAt:now}):x);changed.push(updatedE);});const result=await employeeRelationPersist(changed,true);employeeApplicantLinkState.selected.clear();const cloud=employeeRelationCloudResultText(result);employeeRelationSetCloudState(cloud.text,cloud.tone);renderEmployeeApplicantLink();if(typeof uxToast==='function')uxToast(`${rows.length}건의 사원-지원자 연결을 반영했습니다.`);}finally{employeeRelationSetBusy(false);}
+}
+async function unlinkEmployeeApplicant(key){
+  if(employeeRelationBusy)return;const row=employeeApplicantLinkRows().find(r=>r.key===key);if(!row)return;let e=null,a=null;if(row.kind==='employee'){e=row.employee;a=row.linked||applicants.find(x=>String(x.id)===String(e.applicantId));}else{a=row.applicant;e=row.linked||employees.find(x=>String(x.id)===String(a.employeeId));}if(!e&&!a)return;if(!confirm(`${e?.name||a?.name||'선택 기록'}의 사원-지원자 연결을 해제할까요?\n\n사원과 지원자 양쪽 연결값을 함께 정리합니다.`))return;employeeRelationSafetyBackup('사원-지원자 연결 해제 직전');employeeRelationSetBusy(true,'양방향 연결 해제 저장 중...');try{const now=new Date().toISOString(),changed=[];if(e){const updated=normalizeEmployee({...e,applicantId:'',updatedAt:now});employees=employees.map(x=>x.id===e.id?updated:x);changed.push(updated);}if(a)applicants=applicants.map(x=>x.id===a.id?normalize({...x,employeeId:'',updatedAt:now}):x);const result=await employeeRelationPersist(changed,!!a);const cloud=employeeRelationCloudResultText(result);employeeRelationSetCloudState(cloud.text,cloud.tone);renderEmployeeApplicantLink();if(typeof uxToast==='function')uxToast('사원-지원자 연결을 해제했습니다.');}finally{employeeRelationSetBusy(false);}
+}
+function applyEmployeeRelations(){return employeeRelationActiveTab==='school'?applyEmployeeSchoolLinks():applyEmployeeApplicantLinks();}
 function employeeRelationModalClick(event){
-  const tab=event.target.closest('[data-employee-relation-tab]');if(tab){employeeRelationActiveTab=tab.dataset.employeeRelationTab;renderEmployeeRelations();return;}
+  const tab=event.target.closest('[data-employee-relation-tab]');if(tab&&!employeeRelationBusy){employeeRelationActiveTab=tab.dataset.employeeRelationTab;renderEmployeeRelations();return;}
   const sf=event.target.closest('[data-school-link-filter]');if(sf){employeeSchoolLinkState.filter=sf.dataset.schoolLinkFilter;employeeSchoolLinkState.page=1;renderEmployeeSchoolLink();return;}
   const af=event.target.closest('[data-applicant-link-filter]');if(af){employeeApplicantLinkState.filter=af.dataset.applicantLinkFilter;employeeApplicantLinkState.page=1;renderEmployeeApplicantLink();return;}
   const page=event.target.closest('[data-relation-page]');if(page&&!page.disabled){const[type,p]=page.dataset.relationPage.split(':');if(type==='school'){employeeSchoolLinkState.page=Number(p)||1;renderEmployeeSchoolLink();}else{employeeApplicantLinkState.page=Number(p)||1;renderEmployeeApplicantLink();}return;}
@@ -1412,12 +1479,13 @@ function employeeRelationModalClick(event){
   const appUnlink=event.target.closest('[data-applicant-link-unlink]');if(appUnlink){unlinkEmployeeApplicant(appUnlink.dataset.applicantLinkUnlink);return;}
 }
 function employeeRelationModalChange(event){
-  const schoolSelect=event.target.closest('[data-school-link-select]');if(schoolSelect){if(schoolSelect.checked)employeeSchoolLinkState.selected.add(schoolSelect.dataset.schoolLinkSelect);else employeeSchoolLinkState.selected.delete(schoolSelect.dataset.schoolLinkSelect);employeeRelationUpdateApplyState();return;}
-  const schoolChoice=event.target.closest('[data-school-link-choice]');if(schoolChoice){employeeSchoolLinkState.choices.set(schoolChoice.dataset.schoolLinkChoice,schoolChoice.value);renderEmployeeSchoolLink();return;}
-  const appSelect=event.target.closest('[data-applicant-link-select]');if(appSelect){if(appSelect.checked)employeeApplicantLinkState.selected.add(appSelect.dataset.applicantLinkSelect);else employeeApplicantLinkState.selected.delete(appSelect.dataset.applicantLinkSelect);employeeRelationUpdateApplyState();return;}
-  const appChoice=event.target.closest('[data-applicant-link-choice]');if(appChoice){employeeApplicantLinkState.choices.set(appChoice.dataset.applicantLinkChoice,appChoice.value);renderEmployeeApplicantLink();return;}
+  const schoolSelect=event.target.closest('[data-school-link-select]');if(schoolSelect){if(schoolSelect.checked)employeeSchoolLinkState.selected.add(schoolSelect.dataset.schoolLinkSelect);else employeeSchoolLinkState.selected.delete(schoolSelect.dataset.schoolLinkSelect);employeeRelationUpdateApplyState();renderEmployeeSchoolLink();return;}
+  const schoolChoice=event.target.closest('[data-school-link-choice]');if(schoolChoice){employeeSchoolLinkState.choices.set(schoolChoice.dataset.schoolLinkChoice,schoolChoice.value);employeeSchoolLinkState.selected.add(schoolChoice.dataset.schoolLinkChoice);renderEmployeeSchoolLink();return;}
+  const appSelect=event.target.closest('[data-applicant-link-select]');if(appSelect){if(appSelect.checked)employeeApplicantLinkState.selected.add(appSelect.dataset.applicantLinkSelect);else employeeApplicantLinkState.selected.delete(appSelect.dataset.applicantLinkSelect);employeeRelationUpdateApplyState();renderEmployeeApplicantLink();return;}
+  const appChoice=event.target.closest('[data-applicant-link-choice]');if(appChoice){employeeApplicantLinkState.choices.set(appChoice.dataset.applicantLinkChoice,appChoice.value);const row=employeeApplicantLinkRows().find(r=>r.key===appChoice.dataset.applicantLinkChoice);if(row&&!employeeApplicantCandidateUnavailable(row,appChoice.value))employeeApplicantLinkState.selected.add(appChoice.dataset.applicantLinkChoice);renderEmployeeApplicantLink();return;}
 }
 function employeeSchoolSelectExact(){employeeSchoolLinkRows().filter(r=>r.status==='exact'&&r.candidates.length).forEach(r=>employeeSchoolLinkState.selected.add(r.key));renderEmployeeSchoolLink();}
 function employeeSchoolClearSelection(){employeeSchoolLinkState.selected.clear();renderEmployeeSchoolLink();}
 function employeeApplicantSelectStrong(){employeeApplicantLinkRows().filter(r=>r.status==='strong'&&r.candidates.length&&!employeeApplicantCandidateUnavailable(r,employeeApplicantChoice(r))).forEach(r=>employeeApplicantLinkState.selected.add(r.key));renderEmployeeApplicantLink();}
 function employeeApplicantClearSelection(){employeeApplicantLinkState.selected.clear();renderEmployeeApplicantLink();}
+

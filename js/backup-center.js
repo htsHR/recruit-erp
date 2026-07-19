@@ -1,4 +1,4 @@
-/* Recruit ERP v10.40.23 BACKUP CENTER + JSON TYPE GUARD
+/* Recruit ERP v10.40.24 BACKUP CENTER + JSON TYPE GUARD
  * 회사: 퇴근 전 전체 JSON 다운로드 전용
  * 집: 회사 JSON 검사/비교/병합/전체교체 + 검증된 Supabase 저장 확인
  * 기존 핵심 저장키와 데이터 필드 구조는 변경하지 않습니다.
@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='10.40.23';
+  const BC_VERSION='10.40.24';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
@@ -544,23 +544,26 @@
     el.innerHTML=list.slice(0,10).map(x=>`<div class="backup-history-row"><time>${escHtml(formatDate(x.at))}</time><strong>${escHtml(x.action)}</strong><span>${escHtml(x.detail||'')}</span></div>`).join('');
   }
 
-  function cloudRowsFor(key,rows,stripSchoolManagement){
-    if(key==='applicants')return rows.map(row=>{if(typeof applicantForCloud==='function')return applicantForCloud(row);const copy={...row};delete copy.employeeId;return copy;});
-    if(key==='schools'&&stripSchoolManagement)return rows.map(({managementStatus,...rest})=>rest);
+  function cloudRowsFor(key,rows,stripLegacy){
+    if(key==='applicants')return rows.map(row=>{if(typeof applicantForCloud==='function')return applicantForCloud(row,!!stripLegacy);const copy={...row};if(stripLegacy)delete copy.employeeId;return copy;});
+    if(key==='schools'&&stripLegacy)return rows.map(({managementStatus,...rest})=>rest);
     return rows.map(row=>({...row}));
   }
   async function cloudUpsertDataset(info,rows,onProgress){
-    const groups=chunk(rows,BC_CLOUD_CHUNK);let done=0;let stripSchoolManagement=false;
+    const groups=chunk(rows,BC_CLOUD_CHUNK);let done=0;let stripLegacy=false;
     for(let i=0;i<groups.length;i++){
-      let payload=cloudRowsFor(info.key,groups[i],stripSchoolManagement);
+      let payload=cloudRowsFor(info.key,groups[i],stripLegacy);
       let res=await window.sb.from(info.cloudTable).upsert(payload);
       if(res&&res.error&&info.key==='schools'&&safeText(res.error.message).includes('managementStatus')){
-        stripSchoolManagement=true;payload=cloudRowsFor(info.key,groups[i],true);res=await window.sb.from(info.cloudTable).upsert(payload);
+        stripLegacy=true;payload=cloudRowsFor(info.key,groups[i],true);res=await window.sb.from(info.cloudTable).upsert(payload);
+      }
+      if(res&&res.error&&info.key==='applicants'&&typeof applicantEmployeeIdColumnError==='function'&&applicantEmployeeIdColumnError(res.error)){
+        stripLegacy=true;if(typeof applicantEmployeeIdCloudUnsupported!=='undefined')applicantEmployeeIdCloudUnsupported=true;payload=cloudRowsFor(info.key,groups[i],true);res=await window.sb.from(info.cloudTable).upsert(payload);
       }
       if(res&&res.error)throw new Error(res.error.message||`${info.label} 저장 실패`);
       done+=groups[i].length;if(onProgress)onProgress(done,rows.length,`${info.label} 저장`);
     }
-    return {upserted:done,stripSchoolManagement};
+    return {upserted:done,stripLegacy};
   }
   async function cloudFetchIds(info,onProgress){
     const ids=[];let from=0;

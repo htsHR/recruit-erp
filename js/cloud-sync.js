@@ -4,21 +4,37 @@
    - window.sb가 연결돼 있으면 추가로 클라우드에도 동기화
    - 실패해도 절대 로컬 동작을 막지 않음 (전부 try/catch로 감쌈)
    ========================================================= */
-function applicantForCloud(a){
-  // v10.30.3: employeeId는 로컬 전용 연결값으로 유지합니다.
-  // 기존 Supabase applicants 테이블에 employeeId 컬럼이 없는 환경에서도
-  // 저장 오류가 나지 않도록 클라우드 전송본에서만 제외합니다.
-  var row = {...a};
-  delete row.employeeId;
+let applicantEmployeeIdCloudUnsupported=false;
+function applicantForCloud(a,legacy=false){
+  var row={...a};
+  if(legacy) delete row.employeeId;
   return row;
 }
+function applicantEmployeeIdColumnError(error){
+  var msg=String(error&&error.message||error||'').toLowerCase();
+  return msg.includes('employeeid')&&(msg.includes('column')||msg.includes('schema')||msg.includes('not found')||msg.includes('does not exist'));
+}
 function supabaseSyncAll(list){
-  if(!canUseCloud()) return;
-  var cloudRows = (Array.isArray(list) ? list : []).map(applicantForCloud);
-  window.sb.from('applicants').upsert(cloudRows).then(function(res){
-    if(res && res.error){ console.warn('Supabase 저장 실패(로컬엔 정상 저장됨):', res.error.message); setCloudSyncStatus('error'); return; }
+  if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
+  var targets=Array.isArray(list)?list.filter(Boolean):[];
+  if(!targets.length) return Promise.resolve({skipped:true,count:0});
+  var CHUNK_SIZE=250;
+  return (async function(){
+    var useLegacy=applicantEmployeeIdCloudUnsupported,saved=0;
+    for(var start=0;start<targets.length;start+=CHUNK_SIZE){
+      var chunk=targets.slice(start,start+CHUNK_SIZE);
+      var res=await window.sb.from('applicants').upsert(chunk.map(function(a){return applicantForCloud(a,useLegacy);}));
+      if(res&&res.error&&!useLegacy&&applicantEmployeeIdColumnError(res.error)){
+        applicantEmployeeIdCloudUnsupported=true;useLegacy=true;
+        console.warn('지원자 employeeId용 Supabase 컬럼이 없어 기존 필드만 클라우드에 저장합니다. v10.40.24 관계 필드 SQL 실행 후 새로고침하면 양방향 연결도 동기화됩니다.',res.error.message);
+        res=await window.sb.from('applicants').upsert(chunk.map(function(a){return applicantForCloud(a,true);}));
+      }
+      if(res&&res.error) throw new Error(res.error.message||'지원자 Supabase 저장 실패');
+      saved+=chunk.length;
+    }
     setCloudSyncStatus('ok');
-  }).catch(function(e){ console.warn('Supabase 저장 실패(로컬엔 정상 저장됨):', e); setCloudSyncStatus('error'); });
+    return {saved:saved,count:targets.length,legacy:useLegacy};
+  })().catch(function(e){console.warn('Supabase 저장 실패(로컬엔 정상 저장됨):',e);setCloudSyncStatus('error');return {error:e,count:targets.length};});
 }
 function supabaseDeleteOne(id){
   if(!canUseCloud()) return;
