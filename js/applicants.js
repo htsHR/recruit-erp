@@ -150,7 +150,12 @@ function taskGroups(){
     const bv=b.interviewDate || '9999-12-31';
     return (av+' '+(a.interviewTime||'23:59')).localeCompare(bv+' '+(b.interviewTime||'23:59'));
   });
-  const recalls=applicants.filter(a=>isActive(a) && ['부재중','미연락'].includes(a.status));
+  const recalls=applicants.filter(a=>{
+    if(!isActive(a)) return false;
+    const next=a.nextContactDate||'';
+    const statusNeeds=['부재중','미연락'].includes(a.status);
+    return next===t || (statusNeeds && (!next || next<=t));
+  });
   const dorms=applicants.filter(isDormPending);
   const hireD7=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===7);
   const hireD3=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===3);
@@ -160,9 +165,10 @@ function taskGroups(){
   const weekInterviews=applicants.filter(a=>isActive(a) && a.interviewDate && daysUntil(a.interviewDate)>=0 && daysUntil(a.interviewDate)<=6);
   const overdue=applicants.filter(a=>{
     if(!isActive(a)) return false;
+    const contactOverdue=a.nextContactDate && daysUntil(a.nextContactDate)<0;
     const interviewOverdue=a.interviewDate && daysUntil(a.interviewDate)<0 && ['면접예정','다음면접'].includes(a.status);
     const hireOverdue=a.hireDate && daysUntil(a.hireDate)<0 && a.status==='입사예정';
-    return interviewOverdue || hireOverdue;
+    return contactOverdue || interviewOverdue || hireOverdue;
   });
   const waits=applicants.filter(a=>isActive(a) && (['입사예정'].includes(a.status)||['입사예정','보류'].includes(a.finalDecision))); 
   return {todayInterviews,upcomingInterviews,tomorrowInterviews:upcomingInterviews,recalls,dorms,hireD7,hireD3,hireToday,hireSoon,decisions,weekInterviews,overdue,waits};
