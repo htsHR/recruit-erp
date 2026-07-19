@@ -26,6 +26,7 @@ bind('applicantForm','submit',e=>{
   if(typeof window.erpMarkExcelApplicants==='function'&&((f.editId&&excelPending===String(f.editId))||(!f.editId&&excelPending==='__new__')))window.erpMarkExcelApplicants(savedId);
   window.__erpExcelPastePendingApplicant='';
   resetForm(); save(); setPage('applicants');
+  if(typeof window.erpRestoreApplicantListAfterSave==='function') window.erpRestoreApplicantListAfterSave(savedId);
 });
 bind('btnResetForm','click', resetForm);
 bind('searchInput','input',e=>{ currentSearch=e.target.value; renderTable(); });
@@ -289,7 +290,9 @@ bind('btnClearAll','click',()=>{
 });
 bind('btnCloseDetail','click', closeDetail);
 bind('detailBackdrop','click', closeDetail);
-bind('btnDetailEdit','click',()=>{ const id=detailCurrentId; closeDetail(); if(id) editApplicant(id); });
+const openApplicantEditFromDetail=()=>{ const id=detailCurrentId; window.__erpApplicantDetailEditPending=true; closeDetail(); try{ if(id) editApplicant(id); } finally{ window.__erpApplicantDetailEditPending=false; } };
+bind('btnDetailEdit','click',openApplicantEditFromDetail);
+bind('btnDetailEditTop','click',openApplicantEditFromDetail);
 bind('btnCloseSchoolDetail','click', closeSchoolDetail);
 bind('schoolDetailBackdrop','click', closeSchoolDetail);
 bind('btnSaveSchoolDetail','click', saveSchoolDetailHistory);

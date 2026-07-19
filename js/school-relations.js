@@ -224,73 +224,88 @@ function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a)
 판정/메모: ${[a.memo,a.decisionReason].filter(Boolean).join(' / ')||'-'}`; }
 function viewApplicant(id){
   const a=applicants.find(x=>x.id===id); if(!a) return;
-  detailCurrentId=id; const score=calcScore(a); const sc=deriveScores(a);
+  detailCurrentId=id;
+  const score=calcScore(a), sc=deriveScores(a);
   const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ') || '일정 미정';
   const dorm=dormLabel(a);
   const decision=finalDecisionOf(a);
   const action=nextAction(a);
-  const profileSub=[a.careerType,a.education,a.workplace].filter(Boolean).join(' · ') || '지원자 기본정보';
   const status=normalizeStatus(a.status);
-  const rejectedCls=statusToneClass(a);
-  const detailSection=(title, rows, cls='')=>rows ? `<section class="detail-section-card detail-section-v108 ${cls}"><div class="detail-section-title"><h4>${title}</h4></div><div class="detail-grid detail-grid-v108">${rows}</div></section>` : '';
+  const profileSub=[a.careerType,a.education,a.school,a.major].filter(Boolean).join(' · ') || '지원자 기본정보';
+  let manager='미지정';
+  try{ manager=(JSON.parse(localStorage.getItem('recruit_erp_applicant_manager_assignments')||'{}')||{})[a.id]||'미지정'; }catch{}
+  const detailSection=(title, rows, cls='')=>rows ? `<section class="detail-section-card detail-section-v108 applicant-detail-section ${cls}"><div class="detail-section-title"><h4>${title}</h4></div><div class="detail-grid detail-grid-v108">${rows}</div></section>` : '';
   const longBlock=(title, value, cls='')=>{
     const v=String(value ?? '').trim();
     if(!v) return '';
-    return `<section class="detail-section-card detail-section-v108 detail-long-section ${cls}"><div class="detail-section-title"><h4>${title}</h4></div><p>${esc(v)}</p></section>`;
+    return `<section class="detail-section-card detail-section-v108 detail-long-section applicant-detail-long ${cls}"><div class="detail-section-title"><h4>${title}</h4></div><p>${esc(v)}</p></section>`;
   };
+  const summaryItem=(label,value,cls='')=>`<div class="applicant-detail-summary-item ${cls}"><span>${label}</span><strong>${esc(String(value||'-'))}</strong></div>`;
 
-  const profile = `<div class="profile-hero-detail detail-hero-v109 ${rejectedCls}">
-    <div class="detail-hero-main-v109">
+  const profile=`<section class="applicant-detail-identity ${statusToneClass(a)}">
+    <div>
       <p class="eyebrow">APPLICANT PROFILE</p>
       <h2 class="detail-name ${genderClass(a)}">${esc(a.name||'이름없음')}</h2>
-      <p class="detail-subline">${esc(profileSub)}</p>
-      <div class="profile-badges"><span class="badge ${badgeClass(status)}">${esc(status||'미입력')}</span><span class="dorm-pill ${dormClass(dorm)}">${
-        esc(dorm)}</span><span class="workplace-pill">${esc(a.workplace||'근무지 미입력')}</span></div>
+      <p>${esc(profileSub)}</p>
     </div>
-    <div class="detail-summary-v109">
-      <div><span>판정</span><strong>${esc(decision)}</strong></div>
-      <div><span>다음액션</span><strong>${esc(action)}</strong></div>
+    <div class="applicant-detail-contact-line">
+      <span>${esc(a.phone||'연락처 미등록')}</span>
+      <span>${esc(a.email||'이메일 미등록')}</span>
     </div>
-  </div>`;
+  </section>`;
 
-  const core = `<div class="detail-core-card detail-core-v108">
-    ${coreItem('연락처',a.phone)}${coreItem('이메일',a.email)}${coreItem('지원일',a.applyDate)}${coreItem('지원경로',a.source)}
-    ${coreItem('근무지',a.workplace)}${coreItem('출근방법',dorm)}${coreItem('면접일정',interview)}${coreItem('입사예정일',a.hireDate)}
-  </div>`;
+  const summary=`<section class="applicant-detail-summary-section">
+    <div class="applicant-detail-summary-grid">
+      ${summaryItem('현재 상태',status||'미입력','status')}
+      ${summaryItem('담당자',manager,'manager')}
+      ${summaryItem('지원근무지',a.workplace||'미입력','workplace')}
+      ${summaryItem('면접 일정',interview,'interview')}
+      ${summaryItem('입사 예정일',a.hireDate||'미정','hire')}
+    </div>
+  </section>`;
 
-  const personalRows = [
-    detailRow('성별',a.gender), detailRow('생년월일/연령',[a.birthYear,a.age&&a.age+'세'].filter(Boolean).join(' / ')), detailRow('거주지역',a.region), detailRow('경력구분',a.careerType)
+  const basicRows=[
+    detailRow('연락처',a.phone),detailRow('이메일',a.email),detailRow('지원일',a.applyDate),detailRow('지원경로',a.source),
+    detailRow('출근방법',dorm),detailRow('거주지역',a.region),detailRow('성별',a.gender),detailRow('생년월일/연령',[a.birthYear,a.age&&a.age+'세'].filter(Boolean).join(' / '))
   ].join('');
-  const educationRows = [
-    detailRow('학력구분',a.education), detailRow('학교/전공',[a.school,a.major].filter(Boolean).join(' / ')),
-      detailRow('자격증',a.certs,'wide-row'), detailRow('외국어/기타자격',a.languageEtc,'wide-row')
+  const educationRows=[
+    detailRow('학력구분',a.education),detailRow('학교/전공',[a.school,a.major].filter(Boolean).join(' / ')),
+    detailRow('자격증',a.certs,'wide-row'),detailRow('외국어/기타자격',a.languageEtc,'wide-row')
   ].join('');
-  const jobRows = [
-    detailRow('직무적합',displayCategory(a)), detailRow('확인필요사항',displayCheckNeeds(a.checkNeeds),'wide-row'), detailRow('자소서/태도 키워드',a.selfIntroKeywords,'wide-row')
+  const reviewRows=[
+    detailRow('직무적합',displayCategory(a)),detailRow('경력구분',a.careerType),detailRow('확인필요사항',displayCheckNeeds(a.checkNeeds),'wide-row'),
+    detailRow('자소서/태도 키워드',a.selfIntroKeywords,'wide-row')
   ].join('');
-  const memoRows = [
-    longBlock('상담내용', a.consult, 'memo-primary'),
-    longBlock('메모·다음액션', a.memo),
-    longBlock('판정사유·참고', a.decisionReason)
+  const memoBlocks=[
+    longBlock('상담내용',a.consult,'memo-primary'),
+    longBlock('메모·다음 액션',a.memo),
+    longBlock('판정사유·참고',a.decisionReason)
   ].filter(Boolean).join('');
-  const careerBlock = longBlock('경력사항', a.career, 'career-long detail-career-v109');
+  const careerBlock=longBlock('경력사항',a.career,'career-long');
 
-  $('detailTitle').textContent = `${a.name||'이름없음'} · 상세 프로필`;
-  $('detailBody').innerHTML = `
+  $('detailTitle').textContent=`${a.name||'이름없음'} · 지원자 상세`;
+  $('detailBody').innerHTML=`
     ${profile}
-    ${core}
-    ${memoRows ? `<div class="detail-memo-stack-v109">${memoRows}</div>` : ''}
-    <div class="detail-info-board-v109">
-      ${detailSection('인적사항', personalRows)}
-      ${detailSection('학력·자격 정보', educationRows)}
-      ${detailSection('검토 참고정보', jobRows)}
-    </div>
-    ${careerBlock}
-    <section class="detail-score-section detail-score-v108 detail-score-v109"><div class="detail-section-title"><h4>검토점수</h4><span>참고용 자동 점수</span></div><div class="detail-score"><strong>${
-      score}점</strong><span>${esc(decision)}</span><small>${esc(displayCategory(a))} · ${esc(action)}</small></div>
-    <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${
-      sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${
-      sc.field}/20</strong></div></div></section>`;
+    ${summary}
+    <div class="applicant-detail-content-grid">
+      <div class="applicant-detail-content-main">
+        ${detailSection('기본정보',basicRows)}
+        ${memoBlocks?`<div class="applicant-detail-memo-stack">${memoBlocks}</div>`:''}
+        ${careerBlock}
+      </div>
+      <aside class="applicant-detail-content-side">
+        ${detailSection('학력·자격',educationRows)}
+        ${detailSection('검토 참고정보',reviewRows)}
+        <section class="applicant-detail-decision-card">
+          <div><span>현재 판정</span><strong>${esc(decision)}</strong></div>
+          <div><span>다음 액션</span><strong>${esc(action)}</strong></div>
+        </section>
+        <details class="applicant-detail-score-details">
+          <summary><span>검토점수 참고보기</span><strong>${score}점</strong></summary>
+          <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${sc.field}/20</strong></div></div>
+        </details>
+      </aside>
+    </div>`;
   $('detailModal').classList.add('show');
 }
 function closeDetail(){ $('detailModal').classList.remove('show'); detailCurrentId=''; }
