@@ -389,6 +389,7 @@ let excelPasteTouchedFields = new Set();
 let excelPasteBatchRows = [];
 let excelPasteBatchRegisteredIds = [];
 let excelPasteBatchHeaderRow = null;
+let excelPasteBatchFilter = 'all';
 
 function excelPasteText(v){ return String(v ?? '').replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim(); }
 function excelPastePhoneDigits(v){ return String(v||'').replace(/\D/g,''); }
@@ -733,6 +734,14 @@ function excelPasteBatchIssueText(item){
   item.internalDuplicates.slice(0,1).forEach(x=>rows.push(`${x.row}행과 중복: ${x.reasons.join(', ')}`));
   return rows.join(' / ')||'필수값과 형식 정상';
 }
+function excelPasteBatchVisibleRows(){
+  return excelPasteBatchRows.map((item,index)=>({item,index})).filter(({item})=>excelPasteBatchFilter==='all'||item.state===excelPasteBatchFilter);
+}
+function excelPasteBatchSetFilter(filter){
+  excelPasteBatchFilter=['all','ready','warning','duplicate','error'].includes(filter)?filter:'all';
+  document.querySelectorAll('[data-excel-batch-filter]').forEach(btn=>btn.classList.toggle('active',btn.dataset.excelBatchFilter===excelPasteBatchFilter));
+  excelPasteBatchRender();
+}
 function excelPasteBatchRender(){
   const section=$('excelPasteBatch'),body=$('excelBatchBody');
   if(!section||!body)return;
@@ -742,20 +751,23 @@ function excelPasteBatchRender(){
   excelPasteBatchRows.forEach(x=>counts[x.state]++);
   const countBox=$('excelBatchCounts');
   if(countBox)countBox.innerHTML=`<span class="is-ready">정상 ${counts.ready}</span><span class="is-warning">주의 ${counts.warning}</span><span class="is-duplicate">중복 ${counts.duplicate}</span><span class="is-error">오류 ${counts.error}</span>`;
-  body.innerHTML=excelPasteBatchRows.map((item,index)=>{
+  const visible=excelPasteBatchVisibleRows();
+  body.innerHTML=visible.length?visible.map(({item,index})=>{
     const [label,note]=excelPasteBatchStatusLabel(item);
     const excelNo=item.preview?.cells?.[0]||String(index+1);
     const invalidWork=item.data.workplace&&!excelPasteKnownWorkplace(item.data.workplace);
     return `<tr class="excel-batch-row is-${item.state}" data-batch-row="${index}">
       <td><input class="excel-batch-select" type="checkbox" data-batch-index="${index}" ${item.selected?'checked':''} ${item.state==='error'?'disabled':''} aria-label="${esc(item.data.name||`${index+1}행`)} 선택"></td>
       <td><strong>${esc(excelNo)}</strong><small>${index+1}번째 데이터</small></td>
-      <td><strong>${esc(item.data.name||'성명 없음')}</strong><small>${esc(item.data.applyDate||'지원일 없음')} · ${esc(item.data.status||'미연락')}</small></td>
-      <td><strong>${esc(item.data.phone||'연락처 없음')}</strong><small>${esc(item.data.email||'이메일 없음')}</small></td>
+      <td><input class="excel-batch-inline-input" data-batch-index="${index}" data-batch-field="name" value="${esc(item.data.name||'')}" placeholder="성명 입력"><small>${esc(item.data.applyDate||'지원일 없음')} · ${esc(item.data.status||'미연락')}</small></td>
+      <td><input class="excel-batch-inline-input" data-batch-index="${index}" data-batch-field="phone" value="${esc(item.data.phone||'')}" placeholder="연락처 입력"><small>${esc(item.data.email||'이메일 없음')}</small></td>
       <td><select data-batch-index="${index}" data-batch-field="workplace"><option value="">선택</option>${invalidWork?`<option value="${esc(item.data.workplace)}" selected>${esc(item.data.workplace)} (확인 필요)</option>`:''}<option ${item.data.workplace==='천안'?'selected':''}>천안</option><option ${item.data.workplace==='평택'?'selected':''}>평택</option><option ${item.data.workplace==='기타'?'selected':''}>기타</option></select></td>
       <td><select data-batch-index="${index}" data-batch-field="dormUse"><option value="">선택</option><option ${item.data.dormUse==='기숙사'?'selected':''}>기숙사</option><option ${item.data.dormUse==='출퇴근'?'selected':''}>출퇴근</option><option ${item.data.dormUse==='확인필요'?'selected':''}>확인필요</option></select></td>
       <td><span class="excel-batch-state is-${item.state}">${label}</span><strong>${esc(note)}</strong><small title="${esc(excelPasteBatchIssueText(item))}">${esc(excelPasteBatchIssueText(item))}</small></td>
     </tr>`;
-  }).join('');
+  }).join(''):`<tr><td colspan="7" class="excel-batch-empty">현재 필터에 해당하는 행이 없습니다.</td></tr>`;
+  const shown=$('excelBatchShownSummary');
+  if(shown)shown.textContent=`표시 ${visible.length}건 · 전체 ${excelPasteBatchRows.length}건`;
   excelPasteBatchUpdateSelectionState();
 }
 function excelPasteBatchSelected(){return excelPasteBatchRows.filter(x=>x.selected&&x.state!=='error');}
@@ -780,6 +792,7 @@ function excelPasteBatchUpdateSelectionState(){
   }
 }
 function excelPastePrepareBatch(rows,headerRow=null){
+  excelPasteBatchFilter='all';
   excelPasteBatchRows=rows.map((row,index)=>{
     try{
       const parsed=excelPasteRowToApplicant(row,headerRow);

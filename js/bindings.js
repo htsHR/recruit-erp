@@ -317,6 +317,7 @@ bind('excelPasteRaw','paste',()=>setTimeout(()=>{
 const excelPasteBatchEl=$('excelPasteBatch');
 if(excelPasteBatchEl){
   excelPasteBatchEl.addEventListener('change',e=>{if(e.target.matches('.excel-batch-select,[data-batch-field]'))excelPasteBatchHandleChange(e.target);});
+  excelPasteBatchEl.addEventListener('click',e=>{const btn=e.target.closest('[data-excel-batch-filter]');if(btn)excelPasteBatchSetFilter(btn.dataset.excelBatchFilter);});
 }
 const excelPasteEditorEl=$('excelPasteEditor');
 if(excelPasteEditorEl){

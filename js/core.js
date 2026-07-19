@@ -1,4 +1,4 @@
-// [HOME_DEV] Recruit ERP v10.40.30 APPLICANT_QUICK_ENTRY — 역할별 파일 분리 빌드
+// [HOME_DEV] Recruit ERP v10.40.30 SCHOOL_EXACT_AUTO_LINK — 역할별 파일 분리 빌드
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
 const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
