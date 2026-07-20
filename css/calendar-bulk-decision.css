@@ -1,0 +1,52 @@
+/* Recruit ERP v10.46.4 CALENDAR_BULK_DECISION */
+#calendar .calendar-bulk-decision-bar[hidden]{display:none!important}
+#calendar .calendar-bulk-decision-bar{margin:0 0 12px;padding:11px 12px;border:1px solid #dbe7f7;border-radius:14px;background:#f8fbff;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#calendar .calendar-bulk-left,#calendar .calendar-bulk-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#calendar .calendar-bulk-select-all{display:inline-flex;flex-direction:row;align-items:center;gap:7px;font-size:12px;color:#334155;font-weight:850;cursor:pointer}
+#calendar .calendar-bulk-select-all input{width:16px;height:16px;margin:0;accent-color:#2563eb}
+#calendar .calendar-bulk-count{display:inline-flex;align-items:center;min-height:30px;padding:5px 9px;border-radius:999px;background:#fff;border:1px solid #dbe7f7;color:#475569;font-size:12px;font-weight:800}
+#calendar .calendar-bulk-count strong{color:#1d4ed8;margin-right:2px}
+#calendar .calendar-bulk-accept,#calendar .calendar-bulk-reject{border-radius:10px;padding:8px 12px;font-size:12px;font-weight:900;cursor:pointer}
+#calendar .calendar-bulk-accept{border:1px solid #86efac;background:#ecfdf5;color:#047857}
+#calendar .calendar-bulk-reject{border:1px solid #fecaca;background:#fff1f2;color:#dc2626}
+#calendar .calendar-bulk-accept:disabled,#calendar .calendar-bulk-reject:disabled{opacity:.42;cursor:not-allowed}
+#calendar .calendar-timeline-item.is-bulk-selected{border-color:#93c5fd;background:#eff6ff;box-shadow:0 0 0 2px rgba(37,99,235,.08)}
+#calendar .calendar-item-select{flex:0 0 auto;display:flex;align-items:center;padding-top:2px}
+#calendar .calendar-item-select input{width:18px;height:18px;margin:0;accent-color:#2563eb;cursor:pointer}
+#calendar .calendar-timeline-main-wrap{display:flex;gap:10px;align-items:flex-start;min-width:0;flex:1}
+#calendar .calendar-result-tag{display:inline-flex;align-items:center;margin-left:6px;padding:3px 7px;border-radius:999px;font-size:11px;font-weight:900;vertical-align:middle}
+#calendar .calendar-result-tag.accept{background:#dcfce7;color:#047857}
+#calendar .calendar-result-tag.reject{background:#fee2e2;color:#b91c1c}
+#calendar .calendar-result-tag.done{background:#e2e8f0;color:#475569}
+#calendar .calendar-timeline-item.is-processed{background:#f8fafc}
+#calendar .calendar-timeline-item.is-processed .calendar-timeline-main{opacity:.82}
+#calendar .calendar-processed-note{font-size:11px;color:#64748b;font-weight:800;white-space:nowrap}
+.calendar-decision-modal-card{width:min(560px,calc(100vw - 28px))!important;padding:0!important;overflow:hidden!important}
+.calendar-decision-modal-card .modal-head{padding:20px 22px 16px;border-bottom:1px solid #e2e8f0;margin:0}
+.calendar-decision-modal-card .modal-head h3{margin:4px 0 4px;font-size:22px;color:#0f172a}
+.calendar-decision-subtitle{margin:0;color:#64748b;font-size:13px;line-height:1.45}
+.calendar-decision-body{padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+.calendar-decision-summary{display:flex;align-items:center;justify-content:space-between;border:1px solid #dbe7f7;background:#f8fbff;border-radius:14px;padding:12px 14px}
+.calendar-decision-summary span{font-size:12px;color:#64748b;font-weight:800}.calendar-decision-summary strong{font-size:20px;color:#0f172a}
+.calendar-decision-names{display:flex;gap:7px;flex-wrap:wrap;max-height:132px;overflow:auto;padding:2px}
+.calendar-decision-name{display:inline-flex;padding:6px 9px;border-radius:999px;background:#eef4ff;border:1px solid #cfe0ff;color:#1e40af;font-size:12px;font-weight:850}
+.calendar-hire-date-field{display:flex;flex-direction:column;gap:7px;padding:14px;border:1px solid #bbf7d0;background:#f0fdf4;border-radius:14px;color:#166534}
+.calendar-hire-date-field strong{display:inline;color:#dc2626;font-size:11px;margin-left:4px}
+.calendar-hire-date-field input{background:#fff;border-color:#86efac}
+.calendar-decision-warning{padding:11px 12px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:12px;line-height:1.5;font-weight:750}
+.calendar-decision-actions{padding:14px 22px 20px!important;border-top:1px solid #e2e8f0;margin:0;justify-content:flex-end}
+.calendar-decision-modal.is-reject .calendar-decision-summary{background:#fff1f2;border-color:#fecdd3}
+.calendar-decision-modal.is-reject .calendar-decision-name{background:#fff1f2;border-color:#fecdd3;color:#b91c1c}
+.calendar-decision-modal.is-reject #btnApplyCalendarBulkDecision{background:#dc2626}
+@media(max-width:760px){
+  #calendar .calendar-bulk-decision-bar{align-items:stretch}
+  #calendar .calendar-bulk-left,#calendar .calendar-bulk-actions{width:100%;justify-content:space-between}
+  #calendar .calendar-bulk-actions button{flex:1}
+  #calendar .calendar-timeline-item{flex-wrap:wrap}
+  #calendar .calendar-timeline-main-wrap{width:100%}
+  #calendar .calendar-timeline-actions{width:100%;justify-content:flex-end}
+  .calendar-decision-modal-card .modal-head,.calendar-decision-body{padding-left:16px;padding-right:16px}
+  .calendar-decision-actions{padding-left:16px!important;padding-right:16px!important}
+}
+
+.calendar-hire-date-field[hidden]{display:none!important}
