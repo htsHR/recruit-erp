@@ -229,5 +229,6 @@
     };
   }
   window.applicantProgressHistoryAddSystem=function(id,type,title,detail,meta={}){const a=(applicants||[]).find(x=>String(x.id)===String(id));if(!a)return;addHistory(a,type,title,detail,meta);};
+  window.applicantProgressHistoryRefreshSnapshots=refreshSnapshots;
   refreshSnapshots();
 })();

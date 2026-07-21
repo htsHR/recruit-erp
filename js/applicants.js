@@ -394,6 +394,8 @@ let excelPastePreviewMeta = null;
 let excelPasteTouchedFields = new Set();
 let excelPasteBatchRows = [];
 let excelPasteBatchRegisteredIds = [];
+let excelPasteBatchUndoSnapshot = null;
+let excelPasteBatchUndoSummary = null;
 let excelPasteBatchHeaderRow = null;
 let excelPasteBatchFilter = 'all';
 
@@ -703,6 +705,56 @@ function excelPasteBatchPairReasons(a,b){
   if(a.name&&a.name===b.name&&ab&&ab===bb)reasons.push('붙여넣은 행끼리 성명+생년월일 동일');
   return reasons;
 }
+function excelPasteBatchInternalDuplicateReason(item){
+  if(!item.internalDuplicates?.length)return '';
+  const first=item.internalDuplicates[0];
+  return `${first.row}행과 동일 지원자 식별값이 겹칩니다: ${first.reasons.join(', ')}`;
+}
+function excelPasteBatchExactMatches(data){
+  const phone=excelPastePhoneDigits(data.phone),email=excelPasteText(data.email).toLowerCase(),birth=excelPasteText(data.birthYear),name=excelPasteText(data.name);
+  const phoneMatches=phone.length>=8?applicants.filter(a=>excelPastePhoneDigits(a.phone)===phone):[];
+  const emailMatches=email?applicants.filter(a=>excelPasteText(a.email).toLowerCase()===email):[];
+  const nameBirthMatches=name&&birth?applicants.filter(a=>excelPasteText(a.name)===name&&excelPasteSameValue('birthYear',a.birthYear,birth)):[];
+  return {phoneMatches,emailMatches,nameBirthMatches};
+}
+function excelPasteBatchApplyFields(item){
+  const present=item.present||item.parsed?.present||{};
+  return Object.keys(EXCEL_PASTE_FIELD_MAP).filter(field=>present[field]&&excelPasteText(item.data[field])!=='');
+}
+function excelPasteBatchChanges(item,target){
+  if(!target)return [];
+  return excelPasteBatchApplyFields(item).filter(field=>!excelPasteSameValue(field,target[field]||'',item.data[field]||'')).map(field=>({
+    field,label:EXCEL_PASTE_FIELD_LABELS[field]||field,before:target[field]||'',after:item.data[field]||''
+  }));
+}
+function excelPasteBatchClassify(item){
+  item.matchedApplicant=null;item.matchReasons=[];item.changes=[];
+  if(item.errors.length){item.state='error';item.selected=false;return;}
+  const internalReason=excelPasteBatchInternalDuplicateReason(item);
+  if(internalReason){item.state='review';item.matchReasons=[internalReason];item.selected=false;return;}
+  const {phoneMatches,emailMatches,nameBirthMatches}=excelPasteBatchExactMatches(item.data);
+  if(phoneMatches.length>1){item.state='review';item.matchReasons=[`현재 ERP에 같은 연락처가 ${phoneMatches.length}명 있습니다.`];item.selected=false;return;}
+  if(phoneMatches.length===1){
+    const target=phoneMatches[0],incomingName=excelPasteText(item.data.name),targetName=excelPasteText(target.name);
+    const incomingBirth=excelPasteText(item.data.birthYear),targetBirth=excelPasteText(target.birthYear);
+    if(incomingName&&targetName&&incomingName!==targetName){item.state='review';item.matchReasons=[`연락처는 ${targetName}님과 같지만 성명이 다릅니다.`];item.selected=false;return;}
+    if(incomingBirth&&targetBirth&&!excelPasteSameValue('birthYear',incomingBirth,targetBirth)){item.state='review';item.matchReasons=[`연락처는 ${targetName||'기존 지원자'}님과 같지만 생년월일이 다릅니다.`];item.selected=false;return;}
+    item.matchedApplicant=target;item.matchReasons=['연락처 정확 일치'];item.changes=excelPasteBatchChanges(item,target);
+    item.state=item.changes.length?'update':'same';
+    if(item.state==='same')item.selected=false;
+    return;
+  }
+  if(emailMatches.length||nameBirthMatches.length){
+    const candidates=[...new Map([...emailMatches,...nameBirthMatches].map(a=>[String(a.id),a])).values()];
+    item.state='review';
+    if(candidates.length===1){
+      const a=candidates[0];
+      item.matchReasons=[emailMatches.includes(a)?`이메일이 기존 ${a.name||'지원자'}님과 같습니다.`:`성명+생년월일이 기존 ${a.name||'지원자'}님과 같습니다.`];
+    }else item.matchReasons=[`이메일 또는 성명+생년월일 일치 후보가 ${candidates.length}명 있습니다.`];
+    item.selected=false;return;
+  }
+  item.state='new';
+}
 function excelPasteBatchRecalculate(){
   excelPasteBatchRows.forEach(item=>{item.internalDuplicates=[];});
   for(let i=0;i<excelPasteBatchRows.length;i++){
@@ -715,36 +767,59 @@ function excelPasteBatchRecalculate(){
     }
   }
   excelPasteBatchRows.forEach(item=>{
-    const live=excelPasteValidateLive(item.data);
+    const matches=excelPasteBatchExactMatches(item.data);
+    let safeTarget=null;
+    if(matches.phoneMatches.length===1){
+      const candidate=matches.phoneMatches[0],incomingName=excelPasteText(item.data.name),targetName=excelPasteText(candidate.name);
+      const incomingBirth=excelPasteText(item.data.birthYear),targetBirth=excelPasteText(candidate.birthYear);
+      const nameOkay=!incomingName||!targetName||incomingName===targetName;
+      const birthOkay=!incomingBirth||!targetBirth||excelPasteSameValue('birthYear',incomingBirth,targetBirth);
+      if(nameOkay&&birthOkay)safeTarget=candidate;
+    }
+    const validationData=safeTarget?{...safeTarget}:item.data;
+    if(safeTarget)excelPasteBatchApplyFields(item).forEach(field=>{validationData[field]=item.data[field];});
+    const live=excelPasteValidateLive(validationData);
+    if(safeTarget)live.errors=live.errors.filter(x=>!['required-workplace','required-dormUse'].includes(x.code));
     const staticErrors=(item.issues||[]).filter(x=>x.level==='error'&&!excelPasteIssueResolved(x,item.data));
     const staticWarnings=(item.issues||[]).filter(x=>x.level!=='error');
     item.errors=[...staticErrors,...live.errors].filter((x,i,a)=>a.findIndex(y=>y.field===x.field&&y.code===x.code)===i);
     item.warnings=[...staticWarnings,...live.warnings].filter((x,i,a)=>a.findIndex(y=>y.field===x.field&&y.code===x.code)===i);
-    item.existingDuplicates=excelPasteFindDuplicates(item.data);
-    item.hasDuplicate=!!(item.existingDuplicates.length||item.internalDuplicates.length);
-    item.state=item.errors.length?'error':item.hasDuplicate?'duplicate':item.warnings.length?'warning':'ready';
-    if(item.state==='error')item.selected=false;
+    excelPasteBatchClassify(item);
   });
 }
 function excelPasteBatchStatusLabel(item){
   if(item.state==='error')return ['오류',`${item.errors.length}개 수정 필요`];
-  if(item.state==='duplicate')return ['중복 후보',`${item.existingDuplicates.length+item.internalDuplicates.length}건 확인`];
-  if(item.state==='warning')return ['주의',`${item.warnings.length}개 확인`];
-  return ['정상','등록 가능'];
+  if(item.state==='review')return ['확인 필요','자동 변경 차단'];
+  if(item.state==='update')return ['변경',`${item.changes.length}개 변경`];
+  if(item.state==='same')return ['동일','변경 없음'];
+  return ['신규','신규 등록'];
 }
 function excelPasteBatchIssueText(item){
   const rows=[];
   item.errors.slice(0,2).forEach(x=>rows.push(x.text));
-  item.warnings.slice(0,1).forEach(x=>rows.push(x.text));
-  item.existingDuplicates.slice(0,1).forEach(x=>rows.push(`기존 ${x.applicant.name||'지원자'}: ${x.reasons.join(', ')}`));
-  item.internalDuplicates.slice(0,1).forEach(x=>rows.push(`${x.row}행과 중복: ${x.reasons.join(', ')}`));
-  return rows.join(' / ')||'필수값과 형식 정상';
+  item.matchReasons?.slice(0,1).forEach(x=>rows.push(x));
+  if(item.state==='update')item.changes.slice(0,3).forEach(x=>rows.push(`${x.label}: ${x.before||'비어 있음'} → ${x.after||'비어 있음'}`));
+  if(item.state==='same')rows.push(`기존 ${item.matchedApplicant?.name||'지원자'} 정보와 동일합니다.`);
+  if(item.state==='new')rows.push('일치하는 기존 지원자가 없어 신규 등록됩니다.');
+  item.warnings.slice(0,1).forEach(x=>rows.push(`주의: ${x.text}`));
+  return rows.join(' / ')||'검사 완료';
+}
+function excelPasteBatchChangeHtml(item){
+  if(item.state==='update'){
+    const shown=item.changes.slice(0,4).map(x=>`<li><b>${esc(x.label)}</b><span>${esc(x.before||'비어 있음')}</span><i>→</i><strong>${esc(x.after||'비어 있음')}</strong></li>`).join('');
+    const more=item.changes.length>4?`<small>외 ${item.changes.length-4}개 항목</small>`:'';
+    return `<ul class="excel-batch-change-preview">${shown}</ul>${more}`;
+  }
+  if(item.state==='review')return `<strong>${esc(item.matchReasons?.[0]||'지원자 식별 확인이 필요합니다.')}</strong><small>이 행은 자동 적용되지 않습니다.</small>`;
+  if(item.state==='same')return `<strong>${esc(item.matchedApplicant?.name||item.data.name||'기존 지원자')} · 변경 없음</strong><small>자동으로 건너뜁니다.</small>`;
+  if(item.state==='new')return `<strong>신규 지원자로 등록</strong><small>기존 ERP에서 정확히 일치하는 연락처를 찾지 못했습니다.</small>`;
+  return `<strong>${esc(item.errors?.[0]?.text||'수정이 필요합니다.')}</strong><small>${esc(item.errors?.[1]?.text||'')}</small>`;
 }
 function excelPasteBatchVisibleRows(){
   return excelPasteBatchRows.map((item,index)=>({item,index})).filter(({item})=>excelPasteBatchFilter==='all'||item.state===excelPasteBatchFilter);
 }
 function excelPasteBatchSetFilter(filter){
-  excelPasteBatchFilter=['all','ready','warning','duplicate','error'].includes(filter)?filter:'all';
+  excelPasteBatchFilter=['all','new','update','same','review','error'].includes(filter)?filter:'all';
   document.querySelectorAll('[data-excel-batch-filter]').forEach(btn=>btn.classList.toggle('active',btn.dataset.excelBatchFilter===excelPasteBatchFilter));
   excelPasteBatchRender();
 }
@@ -753,62 +828,62 @@ function excelPasteBatchRender(){
   if(!section||!body)return;
   excelPasteBatchRecalculate();
   section.hidden=false;
-  const counts={ready:0,warning:0,duplicate:0,error:0};
+  const counts={new:0,update:0,same:0,review:0,error:0};
   excelPasteBatchRows.forEach(x=>counts[x.state]++);
   const countBox=$('excelBatchCounts');
-  if(countBox)countBox.innerHTML=`<span class="is-ready">정상 ${counts.ready}</span><span class="is-warning">주의 ${counts.warning}</span><span class="is-duplicate">중복 ${counts.duplicate}</span><span class="is-error">오류 ${counts.error}</span>`;
+  if(countBox)countBox.innerHTML=`<span class="is-new">신규 ${counts.new}</span><span class="is-update">변경 ${counts.update}</span><span class="is-same">동일 ${counts.same}</span><span class="is-review">확인 필요 ${counts.review}</span><span class="is-error">오류 ${counts.error}</span>`;
   const visible=excelPasteBatchVisibleRows();
   body.innerHTML=visible.length?visible.map(({item,index})=>{
     const [label,note]=excelPasteBatchStatusLabel(item);
     const excelNo=item.preview?.cells?.[0]||String(index+1);
     const invalidWork=item.data.workplace&&!excelPasteKnownWorkplace(item.data.workplace);
+    const disabled=['error','review','same'].includes(item.state);
     return `<tr class="excel-batch-row is-${item.state}" data-batch-row="${index}">
-      <td><input class="excel-batch-select" type="checkbox" data-batch-index="${index}" ${item.selected?'checked':''} ${item.state==='error'?'disabled':''} aria-label="${esc(item.data.name||`${index+1}행`)} 선택"></td>
+      <td><input class="excel-batch-select" type="checkbox" data-batch-index="${index}" ${item.selected?'checked':''} ${disabled?'disabled':''} aria-label="${esc(item.data.name||`${index+1}행`)} 선택"></td>
       <td><strong>${esc(excelNo)}</strong><small>${index+1}번째 데이터</small></td>
       <td><input class="excel-batch-inline-input" data-batch-index="${index}" data-batch-field="name" value="${esc(item.data.name||'')}" placeholder="성명 입력"><small>${esc(item.data.applyDate||'지원일 없음')} · ${esc(item.data.status||'미연락')}</small></td>
       <td><input class="excel-batch-inline-input" data-batch-index="${index}" data-batch-field="phone" value="${esc(item.data.phone||'')}" placeholder="연락처 입력"><small>${esc(item.data.email||'이메일 없음')}</small></td>
       <td><select data-batch-index="${index}" data-batch-field="workplace"><option value="">선택</option>${invalidWork?`<option value="${esc(item.data.workplace)}" selected>${esc(item.data.workplace)} (확인 필요)</option>`:''}<option ${item.data.workplace==='천안'?'selected':''}>천안</option><option ${item.data.workplace==='평택'?'selected':''}>평택</option><option ${item.data.workplace==='기타'?'selected':''}>기타</option></select></td>
       <td><select data-batch-index="${index}" data-batch-field="dormUse"><option value="">선택</option><option ${item.data.dormUse==='기숙사'?'selected':''}>기숙사</option><option ${item.data.dormUse==='출퇴근'?'selected':''}>출퇴근</option><option ${item.data.dormUse==='확인필요'?'selected':''}>확인필요</option></select></td>
-      <td><span class="excel-batch-state is-${item.state}">${label}</span><strong>${esc(note)}</strong><small title="${esc(excelPasteBatchIssueText(item))}">${esc(excelPasteBatchIssueText(item))}</small></td>
+      <td><span class="excel-batch-state is-${item.state}">${label}</span><strong>${esc(note)}</strong><div title="${esc(excelPasteBatchIssueText(item))}">${excelPasteBatchChangeHtml(item)}</div></td>
     </tr>`;
   }).join(''):`<tr><td colspan="7" class="excel-batch-empty">현재 필터에 해당하는 행이 없습니다.</td></tr>`;
-  const shown=$('excelBatchShownSummary');
-  if(shown)shown.textContent=`표시 ${visible.length}건 · 전체 ${excelPasteBatchRows.length}건`;
+  const shown=$('excelBatchShownSummary');if(shown)shown.textContent=`표시 ${visible.length}건 · 전체 ${excelPasteBatchRows.length}건`;
   excelPasteBatchUpdateSelectionState();
 }
-function excelPasteBatchSelected(){return excelPasteBatchRows.filter(x=>x.selected&&x.state!=='error');}
+function excelPasteBatchSelected(){return excelPasteBatchRows.filter(x=>x.selected&&['new','update'].includes(x.state));}
 function excelPasteBatchUpdateSelectionState(){
-  const selected=excelPasteBatchSelected();
-  const hasWarning=selected.some(x=>x.state==='warning');
-  const hasDuplicate=selected.some(x=>x.state==='duplicate');
-  const warningWrap=$('excelBatchWarningConfirmWrap'),duplicateWrap=$('excelBatchDuplicateConfirmWrap');
+  const selected=excelPasteBatchSelected(),newRows=selected.filter(x=>x.state==='new'),updates=selected.filter(x=>x.state==='update');
+  const hasWarning=selected.some(x=>x.warnings?.length);
+  const warningWrap=$('excelBatchWarningConfirmWrap'),updateWrap=$('excelBatchDuplicateConfirmWrap');
   if(warningWrap)warningWrap.hidden=!hasWarning;
-  if(duplicateWrap)duplicateWrap.hidden=!hasDuplicate;
+  if(updateWrap)updateWrap.hidden=!updates.length;
   const warningOk=!hasWarning||!!$('xpBatchWarningConfirm')?.checked;
-  const duplicateOk=!hasDuplicate||!!$('xpBatchDuplicateConfirm')?.checked;
-  const summary=$('excelBatchSelectionSummary');if(summary)summary.textContent=`${selected.length}명 선택 · 전체 ${excelPasteBatchRows.length}명`;
+  const updateOk=!updates.length||!!$('xpBatchDuplicateConfirm')?.checked;
+  const summary=$('excelBatchSelectionSummary');if(summary)summary.textContent=`선택 ${selected.length}명 · 신규 ${newRows.length} · 변경 ${updates.length}`;
   const button=$('btnRegisterExcelBatch');
-  if(button){button.hidden=false;button.disabled=!selected.length||!warningOk||!duplicateOk;button.textContent=`선택 ${selected.length}명 등록`;}
+  if(button){button.hidden=false;button.disabled=!selected.length||!warningOk||!updateOk;button.textContent=`신규 ${newRows.length}명 등록 · 기존 ${updates.length}명 변경 적용`;}
   const ready=$('excelPasteReadyState');
   if(ready){
-    if(!selected.length){ready.className='excel-paste-ready is-blocked';ready.textContent='등록할 행을 선택하세요';}
-    else if(!warningOk){ready.className='excel-paste-ready is-waiting';ready.textContent='주의 행 확인 필요';}
-    else if(!duplicateOk){ready.className='excel-paste-ready is-waiting';ready.textContent='중복 후보 확인 필요';}
-    else{ready.className='excel-paste-ready is-ready';ready.textContent=`${selected.length}명 일괄 등록 가능`;}
+    if(!selected.length){ready.className='excel-paste-ready is-blocked';ready.textContent='신규 또는 변경 행을 선택하세요';}
+    else if(!warningOk){ready.className='excel-paste-ready is-waiting';ready.textContent='주의 항목 확인 필요';}
+    else if(!updateOk){ready.className='excel-paste-ready is-waiting';ready.textContent='기존 지원자 변경 내역 확인 필요';}
+    else{ready.className='excel-paste-ready is-ready';ready.textContent=`신규 ${newRows.length} · 변경 ${updates.length} 적용 가능`;}
   }
 }
 function excelPastePrepareBatch(rows,headerRow=null){
   excelPasteBatchFilter='all';
+  excelPasteBatchUndoSnapshot=null;excelPasteBatchUndoSummary=null;excelPasteBatchRegisteredIds=[];
   excelPasteBatchRows=rows.map((row,index)=>{
     try{
       const parsed=excelPasteRowToApplicant(row,headerRow);
-      return {index,row,parsed,data:{...parsed.data},issues:[...parsed.issues],preview:parsed.preview,selected:false,errors:[],warnings:[],existingDuplicates:[],internalDuplicates:[],state:'error'};
+      return {index,row,parsed,data:{...parsed.data},present:{...parsed.present},issues:[...parsed.issues],preview:parsed.preview,selected:false,errors:[],warnings:[],internalDuplicates:[],matchedApplicant:null,matchReasons:[],changes:[],state:'error'};
     }catch(err){
-      return {index,row,parsed:null,data:{name:row[10]||'',phone:'',workplace:'',dormUse:''},issues:[excelPasteIssue('',err.message||'행 분석 실패','error','row-parse')],preview:{cells:row,headers:headerRow},selected:false,errors:[],warnings:[],existingDuplicates:[],internalDuplicates:[],state:'error'};
+      return {index,row,parsed:null,data:{name:row[10]||'',phone:'',workplace:'',dormUse:''},present:{},issues:[excelPasteIssue('',err.message||'행 분석 실패','error','row-parse')],preview:{cells:row,headers:headerRow},selected:false,errors:[],warnings:[],internalDuplicates:[],matchedApplicant:null,matchReasons:[],changes:[],state:'error'};
     }
   });
   excelPasteBatchRecalculate();
-  excelPasteBatchRows.forEach(item=>{item.selected=item.state==='ready';});
+  excelPasteBatchRows.forEach(item=>{item.selected=['new','update'].includes(item.state);});
   if($('excelPasteEditor'))$('excelPasteEditor').hidden=true;
   if($('excelPasteOriginalBlock'))$('excelPasteOriginalBlock').hidden=true;
   if($('btnApplyExcelPaste'))$('btnApplyExcelPaste').hidden=true;
@@ -816,52 +891,79 @@ function excelPastePrepareBatch(rows,headerRow=null){
   if($('btnUndoExcelBatch'))$('btnUndoExcelBatch').hidden=true;
   if($('excelBatchResult')){$('excelBatchResult').hidden=true;$('excelBatchResult').innerHTML='';}
   if($('excelPasteColumnSummary'))$('excelPasteColumnSummary').textContent='';
+  const warning=$('xpBatchWarningConfirm');if(warning)warning.checked=false;
+  const update=$('xpBatchDuplicateConfirm');if(update)update.checked=false;
   excelPasteBatchRender();
-  const invalid=excelPasteBatchRows.filter(x=>x.state==='error').length;
-  excelPasteSetMessage(`여러 행 ${rows.length}건을 분석했습니다.${invalid?` 오류 ${invalid}건은 선택할 수 없습니다.`:' 정상 행을 확인해 등록하세요.'}`,invalid?'warning':'success');
+  const counts=excelPasteBatchRows.reduce((m,x)=>(m[x.state]=(m[x.state]||0)+1,m),{});
+  excelPasteSetMessage(`여러 행 ${rows.length}건 분석 · 신규 ${counts.new||0} · 변경 ${counts.update||0} · 동일 ${counts.same||0} · 확인 필요 ${counts.review||0} · 오류 ${counts.error||0}`,(counts.review||counts.error)?'warning':'success');
 }
-function excelPasteBatchSelectReady(){excelPasteBatchRows.forEach(x=>x.selected=x.state==='ready');excelPasteBatchRender();}
+function excelPasteBatchSelectReady(){excelPasteBatchRows.forEach(x=>x.selected=['new','update'].includes(x.state));excelPasteBatchRender();}
 function excelPasteBatchClearSelection(){excelPasteBatchRows.forEach(x=>x.selected=false);excelPasteBatchRender();}
 function excelPasteBatchHandleChange(target){
   const index=Number(target?.dataset?.batchIndex);if(!Number.isInteger(index)||!excelPasteBatchRows[index])return;
   const item=excelPasteBatchRows[index];
   if(target.classList.contains('excel-batch-select'))item.selected=target.checked;
-  const field=target.dataset.batchField;if(field)item.data[field]=target.value;
+  const field=target.dataset.batchField;if(field){item.data[field]=target.value;item.present=item.present||{};item.present[field]=!!excelPasteText(target.value);}
   excelPasteBatchRender();
+}
+function excelPasteBatchSafetyBackup(){
+  try{if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup('엑셀 여러 행 신규 등록·기존 지원자 변경 직전');}catch(err){console.warn('엑셀 일괄 변경 안전백업 생성 실패',err);}
+  return null;
+}
+function excelPasteBatchPersistWithoutHistory(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(applicants));
+  try{if(typeof canUseCloud==='function'&&canUseCloud()&&typeof supabaseSyncAll==='function')supabaseSyncAll(applicants);}catch(err){console.warn('엑셀 일괄작업 실행 취소 클라우드 동기화 실패',err);}
+  if(typeof renderAll==='function')renderAll();
+  if(typeof window.applicantProgressHistoryRefreshSnapshots==='function')window.applicantProgressHistoryRefreshSnapshots();
 }
 function registerExcelPasteBatch(){
   excelPasteBatchRecalculate();
   const selected=excelPasteBatchSelected();
   excelPasteBatchUpdateSelectionState();
   const button=$('btnRegisterExcelBatch');if(!selected.length||button?.disabled)return;
-  if(!confirm(`검증된 지원자 ${selected.length}명을 신규 등록할까요?\n\n등록 후에도 이번 작업 실행 취소가 가능합니다.`))return;
-  const base=Date.now();
-  const created=selected.map((item,index)=>normalize({...item.data,id:uid(),createdAt:new Date(base-index).toISOString(),updatedAt:''}));
+  const newRows=selected.filter(x=>x.state==='new'),updates=selected.filter(x=>x.state==='update');
+  const changedFields=updates.reduce((n,x)=>n+x.changes.length,0);
+  const updateNames=updates.slice(0,8).map(x=>x.matchedApplicant?.name||x.data.name).join(', ');
+  const message=[`엑셀 붙여넣기 내용을 적용할까요?`,`신규 등록 ${newRows.length}명`,`기존 지원자 변경 ${updates.length}명 · 변경 항목 ${changedFields}개`,updates.length?`변경 대상: ${updateNames}${updates.length>8?` 외 ${updates.length-8}명`:''}`:'',`빈 셀은 기존 값을 지우지 않습니다.`,`적용 직전 전체 ERP 안전백업 파일을 생성합니다.`].filter(Boolean).join('\n\n');
+  if(!confirm(message))return;
+  excelPasteBatchUndoSnapshot=JSON.parse(JSON.stringify(applicants));
+  excelPasteBatchUndoSummary={newCount:newRows.length,updateCount:updates.length};
+  excelPasteBatchSafetyBackup();
+  const now=new Date().toISOString(),base=Date.now(),updatedById=new Map();
+  updates.forEach(item=>{
+    const current=applicants.find(a=>String(a.id)===String(item.matchedApplicant?.id));if(!current)return;
+    const patch={...current};item.changes.forEach(change=>{patch[change.field]=item.data[change.field];});
+    patch.updatedAt=now;updatedById.set(String(current.id),normalize(patch));
+  });
+  const updatedApplicants=applicants.map(a=>updatedById.get(String(a.id))||a);
+  const created=newRows.map((item,index)=>normalize({...item.data,id:uid(),createdAt:new Date(base-index).toISOString(),updatedAt:''}));
   excelPasteBatchRegisteredIds=created.map(x=>x.id);
-  applicants=[...created,...applicants];
-  if(typeof window.erpMarkExcelApplicants==='function')window.erpMarkExcelApplicants(excelPasteBatchRegisteredIds);
+  applicants=[...created,...updatedApplicants];
+  if(typeof window.erpMarkExcelApplicants==='function'&&excelPasteBatchRegisteredIds.length)window.erpMarkExcelApplicants(excelPasteBatchRegisteredIds);
   save();
-  excelPasteBatchRows.forEach(item=>{if(item.selected)item.registered=true;item.selected=false;});
+  excelPasteBatchRows.forEach(item=>{if(item.selected)item.applied=true;item.selected=false;});
   const result=$('excelBatchResult');
-  if(result){result.hidden=false;result.innerHTML=`<strong>${created.length}명 등록 완료</strong><span>지원자 목록에 반영했습니다. 잘못 등록했다면 아래 실행 취소를 누르세요.</span>`;}
-  if($('btnUndoExcelBatch'))$('btnUndoExcelBatch').hidden=false;
-  if(button){button.disabled=true;button.textContent='등록 완료';}
-  const ready=$('excelPasteReadyState');if(ready){ready.className='excel-paste-ready is-ready';ready.textContent=`${created.length}명 등록 완료`;}
-  excelPasteSetMessage(`지원자 ${created.length}명을 등록했습니다.`,'success');
-  if(typeof uxToast==='function')uxToast(`엑셀 지원자 ${created.length}명을 일괄 등록했습니다.`);
+  if(result){result.hidden=false;result.innerHTML=`<strong>신규 ${created.length}명 등록 · 기존 ${updatedById.size}명 변경 완료</strong><span>지원자 목록과 면접·입사 일정에 반영했습니다. 잘못 적용했다면 아래 실행 취소를 누르세요.</span>`;}
+  if($('btnUndoExcelBatch')){$('btnUndoExcelBatch').hidden=false;$('btnUndoExcelBatch').textContent='이번 적용 실행 취소';}
+  if(button){button.disabled=true;button.textContent='적용 완료';}
+  const ready=$('excelPasteReadyState');if(ready){ready.className='excel-paste-ready is-ready';ready.textContent=`신규 ${created.length} · 변경 ${updatedById.size} 완료`;}
+  excelPasteSetMessage(`신규 지원자 ${created.length}명 등록, 기존 지원자 ${updatedById.size}명 변경을 완료했습니다.`,'success');
+  if(typeof uxToast==='function')uxToast(`엑셀 붙여넣기: 신규 ${created.length}명 · 변경 ${updatedById.size}명 적용 완료`);
 }
 function undoExcelPasteBatch(){
-  if(!excelPasteBatchRegisteredIds.length)return;
-  if(!confirm(`방금 등록한 지원자 ${excelPasteBatchRegisteredIds.length}명을 모두 취소할까요?`))return;
-  const removedIds=[...excelPasteBatchRegisteredIds];const ids=new Set(removedIds);applicants=applicants.filter(a=>!ids.has(a.id));
-  if(typeof window.erpUnmarkExcelApplicants==='function')window.erpUnmarkExcelApplicants(removedIds);
-  save();
-  const count=excelPasteBatchRegisteredIds.length;excelPasteBatchRegisteredIds=[];
-  excelPasteBatchRows.forEach(item=>{item.registered=false;item.selected=item.state==='ready';});
+  if(!excelPasteBatchUndoSnapshot)return;
+  const summary=excelPasteBatchUndoSummary||{newCount:excelPasteBatchRegisteredIds.length,updateCount:0};
+  if(!confirm(`방금 적용한 작업을 모두 취소할까요?\n\n신규 ${summary.newCount}명 등록과 기존 ${summary.updateCount}명 변경을 적용 전 상태로 되돌립니다.`))return;
+  const createdIds=[...excelPasteBatchRegisteredIds];
+  applicants=JSON.parse(JSON.stringify(excelPasteBatchUndoSnapshot));
+  if(typeof window.erpUnmarkExcelApplicants==='function'&&createdIds.length)window.erpUnmarkExcelApplicants(createdIds);
+  excelPasteBatchPersistWithoutHistory();
+  excelPasteBatchUndoSnapshot=null;excelPasteBatchUndoSummary=null;excelPasteBatchRegisteredIds=[];
+  excelPasteBatchRows.forEach(item=>{item.applied=false;item.selected=['new','update'].includes(item.state);});
   if($('btnUndoExcelBatch'))$('btnUndoExcelBatch').hidden=true;
-  if($('excelBatchResult')){$('excelBatchResult').hidden=false;$('excelBatchResult').innerHTML=`<strong>등록 취소 완료</strong><span>${count}명을 등록 전 상태로 되돌렸습니다.</span>`;}
+  if($('excelBatchResult')){$('excelBatchResult').hidden=false;$('excelBatchResult').innerHTML=`<strong>적용 취소 완료</strong><span>신규 등록과 기존 지원자 변경을 모두 적용 전 상태로 되돌렸습니다.</span>`;}
   excelPasteBatchRender();
-  if(typeof uxToast==='function')uxToast(`일괄 등록 ${count}명을 취소했습니다.`,'warn');
+  if(typeof uxToast==='function')uxToast('엑셀 일괄 적용을 취소했습니다.','warn');
 }
 
 function excelPasteCurrentApplicant(){ const id=$('editId')?.value||''; return id?applicants.find(a=>a.id===id)||null:null; }
@@ -1093,7 +1195,7 @@ function parseExcelRowPaste(){
   }
 }
 function resetExcelRowPaste(){
-  excelPasteParsedData=null; excelPasteParseIssues=[]; excelPasteSourcePresent={}; excelPasteDetectedFormat=''; excelPasteRawInvalidFields=new Set(); excelPasteDuplicateMatches=[]; excelPastePreviewMeta=null; excelPasteTouchedFields=new Set(); excelPasteBatchRows=[]; excelPasteBatchRegisteredIds=[]; excelPasteBatchHeaderRow=null;
+  excelPasteParsedData=null; excelPasteParseIssues=[]; excelPasteSourcePresent={}; excelPasteDetectedFormat=''; excelPasteRawInvalidFields=new Set(); excelPasteDuplicateMatches=[]; excelPastePreviewMeta=null; excelPasteTouchedFields=new Set(); excelPasteBatchRows=[]; excelPasteBatchRegisteredIds=[]; excelPasteBatchUndoSnapshot=null; excelPasteBatchUndoSummary=null; excelPasteBatchHeaderRow=null;
   if($('excelPasteRaw'))$('excelPasteRaw').value='';
   if($('excelPasteEditor'))$('excelPasteEditor').hidden=true;
   if($('excelPasteBatch'))$('excelPasteBatch').hidden=true;
