@@ -1,0 +1,208 @@
+/* ===== v10.46.7 APPLICANT_CLEARVIEW =====
+   지원자 목록만 대상으로 하는 절제된 기업형 가시성 보정.
+   데이터 구조·저장 로직·다른 화면은 변경하지 않습니다. */
+
+#applicants.applicant-list-clarity{
+  --clarity-line:#dde3ea;
+  --clarity-line-strong:#cfd7e1;
+  --clarity-text:#252d38;
+  --clarity-muted:#717b88;
+  --clarity-blue-bg:#edf3fa;
+  --clarity-blue-text:#315f92;
+  --clarity-green-bg:#edf6ef;
+  --clarity-green-text:#356a48;
+  --clarity-gray-bg:#f2f4f6;
+  --clarity-gray-text:#606873;
+}
+#applicants .applicant-list-filter-card{
+  display:grid!important;
+  gap:14px!important;
+  padding:16px 18px!important;
+  border:1px solid var(--clarity-line)!important;
+  border-radius:13px!important;
+  background:#fff!important;
+  box-shadow:0 4px 14px rgba(35,48,66,.045)!important;
+}
+#applicants .applicant-list-filter-stack{display:grid;gap:10px;}
+#applicants .applicant-filter-line{display:flex;align-items:center;gap:12px;min-width:0;}
+#applicants .applicant-filter-label{
+  flex:0 0 48px;
+  color:#626c79;
+  font-size:11.5px;
+  font-weight:800;
+  letter-spacing:-.01em;
+}
+#applicants #quickFilters,#applicants #workplaceTabs{
+  display:flex!important;
+  flex-wrap:wrap!important;
+  gap:7px!important;
+  min-width:0!important;
+}
+#applicants #quickFilters .chip,#applicants #workplaceTabs .tab{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  min-height:34px!important;
+  padding:0 11px!important;
+  border:1px solid #d9e0e8!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  color:#3f4854!important;
+  box-shadow:none!important;
+  font-size:11.5px!important;
+  font-weight:750!important;
+}
+#applicants #quickFilters .chip:hover,#applicants #workplaceTabs .tab:hover{background:#f7f9fb!important;border-color:#c8d2dd!important;}
+#applicants #quickFilters .chip.active,#applicants #workplaceTabs .tab.active{
+  border-color:#9eb9dc!important;
+  background:#eef4fb!important;
+  color:#285b96!important;
+}
+#applicants .filter-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:20px;
+  height:18px;
+  padding:0 5px;
+  border-radius:999px;
+  background:#f0f2f5;
+  color:#6a7380;
+  font-size:9.5px;
+  font-weight:800;
+  line-height:1;
+}
+#applicants .chip.active .filter-count,#applicants .tab.active .filter-count{background:#dce8f6;color:#285b96;}
+#applicants #duplicateFilterChip.chip-alert:not(.active){border-color:#d8cbb5!important;background:#fbf9f4!important;color:#75654a!important;}
+#applicants .applicant-list-tool-row{
+  display:grid!important;
+  grid-template-columns:minmax(250px,1fr) 150px auto auto auto auto!important;
+  align-items:center!important;
+  gap:8px!important;
+  padding-top:13px!important;
+  border-top:1px solid #edf0f4!important;
+}
+#applicants .applicant-list-tool-row .search,#applicants .applicant-list-tool-row .sort-select{height:38px!important;min-height:38px!important;border-color:#d8dfe8!important;border-radius:8px!important;background:#fff!important;box-shadow:none!important;}
+#applicants .applicant-list-tool-row .check-inline{font-size:11.5px!important;font-weight:700!important;color:#5f6874!important;}
+#applicants .applicant-list-tool-row button{min-height:36px!important;border-radius:8px!important;}
+#applicants .list-summary{margin-top:10px!important;padding:8px 11px!important;border:1px solid #e4e9ef!important;border-radius:9px!important;background:#fafbfc!important;box-shadow:none!important;color:#66717f!important;}
+#applicants .list-summary>span{border:0!important;background:transparent!important;padding:0!important;}
+#applicants .list-summary .summary-strong{color:#27313d!important;font-weight:850!important;}
+#applicants .table-wrap{border:1px solid var(--clarity-line)!important;border-radius:12px!important;background:#fff!important;box-shadow:0 4px 16px rgba(35,48,66,.04)!important;}
+#applicants .applicant-table{min-width:1370px!important;}
+#applicants .applicant-table thead th{
+  height:43px!important;
+  background:#f7f8fa!important;
+  color:#535d69!important;
+  border-bottom:1px solid #dce2e9!important;
+  font-size:11.5px!important;
+  font-weight:800!important;
+}
+#applicants .applicant-table tbody td{height:56px!important;border-bottom:1px solid #e9edf2!important;background:#fff!important;color:#313a46!important;}
+#applicants .applicant-table tbody tr:nth-child(even) td{background:#fbfcfd!important;}
+#applicants .applicant-table tbody tr:hover td{background:#f5f8fb!important;}
+#applicants .applicant-table tbody tr:hover{box-shadow:inset 2px 0 0 #9bb7d8!important;}
+#applicants .applicant-table .name-button{color:#222b36!important;font-size:13.5px!important;font-weight:820!important;}
+#applicants .applicant-table .applicant-name-cell small{color:#7d8794!important;font-size:10.5px!important;font-weight:600!important;}
+#applicants .status-inline{
+  width:94px!important;
+  min-width:94px!important;
+  height:29px!important;
+  min-height:29px!important;
+  padding:0 8px!important;
+  border-width:1px!important;
+  border-style:solid!important;
+  border-radius:7px!important;
+  box-shadow:none!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+#applicants .status-inline.info{background:var(--clarity-blue-bg)!important;color:var(--clarity-blue-text)!important;border-color:#cbd9e9!important;}
+#applicants .status-inline.good{background:var(--clarity-green-bg)!important;color:var(--clarity-green-text)!important;border-color:#cfe2d4!important;}
+#applicants .status-inline.missed{background:#f7f5f0!important;color:#716550!important;border-color:#e4ded2!important;}
+#applicants .status-inline.bad,#applicants .status-inline.neutral{background:var(--clarity-gray-bg)!important;color:var(--clarity-gray-text)!important;border-color:#dadddf!important;}
+#applicants .status-inline.hold{background:#f3f5f7!important;color:#505b68!important;border-color:#d9dee4!important;}
+#applicants .workplace-pill{
+  min-width:54px;
+  padding:5px 9px!important;
+  border-radius:7px!important;
+  background:#fff!important;
+  font-size:11px!important;
+  font-weight:800!important;
+}
+#applicants .workplace-pill.workplace-pyeongtaek{border-color:#7db7bd!important;color:#3e7278!important;background:#fbfdfd!important;}
+#applicants .workplace-pill.workplace-cheonan{border-color:#aa9acb!important;color:#695b91!important;background:#fdfcff!important;}
+#applicants .workplace-pill.workplace-other{border-color:#c9d0d8!important;color:#626b77!important;background:#fff!important;}
+#applicants .workplace-pill.workplace-empty{border-color:#d9cdbd!important;color:#7b6e5a!important;background:#fcfaf7!important;}
+#applicants .hire-date-cell strong{color:#425264;font-weight:750;}
+#applicants .decision-cell{display:flex;align-items:center;gap:7px;}
+#applicants .decision-pill{display:inline-flex;align-items:center;min-height:25px;padding:0 8px;border:1px solid #dde2e8;border-radius:6px;background:#f7f8fa;color:#5b6571;font-size:10.5px;font-weight:800;}
+#applicants .decision-pill.decision-good{background:#eef6f0;color:#3d6e4d;border-color:#d2e3d6;}
+#applicants .decision-pill.decision-finished{background:#f2f3f5;color:#6c737d;border-color:#dfe2e6;}
+#applicants .decision-cell small{margin:0!important;color:#929aa4!important;font-size:9.5px!important;font-weight:650!important;}
+#applicants .stale-badge{display:inline-flex;margin-left:6px;padding:2px 6px;border-radius:5px;background:#f5f2ec;color:#756954;font-size:9px;font-weight:750;vertical-align:middle;}
+#applicants .applicant-row.is-finished td{background:#fafbfc!important;color:#7d858f!important;}
+#applicants .applicant-row.is-finished:nth-child(even) td{background:#f8f9fa!important;}
+#applicants .applicant-row.is-finished .name-button,#applicants .applicant-row.is-finished .phone-cell strong,#applicants .applicant-row.is-finished .hire-date-cell strong{color:#737b85!important;}
+#applicants .applicant-row.is-finished .applicant-name-cell small{color:#a0a6ae!important;}
+#applicants .applicant-row.is-finished:hover td{background:#f4f6f8!important;}
+#applicants .applicant-actions{min-width:164px!important;}
+#applicants .applicant-actions button{background:#fff!important;border-color:#dbe1e8!important;color:#4b5663!important;box-shadow:none!important;}
+#applicants .applicant-actions button:hover{background:#f5f7f9!important;border-color:#cbd4de!important;}
+#applicants .applicant-actions .delete{color:#747b84!important;}
+
+@media(min-width:761px){
+  #applicants .applicant-table th:nth-child(1),#applicants .applicant-table .sticky-app-no{width:52px!important;min-width:52px!important;max-width:52px!important;}
+  #applicants .applicant-table th:nth-child(2),#applicants .applicant-table .sticky-app-name{width:178px!important;min-width:178px!important;max-width:178px!important;}
+  #applicants .applicant-table th:nth-child(3),#applicants .applicant-table .sticky-app-workplace{width:90px!important;min-width:90px!important;max-width:90px!important;}
+  #applicants .applicant-table th:nth-child(4),#applicants .applicant-table .sticky-app-status{width:108px!important;min-width:108px!important;max-width:108px!important;}
+  #applicants .applicant-table thead th:nth-child(1),#applicants .applicant-table .sticky-app-no{position:sticky!important;left:0!important;}
+  #applicants .applicant-table thead th:nth-child(2),#applicants .applicant-table .sticky-app-name{position:sticky!important;left:52px!important;}
+  #applicants .applicant-table thead th:nth-child(3),#applicants .applicant-table .sticky-app-workplace{position:sticky!important;left:230px!important;}
+  #applicants .applicant-table thead th:nth-child(4),#applicants .applicant-table .sticky-app-status{position:sticky!important;left:320px!important;}
+  #applicants .applicant-table thead th:nth-child(-n+4),#applicants .applicant-table thead th:last-child{z-index:9!important;}
+  #applicants .applicant-table tbody .sticky-app-col,#applicants .applicant-table tbody .sticky-app-actions{z-index:5!important;}
+  #applicants .applicant-table .sticky-app-status{box-shadow:8px 0 12px -13px rgba(36,48,63,.5)!important;}
+  #applicants .applicant-table .sticky-app-name{box-shadow:none!important;}
+  #applicants .applicant-row.is-finished .sticky-app-col,#applicants .applicant-row.is-finished .sticky-app-actions{background:#fafbfc!important;}
+  #applicants .applicant-row.is-finished:nth-child(even) .sticky-app-col,#applicants .applicant-row.is-finished:nth-child(even) .sticky-app-actions{background:#f8f9fa!important;}
+  #applicants .applicant-row.is-finished:hover .sticky-app-col,#applicants .applicant-row.is-finished:hover .sticky-app-actions{background:#f4f6f8!important;}
+}
+@media(max-width:1700px) and (min-width:761px){
+  #applicants .applicant-table th:nth-child(6),#applicants .applicant-table td:nth-child(6),#applicants .applicant-table th:nth-child(8),#applicants .applicant-table td:nth-child(8){display:table-cell!important;}
+  #applicants .applicant-table .email-head,#applicants .applicant-table .email-cell,#applicants .applicant-table .region-head,#applicants .applicant-table .region-cell{display:none!important;}
+  #applicants .applicant-table{min-width:1160px!important;}
+}
+@media(max-width:1100px) and (min-width:761px){
+  #applicants .applicant-list-tool-row{grid-template-columns:minmax(220px,1fr) 145px auto auto!important;}
+  #applicants .applicant-list-tool-row .check-inline{grid-column:1/3;}
+}
+@media(max-width:760px){
+  #applicants .applicant-list-filter-card{padding:12px!important;gap:11px!important;}
+  #applicants .applicant-filter-line{align-items:flex-start!important;flex-direction:column!important;gap:7px!important;}
+  #applicants .applicant-filter-label{flex:auto!important;}
+  #applicants #quickFilters,#applicants #workplaceTabs{width:100%!important;flex-wrap:nowrap!important;overflow-x:auto!important;padding-bottom:2px!important;}
+  #applicants #quickFilters .chip,#applicants #workplaceTabs .tab{flex:0 0 auto!important;width:auto!important;max-width:none!important;}
+  #applicants .applicant-list-tool-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;}
+  #applicants .applicant-list-tool-row .search{grid-column:1/-1!important;}
+  #applicants .applicant-list-tool-row .check-inline{grid-column:1/-1!important;}
+  #applicants .list-summary{overflow-x:auto!important;white-space:nowrap!important;}
+  #applicants .applicant-table tr.applicant-row{grid-template-columns:minmax(0,1fr) auto!important;padding:14px!important;border-color:#e1e6ec!important;border-radius:12px!important;box-shadow:0 3px 11px rgba(35,48,66,.045)!important;}
+  #applicants .applicant-table tr.applicant-row td{display:none!important;background:transparent!important;}
+  #applicants .applicant-table tr.applicant-row td.applicant-name-cell,#applicants .applicant-table tr.applicant-row td.status-cell,#applicants .applicant-table tr.applicant-row td.workplace-cell,#applicants .applicant-table tr.applicant-row td.schedule-cell,#applicants .applicant-table tr.applicant-row td.hire-date-cell,#applicants .applicant-table tr.applicant-row td.phone-cell,#applicants .applicant-table tr.applicant-row td.decision-cell,#applicants .applicant-table tr.applicant-row td.row-actions{display:block!important;}
+  #applicants .applicant-table .applicant-name-cell{grid-column:1;grid-row:1;}
+  #applicants .applicant-table .status-cell{grid-column:2;grid-row:1;align-self:start!important;}
+  #applicants .applicant-table .workplace-cell,#applicants .applicant-table .schedule-cell,#applicants .applicant-table .hire-date-cell,#applicants .applicant-table .phone-cell,#applicants .applicant-table .decision-cell{grid-column:1/-1!important;margin-top:8px!important;display:grid!important;grid-template-columns:76px minmax(0,1fr)!important;align-items:center!important;gap:8px!important;}
+  #applicants .applicant-table .workplace-cell::before{content:'근무지';}
+  #applicants .applicant-table .schedule-cell::before{content:'면접일정';}
+  #applicants .applicant-table .hire-date-cell::before{content:'입사예정';}
+  #applicants .applicant-table .phone-cell::before{content:'연락처';}
+  #applicants .applicant-table .decision-cell::before{content:'판정';}
+  #applicants .applicant-table .workplace-cell::before,#applicants .applicant-table .schedule-cell::before,#applicants .applicant-table .hire-date-cell::before,#applicants .applicant-table .phone-cell::before,#applicants .applicant-table .decision-cell::before{color:#7d8792;font-size:10.5px;font-weight:750;}
+  #applicants .applicant-table .decision-cell{display:grid!important;}
+  #applicants .applicant-table .decision-cell small{display:none!important;}
+  #applicants .applicant-table .row-actions{grid-column:1/-1!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:6px!important;margin-top:12px!important;padding-top:11px!important;border-top:1px solid #edf0f3!important;}
+  #applicants .applicant-row.is-finished{background:#fafbfc!important;}
+  #applicants .applicant-row.is-finished:hover{background:#fafbfc!important;}
+}

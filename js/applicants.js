@@ -55,14 +55,35 @@ function displayCategory(a){
   return '확인필요';
 }
 function badgeClass(status){
-  if(['부재중','미연락','연락두절'].includes(status)) return 'missed';
-  if(['입사예정','출근'].includes(status)) return 'good';
-  if(['면접예정','다음면접'].includes(status)) return 'info';
+  if(['불합격','철회','연락두절'].includes(status)) return 'bad';
   if(status==='서류탈락') return 'neutral';
-  if(['불합격','철회'].includes(status)) return 'bad';
+  if(['입사예정','출근'].includes(status)) return 'good';
+  if(['면접예정','다음면접','면접완료'].includes(status)) return 'info';
+  if(['부재중','미연락'].includes(status)) return 'missed';
   return 'hold';
 }
 function statusToneClass(a){ return normalizeStatus(a?.status)==='서류탈락' ? 'is-paper-rejected' : ''; }
+function applicantRowToneClass(a){
+  const status=normalizeStatus(a?.status);
+  if(isFinished(a)) return 'is-finished';
+  if(['입사예정','출근'].includes(status) || a?.finalDecision==='합격') return 'is-hire-track';
+  if(['면접예정','다음면접','면접완료'].includes(status)) return 'is-interview-track';
+  if(['미연락','부재중'].includes(status)) return 'is-contact-track';
+  return 'is-neutral-track';
+}
+function workplaceBadgeClass(value){
+  const workplace=String(value||'').trim();
+  if(workplace==='천안') return 'workplace-cheonan';
+  if(workplace==='평택') return 'workplace-pyeongtaek';
+  if(!workplace) return 'workplace-empty';
+  return 'workplace-other';
+}
+function decisionToneClass(a){
+  const decision=String(a?.finalDecision||'').trim();
+  if(decision==='합격') return 'decision-good';
+  if(['불합격','입사포기','철회'].includes(decision) || isFinished(a)) return 'decision-finished';
+  return 'decision-neutral';
+}
 function nextAction(a){
   if(!a.status || a.status==='미연락') return '첫 연락 필요';
   if(a.status==='부재중') return '재연락';
@@ -285,6 +306,8 @@ function filtered(){
     if(currentFilter==='decision') filterOk=isDecisionNeeded(a);
     if(currentFilter==='hold') filterOk=a.finalDecision==='보류';
     if(currentFilter==='active') filterOk=isActive(a);
+    if(currentFilter==='hire') filterOk=['입사예정','출근'].includes(a.status) || a.finalDecision==='합격';
+    if(currentFilter==='finished') filterOk=isFinished(a);
     if(currentFilter==='rejected') filterOk=a.status==='서류탈락';
     if(currentFilter==='duplicate') filterOk=dupSet.has(normalizePhone(a.phone));
     return workplaceOk && searchOk && schoolOk && filterOk;
@@ -316,10 +339,44 @@ function resetListFiltersToAll(){
   document.querySelectorAll('#workplaceTabs .tab').forEach(x=>x.classList.toggle('active', x.dataset.workplace==='all'));
   document.querySelectorAll('#quickFilters .chip').forEach(x=>x.classList.toggle('active', x.dataset.filter==='all'));
 }
+function updateApplicantListFilterCounts(){
+  const duplicateSet=duplicatePhoneSet();
+  const filterCounts={
+    all:applicants.length,
+    active:applicants.filter(isActive).length,
+    interview:applicants.filter(a=>['면접예정','다음면접'].includes(a.status)).length,
+    hire:applicants.filter(a=>['입사예정','출근'].includes(a.status) || a.finalDecision==='합격').length,
+    finished:applicants.filter(isFinished).length,
+    contact:applicants.filter(a=>['미연락','부재중'].includes(a.status)).length,
+    decision:applicants.filter(isDecisionNeeded).length,
+    duplicate:applicants.filter(a=>duplicateSet.has(normalizePhone(a.phone))).length
+  };
+  document.querySelectorAll('#quickFilters [data-filter]').forEach(button=>{
+    const count=filterCounts[button.dataset.filter] ?? 0;
+    const target=button.querySelector('[data-filter-count]');
+    if(target) target.textContent=String(count);
+    button.setAttribute('aria-pressed', button.classList.contains('active') ? 'true' : 'false');
+  });
+  const workplaceCounts={
+    all:applicants.length,
+    '천안':applicants.filter(a=>a.workplace==='천안').length,
+    '평택':applicants.filter(a=>a.workplace==='평택').length,
+    '기타':applicants.filter(a=>!['천안','평택'].includes(a.workplace)).length
+  };
+  document.querySelectorAll('#workplaceTabs [data-workplace]').forEach(button=>{
+    const target=button.querySelector('[data-workplace-count]');
+    if(target) target.textContent=String(workplaceCounts[button.dataset.workplace] ?? 0);
+    button.setAttribute('aria-pressed', button.classList.contains('active') ? 'true' : 'false');
+  });
+}
 function renderTable(){
   const rows=filtered();
+  updateApplicantListFilterCounts();
   const dupChip=$('duplicateFilterChip');
-  if(dupChip){ const dset=duplicatePhoneSet(); const n=applicants.filter(a=>dset.has(normalizePhone(a.phone))).length; dupChip.textContent = n ? `중복의심 ${n}명` : '중복의심'; dupChip.classList.toggle('chip-alert', n>0); }
+  if(dupChip){
+    const n=applicants.filter(a=>duplicatePhoneSet().has(normalizePhone(a.phone))).length;
+    dupChip.classList.toggle('chip-alert', n>0);
+  }
   const sortName=$('sortSelect')?.selectedOptions?.[0]?.textContent || '최근 등록순';
   const contactCount=rows.filter(a=>['미연락','부재중'].includes(a.status)).length;
   const interviewCount=rows.filter(a=>['면접예정','다음면접'].includes(a.status) || a.interviewDate).length;
@@ -336,22 +393,23 @@ function renderTable(){
     const dorm = dormLabel(a);
     const typeLine = [a.careerType, a.education].filter(Boolean).join(' · ') || '기본정보 미입력';
     const staleDays = ['미연락','부재중'].includes(a.status) ? daysSinceApply(a) : null;
-    const staleBadge = (staleDays!==null && staleDays>=3) ? `<span class="stale-badge" title="지원일 기준 ${staleDays}일째 연락 안 됨">⏰${staleDays}일째</span>` : '';
-    return `<tr class="applicant-row compact-row clickable-data-row ${statusToneClass(a)}" data-applicant-id="${a.id}" tabindex="0" onclick="if(!event.target.closest('button,select,a,input,label,summary,details')) viewApplicant('${a.id}')" onkeydown="listRowKeyActivate(event,()=>viewApplicant('${a.id}'))">
+    const staleBadge = (staleDays!==null && staleDays>=3) ? `<span class="stale-badge" title="지원일 기준 ${staleDays}일째 연락 안 됨">${staleDays}일째</span>` : '';
+    return `<tr class="applicant-row compact-row clickable-data-row ${applicantRowToneClass(a)}" data-applicant-id="${a.id}" tabindex="0" onclick="if(!event.target.closest('button,select,a,input,label,summary,details')) viewApplicant('${a.id}')" onkeydown="listRowKeyActivate(event,()=>viewApplicant('${a.id}'))">
       <td class="no-cell sticky-app-col sticky-app-no" data-label="번호">${idx+1}</td>
-      <td class="apply-date-cell sticky-app-col sticky-app-date" data-label="지원일">${esc(a.applyDate||'-')}</td>
-      <td class="status-cell sticky-app-col sticky-app-status" data-label="상태"><select class="status-inline ${badgeClass(a.status)}" onchange="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></td>
       <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><button class="name-button ${genderClass(a)}" onclick="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button>${staleBadge}<small>${esc(typeLine)}</small></td>
+      <td class="workplace-cell sticky-app-col sticky-app-workplace" data-label="근무지"><span class="workplace-pill ${workplaceBadgeClass(a.workplace)}">${esc(a.workplace||'미지정')}</span></td>
+      <td class="status-cell sticky-app-col sticky-app-status" data-label="상태"><select class="status-inline ${badgeClass(a.status)}" onchange="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></td>
+      <td class="apply-date-cell" data-label="지원일">${esc(a.applyDate||'-')}</td>
+      <td class="schedule-cell" data-label="면접일정"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
+      <td class="hire-date-cell" data-label="입사예정일"><strong>${esc(a.hireDate||'-')}</strong></td>
       <td class="phone-cell" data-label="연락처"><strong>${esc(a.phone||'')}</strong></td>
       <td class="email-cell" data-label="이메일">${a.email ? `<span>${esc(a.email)}</span>` : ''}</td>
-      <td data-label="근무지"><span class="workplace-pill">${esc(a.workplace||'')}</span></td>
       <td class="region-cell" data-label="지역">${esc(a.region||'')}</td>
-      <td class="schedule-cell" data-label="면접일정"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
       <td class="commute-cell" data-label="출근방법"><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
-      <td class="decision-cell" data-label="판정"><strong>${esc(decision)}</strong><small>${score}점</small></td>
-      <td class="row-actions compact-actions applicant-actions" data-label="관리"><button class="view" onclick="event.stopPropagation();viewApplicant('${a.id}')">상세</button><button onclick="event.stopPropagation();editApplicant('${a.id}')">수정</button><button class="delete" onclick="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></td>
+      <td class="decision-cell" data-label="판정"><span class="decision-pill ${decisionToneClass(a)}">${esc(decision)}</span><small>${score}점</small></td>
+      <td class="row-actions compact-actions applicant-actions sticky-app-actions" data-label="관리"><button class="view" onclick="event.stopPropagation();viewApplicant('${a.id}')">상세</button><button onclick="event.stopPropagation();editApplicant('${a.id}')">수정</button><button class="delete" onclick="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="12" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" onclick="resetAndRenderList()">필터 초기화</button></td></tr>`;
+  }).join(''):`<tr><td colspan="13" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" onclick="resetAndRenderList()">필터 초기화</button></td></tr>`;
 }
 function resetAndRenderList(){ resetListFiltersToAll(); renderTable(); }
 

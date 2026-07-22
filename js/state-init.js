@@ -4,4 +4,5 @@ schools = loadSchools();
 employees = loadEmployees();
 applicants = load();
 calendarEvents = loadCalendarEvents();
-console.info('[HOME_DEV] Recruit ERP v10.40.29 loaded applicants:', applicants.length);
+hireWaitingProfiles = loadHireWaitingProfiles();
+console.info('[HOME_DEV] Recruit ERP v10.46.7 loaded applicants:', applicants.length, 'hire waiting profiles:', hireWaitingProfiles.length);
