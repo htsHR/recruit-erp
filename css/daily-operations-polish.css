@@ -288,3 +288,210 @@
     max-width:none!important;
   }
 }
+
+/* ===== v10.46.8.2 APPLICANT LIST TOP CLEANUP =====
+   - 지원자 목록 상단을 '제목/검색/빠른필터' 3영역으로 재정리
+   - 너무 길던 요약 문구를 짧게 정리
+   - 헤더 위로 첫 행 일부가 비치던 현상을 더 강하게 차단
+*/
+#applicants .applicant-list-filter-card{
+  gap:16px!important;
+  padding:18px!important;
+}
+#applicants .applicant-list-header-row{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:start!important;
+  gap:14px!important;
+}
+#applicants .applicant-list-header-copy h3{
+  margin:0!important;
+  color:#1f2937!important;
+  font-size:18px!important;
+  font-weight:850!important;
+  letter-spacing:-.03em!important;
+}
+#applicants .applicant-list-header-copy p{
+  margin:5px 0 0!important;
+  color:#6b7280!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  line-height:1.5!important;
+}
+#applicants .applicant-list-header-metrics{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(72px,auto))!important;
+  gap:8px!important;
+}
+#applicants .applicant-header-metric{
+  min-width:72px!important;
+  padding:10px 12px!important;
+  border:1px solid #e2e8f0!important;
+  border-radius:10px!important;
+  background:#f8fafc!important;
+  text-align:center!important;
+}
+#applicants .applicant-header-metric strong{
+  display:block!important;
+  color:#1f2937!important;
+  font-size:16px!important;
+  font-weight:850!important;
+  line-height:1.1!important;
+}
+#applicants .applicant-header-metric span{
+  display:block!important;
+  margin-top:3px!important;
+  color:#6b7280!important;
+  font-size:10.5px!important;
+  font-weight:800!important;
+}
+#applicants .applicant-list-tool-row{
+  grid-template-columns:minmax(280px,1fr) 156px auto auto!important;
+  gap:10px!important;
+  padding-top:14px!important;
+}
+#applicants .compact-check-inline{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  min-height:38px!important;
+  padding:0 12px!important;
+  border:1px solid #d8dfe8!important;
+  border-radius:8px!important;
+  background:#fff!important;
+  white-space:nowrap!important;
+}
+#applicants .compact-check-inline input{margin:0!important;}
+#applicants .applicant-list-button-row{
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:8px!important;
+}
+#applicants .applicant-list-button-row button{min-width:82px!important;}
+#applicants .applicant-list-filter-stack-compact{
+  gap:12px!important;
+}
+#applicants .applicant-filter-group{
+  display:grid!important;
+  gap:8px!important;
+  padding:12px!important;
+  border:1px solid #edf1f5!important;
+  border-radius:12px!important;
+  background:#fbfcfd!important;
+}
+#applicants .applicant-filter-group-head{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  flex-wrap:wrap!important;
+}
+#applicants .applicant-filter-group-title{
+  color:#475569!important;
+  font-size:11px!important;
+  font-weight:850!important;
+  letter-spacing:.01em!important;
+}
+#applicants .applicant-filter-group-head small{
+  color:#94a3b8!important;
+  font-size:10.5px!important;
+  font-weight:700!important;
+}
+#applicants .list-summary{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:14px!important;
+  flex-wrap:wrap!important;
+  margin-top:12px!important;
+  padding:10px 14px!important;
+  border-radius:10px!important;
+}
+#applicants .list-summary-main,
+#applicants .list-summary-side{
+  display:flex!important;
+  align-items:center!important;
+  gap:8px!important;
+  flex-wrap:wrap!important;
+}
+#applicants .list-summary-main strong{
+  color:#1f2937!important;
+  font-size:13px!important;
+  font-weight:850!important;
+}
+#applicants .list-summary-side{
+  color:#66717f!important;
+  font-size:11px!important;
+  font-weight:700!important;
+}
+#applicants .school-filter-inline{
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:6px!important;
+}
+#applicants .school-filter-inline button{
+  width:18px!important;
+  height:18px!important;
+  min-width:18px!important;
+  padding:0!important;
+  border:1px solid #d5dde7!important;
+  border-radius:999px!important;
+  background:#fff!important;
+  color:#5b6571!important;
+  font-size:11px!important;
+  line-height:1!important;
+}
+#applicants .table-wrap{
+  position:relative!important;
+  isolation:isolate!important;
+  overflow:auto!important;
+  border-radius:12px!important;
+}
+#applicants .applicant-table{
+  border-collapse:separate!important;
+  border-spacing:0!important;
+}
+#applicants .applicant-table thead,
+#applicants .applicant-table thead tr{
+  background:#f7f8fa!important;
+}
+#applicants .applicant-table thead th{
+  position:sticky!important;
+  top:0!important;
+  z-index:22!important;
+  background:#f7f8fa!important;
+  background-clip:padding-box!important;
+}
+#applicants .applicant-table tbody td{
+  position:relative!important;
+  z-index:1!important;
+}
+#applicants .applicant-table tbody .sticky-app-col,
+#applicants .applicant-table tbody .sticky-app-actions{
+  z-index:4!important;
+}
+#applicants .applicant-table thead .no-head,
+#applicants .applicant-table thead .name-head,
+#applicants .applicant-table thead .status-head,
+#applicants .applicant-table thead .actions-head{
+  z-index:25!important;
+}
+
+@media(max-width:1200px) and (min-width:761px){
+  #applicants .applicant-list-tool-row{
+    grid-template-columns:minmax(240px,1fr) 146px 1fr auto!important;
+  }
+  #applicants .applicant-list-button-row{justify-content:flex-start!important;grid-column:3/5!important;}
+}
+@media(max-width:760px){
+  #applicants .applicant-list-header-row{grid-template-columns:1fr!important;}
+  #applicants .applicant-list-header-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  #applicants .applicant-list-tool-row{grid-template-columns:1fr!important;}
+  #applicants .compact-check-inline{justify-content:flex-start!important;}
+  #applicants .applicant-list-button-row{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;justify-content:stretch!important;}
+  #applicants .applicant-list-button-row button{width:100%!important;min-width:0!important;}
+  #applicants .applicant-filter-group{padding:10px!important;}
+  #applicants .list-summary{display:grid!important;grid-template-columns:1fr!important;}
+  #applicants .list-summary-side{justify-content:space-between!important;}
+}

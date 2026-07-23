@@ -358,6 +358,10 @@ function updateApplicantListFilterCounts(){
     if(target) target.textContent=String(count);
     button.setAttribute('aria-pressed', button.classList.contains('active') ? 'true' : 'false');
   });
+  setText('applicantHeaderTotalCount', filterCounts.all);
+  setText('applicantHeaderActiveCount', filterCounts.active);
+  setText('applicantHeaderInterviewCount', filterCounts.interview);
+  setText('applicantHeaderFinishedCount', filterCounts.finished);
   const workplaceCounts={
     all:applicants.length,
     '천안':applicants.filter(a=>a.workplace==='천안').length,
@@ -417,11 +421,22 @@ function renderTable(){
   const sortName=$('sortSelect')?.selectedOptions?.[0]?.textContent || '최근 등록순';
   const contactCount=allRows.filter(a=>['서류검토','부재중'].includes(a.status)).length;
   const interviewCount=allRows.filter(a=>['면접예정','다음면접'].includes(a.status) || a.interviewDate).length;
-  const dormCount=allRows.filter(a=>dormLabel(a)==='기숙사').length;
-  const commuteCount=allRows.filter(a=>dormLabel(a)==='출퇴근').length;
-  const dormPendingCount=allRows.filter(isDormPending).length;
+  const pageText=`${currentApplicantPage} / ${totalPages}페이지`;
   const schoolFilterName = currentSchoolFilterId ? (schools.find(s=>s.id===currentSchoolFilterId)?.name || '선택한 학교') : '';
-  $('listSummary').innerHTML = `<span class="summary-strong">${allRows.length}명</span> 검색 결과 <span>정렬 ${esc(sortName)}</span><span>연락필요 ${contactCount}명</span><span>면접/예정 ${interviewCount}명</span><span class="summary-commute">출근방법: 기숙사 ${dormCount}명 · 출퇴근 ${commuteCount}명 · 확인 ${dormPendingCount}명</span>${hideFinished ? '<span>종료숨김 적용</span>' : ''}${schoolFilterName ? `<span class="workplace-pill school-filter-pill">학교 필터: ${esc(schoolFilterName)}<button onclick="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}<span class="list-interaction-hint">행 클릭 → 상세보기</span>`;
+  $('listSummary').innerHTML = `
+    <div class="list-summary-main">
+      <strong>${allRows.length}명</strong>
+      <span>검색 결과</span>
+      <span>· 정렬 ${esc(sortName)}</span>
+      <span>· 연락 필요 ${contactCount}명</span>
+      <span>· 면접/예정 ${interviewCount}명</span>
+      ${hideFinished ? '<span>· 종료 숨김 적용</span>' : ''}
+      ${schoolFilterName ? `<span class="school-filter-inline">· 학교 ${esc(schoolFilterName)} <button type="button" onclick="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}
+    </div>
+    <div class="list-summary-side">
+      <span>${pageText}</span>
+      <span class="list-interaction-hint">행 클릭 → 상세보기</span>
+    </div>`;
   $('applicantTbody').innerHTML=rows.length?rows.map((a,idx)=>{
     const score=calcScore(a), decision=finalDecisionOf(a);
     const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
