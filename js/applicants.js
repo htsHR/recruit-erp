@@ -513,6 +513,11 @@ function excelPasteText(v){ return String(v ?? '').replace(/\r\n/g,'\n').replace
 function excelPastePhoneDigits(v){ return String(v||'').replace(/\D/g,''); }
 function excelPasteSameValue(field,a,b){
   if(field==='phone') return excelPastePhoneDigits(a)===excelPastePhoneDigits(b);
+  if(field==='birthYear'){
+    const left=excelPasteBirthValue(a),right=excelPasteBirthValue(b);
+    if(left&&right)return left===right;
+    return excelPasteText(a).replace(/\D/g,'')===excelPasteText(b).replace(/\D/g,'');
+  }
   return excelPasteText(a)===excelPasteText(b);
 }
 function excelPasteParseTsv(text){
@@ -754,7 +759,7 @@ function excelPasteRowToApplicant(row,headerRow=null){
   const region=[get('region'),get('detailRegion')].filter(Boolean).join(' ');
   const data={
     applyDate,status:statusRaw?normalizeStatus(statusRaw):'서류검토',interviewDate,interviewTime,hireDate,source:get('source'),
-    careerType:excelPasteCareerType(get('careerType'),get('career')),workplace:excelPasteWorkplace(get('workplace')),dormUse:excelPasteDorm(memo),
+    careerType:excelPasteCareerType(get('careerType'),get('career')),workplace:excelPasteWorkplace(get('workplace')),dormUse:excelPasteDorm(memo)||'확인필요',
     gender:normalizeGender(genderRaw),name:get('name'),email:emailRaw,school,major:get('major'),phone:formatPhoneDisplay(phoneRaw),birthYear:birthValue,
     age:get('age')||(birthValue&&typeof calcAge==='function'?String(calcAge(birthValue)||''):''),region,career:get('career'),certs:get('certs'),memo,
     education:explicitEducation||excelPasteEducation(school)
@@ -787,7 +792,7 @@ function excelPasteFindDuplicates(data,editId=''){
     const reasons=[];
     if(p.length>=8&&excelPastePhoneDigits(a.phone)===p)reasons.push('연락처 동일');
     if(email&&excelPasteText(a.email).toLowerCase()===email)reasons.push('이메일 동일');
-    if(data.name&&a.name===data.name&&birth&&excelPasteText(a.birthYear)===birth)reasons.push('성명+생년월일 동일');
+    if(data.name&&a.name===data.name&&birth&&excelPasteSameValue('birthYear',a.birthYear,birth))reasons.push('성명+생년월일 동일');
     return reasons.length?{applicant:a,reasons}:null;
   }).filter(Boolean).slice(0,5);
 }
@@ -812,7 +817,7 @@ function excelPasteBatchPairReasons(a,b){
   const ab=excelPasteText(a.birthYear),bb=excelPasteText(b.birthYear);
   if(ap.length>=8&&ap===bp)reasons.push('붙여넣은 행끼리 연락처 동일');
   if(ae&&ae===be)reasons.push('붙여넣은 행끼리 이메일 동일');
-  if(a.name&&a.name===b.name&&ab&&ab===bb)reasons.push('붙여넣은 행끼리 성명+생년월일 동일');
+  if(a.name&&a.name===b.name&&ab&&bb&&excelPasteSameValue('birthYear',ab,bb))reasons.push('붙여넣은 행끼리 성명+생년월일 동일');
   return reasons;
 }
 function excelPasteBatchInternalDuplicateReason(item){
@@ -1188,7 +1193,7 @@ function excelPasteUpdateApplyState(){
   const data=excelPasteLiveData(),validation=excelPasteValidateLive(data);
   const staticErrors=excelPasteParseIssues.filter(i=>i.level==='error').filter(i=>{
     if(i.code==='layout-confidence')return true;
-    if(String(i.code).startsWith('raw-'))return !excelPasteTouchedFields.has(i.field);
+    if(String(i.code).startsWith('raw-'))return !excelPasteIssueResolved(i,data)&&!excelPasteTouchedFields.has(i.field);
     return false;
   });
   const staticWarnings=excelPasteParseIssues.filter(i=>i.level!=='error'&&!validation.warnings.some(w=>w.code===i.code));
