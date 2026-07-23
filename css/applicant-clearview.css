@@ -1,4 +1,4 @@
-/* ===== v10.46.7 APPLICANT_CLEARVIEW =====
+/* ===== v10.46.7.1 CLEARVIEW_ALIGNMENT_FIX =====
    지원자 목록만 대상으로 하는 절제된 기업형 가시성 보정.
    데이터 구조·저장 로직·다른 화면은 변경하지 않습니다. */
 
@@ -205,4 +205,116 @@
   #applicants .applicant-table .row-actions{grid-column:1/-1!important;display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:6px!important;margin-top:12px!important;padding-top:11px!important;border-top:1px solid #edf0f3!important;}
   #applicants .applicant-row.is-finished{background:#fafbfc!important;}
   #applicants .applicant-row.is-finished:hover{background:#fafbfc!important;}
+}
+
+
+/* ===== v10.46.7.1 CLEARVIEW_ALIGNMENT_FIX =====
+   과거 nth-child 기반 열 숨김 규칙이 새 열 순서와 충돌해 헤더와 행이 밀리던 문제를
+   의미 기반 클래스 선택자로 최종 교정합니다. */
+@media(min-width:761px){
+  #applicants .applicant-table{
+    width:100%!important;
+    table-layout:fixed!important;
+  }
+
+  /* 표시 대상은 셀 의미 클래스 기준으로 명시하여 구형 nth-child 숨김 규칙을 무효화 */
+  #applicants .applicant-table .no-head,
+  #applicants .applicant-table .name-head,
+  #applicants .applicant-table .workplace-head,
+  #applicants .applicant-table .status-head,
+  #applicants .applicant-table .apply-date-head,
+  #applicants .applicant-table .schedule-head,
+  #applicants .applicant-table .hire-date-head,
+  #applicants .applicant-table .phone-head,
+  #applicants .applicant-table .commute-head,
+  #applicants .applicant-table .decision-head,
+  #applicants .applicant-table .actions-head,
+  #applicants .applicant-table .no-cell,
+  #applicants .applicant-table .applicant-name-cell,
+  #applicants .applicant-table .workplace-cell,
+  #applicants .applicant-table .status-cell,
+  #applicants .applicant-table .apply-date-cell,
+  #applicants .applicant-table .schedule-cell,
+  #applicants .applicant-table .hire-date-cell,
+  #applicants .applicant-table .phone-cell,
+  #applicants .applicant-table .commute-cell,
+  #applicants .applicant-table .decision-cell,
+  #applicants .applicant-table .applicant-actions{
+    display:table-cell!important;
+  }
+
+  #applicants .applicant-table .no-head,
+  #applicants .applicant-table .no-cell{width:52px!important;min-width:52px!important;max-width:52px!important;}
+  #applicants .applicant-table .name-head,
+  #applicants .applicant-table .applicant-name-cell{width:178px!important;min-width:178px!important;max-width:178px!important;}
+  #applicants .applicant-table .workplace-head,
+  #applicants .applicant-table .workplace-cell{width:90px!important;min-width:90px!important;max-width:90px!important;}
+  #applicants .applicant-table .status-head,
+  #applicants .applicant-table .status-cell{width:108px!important;min-width:108px!important;max-width:108px!important;}
+  #applicants .applicant-table .apply-date-head,
+  #applicants .applicant-table .apply-date-cell{width:112px!important;}
+  #applicants .applicant-table .schedule-head,
+  #applicants .applicant-table .schedule-cell{width:150px!important;}
+  #applicants .applicant-table .hire-date-head,
+  #applicants .applicant-table .hire-date-cell{width:112px!important;}
+  #applicants .applicant-table .phone-head,
+  #applicants .applicant-table .phone-cell{width:132px!important;}
+  #applicants .applicant-table .commute-head,
+  #applicants .applicant-table .commute-cell{width:105px!important;}
+  #applicants .applicant-table .decision-head,
+  #applicants .applicant-table .decision-cell{width:128px!important;}
+  #applicants .applicant-table .actions-head,
+  #applicants .applicant-table .applicant-actions{width:164px!important;min-width:164px!important;max-width:164px!important;}
+
+  #applicants .applicant-table .actions-head,
+  #applicants .applicant-table .applicant-actions{
+    position:sticky!important;
+    right:0!important;
+  }
+  #applicants .applicant-table .actions-head{z-index:10!important;background:#f7f8fa!important;}
+  #applicants .applicant-table .applicant-actions{z-index:6!important;}
+}
+
+@media(max-width:1700px) and (min-width:761px){
+  #applicants .applicant-table .email-head,
+  #applicants .applicant-table .email-cell,
+  #applicants .applicant-table .region-head,
+  #applicants .applicant-table .region-cell{
+    display:none!important;
+  }
+  #applicants .applicant-table{min-width:1225px!important;}
+}
+
+@media(min-width:1701px){
+  #applicants .applicant-table .email-head,
+  #applicants .applicant-table .email-cell,
+  #applicants .applicant-table .region-head,
+  #applicants .applicant-table .region-cell{
+    display:table-cell!important;
+  }
+  #applicants .applicant-table .email-head,
+  #applicants .applicant-table .email-cell{width:190px!important;}
+  #applicants .applicant-table .region-head,
+  #applicants .applicant-table .region-cell{width:110px!important;}
+  #applicants .applicant-table{min-width:1525px!important;}
+}
+
+@media(min-width:761px){
+  #applicants .applicant-table .actions-head,
+  #applicants .applicant-table .applicant-actions{
+    width:190px!important;
+    min-width:190px!important;
+    max-width:190px!important;
+  }
+  #applicants .applicant-table td.applicant-actions{
+    overflow:visible!important;
+    white-space:nowrap!important;
+    padding-left:8px!important;
+    padding-right:8px!important;
+  }
+  #applicants .applicant-actions>button{
+    min-width:48px!important;
+    padding-left:8px!important;
+    padding-right:8px!important;
+  }
 }

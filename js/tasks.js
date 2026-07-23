@@ -86,7 +86,7 @@ function dailyWorkflowGroups(){
   const active=applicants.filter(isActive);
   const contact=active.filter(a=>{
     const next=a.nextContactDate||'';
-    const statusNeeds=['미연락','부재중'].includes(a.status);
+    const statusNeeds=['서류검토','부재중'].includes(a.status);
     return next===t || (statusNeeds && (!next || next<=t));
   });
   const contactOverdue=active.filter(a=>a.nextContactDate && a.nextContactDate<t);

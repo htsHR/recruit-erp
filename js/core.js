@@ -4,23 +4,29 @@ const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applican
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
 const CALENDAR_EVENTS_KEY = 'recruit_erp_calendar_events';
 const HIRE_WAITING_PROFILES_KEY = 'recruit_erp_hire_waiting_profiles';
+const MESSAGE_TEMPLATES_KEY = 'recruit_erp_message_templates';
 const REMINDER_DISMISS_KEY = 'recruit_erp_reminder_dismissed_date';
 const SCHOOLS_KEY = 'recruit_erp_schools';
 const NAV_COLLAPSE_KEY = 'recruit_erp_nav_collapsed';
 const EMPLOYEES_KEY = 'recruit_erp_employees';
-const STATUS_OPTIONS = ['미연락','부재중','면접예정','면접완료','다음면접','입사예정','출근','불합격','서류탈락','철회','연락두절'];
+const STATUS_OPTIONS = ['서류검토','부재중','면접예정','면접완료','다음면접','입사예정','출근','불합격','서류탈락','면접거절','면접불참','입사철회'];
+const LEGACY_STATUS_OPTIONS = ['철회','연락두절'];
 let schools = [];
 let editingSchoolId = '';
 let employees = [];
 let editingEmployeeId = '';
 let applicants = [];
 let hireWaitingProfiles = [];
+let messageTemplates = [];
 let currentWorkplace = 'all';
 let currentFilter = 'all';
 let currentSearch = '';
 let currentSort = 'recent';
 let hideFinished = false;
 let currentSchoolFilterId = '';
+let currentApplicantPage = 1;
+let applicantPageSize = 30;
+let lastApplicantFilterSignature = '';
 let detailCurrentId = '';
 
 const $ = id => document.getElementById(id);
@@ -39,13 +45,18 @@ function genderClass(a){ const g=normalizeGender(a?.gender); if(g==='남자') re
 function normalizeStatus(v){
   const s=String(v||'').trim();
   const map={
-    '문자발송':'미연락','연락완료':'면접예정','보류':'다음면접',
-    '부적합':'서류탈락','전형마감':'서류탈락','취소':'철회','입사포기':'철회'
+    '미연락':'서류검토','문자발송':'서류검토','연락완료':'면접예정','보류':'다음면접',
+    '부적합':'서류탈락','전형마감':'서류탈락','입사포기':'입사철회','포기':'입사철회','취소':'철회'
   };
-  const out=map[s] || s || '미연락';
-  return STATUS_OPTIONS.includes(out) ? out : '미연락';
+  const out=map[s] || s || '서류검토';
+  if(STATUS_OPTIONS.includes(out) || LEGACY_STATUS_OPTIONS.includes(out)) return out;
+  return '서류검토';
 }
-function statusOptionsHtml(current){ const cur=normalizeStatus(current); return STATUS_OPTIONS.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join(''); }
+function statusOptionsHtml(current){
+  const cur=normalizeStatus(current);
+  const legacy=LEGACY_STATUS_OPTIONS.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'';
+  return legacy+STATUS_OPTIONS.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('');
+}
 function normalizeDorm(v){
   const s=String(v||'').trim();
   if(['사용','기숙사 사용','기숙사'].includes(s)) return '기숙사';

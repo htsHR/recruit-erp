@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='10.46.7';
+  const BC_VERSION='10.46.8.1';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
@@ -23,7 +23,8 @@
     {key:'schools',label:'협력학교',storage:'recruit_erp_schools',cloudTable:'schools',critical:true},
     {key:'employees',label:'사원명부',storage:'recruit_erp_employees',cloudTable:'employees',critical:true},
     {key:'calendarEvents',label:'수동 일정',storage:'recruit_erp_calendar_events',cloudTable:'',critical:false},
-    {key:'hireWaitingProfiles',label:'입사대기 입력정보',storage:'recruit_erp_hire_waiting_profiles',cloudTable:'',critical:false,optional:true}
+    {key:'hireWaitingProfiles',label:'입사대기 입력정보',storage:'recruit_erp_hire_waiting_profiles',cloudTable:'',critical:false,optional:true},
+    {key:'messageTemplates',label:'안내문 문구함',storage:'recruit_erp_message_templates',cloudTable:'',critical:false,optional:true}
   ];
 
   let inspected=null;
@@ -62,7 +63,8 @@
       schools:Array.isArray(schools)?schools:[],
       employees:Array.isArray(employees)?employees:[],
       calendarEvents:Array.isArray(calendarEvents)?calendarEvents:[],
-      hireWaitingProfiles:Array.isArray(hireWaitingProfiles)?hireWaitingProfiles:[]
+      hireWaitingProfiles:Array.isArray(hireWaitingProfiles)?hireWaitingProfiles:[],
+      messageTemplates:Array.isArray(messageTemplates)?messageTemplates:[]
     };
   }
   function countsOf(data){const out={};DATASETS.forEach(d=>out[d.key]=Array.isArray(data&&data[d.key])?data[d.key].length:0);return out;}
@@ -84,6 +86,7 @@
     if(key==='employees')return `employee:${safeText(row&&row.empNo).trim()||`${safeText(row&&row.name).trim()}|${safeText(row&&row.hireDate).trim()}`||index}`;
     if(key==='calendarEvents')return `calendar:${safeText(row&&row.title).trim()}|${safeText(row&&row.date).trim()}|${index}`;
     if(key==='hireWaitingProfiles')return `hire-waiting:${safeText(row&&row.applicantId).trim()||index}`;
+    if(key==='messageTemplates')return `message-template:${safeText(row&&row.id).trim()||index}`;
     const phone=safeText(row&&row.phone).replace(/\D/g,'');
     const email=safeText(row&&row.email).trim().toLowerCase();
     return `applicant:${phone||email||`${safeText(row&&row.name).trim()}|${safeText(row&&row.birthYear).trim()}|${safeText(row&&row.applyDate).trim()}`||index}`;
@@ -150,7 +153,7 @@
     return pack;
   }
   function fileName(type,prefix='recruit_erp'){
-    const names={full:'full_backup',applicants:'applicants',schools:'schools',employees:'employees',calendarEvents:'manual_calendar',hireWaitingProfiles:'hire_waiting_profiles'};
+    const names={full:'full_backup',applicants:'applicants',schools:'schools',employees:'employees',calendarEvents:'manual_calendar',hireWaitingProfiles:'hire_waiting_profiles',messageTemplates:'message_templates'};
     return `${prefix}_${names[type]||type}_${localIso()}.json`;
   }
   function recordHistory(action,detail){
@@ -191,6 +194,7 @@
   function detectLegacyArray(arr){
     const sample=arr.find(x=>x&&typeof x==='object')||{};
     if('applicantId'in sample&&('residentNumber'in sample||'groupName'in sample||'employeeNo'in sample))return 'hireWaitingProfiles';
+    if('body'in sample&&'title'in sample&&'category'in sample)return 'messageTemplates';
     if('empNo'in sample||'department'in sample||'leaveDate'in sample)return 'employees';
     if('title'in sample&&'date'in sample&&('importance'in sample||'type'in sample))return 'calendarEvents';
     if('aliases'in sample||'managementStatus'in sample||'mouDate'in sample||'contactPhone'in sample)return 'schools';
@@ -217,14 +221,14 @@
     }
     if(Array.isArray(parsed)){
       const key=detectLegacyArray(parsed);
-      const labels={applicants:'지원자 전용 JSON',employees:'사원명부 전용 JSON',schools:'협력학교 전용 JSON',calendarEvents:'수동 일정 전용 JSON',hireWaitingProfiles:'입사대기 입력정보 전용 JSON'};
+      const labels={applicants:'지원자 전용 JSON',employees:'사원명부 전용 JSON',schools:'협력학교 전용 JSON',calendarEvents:'수동 일정 전용 JSON',hireWaitingProfiles:'입사대기 입력정보 전용 JSON',messageTemplates:'안내문 문구함 전용 JSON'};
       return {kind:`legacy-${key}`,label:labels[key]||'구형 배열 JSON',route:'백업/내보내기 → 회사 JSON 검사 및 적용',count:parsed.length,summary:`${datasetInfo(key).label} ${parsed.length}건`};
     }
     if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)){
       const keys=DATASETS.filter(d=>Array.isArray(parsed[d.key])).map(d=>d.key);
       if(keys.length){
         const only=keys.length===1?keys[0]:'';
-        const labels={applicants:'지원자 전용 JSON',employees:'사원명부 전용 JSON',schools:'협력학교 전용 JSON',calendarEvents:'수동 일정 전용 JSON',hireWaitingProfiles:'입사대기 입력정보 전용 JSON'};
+        const labels={applicants:'지원자 전용 JSON',employees:'사원명부 전용 JSON',schools:'협력학교 전용 JSON',calendarEvents:'수동 일정 전용 JSON',hireWaitingProfiles:'입사대기 입력정보 전용 JSON',messageTemplates:'안내문 문구함 전용 JSON'};
         return {
           kind:only?`legacy-${only}`:'legacy-mixed',
           label:only?(labels[only]||'구형 데이터 JSON'):'구형 ERP 혼합 JSON',
@@ -235,7 +239,7 @@
       }
       if(Array.isArray(parsed.rows)){
         const key=detectLegacyArray(parsed.rows);
-        const labels={applicants:'지원자 전용 JSON',employees:'사원명부 전용 JSON',schools:'협력학교 전용 JSON',calendarEvents:'수동 일정 전용 JSON',hireWaitingProfiles:'입사대기 입력정보 전용 JSON'};
+        const labels={applicants:'지원자 전용 JSON',employees:'사원명부 전용 JSON',schools:'협력학교 전용 JSON',calendarEvents:'수동 일정 전용 JSON',hireWaitingProfiles:'입사대기 입력정보 전용 JSON',messageTemplates:'안내문 문구함 전용 JSON'};
         return {kind:`rows-${key}`,label:labels[key]||'행 데이터 JSON',route:'백업/내보내기 → 회사 JSON 검사 및 적용',count:parsed.rows.length,summary:`${datasetInfo(key).label} ${parsed.rows.length}건`};
       }
     }
@@ -406,6 +410,7 @@
         if(key==='employees')return typeof normalizeEmployee==='function'?normalizeEmployee(row):row;
         if(key==='calendarEvents')return typeof normalizeCalendarEvent==='function'?normalizeCalendarEvent(row):row;
         if(key==='hireWaitingProfiles')return typeof normalizeHireWaitingProfile==='function'?normalizeHireWaitingProfile(row):row;
+        if(key==='messageTemplates')return typeof normalizeMessageTemplate==='function'?normalizeMessageTemplate(row):row;
         return row;
       }catch(err){console.warn(`Backup normalize failed: ${key}`,err,row);return null;}
     }).filter(Boolean).filter(row=>{
@@ -413,6 +418,7 @@
       if(key==='employees')return !!(row.name||row.empNo);
       if(key==='calendarEvents')return !!(row.title&&row.date);
       if(key==='hireWaitingProfiles')return !!row.applicantId;
+      if(key==='messageTemplates')return !!(row.title||row.body);
       return true;
     });
   }
@@ -422,6 +428,7 @@
     if(Object.prototype.hasOwnProperty.call(next,'employees')){employees=normalizeRows('employees',next.employees);localStorage.setItem('recruit_erp_employees',JSON.stringify(employees));}
     if(Object.prototype.hasOwnProperty.call(next,'calendarEvents')){calendarEvents=normalizeRows('calendarEvents',next.calendarEvents);localStorage.setItem('recruit_erp_calendar_events',JSON.stringify(calendarEvents));}
     if(Object.prototype.hasOwnProperty.call(next,'hireWaitingProfiles')){hireWaitingProfiles=normalizeRows('hireWaitingProfiles',next.hireWaitingProfiles);localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(hireWaitingProfiles));}
+    if(Object.prototype.hasOwnProperty.call(next,'messageTemplates')){messageTemplates=normalizeRows('messageTemplates',next.messageTemplates);localStorage.setItem('recruit_erp_message_templates',JSON.stringify(messageTemplates));if(typeof renderMessageTemplateList==='function')renderMessageTemplateList();}
     if(typeof renderAll==='function')renderAll();
     if(typeof updateStorageNote==='function')updateStorageNote();
     refreshCounts();

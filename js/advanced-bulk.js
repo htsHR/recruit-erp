@@ -23,7 +23,7 @@ function runSearch(){
  const c=criteria(), ms=managers(), kw=c.Keyword.toLowerCase();
  advancedResults=applicants.filter(a=>dateOK(a.applyDate,c.ApplyFrom,c.ApplyTo)&&dateOK(a.interviewDate,c.InterviewFrom,c.InterviewTo)&&dateOK(a.hireDate,c.HireFrom,c.HireTo))
  .filter(a=>c.Status==='all'||a.status===c.Status).filter(a=>c.Workplace==='all'||a.workplace===c.Workplace).filter(a=>c.School==='all'||a.school===c.School).filter(a=>c.Manager==='all'||ms[a.id]===c.Manager)
- .filter(a=>c.Contact==='all'||(c.Contact==='needed'&&['미연락','부재중'].includes(a.status))||(c.Contact==='done'&&!['미연락','부재중'].includes(a.status))||(c.Contact==='missing'&&!String(a.phone||'').trim()))
+ .filter(a=>c.Contact==='all'||(c.Contact==='needed'&&['서류검토','부재중'].includes(a.status))||(c.Contact==='done'&&!['서류검토','부재중'].includes(a.status))||(c.Contact==='missing'&&!String(a.phone||'').trim()))
  .filter(a=>c.Dorm==='all'||(c.Dorm==='pending'&&['미확인','확인필요'].includes(typeof dormLabel==='function'?dormLabel(a):a.dormUse))||(c.Dorm!=='pending'&&(typeof dormLabel==='function'?dormLabel(a):a.dormUse)===c.Dorm))
  .filter(a=>!kw||[a.name,a.phone,a.school,a.workplace,a.status,ms[a.id]].join(' ').toLowerCase().includes(kw)); window.__erpAdvancedFilterIds=advancedResults.map(a=>a.id); renderAdvanced(); if(typeof renderTable==='function')renderTable();
 }

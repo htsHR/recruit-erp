@@ -22,7 +22,7 @@ const HIRE_WAITING_COLUMNS=[
   {key:'rank',label:'직 급',editable:true},
   {key:'residentNumber',label:'주민등록번호',editable:true,sensitive:true},
   {key:'birthDate',label:'생년월일',editable:false},
-  {key:'age',label:'(만)나이',editable:false},
+  {key:'age',label:'나이',editable:false},
   {key:'email',label:'이메일',editable:false},
   {key:'education',label:'최종학력',editable:false},
   {key:'school',label:'학교',editable:false},
@@ -124,6 +124,10 @@ function hireWaitingAgeOn(birth,dateStr=today()){
   let age=ref.getFullYear()-d.getFullYear();
   if(ref.getMonth()<d.getMonth()||(ref.getMonth()===d.getMonth()&&ref.getDate()<d.getDate())) age--;
   return age>=0?String(age):'';
+}
+function hireWaitingShortDate(v){
+  const m=String(v||'').match(/^(?:\d{4})-(\d{2})-(\d{2})$/);
+  return m?`${m[1]}월 ${m[2]}일`:String(v||'');
 }
 function hireWaitingEducation(a){
   const raw=String(a?.finalEducation||a?.education||'').trim();
@@ -354,28 +358,32 @@ function hireWaitingZip(files){
   return hireWaitingConcat([localData,centralData,eocd]);
 }
 function hireWaitingWorkbookFiles(rows){
-  const current=today();
   const headers=HIRE_WAITING_COLUMNS.map(c=>c.label);
   const dataRows=rows.map((row,index)=>[
-    index+1,row.employeeNo,'입사대기',row.hireDate,row.workplace,row.pmtc,row.gender,row.groupName,row.product,row.part,row.name,row.rank,row.residentNumber,
+    index+1,row.employeeNo,'입사대기',hireWaitingShortDate(row.hireDate),row.workplace,row.pmtc,row.gender,row.groupName,row.product,row.part,row.name,row.rank,row.residentNumber,
     row.birthDate,row.age,row.email,row.education,row.school,row.major,row.phone,row.region,row.commuteMethod,row.remarks
   ]);
-  const first=Array(23).fill('');first[14]=current;first[20]='기준일';
-  const all=[first,headers,...dataRows];
-  const numericCols=new Set([0,14]);
+  const all=[Array(23).fill(''),headers,...dataRows];
   const xmlRows=all.map((values,r)=>{
     const excelRow=r+1;
+    if(r===0) return `<row r="1" ht="2" hidden="1" customHeight="1"/>`;
     const cells=values.map((value,c)=>{
-      const style=r===1?3:(numericCols.has(c)&&r>=2?1:2);
-      return hireWaitingXlsxCell(excelRow,c,value,style,numericCols.has(c)&&r>=2);
+      let style=1,numeric=false;
+      if(r===1) style=3;
+      else if(c===2) style=4;
+      else if(c===4 && String(value)==='천안') style=5;
+      else if(c===22) style=6;
+      else if(c===0 || c===14){style=1;numeric=true;}
+      else style=2;
+      return hireWaitingXlsxCell(excelRow,c,value,style,numeric);
     }).join('');
-    return `<row r="${excelRow}" ht="${r===1?24:21}" customHeight="1">${cells}</row>`;
+    return `<row r="${excelRow}" ht="${r===1?28:25}" customHeight="1">${cells}</row>`;
   }).join('');
-  const widths=[6,13,13,13,9,15,8,14,12,17,11,11,17,13,10,25,11,20,20,16,13,12,34];
+  const widths=[6,11,11,11,8,13,7,11,9,12,10,9,15,11,6,22,10,18,16,15,11,10,30];
   const cols=widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
   const sheetName=(hireWaitingCurrentDate||today()).slice(2).replaceAll('-','.');
-  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="18"/><cols>${cols}</cols><sheetData>${xmlRows}</sheetData><autoFilter ref="A2:W${Math.max(2,all.length)}"/><pageMargins left="0.25" right="0.25" top="0.5" bottom="0.5" header="0.2" footer="0.2"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>`;
-  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="10"/><name val="맑은 고딕"/></font><font><b/><sz val="10"/><name val="맑은 고딕"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFD9EAF7"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border/><border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="49" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" zoomScale="85"><pane ySplit="2" topLeftCell="A3" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="18"/><cols>${cols}</cols><sheetData>${xmlRows}</sheetData><autoFilter ref="A2:W${Math.max(2,all.length)}"/><pageMargins left="0.2" right="0.2" top="0.35" bottom="0.35" header="0.15" footer="0.15"/><pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0" paperSize="9"/></worksheet>`;
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="10"/><name val="맑은 고딕"/></font><font><b/><sz val="10"/><name val="맑은 고딕"/></font></fonts><fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFC000"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF92D050"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFFFFF"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border/><border><left style="hair"><color rgb="FF000000"/></left><right style="hair"><color rgb="FF000000"/></right><top style="hair"><color rgb="FF000000"/></top><bottom style="hair"><color rgb="FF000000"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="49" fontId="0" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="49" fontId="0" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="49" fontId="0" fillId="4" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="49" fontId="0" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   return {
     '[Content_Types].xml':`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`,
     '_rels/.rels':`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`,

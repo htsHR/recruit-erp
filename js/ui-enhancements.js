@@ -95,7 +95,7 @@ function uxPromptStatusData(a,next){
     if(d===null) return null;
     if(d.trim()) patch.hireDate=d.trim();
   }
-  if(['불합격','서류탈락','철회','연락두절'].includes(next)){
+  if(['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절'].includes(next)){
     const reason=prompt('사유 또는 참고 메모를 입력하세요. (선택)',a.decisionReason||'');
     if(reason===null) return null;
     if(reason.trim()) patch.decisionReason=reason.trim();
@@ -120,7 +120,7 @@ card=function(a){
   const schedule=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
   const dateText=schedule?`면접 ${schedule}`:(a.hireDate?`입사 ${a.hireDate}`:'일정 미정');
   const needs=[];
-  if(['미연락','부재중'].includes(a.status)) needs.push('연락');
+  if(['서류검토','부재중'].includes(a.status)) needs.push('연락');
   if(isDormPending(a)) needs.push('출근방법');
   if(isDecisionNeeded(a)) needs.push('판정');
   return `<article class="person-card workflow-person-card ${statusToneClass(a)}">
@@ -220,7 +220,7 @@ viewApplicant=function(id){
   const print=uxEl('btnDetailPrint'); if(print) print.onclick=()=>window.print();
   const body=uxEl('detailBody');
   if(body && !body.querySelector('.detail-progress-strip')){
-    const steps=['미연락','면접예정','면접완료','입사예정','출근'];
+    const steps=['서류검토','면접예정','면접완료','입사예정','출근'];
     const cur=steps.indexOf(normalizeStatus(a.status));
     const strip=document.createElement('div'); strip.className='detail-progress-strip';
     strip.innerHTML=steps.map((x,i)=>`<span class="${i<=cur?'done':''} ${i===cur?'current':''}">${x}</span>`).join('');

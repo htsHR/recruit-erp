@@ -6,7 +6,7 @@
    ========================================================= */
 let calendarSelectedInterviewIds=new Set();
 let calendarBulkDecisionType='';
-const CALENDAR_FINAL_STATUSES=new Set(['입사예정','출근','불합격','서류탈락','철회','연락두절']);
+const CALENDAR_FINAL_STATUSES=new Set(['입사예정','출근','불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절']);
 function calendarApplicantById(id){ return applicants.find(a=>String(a.id)===String(id))||null; }
 function calendarInterviewSelectable(item){
   if(!item || item.kind!=='auto' || item.type!=='면접') return false;
@@ -17,7 +17,7 @@ function calendarResultLabel(a){
   if(!a) return '';
   if(['입사예정','출근'].includes(a.status) || a.finalDecision==='합격') return '합격';
   if(['불합격','서류탈락'].includes(a.status) || a.finalDecision==='불합격') return '불합격';
-  if(['철회','연락두절'].includes(a.status)) return a.status;
+  if(['면접거절','면접불참','입사철회','철회','연락두절'].includes(a.status)) return a.status;
   return '';
 }
 function calendarCurrentActor(){

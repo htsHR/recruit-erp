@@ -1,0 +1,290 @@
+/* ===== v10.46.8.1 DAILY OPERATIONS POLISH ===== */
+/* 입사대기자 엑셀형 입력표: 실제 입력 길이에 맞춘 조밀한 열 */
+.hire-waiting-table{min-width:2150px!important;font-size:11.5px!important;table-layout:fixed!important;}
+.hire-waiting-table th,.hire-waiting-table td{min-width:0!important;height:36px!important;}
+.hire-waiting-table th{height:40px!important;padding:0 5px!important;}
+.hire-waiting-table th:nth-child(1),.hire-waiting-table td:nth-child(1){width:44px!important;min-width:44px!important;max-width:44px!important;}
+.hire-waiting-table th:nth-child(2),.hire-waiting-table td:nth-child(2){width:98px!important;min-width:98px!important;max-width:98px!important;}
+.hire-waiting-table th:nth-child(3),.hire-waiting-table td:nth-child(3){width:82px!important;min-width:82px!important;max-width:82px!important;}
+.hire-waiting-table th:nth-child(4),.hire-waiting-table td:nth-child(4){width:88px!important;min-width:88px!important;max-width:88px!important;}
+.hire-waiting-table th:nth-child(5),.hire-waiting-table td:nth-child(5){width:62px!important;min-width:62px!important;max-width:62px!important;}
+.hire-waiting-table th:nth-child(6),.hire-waiting-table td:nth-child(6){width:96px!important;min-width:96px!important;max-width:96px!important;}
+.hire-waiting-table th:nth-child(7),.hire-waiting-table td:nth-child(7){width:52px!important;min-width:52px!important;max-width:52px!important;}
+.hire-waiting-table th:nth-child(8),.hire-waiting-table td:nth-child(8){width:92px!important;min-width:92px!important;max-width:92px!important;}
+.hire-waiting-table th:nth-child(9),.hire-waiting-table td:nth-child(9){width:64px!important;min-width:64px!important;max-width:64px!important;}
+.hire-waiting-table th:nth-child(10),.hire-waiting-table td:nth-child(10){width:106px!important;min-width:106px!important;max-width:106px!important;}
+.hire-waiting-table th:nth-child(11),.hire-waiting-table td:nth-child(11){left:44px!important;width:90px!important;min-width:90px!important;max-width:90px!important;}
+.hire-waiting-table th:nth-child(12),.hire-waiting-table td:nth-child(12){width:62px!important;min-width:62px!important;max-width:62px!important;}
+.hire-waiting-table th:nth-child(13),.hire-waiting-table td:nth-child(13){width:128px!important;min-width:128px!important;max-width:128px!important;}
+.hire-waiting-table th:nth-child(14),.hire-waiting-table td:nth-child(14){width:92px!important;min-width:92px!important;max-width:92px!important;}
+.hire-waiting-table th:nth-child(15),.hire-waiting-table td:nth-child(15){width:46px!important;min-width:46px!important;max-width:46px!important;}
+.hire-waiting-table th:nth-child(16),.hire-waiting-table td:nth-child(16){width:165px!important;min-width:165px!important;max-width:165px!important;}
+.hire-waiting-table th:nth-child(17),.hire-waiting-table td:nth-child(17){width:70px!important;min-width:70px!important;max-width:70px!important;}
+.hire-waiting-table th:nth-child(18),.hire-waiting-table td:nth-child(18){width:130px!important;min-width:130px!important;max-width:130px!important;}
+.hire-waiting-table th:nth-child(19),.hire-waiting-table td:nth-child(19){width:110px!important;min-width:110px!important;max-width:110px!important;}
+.hire-waiting-table th:nth-child(20),.hire-waiting-table td:nth-child(20){width:115px!important;min-width:115px!important;max-width:115px!important;}
+.hire-waiting-table th:nth-child(21),.hire-waiting-table td:nth-child(21){width:76px!important;min-width:76px!important;max-width:76px!important;}
+.hire-waiting-table th:nth-child(22),.hire-waiting-table td:nth-child(22){width:82px!important;min-width:82px!important;max-width:82px!important;}
+.hire-waiting-table th:nth-child(23),.hire-waiting-table td:nth-child(23){width:200px!important;min-width:200px!important;max-width:200px!important;}
+.hire-waiting-editable input,.hire-waiting-editable select{min-width:0!important;padding:0 6px!important;}
+.hire-waiting-resident-cell,.hire-waiting-remarks-cell,.hire-waiting-remarks-cell input{min-width:0!important;}
+
+/* 지원자 목록: 이름과 근무지를 한 칸으로 합치고 페이지 단위로 표시 */
+#applicants .table-wrap{max-height:calc(100vh - 355px)!important;min-height:360px!important;overflow:auto!important;}
+#applicants .applicant-table thead{position:sticky!important;top:0!important;z-index:12!important;}
+#applicants .applicant-name-line{display:flex;align-items:center;gap:7px;min-width:0;}
+#applicants .applicant-name-line .name-button{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#applicants .applicant-name-line .workplace-pill{flex:0 0 auto;min-width:45px!important;padding:3px 7px!important;font-size:10px!important;}
+@media(min-width:761px){
+ #applicants .applicant-table{min-width:1115px!important;table-layout:fixed!important;}
+ #applicants .applicant-table .workplace-head,#applicants .applicant-table .workplace-cell{display:none!important;}
+ #applicants .applicant-table .no-head,#applicants .applicant-table .no-cell{width:48px!important;min-width:48px!important;max-width:48px!important;}
+ #applicants .applicant-table .name-head,#applicants .applicant-table .applicant-name-cell{width:210px!important;min-width:210px!important;max-width:210px!important;}
+ #applicants .applicant-table .status-head,#applicants .applicant-table .status-cell{width:118px!important;min-width:118px!important;max-width:118px!important;}
+ #applicants .applicant-table .sticky-app-no{position:sticky!important;left:0!important;}
+ #applicants .applicant-table .sticky-app-name{position:sticky!important;left:48px!important;}
+ #applicants .applicant-table .sticky-app-status{position:sticky!important;left:258px!important;box-shadow:8px 0 12px -13px rgba(36,48,63,.5)!important;}
+ #applicants .applicant-table thead .no-head{position:sticky!important;left:0!important;}
+ #applicants .applicant-table thead .name-head{position:sticky!important;left:48px!important;}
+ #applicants .applicant-table thead .status-head{position:sticky!important;left:258px!important;}
+ #applicants .status-inline{width:104px!important;min-width:104px!important;}
+}
+#applicants .applicant-pagination{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-top:10px;padding:10px 12px;border:1px solid #e0e6ed;border-radius:10px;background:#fff;color:#66717f;font-size:11.5px;}
+#applicants .applicant-page-controls{display:flex;align-items:center;justify-content:center;gap:5px;}
+#applicants .applicant-page-btn{min-width:34px;height:32px;padding:0 8px;border:1px solid #d9e0e8;border-radius:7px;background:#fff;color:#4b5663;font-size:11px;font-weight:750;}
+#applicants .applicant-page-btn:hover:not(:disabled){background:#f5f8fb;border-color:#bdc9d6;}
+#applicants .applicant-page-btn.active{background:#edf3fa;border-color:#9eb9dc;color:#285b96;}
+#applicants .applicant-page-btn:disabled{opacity:.4;cursor:not-allowed;}
+#applicants .page-ellipsis{padding:0 3px;color:#929aa4;}
+#applicants .applicant-page-size{justify-self:end;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+#applicants .applicant-page-size select{height:32px;border:1px solid #d9e0e8;border-radius:7px;background:#fff;padding:0 8px;font:inherit;color:#4b5663;}
+#applicants .status-inline.bad,#applicants .status-inline.neutral{background:#f2f4f6!important;color:#606873!important;border-color:#dadddf!important;}
+@media(max-width:760px){
+ #applicants .table-wrap{max-height:none!important;min-height:0!important;overflow:visible!important;}
+ #applicants .applicant-table tr.applicant-row td.workplace-cell{display:none!important;}
+ #applicants .applicant-pagination{grid-template-columns:1fr;}
+ #applicants .applicant-page-summary,#applicants .applicant-page-size{justify-self:center;}
+ #applicants .applicant-page-controls{max-width:100%;overflow-x:auto;justify-content:flex-start;padding-bottom:3px;}
+}
+
+/* 안내문 템플릿을 지원자 선택 없는 저장형 문구함으로 변경 */
+.message-library-shell{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:16px;min-height:650px;}
+.message-library-sidebar,.message-library-editor{margin:0!important;min-height:0;}
+.message-library-sidebar{display:flex;flex-direction:column;gap:12px;}
+.message-library-sidebar .panel-head,.message-library-editor .panel-head{align-items:center;}
+.message-library-sidebar .search{width:100%;height:40px;}
+.message-library-list{display:flex;flex-direction:column;gap:7px;min-height:0;max-height:585px;overflow:auto;padding-right:3px;}
+.message-library-item{width:100%;padding:12px;border:1px solid #e0e5eb;border-radius:10px;background:#fff;text-align:left;color:#334155;box-shadow:none;}
+.message-library-item:hover{background:#f8fafc;border-color:#cbd5e1;}
+.message-library-item.active{background:#eef4fb;border-color:#9eb9dc;}
+.message-library-item-head{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.message-library-item-head strong{font-size:13px;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.message-library-item-head em{flex:0 0 auto;padding:2px 6px;border-radius:999px;background:#edf6ef;color:#356a48;font-size:9px;font-style:normal;font-weight:800;}
+.message-library-item small{display:block;margin-top:4px;color:#64748b;font-size:10px;font-weight:750;}
+.message-library-item p{margin:7px 0 0;color:#7b8490;font-size:11px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.message-library-empty{padding:54px 16px;text-align:center;color:#8a94a1;font-size:12px;line-height:1.7;border:1px dashed #d8dee6;border-radius:10px;}
+.message-library-editor{display:flex;flex-direction:column;}
+.message-favorite-check{display:flex!important;align-items:center;gap:6px;color:#586270;font-size:11px;font-weight:750;}
+.message-library-form{display:grid;grid-template-columns:2fr 1fr;gap:13px;padding:4px 0 14px;}
+.message-library-form label{display:grid;gap:7px;color:#4b5563;font-size:11.5px;font-weight:800;}
+.message-library-form input,.message-library-form select{height:42px;}
+.message-body-field{grid-column:1/-1;position:relative;}
+.message-body-field textarea{min-height:430px;resize:vertical;padding:16px 16px 38px;font-size:13px;line-height:1.7;}
+.message-char-count{position:absolute;right:12px;bottom:11px;padding:3px 7px;border-radius:6px;background:#f3f5f7;color:#66717f;font-size:10px;font-weight:750;}
+.message-library-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:14px;border-top:1px solid #e6eaf0;}
+.message-library-actions>div{display:flex;gap:8px;}
+@media(max-width:900px){.message-library-shell{grid-template-columns:1fr;}.message-library-list{max-height:320px;}.message-body-field textarea{min-height:330px;}.message-library-actions{align-items:stretch;flex-direction:column-reverse;}.message-library-actions>div{display:grid;grid-template-columns:1fr;}.message-library-actions button{width:100%;}}
+
+/* 현재 12열 지원자 목록 전용 최종 정렬: 과거 nth-child 규칙 완전 무효화 */
+@media(min-width:761px){
+ #applicants .applicant-table{width:100%!important;min-width:1267px!important;table-layout:fixed!important;}
+ #applicants .applicant-table th:nth-child(1),#applicants .applicant-table td:nth-child(1){width:52px!important;min-width:52px!important;max-width:52px!important;}
+ #applicants .applicant-table th:nth-child(2),#applicants .applicant-table td:nth-child(2){width:200px!important;min-width:200px!important;max-width:200px!important;}
+ #applicants .applicant-table th:nth-child(3),#applicants .applicant-table td:nth-child(3){width:120px!important;min-width:120px!important;max-width:120px!important;}
+ #applicants .applicant-table th:nth-child(4),#applicants .applicant-table td:nth-child(4){width:105px!important;min-width:105px!important;max-width:105px!important;}
+ #applicants .applicant-table th:nth-child(5),#applicants .applicant-table td:nth-child(5){width:150px!important;min-width:150px!important;max-width:150px!important;}
+ #applicants .applicant-table th:nth-child(6),#applicants .applicant-table td:nth-child(6){width:110px!important;min-width:110px!important;max-width:110px!important;}
+ #applicants .applicant-table th:nth-child(7),#applicants .applicant-table td:nth-child(7){width:130px!important;min-width:130px!important;max-width:130px!important;}
+ #applicants .applicant-table th:nth-child(8),#applicants .applicant-table td:nth-child(8){width:180px!important;min-width:180px!important;max-width:180px!important;}
+ #applicants .applicant-table th:nth-child(9),#applicants .applicant-table td:nth-child(9){width:100px!important;min-width:100px!important;max-width:100px!important;}
+ #applicants .applicant-table th:nth-child(10),#applicants .applicant-table td:nth-child(10){width:95px!important;min-width:95px!important;max-width:95px!important;}
+ #applicants .applicant-table th:nth-child(11),#applicants .applicant-table td:nth-child(11){width:130px!important;min-width:130px!important;max-width:130px!important;}
+ #applicants .applicant-table th:nth-child(12),#applicants .applicant-table td:nth-child(12){width:175px!important;min-width:175px!important;max-width:175px!important;}
+ #applicants .applicant-table thead th:nth-child(1),#applicants .applicant-table td:nth-child(1){position:sticky!important;left:0!important;z-index:8!important;}
+ #applicants .applicant-table thead th:nth-child(2),#applicants .applicant-table td:nth-child(2){position:sticky!important;left:52px!important;z-index:8!important;}
+ #applicants .applicant-table thead th:nth-child(3),#applicants .applicant-table td:nth-child(3){position:sticky!important;left:252px!important;z-index:8!important;box-shadow:8px 0 12px -13px rgba(36,48,63,.5)!important;}
+ #applicants .applicant-table thead th:nth-child(12),#applicants .applicant-table td:nth-child(12){position:sticky!important;right:0!important;z-index:9!important;}
+ #applicants .status-inline{width:104px!important;min-width:104px!important;max-width:104px!important;}
+}
+@media(max-width:1700px) and (min-width:761px){
+ #applicants .applicant-table th:nth-child(8),#applicants .applicant-table td:nth-child(8),#applicants .applicant-table th:nth-child(9),#applicants .applicant-table td:nth-child(9){display:none!important;}
+ #applicants .applicant-table{min-width:987px!important;}
+}
+.message-favorite-check input{width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;margin:0!important;accent-color:#315f92;}
+
+/* 모바일 지원자 목록: 데스크톱 열 너비/고정 높이의 영향을 완전히 제거한 카드형 배치 */
+@media(max-width:760px){
+ #applicants .table-wrap{width:100%!important;max-width:100%!important;overflow:visible!important;border:0!important;background:transparent!important;box-shadow:none!important;}
+ #applicants .applicant-table{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;table-layout:auto!important;}
+ #applicants .applicant-table thead{display:none!important;}
+ #applicants .applicant-table tbody{display:grid!important;width:100%!important;gap:9px!important;}
+ #applicants .applicant-table tr.applicant-row{
+   display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;grid-auto-rows:auto!important;
+   width:100%!important;min-width:0!important;height:auto!important;min-height:0!important;
+   padding:13px!important;overflow:hidden!important;box-sizing:border-box!important;
+ }
+ #applicants .applicant-table tr.applicant-row td{
+   position:static!important;left:auto!important;right:auto!important;top:auto!important;
+   width:auto!important;min-width:0!important;max-width:none!important;height:auto!important;min-height:0!important;
+   padding:0!important;border:0!important;box-shadow:none!important;white-space:normal!important;
+ }
+ #applicants .applicant-table tr.applicant-row td{display:none!important;}
+ #applicants .applicant-table tr.applicant-row td.applicant-name-cell,
+ #applicants .applicant-table tr.applicant-row td.status-cell,
+ #applicants .applicant-table tr.applicant-row td.schedule-cell,
+ #applicants .applicant-table tr.applicant-row td.hire-date-cell,
+ #applicants .applicant-table tr.applicant-row td.phone-cell,
+ #applicants .applicant-table tr.applicant-row td.commute-cell,
+ #applicants .applicant-table tr.applicant-row td.decision-cell,
+ #applicants .applicant-table tr.applicant-row td.applicant-actions{display:block!important;}
+ #applicants .applicant-table .applicant-name-cell{grid-column:1;grid-row:1;align-self:center!important;}
+ #applicants .applicant-table .status-cell{grid-column:2;grid-row:1;align-self:start!important;margin-left:8px!important;}
+ #applicants .applicant-table .status-inline{width:106px!important;min-width:106px!important;max-width:106px!important;}
+ #applicants .applicant-table .schedule-cell{grid-column:1/-1!important;grid-row:2!important;margin-top:10px!important;}
+ #applicants .applicant-table .hire-date-cell{grid-column:1/-1!important;grid-row:3!important;margin-top:7px!important;}
+ #applicants .applicant-table .phone-cell{grid-column:1/-1!important;grid-row:4!important;margin-top:7px!important;}
+ #applicants .applicant-table .commute-cell{grid-column:1/-1!important;grid-row:5!important;margin-top:7px!important;}
+ #applicants .applicant-table .decision-cell{grid-column:1/-1!important;grid-row:6!important;margin-top:7px!important;}
+ #applicants .applicant-table .schedule-cell,
+ #applicants .applicant-table .hire-date-cell,
+ #applicants .applicant-table .phone-cell,
+ #applicants .applicant-table .commute-cell,
+ #applicants .applicant-table .decision-cell{
+   display:grid!important;grid-template-columns:72px minmax(0,1fr)!important;align-items:center!important;gap:8px!important;
+ }
+ #applicants .applicant-table .schedule-cell::before{content:'면접일정';}
+ #applicants .applicant-table .hire-date-cell::before{content:'입사예정';}
+ #applicants .applicant-table .phone-cell::before{content:'연락처';}
+ #applicants .applicant-table .commute-cell::before{content:'출근방법';}
+ #applicants .applicant-table .decision-cell::before{content:'판정';}
+ #applicants .applicant-table .schedule-cell::before,
+ #applicants .applicant-table .hire-date-cell::before,
+ #applicants .applicant-table .phone-cell::before,
+ #applicants .applicant-table .commute-cell::before,
+ #applicants .applicant-table .decision-cell::before{color:#7d8792;font-size:10.5px;font-weight:750;}
+ #applicants .applicant-table .decision-cell small{display:inline!important;margin-left:5px!important;}
+ #applicants .applicant-table .applicant-actions{
+   grid-column:1/-1!important;grid-row:7!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+   gap:6px!important;margin-top:11px!important;padding-top:10px!important;border-top:1px solid #edf0f3!important;
+ }
+ #applicants .applicant-table .applicant-actions>button{width:100%!important;min-width:0!important;}
+ #applicants .applicant-pagination{margin-top:9px!important;}
+}
+@media(max-width:760px){
+ #applicants.ui-system-v20 .applicant-table{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;table-layout:auto!important;}
+ #applicants.ui-system-v20 .applicant-table tbody{display:grid!important;width:100%!important;min-width:0!important;}
+ #applicants.ui-system-v20 .applicant-table tbody tr.applicant-row{width:100%!important;min-width:0!important;max-width:100%!important;height:auto!important;min-height:0!important;}
+ #applicants.ui-system-v20 .applicant-table tbody tr.applicant-row td{height:auto!important;min-height:0!important;max-height:none!important;}
+}
+@media(max-width:760px){
+ #applicants.ui-system-v20 .applicant-table tbody tr.applicant-row td.applicant-actions{
+   display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;height:auto!important;min-height:0!important;
+ }
+ #applicants.ui-system-v20 .applicant-table tbody tr.applicant-row td.applicant-actions>button{
+   display:block!important;width:100%!important;min-width:0!important;height:36px!important;min-height:36px!important;margin:0!important;
+ }
+}
+
+
+/* ===== v10.46.8.1 STATUS SELECT POLISH =====
+   - 네이티브 select의 잘림/말줄임 표시를 제거
+   - 짧은 상태명은 중앙 정렬, 긴 기존 상태는 셀 안에서만 표시
+   - 상태와 지원일 사이 간격을 확보하고 고정열 그림자 겹침 방지
+*/
+#applicants .status-cell{
+  overflow:visible!important;
+  padding-left:10px!important;
+  padding-right:12px!important;
+}
+#applicants .status-select-wrap{
+  position:relative!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  width:118px!important;
+  min-width:118px!important;
+  max-width:118px!important;
+  height:30px!important;
+  border-radius:7px!important;
+  overflow:hidden!important;
+  vertical-align:middle!important;
+  color:#505b68;
+}
+#applicants .status-select-wrap::after{
+  content:'▾'!important;
+  position:absolute!important;
+  right:9px!important;
+  top:50%!important;
+  transform:translateY(-51%)!important;
+  z-index:2!important;
+  pointer-events:none!important;
+  font-size:9px!important;
+  line-height:1!important;
+  color:currentColor!important;
+  opacity:.7!important;
+}
+#applicants .status-select-wrap.info{color:var(--clarity-blue-text)!important;}
+#applicants .status-select-wrap.good{color:var(--clarity-green-text)!important;}
+#applicants .status-select-wrap.missed{color:#716550!important;}
+#applicants .status-select-wrap.bad,
+#applicants .status-select-wrap.neutral{color:var(--clarity-gray-text)!important;}
+#applicants .status-select-wrap.hold{color:#505b68!important;}
+#applicants .status-select-wrap .status-inline{
+  -webkit-appearance:none!important;
+  appearance:none!important;
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:none!important;
+  height:30px!important;
+  min-height:30px!important;
+  margin:0!important;
+  padding:0 25px 0 10px!important;
+  border-radius:7px!important;
+  overflow:hidden!important;
+  text-overflow:clip!important;
+  white-space:nowrap!important;
+  text-align:center!important;
+  text-align-last:center!important;
+  cursor:pointer!important;
+  background-image:none!important;
+}
+#applicants .status-select-wrap .status-inline::-ms-expand{display:none!important;}
+@media(min-width:761px){
+  #applicants .applicant-table .status-head,
+  #applicants .applicant-table .status-cell,
+  #applicants .applicant-table th:nth-child(3),
+  #applicants .applicant-table td:nth-child(3){
+    width:136px!important;
+    min-width:136px!important;
+    max-width:136px!important;
+  }
+  #applicants .applicant-table thead th:nth-child(4),
+  #applicants .applicant-table td:nth-child(4){
+    padding-left:16px!important;
+  }
+  #applicants .applicant-table .sticky-app-status{
+    box-shadow:6px 0 10px -12px rgba(36,48,63,.32)!important;
+  }
+}
+@media(max-width:760px){
+  #applicants .applicant-table .status-select-wrap{
+    width:118px!important;
+    min-width:118px!important;
+    max-width:118px!important;
+  }
+  #applicants .applicant-table .status-inline{
+    width:100%!important;
+    min-width:0!important;
+    max-width:none!important;
+  }
+}

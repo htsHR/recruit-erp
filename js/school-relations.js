@@ -192,7 +192,7 @@ function fillForm(a){ fields.forEach(id=>{ const el=$(id); if(!el) return; const
   value)); } el.value = value; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords',
   a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); updateFormMode(); }
 function resetForm(){ window.__erpExcelPastePendingApplicant=''; $('applicantForm').reset(); setChecked('checkNeeds',''); setChecked('selfIntroKeywords',
-  ''); $('editId').value=''; $('applyDate').value=today(); if($('status')) $('status').value='미연락';
+  ''); $('editId').value=''; $('applyDate').value=today(); if($('status')) $('status').value='서류검토';
   $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; updateScorePreview();
   dismissSchoolHint();
   updateFormMode(); }

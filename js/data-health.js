@@ -166,8 +166,8 @@ function buildHealthIssues(){
   const staleDays=parseInt(byId('healthStaleDays')?.value||'30',10);
   const interviewStatuses=['면접예정','면접완료','다음면접'];
   const hireStatuses=['입사예정','출근'];
-  const pendingStatuses=['미연락','부재중','면접예정','면접완료','다음면접'];
-  const earlyStatuses=['미연락','부재중','서류탈락','불합격','철회','연락두절'];
+  const pendingStatuses=['서류검토','부재중','면접예정','면접완료','다음면접'];
+  const earlyStatuses=['서류검토','부재중','서류탈락','불합격','철회','연락두절'];
   const todayValue=typeof today==='function'?today():new Date().toISOString().slice(0,10);
   const dupMembership=new Map();
   buildDuplicateGroups().forEach(g=>g.members.forEach(a=>dupMembership.set(String(a.id),true)));
