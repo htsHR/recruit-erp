@@ -506,3 +506,47 @@ input[type="checkbox"],input[type="radio"]{
 .badge.hold{background:#fbf4e6!important;color:#a16a12!important;}
 .badge.bad,.badge.neutral{background:#f0f2f5!important;color:#5c6673!important;}
 .badge{border:0!important;}
+
+/* ============================================================
+   v10.47.6 — FORM POLISH (등록·수정 폼 마감)
+   ============================================================ */
+
+/* 라벨 그리드: "라벨 + 필수표시" 한 줄, 입력은 전체 폭 */
+#form .form-grid>label{
+  display:grid!important;grid-template-columns:auto 1fr!important;
+  gap:6px 4px!important;align-items:center!important;justify-items:start!important;
+}
+#form .form-grid>label>input,
+#form .form-grid>label>select,
+#form .form-grid>label>textarea{grid-column:1/-1!important;justify-self:stretch!important;width:100%!important;}
+#form em.req{
+  font-style:normal!important;color:#b3352e!important;font-weight:700!important;
+  font-size:12px!important;line-height:1!important;
+}
+
+/* 접이식 섹션: 제목 줄 가로 정렬 + 펼치기/접기 컴팩트 칩 */
+#form .form-section summary,#form .review-only summary{
+  display:flex!important;flex-direction:row!important;align-items:center!important;
+  justify-content:space-between!important;gap:12px!important;
+}
+#form .form-section summary::after,#form .review-only summary::after{
+  flex:0 0 auto!important;align-self:center!important;width:auto!important;
+  padding:5px 12px!important;border-radius:6px!important;font-size:12px!important;font-weight:600!important;
+  color:var(--calm-accent,#2757d6)!important;border:1px solid #c9d8f5!important;background:#fff!important;
+}
+#form .form-section summary small{flex:1 1 auto!important;text-align:left!important;
+  color:var(--calm-ink-3)!important;font-weight:400!important;}
+
+/* 진행률 배너 타이포 정리 */
+#form .form-workflow-banner{padding:14px 18px!important;border-radius:12px!important;}
+#form .form-workflow-banner h3,#form .form-workflow-banner strong{font-size:15px!important;font-weight:700!important;}
+#form .form-workflow-banner p,#form .form-workflow-banner small{font-size:12px!important;color:var(--calm-ink-2)!important;font-weight:400!important;}
+
+/* 검토 체크 상자: 선택 시 조용한 강조 */
+#form .checkbox-grid label{border-radius:8px!important;font-weight:500!important;}
+#form .checkbox-grid label:hover{border-color:var(--calm-line-strong)!important;}
+#form .checkbox-grid label:has(input:checked){
+  border-color:#c9d8f5!important;background:var(--calm-accent-bg,#eef3fd)!important;color:var(--calm-accent,#2757d6)!important;
+}
+/* 점수 미리보기 알약 */
+#form .score-pill{border-radius:6px!important;font-weight:500!important;border-color:var(--calm-line-strong)!important;}
