@@ -305,3 +305,98 @@ input[type="checkbox"],input[type="radio"]{
 #applicants .list-summary span{border:0!important;background:transparent!important;padding:0!important;font-weight:500!important;color:var(--calm-ink-2)!important;}
 #applicants .list-summary .summary-strong{background:transparent!important;color:var(--calm-ink)!important;font-weight:700!important;}
 #applicants .list-summary{gap:6px 14px!important;}
+
+/* ============================================================
+   v10.47.2 — LIST FIXPACK (스크린샷 6개 문제 확정 처리)
+   특이성: #applicants.ui-system-v20 동급으로 대응
+   ============================================================ */
+
+/* 1. 정렬 셀렉트 글자 복구 (흰 글자·흰 배경 충돌 해소) */
+#applicants .applicant-list-tool-row .sort-select,
+#applicants.ui-system-v20 .applicant-list-tool-row .sort-select{
+  color:#1c2330!important;-webkit-text-fill-color:#1c2330!important;
+  background:#fff!important;font-weight:500!important;height:38px!important;
+  border:1px solid var(--calm-line-strong)!important;min-width:150px!important;width:auto!important;
+}
+#applicants .sort-select option{color:#1c2330!important;background:#fff!important;}
+
+/* 2. 컨트롤 행 재정의: 검색 확장 */
+#applicants .applicant-list-tool-row,
+#applicants.ui-system-v20 .applicant-list-tool-row,
+#applicants.ui-system-v20 .compact-list-controls{
+  display:flex!important;flex-wrap:wrap!important;gap:10px!important;align-items:center!important;
+  grid-template-columns:none!important;
+}
+#applicants .applicant-list-tool-row .search,
+#applicants.ui-system-v20 .applicant-list-tool-row .search,
+#applicants.ui-system-v20 .compact-list-controls .search{
+  flex:1 1 260px!important;width:auto!important;min-width:220px!important;max-width:none!important;
+  height:38px!important;grid-column:auto!important;
+}
+#applicants .applicant-list-button-row{display:flex!important;gap:8px!important;flex:0 0 auto!important;}
+
+/* 3. 종료/불합격 숨김 체크 — 상자 제거, 순수 텍스트 */
+#applicants .compact-check-inline,
+#applicants.ui-system-v20 .compact-check-inline,
+#applicants .applicant-list-tool-row .check-inline{
+  display:inline-flex!important;align-items:center!important;gap:6px!important;
+  border:0!important;background:transparent!important;box-shadow:none!important;
+  padding:0!important;height:auto!important;min-height:0!important;border-radius:0!important;
+  font-size:12px!important;font-weight:500!important;color:var(--calm-ink-2)!important;flex:0 0 auto!important;
+}
+
+/* 4. 상태 셀렉트 = 알약 (래퍼가 알약, 셀렉트는 투명, 색점은 알약 안) */
+#applicants .status-select-wrap,
+#applicants.ui-system-v20 .status-select-wrap{
+  display:inline-flex!important;align-items:center!important;position:relative!important;
+  padding:5px 22px 5px 20px!important;border-radius:6px!important;border:0!important;
+  font-weight:600!important;font-size:12px!important;line-height:1!important;
+}
+#applicants .status-select-wrap::before{
+  content:''!important;position:absolute!important;left:9px!important;top:50%!important;
+  margin-top:-3px!important;width:6px!important;height:6px!important;border-radius:99px!important;
+  background:currentColor!important;
+}
+#applicants .status-select-wrap::after{
+  content:''!important;position:absolute!important;right:8px!important;top:50%!important;
+  margin-top:-2px!important;width:5px!important;height:5px!important;
+  border-right:1.5px solid currentColor!important;border-bottom:1.5px solid currentColor!important;
+  transform:rotate(45deg) translateY(-1px)!important;opacity:.55!important;background:none!important;
+}
+#applicants .status-select-wrap .status-inline,
+#applicants.ui-system-v20 .status-select-wrap .status-inline{
+  appearance:none!important;-webkit-appearance:none!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  padding:0!important;margin:0!important;min-height:0!important;height:auto!important;
+  color:inherit!important;-webkit-text-fill-color:currentColor!important;
+  font-weight:600!important;font-size:12px!important;cursor:pointer!important;
+}
+/* 상태군별 알약 색 (calm 토큰) */
+#applicants .status-select-wrap.missed{background:#eef3fd!important;color:#2757d6!important;}   /* 서류검토·부재중 */
+#applicants .status-select-wrap.info{background:#ecf7f1!important;color:#1a7f57!important;}     /* 면접 트랙 */
+#applicants .status-select-wrap.good{background:#f0effa!important;color:#5a51b8!important;}     /* 입사예정·출근 */
+#applicants .status-select-wrap.hold{background:#fbf4e6!important;color:#a16a12!important;}     /* 보류·기타 */
+#applicants .status-select-wrap.bad,
+#applicants .status-select-wrap.neutral{background:#f0f2f5!important;color:#5c6673!important;}  /* 종료군 */
+
+/* 5. 고정 헤더 불투명화 + 계층 정리 (행 비침 차단) */
+#applicants .applicant-table thead th,
+#applicants.ui-system-v20 .applicant-table thead th{
+  position:sticky!important;top:0!important;z-index:10!important;
+  background:var(--calm-surface-soft,#fafbfc)!important;
+  box-shadow:inset 0 -1px 0 var(--calm-line)!important;
+}
+#applicants .applicant-table thead th:nth-child(1),
+#applicants .applicant-table thead th:nth-child(2),
+#applicants .applicant-table thead th:nth-child(3),
+#applicants .applicant-table thead th:nth-child(4){z-index:12!important;}
+
+/* 6. 판정·출근 알약 감산 (calm 톤) */
+#applicants .fit-tag{background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink-2)!important;border-radius:6px!important;font-weight:500!important;}
+#applicants .need-tag{background:#fbf4e6!important;border:1px solid #eeddba!important;color:#a16a12!important;border-radius:6px!important;font-weight:500!important;}
+#applicants .workplace-pill{background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink-2)!important;border-radius:6px!important;font-weight:500!important;min-width:0!important;padding:4px 9px!important;}
+#applicants .dorm-pill{border-radius:6px!important;font-weight:500!important;min-width:0!important;padding:4px 9px!important;}
+#applicants .dorm-pill.on{background:#ecf7f1!important;border:1px solid #cde8db!important;color:#1a7f57!important;}
+#applicants .dorm-pill.off{background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink-2)!important;}
+#applicants .dorm-pill.pending{background:#fbf4e6!important;border:1px solid #eeddba!important;color:#a16a12!important;}
+#applicants .compact-decision{font-weight:600!important;color:var(--calm-ink)!important;}
