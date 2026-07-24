@@ -79,12 +79,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   background:var(--calm-accent)!important;
   box-shadow:none!important;
   font-size:14px!important;
-  font-weight:800!important;
+  font-weight:600!important;
 }
 .brand-copy h1,.brand h1{
   color:#fff!important;
   font-size:14px!important;
-  font-weight:700!important;
+  font-weight:600!important;
   letter-spacing:-.01em!important;
 }
 .brand-copy p,.brand p{
@@ -133,7 +133,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   background:rgba(255,255,255,.10)!important;
   border:0!important;
   box-shadow:none!important;
-  font-weight:650!important;
+  font-weight:600!important;
 }
 .nav-ico{
   width:22px!important;height:22px!important;min-width:22px!important;
@@ -160,7 +160,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   background:rgba(255,255,255,.045)!important;
 }
 .security-note::before,.security-note::after{display:none!important;}
-.security-note strong{color:var(--calm-sidebar-ink)!important;font-size:11px!important;font-weight:650!important;}
+.security-note strong{color:var(--calm-sidebar-ink)!important;font-size:11px!important;font-weight:600!important;}
 .security-note span{margin-top:4px!important;color:var(--calm-sidebar-muted)!important;font-size:10px!important;font-weight:500!important;line-height:1.45!important;}
 .security-note.sync-warn-note{border-color:rgba(249,167,158,.28)!important;background:rgba(179,53,46,.10)!important;}
 .operation-mode-switch{margin-top:9px!important;padding:2px!important;border-radius:6px!important;background:rgba(255,255,255,.06)!important;}
@@ -208,7 +208,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   color:var(--calm-ink)!important;
   font-size:21px!important;
   line-height:1.15!important;
-  font-weight:700!important;
+  font-weight:600!important;
   letter-spacing:-.025em!important;
 }
 .topbar-breadcrumb{
@@ -263,7 +263,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   background:var(--calm-surface)!important;
   box-shadow:none!important;
 }
-.page-intro-card h3{margin:0!important;color:var(--calm-ink)!important;font-size:17px!important;font-weight:650!important;letter-spacing:-.02em!important;}
+.page-intro-card h3{margin:0!important;color:var(--calm-ink)!important;font-size:17px!important;font-weight:600!important;letter-spacing:-.02em!important;}
 .page-intro-card p{margin:5px 0 0!important;color:var(--calm-ink-2)!important;font-size:12px!important;font-weight:400!important;line-height:1.45!important;}
 .page-intro-badge{
   min-height:28px!important;
@@ -276,7 +276,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   font-weight:600!important;
 }
 .section-heading{margin:19px 2px 9px!important;}
-.section-heading h3{color:var(--calm-ink)!important;font-size:15px!important;font-weight:650!important;}
+.section-heading h3{color:var(--calm-ink)!important;font-size:15px!important;font-weight:600!important;}
 .section-heading p{color:var(--calm-ink-3)!important;font-size:11px!important;font-weight:400!important;}
 .panel,.list-top-card,.form-card-main,.stats-filter-panel,.task-hero,.employee-page-hero,.stable-backup-panel,.snapshot-panel,
 .resume-section-card,.form-section.compact-details,.backup-panel,.table-wrap{
@@ -287,7 +287,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 .panel{padding:16px!important;}
 .panel-head{margin-bottom:12px!important;}
-.panel-head h3,.panel h3{color:var(--calm-ink)!important;font-size:15px!important;font-weight:650!important;letter-spacing:-.015em!important;}
+.panel-head h3,.panel h3{color:var(--calm-ink)!important;font-size:15px!important;font-weight:600!important;letter-spacing:-.015em!important;}
 .muted,.panel-intro{color:var(--calm-ink-2)!important;font-weight:400!important;}
 
 /* ---------- Buttons / fields / filters ---------- */
@@ -356,7 +356,7 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
 }
 .dashboard-stats .stat:after{display:none!important;}
 .dashboard-stats .stat span{color:var(--calm-ink-2)!important;font-size:11px!important;font-weight:600!important;}
-.dashboard-stats .stat strong{display:block!important;margin-top:7px!important;color:var(--calm-ink)!important;font-size:25px!important;font-weight:700!important;}
+.dashboard-stats .stat strong{display:block!important;margin-top:7px!important;color:var(--calm-ink)!important;font-size:25px!important;font-weight:600!important;}
 .backup-alert.subtle{margin:9px 0 0!important;padding:0 2px!important;border:0!important;background:transparent!important;box-shadow:none!important;color:var(--calm-ink-3)!important;font-size:10.5px!important;font-weight:400!important;text-align:right!important;}
 .home-work-queue{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:10px!important;margin:0 0 17px!important;}
 .home-work-queue .queue-card:nth-child(4),.home-work-queue .queue-card:nth-child(6){display:none!important;}
@@ -372,7 +372,7 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
 }
 .queue-card:hover{background:var(--calm-surface-soft)!important;border-color:var(--calm-line-strong)!important;transform:none!important;box-shadow:none!important;}
 .queue-card span{color:var(--calm-ink-2)!important;font-size:11px!important;font-weight:600!important;}
-.queue-card strong{color:var(--calm-ink)!important;font-size:25px!important;font-weight:700!important;}
+.queue-card strong{color:var(--calm-ink)!important;font-size:25px!important;font-weight:600!important;}
 .queue-card small{color:var(--calm-ink-3)!important;font-size:10.5px!important;font-weight:400!important;}
 .queue-card.queue-primary strong{color:var(--calm-accent)!important;}
 .queue-card.queue-alert strong{color:var(--calm-bad)!important;}
@@ -392,10 +392,10 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
 /* ---------- Applicant list ---------- */
 #applicants .list-top-card{padding:0!important;margin-bottom:10px!important;overflow:hidden!important;}
 #applicants .applicant-list-header-row{padding:14px 16px!important;border-bottom:1px solid var(--calm-line)!important;background:#fff!important;}
-#applicants .applicant-list-header-copy h3{color:var(--calm-ink)!important;font-size:16px!important;font-weight:650!important;}
+#applicants .applicant-list-header-copy h3{color:var(--calm-ink)!important;font-size:16px!important;font-weight:600!important;}
 #applicants .applicant-list-header-copy p{color:var(--calm-ink-2)!important;font-size:11px!important;font-weight:400!important;}
 #applicants .applicant-header-metric{border-left-color:var(--calm-line)!important;}
-#applicants .applicant-header-metric strong{color:var(--calm-ink)!important;font-weight:700!important;}
+#applicants .applicant-header-metric strong{color:var(--calm-ink)!important;font-weight:600!important;}
 #applicants .applicant-header-metric span{color:var(--calm-ink-3)!important;font-weight:500!important;}
 #applicants .compact-list-controls{grid-template-columns:minmax(260px,1fr) 160px auto auto!important;gap:9px!important;margin:0!important;padding:13px 16px!important;border-bottom:1px solid var(--calm-line)!important;}
 #applicants .applicant-list-filter-stack{padding:10px 16px!important;background:#fff!important;}
@@ -413,7 +413,7 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
   font-weight:400!important;
   box-shadow:none!important;
 }
-#applicants .summary-strong{color:var(--calm-accent)!important;font-size:12px!important;font-weight:650!important;}
+#applicants .summary-strong{color:var(--calm-accent)!important;font-size:12px!important;font-weight:600!important;}
 #applicants .table-wrap{border:1px solid var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;background:#fff!important;box-shadow:none!important;}
 .applicant-table{min-width:1267px!important;}
 .applicant-table thead th{
@@ -436,7 +436,7 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
   font-size:12px!important;
   font-weight:400!important;
 }
-.applicant-table .name-button{color:var(--calm-ink)!important;font-size:13.5px!important;font-weight:650!important;}
+.applicant-table .name-button{color:var(--calm-ink)!important;font-size:13.5px!important;font-weight:600!important;}
 .applicant-table .applicant-name-cell small{color:var(--calm-ink-2)!important;font-weight:400!important;}
 .applicant-table .status-inline{height:26px!important;min-height:26px!important;border-radius:6px!important;font-size:10.5px!important;font-weight:600!important;}
 .applicant-table .row-actions{min-width:168px!important;gap:4px!important;}
@@ -455,17 +455,17 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
   border-bottom:1px solid var(--calm-line)!important;
   background:var(--calm-surface-soft)!important;
 }
-#form .resume-section-card .section-title span,#form .resume-section-card .compact-title span{color:var(--calm-ink)!important;font-size:14px!important;font-weight:650!important;}
+#form .resume-section-card .section-title span,#form .resume-section-card .compact-title span{color:var(--calm-ink)!important;font-size:14px!important;font-weight:600!important;}
 #form .resume-section-card .section-title small,#form .resume-section-card .compact-title small{color:var(--calm-ink-3)!important;font-size:10.5px!important;font-weight:400!important;}
 #form .resume-section-card>.form-grid,#form .resume-section-card>.resume-input-grid{padding:15px 16px 17px!important;}
 #form .resume-input-grid{gap:12px 11px!important;}
 #form input,#form select,#form textarea{margin-top:6px!important;min-height:38px!important;border-radius:var(--calm-radius-s)!important;font-size:12.5px!important;font-weight:400!important;}
 #form .review-only{border-radius:var(--calm-radius-m)!important;}
 #form .review-only summary{font-weight:600!important;}
-.sticky-save-bar{border-color:var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;background:rgba(255,255,255,.96)!important;box-shadow:0 -4px 16px rgba(28,35,48,.06)!important;}
+.sticky-save-bar{border-color:var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;background:rgba(255,255,255,.96)!important;box-shadow:none!important;}
 
 /* ---------- Shared management pages ---------- */
-.school-manage-title,.employee-page-title{color:var(--calm-ink)!important;font-weight:650!important;letter-spacing:-.02em!important;}
+.school-manage-title,.employee-page-title{color:var(--calm-ink)!important;font-weight:600!important;letter-spacing:-.02em!important;}
 .school-manage-note,.employee-page-note{color:var(--calm-ink-2)!important;font-weight:400!important;}
 .stats-summary-grid .stat,.emp-summary-grid .stat{box-shadow:none!important;border-color:var(--calm-line)!important;}
 #schools .table-wrap,#employees .table-wrap,#stats .table-wrap,#calendar .table-wrap,#backup .table-wrap{border:1px solid var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;box-shadow:none!important;}
@@ -477,9 +477,9 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
 }
 #schools tbody td,#employees tbody td,#stats tbody td,#calendar tbody td{color:var(--calm-ink)!important;font-weight:400!important;border-bottom-color:var(--calm-line)!important;}
 .modal-backdrop{background:rgba(17,26,46,.42)!important;backdrop-filter:blur(2px)!important;}
-.modal-card{border:1px solid var(--calm-line)!important;border-radius:14px!important;background:#fff!important;box-shadow:var(--calm-shadow-pop)!important;}
+.modal-card{border:1px solid var(--calm-line)!important;border-radius:14px!important;background:#fff!important;box-shadow:none!important;}
 .modal-head{background:var(--calm-surface-soft)!important;border-bottom-color:var(--calm-line)!important;}
-.modal-head h3{color:var(--calm-ink)!important;font-weight:650!important;}
+.modal-head h3{color:var(--calm-ink)!important;font-weight:600!important;}
 .empty{border-color:var(--calm-line-strong)!important;border-radius:var(--calm-radius-s)!important;color:var(--calm-ink-3)!important;background:#fff!important;}
 
 /* ---------- Status family ---------- */

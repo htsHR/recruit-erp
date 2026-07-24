@@ -362,7 +362,7 @@ body.sidebar-collapsed .auth-user-info{justify-content:center;}
     height:100vh;
     transform:translateX(-105%);
     transition:transform .22s ease;
-    box-shadow:22px 0 60px rgba(2,12,40,.24);
+    box-shadow:none;
   }
   body.sidebar-mobile-open .sidebar{transform:translateX(0);}
   body.sidebar-collapsed .app-shell{grid-template-columns:1fr;}

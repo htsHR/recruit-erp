@@ -56,7 +56,7 @@
   box-shadow:none!important;
 }
 #calendar .calendar-toolbar{padding:0 0 12px!important;border-bottom:1px solid var(--calm-line)!important;}
-#calendar .calendar-toolbar h3,#calendar #calendarMonthTitle{color:var(--calm-ink)!important;font-size:15px!important;font-weight:650!important;}
+#calendar .calendar-toolbar h3,#calendar #calendarMonthTitle{color:var(--calm-ink)!important;font-size:15px!important;font-weight:600!important;}
 #calendar .calendar-toolbar .ghost,#calendar .calendar-toolbar .mini{
   color:var(--calm-ink-2)!important;background:#fff!important;border-color:var(--calm-line-strong)!important;
 }
@@ -72,7 +72,7 @@
   box-shadow:none!important;
 }
 #calendar .calendar-summary-card span,#calendar .calendar-summary-card small{color:var(--calm-ink-2)!important;font-weight:500!important;}
-#calendar .calendar-summary-card strong{color:var(--calm-ink)!important;font-size:20px!important;font-weight:700!important;}
+#calendar .calendar-summary-card strong{color:var(--calm-ink)!important;font-size:20px!important;font-weight:600!important;}
 #calendar .calendar-view-tabs{padding-top:0!important;border-top:0!important;}
 #calendar .calendar-view-tabs button{color:var(--calm-ink-2)!important;background:#fff!important;border-color:var(--calm-line-strong)!important;border-radius:6px!important;}
 #calendar .calendar-view-tabs button.active{color:#fff!important;background:var(--calm-ink)!important;border-color:var(--calm-ink)!important;}
@@ -83,10 +83,9 @@
 #calendar .calendar-weekdays span{color:var(--calm-ink-2)!important;font-weight:600!important;}
 #calendar .calendar-day{border-color:var(--calm-line)!important;background:#fff!important;}
 #calendar .calendar-day:hover{background:#fafbfd!important;}
-#calendar .calendar-day.today{background:var(--calm-accent-bg)!important;box-shadow:inset 0 0 0 2px var(--calm-accent)!important;}
+#calendar .calendar-day.today{background:var(--calm-accent-bg)!important;box-shadow:none!important;}
 
-#schools .school-page-hero,#employees .employee-page-hero,#backup .backup-hero,
-#dataHealth .data-health-hero,#duplicates .duplicate-hero{
+#employees .employee-page-hero,#duplicates .duplicate-hero{
   background:#fff!important;border-color:var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;box-shadow:none!important;
 }
 
@@ -94,3 +93,90 @@
   #applicants .applicant-list-filter-stack{grid-template-columns:1fr!important;}
   #applicants .applicant-workplace-filter-group{min-width:0!important;}
 }
+
+/* ============================================================
+   v10.47.0 — DESIGN CALM FULL INTEGRATION 추가 계층
+   범위 A: 타이포 스케일·글꼴·마감 / 범위 B1·B2: 위계 압축·카드 통합
+   데이터·저장·업무 로직 무관, 표현 전용
+   ============================================================ */
+
+/* ---------- A. 글꼴 (Pretendard, 차단 시 시스템 폴백) ---------- */
+body,button,input,select,textarea{
+  font-family:"Pretendard Variable",Pretendard,system-ui,-apple-system,"Segoe UI","Malgun Gothic",sans-serif!important;
+  letter-spacing:-.01em;
+}
+
+/* ---------- A. 타이포 스케일 (12/13/15/18/22 · 400/600/700) ---------- */
+.topbar h2{font-size:22px!important;font-weight:700!important;letter-spacing:-.02em!important;}
+.topbar-breadcrumb{font-size:12px!important;font-weight:500!important;color:var(--calm-ink-3,#8a93a0)!important;}
+.page-intro-card h3,.section-heading h3,.panel-head h3,.list-top-head h3,
+.applicant-list-header-copy h3,.modal-head h3,.form-hero h3{
+  font-size:18px!important;font-weight:700!important;letter-spacing:-.02em!important;
+}
+.section-title span,.form-section summary span{font-size:15px!important;font-weight:700!important;}
+th{font-size:12px!important;font-weight:600!important;text-transform:none!important;letter-spacing:0!important;}
+td{font-weight:400!important;}
+label{font-weight:600!important;font-size:12px!important;}
+.eyebrow,.form-kicker{font-weight:600!important;letter-spacing:.04em!important;}
+.badge,.status-select-wrap,.status-inline{font-weight:600!important;}
+.primary,.ghost,.mini,.tab,.chip,.file-label{font-weight:600!important;}
+b,strong{font-weight:700;}
+
+/* ---------- A. 상태 배지 색점 ---------- */
+.badge{gap:6px!important;}
+.badge::before{content:''!important;width:6px!important;height:6px!important;border-radius:99px!important;background:currentColor!important;flex:0 0 auto!important;}
+
+/* ---------- A. 형태 통일 (반경 8/12, 잔존 장식 무력화) ---------- */
+.hero-card,.list-top-card,.panel,.table-wrap,.form-card-main,.review-only,.stat,.queue-card,
+.task-hero,.task-panel,.backup-alert,.summary-card,.detail-section-card,.detail-score-section,
+.form-section,.checkbox-block,.modal-card,.person-card,.applicant-list-filter-card{
+  border-radius:12px!important;background-image:none!important;
+}
+.primary,.ghost,.mini,.danger,.file-label,input,select,textarea,.chip,.tab{border-radius:8px!important;}
+.modal-backdrop{backdrop-filter:none!important;background:rgba(17,26,46,.45)!important;}
+.topbar{backdrop-filter:none!important;}
+.hero-card::before,.hero-card::after,.form-hero::before,.form-hero::after,
+.list-top-card::before,.form-card-main::before,.task-hero::before,body::before{
+  display:none!important;content:none!important;
+}
+button:hover,.stat:hover,.queue-card:hover,.today-tile:hover,tbody tr:hover,.form-card-main:hover{transform:none!important;}
+
+/* ---------- A. 등록 폼 배너 → 흰 카드 ---------- */
+.form-hero{background:#fff!important;color:var(--calm-ink,#1c2330)!important;border:1px solid var(--calm-line)!important;padding:18px 20px!important;min-height:0!important;}
+.form-hero p{color:var(--calm-ink-2,#5c6673)!important;font-weight:400!important;}
+.form-kicker{color:var(--calm-ink-3,#8a93a0)!important;}
+.form-hero-tags span{background:var(--calm-surface-soft,#fafbfc)!important;border:1px solid var(--calm-line)!important;color:var(--calm-ink-2)!important;backdrop-filter:none!important;font-weight:500!important;}
+.form-hero-actions .hero-reset{background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink)!important;}
+
+/* ---------- B1. 위계 압축: 인트로 카드·부연 문구 숨김 ---------- */
+.page-intro-card,.page-intro-badge{display:none!important;}
+.section-heading p,.applicant-list-header-copy p,.applicant-filter-group-head small{display:none!important;}
+.section-heading{margin:18px 0 10px!important;}
+.applicant-list-header-row{margin-bottom:10px!important;}
+
+/* ---------- B2. 목록 카드 통합: 컨트롤 ~ 표 ~ 페이지네이션 ---------- */
+#applicants .applicant-list-filter-card{
+  border-radius:12px 12px 0 0!important;border-bottom:0!important;margin-bottom:0!important;
+}
+#applicants .list-summary{
+  margin:0!important;border-radius:0!important;border-left:1px solid var(--calm-line)!important;
+  border-right:1px solid var(--calm-line)!important;border-top:1px solid var(--calm-line)!important;border-bottom:0!important;
+  background:var(--calm-surface-soft,#fafbfc)!important;padding:8px 16px!important;
+}
+#applicants .table-wrap{border-radius:0!important;margin-top:0!important;}
+#applicants .applicant-pagination{
+  border:1px solid var(--calm-line)!important;border-top:0!important;border-radius:0 0 12px 12px!important;
+  background:#fff!important;padding:10px 16px!important;margin-top:0!important;
+}
+
+/* ---------- A. 화면 마감: 사이드바·홈·일정·통계·모달 ---------- */
+.sidebar{background:#111a2e!important;}
+.brand-mark{background:var(--calm-accent,#2757d6)!important;border-radius:9px!important;}
+.nav-btn{border-radius:8px!important;font-weight:500!important;}
+.nav-btn.active{font-weight:600!important;}
+.security-note,.auth-note{border-radius:10px!important;background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.10)!important;}
+.queue-card strong,.stat strong,.today-tile strong{font-weight:700!important;letter-spacing:-.02em!important;}
+.avatar-mini,.avatar-large,.auth-user-avatar,.topbar-user-mark{background:var(--calm-accent-bg,#eef3fd)!important;color:var(--calm-accent,#2757d6)!important;border-radius:9px!important;}
+.profile-hero-detail{background:var(--calm-surface-soft,#fafbfc)!important;color:var(--calm-ink)!important;border:1px solid var(--calm-line)!important;}
+.profile-hero-detail h2,.profile-identity h2{color:var(--calm-ink)!important;font-size:22px!important;font-weight:700!important;}
+.profile-identity p{color:var(--calm-ink-2)!important;}

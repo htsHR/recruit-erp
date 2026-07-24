@@ -33,7 +33,7 @@
   color:#4970b8;
   font-size:12px;
   line-height:1.2;
-  font-weight:950;
+  font-weight:700;
   letter-spacing:.05em;
 }
 
@@ -49,7 +49,7 @@
 .list-summary{
   border:1px solid var(--erp-line);
   border-radius:var(--erp-card-radius);
-  box-shadow:var(--erp-shadow);
+  box-shadow:none;
   background:#fff;
 }
 
@@ -81,7 +81,7 @@
   margin:0;
   color:#1c2330;
   font-size:16px;
-  font-weight:1000;
+  font-weight:700;
   letter-spacing:-.035em;
 }
 
@@ -98,7 +98,7 @@
   border-radius:12px;
   padding:0 16px;
   font-size:13px;
-  font-weight:950;
+  font-weight:700;
   line-height:1;
   display:inline-flex;
   align-items:center;
@@ -125,7 +125,7 @@ label,
   color:#1c2330;
   font-size:var(--erp-label-size);
   line-height:1.25;
-  font-weight:950;
+  font-weight:700;
   letter-spacing:-.015em;
 }
 
@@ -143,7 +143,7 @@ textarea,
   background:#fff;
   color:#0b1220;
   font-size:var(--erp-body-size);
-  font-weight:700;
+  font-weight:600;
   box-sizing:border-box;
 }
 
@@ -193,14 +193,14 @@ textarea:focus,
   border-radius:999px;
   padding:0 14px;
   font-size:13px;
-  font-weight:950;
+  font-weight:700;
   display:inline-flex;
   align-items:center;
   cursor:pointer;
 }
 .tab.active,
 .chip.active{background:#2757d6;color:#fff;border-color:#2757d6;}
-.check-inline{display:flex;align-items:center;gap:8px;font-size:13px;color:#4b5563;white-space:nowrap;font-weight:850;}
+.check-inline{display:flex;align-items:center;gap:8px;font-size:13px;color:#4b5563;white-space:nowrap;font-weight:600;}
 .check-inline input{width:auto;height:auto;min-height:0;}
 
 /* 배지 */
@@ -213,7 +213,7 @@ textarea:focus,
   justify-content:center;
   border-radius:999px;
   font-size:12px;
-  font-weight:1000;
+  font-weight:700;
   line-height:1;
   white-space:nowrap;
 }
@@ -242,7 +242,7 @@ textarea:focus,
   border:0;
   background:transparent;
   color:#2757d6;
-  font-weight:900;
+  font-weight:700;
   font-size:14px;
   line-height:1;
   cursor:pointer;
@@ -270,8 +270,8 @@ textarea:focus,
   gap:10px;
   background:#ffffff;
 }
-.person-card strong{font-weight:1000;}
-.person-card small{display:block;color:#5c6673;margin-top:5px;line-height:1.35;font-size:12px;font-weight:800;}
+.person-card strong{font-weight:700;}
+.person-card small{display:block;color:#5c6673;margin-top:5px;line-height:1.35;font-size:12px;font-weight:600;}
 .empty{padding:18px;border:1px dashed var(--erp-line);border-radius:14px;color:#5c6673;text-align:center;background:#fff;}
 
 /* 테이블 */
@@ -284,7 +284,7 @@ thead th{
   line-height:1.2;
   color:#1e293b;
   background:#edf4ff;
-  font-weight:1000;
+  font-weight:700;
   letter-spacing:-.02em;
   border-bottom:1px solid var(--erp-line);
   text-align:left;
@@ -297,9 +297,9 @@ tbody td{
   line-height:1.3;
   white-space:nowrap;
   vertical-align:middle;
-  font-weight:700;
+  font-weight:600;
 }
-.no-cell{color:#5c6673;font-weight:900;text-align:center;}
+.no-cell{color:#5c6673;font-weight:700;text-align:center;}
 .status-inline{
   appearance:none;
   height:26px;
@@ -312,7 +312,7 @@ tbody td{
   border-radius:999px;
   border:1px solid #d8e2ef;
   font-size:11.5px;
-  font-weight:1000;
+  font-weight:700;
   background:#fafbfc;
 }
 .status-inline.good{background:#ecf7f1;color:#1a7f57;border-color:#b8ead7;}
@@ -327,12 +327,12 @@ tbody td{
   margin:0;
   font-size:14px;
   line-height:1.15;
-  font-weight:1000;
+  font-weight:700;
   cursor:pointer;
   text-align:left;
 }
 .name-button:hover{text-decoration:underline;text-underline-offset:3px;}
-.applicant-name-cell small{display:block;margin-top:4px;color:#5c6673;font-size:11.5px;font-weight:850;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.applicant-name-cell small{display:block;margin-top:4px;color:#5c6673;font-size:11.5px;font-weight:600;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .stale-badge{
   display:inline-flex;
   align-items:center;
@@ -343,16 +343,16 @@ tbody td{
   color:#8a5a00;
   border:1px solid #f5d791;
   font-size:10.5px;
-  font-weight:1000;
+  font-weight:700;
   white-space:nowrap;
 }
-.phone-cell strong,.schedule-cell strong,.decision-cell strong{font-size:12.8px;font-weight:1000;}
+.phone-cell strong,.schedule-cell strong,.decision-cell strong{font-size:12.8px;font-weight:700;}
 .email-cell{font-size:12px;color:#5c6673;max-width:210px;overflow:hidden;text-overflow:ellipsis;}
 .email-cell span{display:block;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.schedule-cell small,.decision-cell small{display:block;margin-top:4px;color:#5c6673;font-size:11px;font-weight:850;}
+.schedule-cell small,.decision-cell small{display:block;margin-top:4px;color:#5c6673;font-size:11px;font-weight:600;}
 .muted-schedule{color:#94a3b8;}
 .compact-actions{display:flex;gap:5px;}
-.compact-actions button{min-height:30px;height:30px;padding:0 8px;font-size:11.5px;border-radius:9px;background:#fff;border:1px solid var(--erp-line);font-weight:950;}
+.compact-actions button{min-height:30px;height:30px;padding:0 8px;font-size:11.5px;border-radius:9px;background:#fff;border:1px solid var(--erp-line);font-weight:700;}
 .compact-actions .delete{color:#b3352e;}
 
 /* 리스트 요약 */
@@ -368,7 +368,7 @@ tbody td{
   font-size:12.5px;
   box-shadow:none;
 }
-.summary-strong{color:#2757d6;font-weight:1000;}
+.summary-strong{color:#2757d6;font-weight:700;}
 
 /* 상세 모달 공통 */
 .modal-card{
@@ -379,7 +379,7 @@ tbody td{
   background:#fafbfc;
   padding:0;
 }
-.modal-head{margin:0;padding:20px 24px;background:linear-gradient(135deg,#fff,#eef6ff);border-bottom:1px solid #e3e6eb;}
+.modal-head{margin:0;padding:20px 24px;background:#fff;border-bottom:1px solid #e3e6eb;}
 .modal-head h3{margin:3px 0 0;font-size:24px;color:#1c2330;letter-spacing:-.04em;}
 .detail-body{max-height:calc(88vh - 150px);overflow:auto;padding:20px 24px 0;}
 .modal-card>.form-actions{padding:0 24px 22px;justify-content:flex-end;}
@@ -409,14 +409,14 @@ tbody td{
   display:block;
   color:#5c6673;
   font-size:12px;
-  font-weight:1000;
+  font-weight:700;
   margin-bottom:6px;
 }
 .backup-status-card strong{
   display:block;
   color:#1c2330;
   font-size:15px;
-  font-weight:1000;
+  font-weight:700;
   word-break:break-word;
 }
 .backup-safety-note{
@@ -427,7 +427,7 @@ tbody td{
   border-radius:14px;
   color:#24426e;
   font-size:13px;
-  font-weight:850;
+  font-weight:600;
 }
 .reset-filter-btn{
   background:#fff;
@@ -437,7 +437,7 @@ tbody td{
 .list-empty-cell > div{
   margin-bottom:10px;
   color:#5c6673;
-  font-weight:900;
+  font-weight:700;
 }
 @media(max-width:920px){
   .backup-status-grid{grid-template-columns:1fr;}
@@ -497,11 +497,11 @@ tbody td{
 .apply-date-cell{
   color:#5c6673;
   font-size:12px;
-  font-weight:900;
+  font-weight:700;
 }
 .detail-hero-v109.is-paper-rejected,
 .detail-section-v108.is-paper-rejected{
-  background:linear-gradient(135deg,#ffffff,#fafbfc);
+  background:#ffffff;
   border-color:#dfe5ee;
 }
 
@@ -570,7 +570,7 @@ tbody tr.applicant-row td{
   transform:translateY(-50%);
   opacity:.85;
 }
-.nav-btn{position:relative;font-size:14px;padding:9px 12px;gap:9px;font-weight:750;}
+.nav-btn{position:relative;font-size:14px;padding:9px 12px;gap:9px;font-weight:600;}
 /* v10.21.0: 사이드바 그룹 접기/펴기 (채용 / 인재풀·HR / 시스템) */
 .nav-group{grid-column:1/-1;}
 .nav-group-label{
@@ -583,7 +583,7 @@ tbody tr.applicant-row td{
   background:transparent;
   cursor:pointer;
   font-size:11px;
-  font-weight:800;
+  font-weight:600;
   letter-spacing:.04em;
   color:rgba(219,228,245,.55);
   padding:10px 10px 5px;
@@ -613,7 +613,7 @@ tbody tr.applicant-row td{
   height:22px;
   border-radius:4px;
   background:#42d7ff;
-  box-shadow:0 0 10px rgba(66,215,255,.7);
+  box-shadow:none;
 }
 
 /* v10.7.6: 상단 배너 전면 재설계
@@ -627,9 +627,9 @@ tbody tr.applicant-row td{
   margin:0 0 18px;
   padding:24px 26px;
   border-radius:22px;
-  background:radial-gradient(circle at 90% 10%,rgba(20,184,166,.20),transparent 40%),linear-gradient(135deg,#1c2330 0%,#1e3a8a 48%,#264fb0 75%,#2757d6 100%);
+  background:#1c2330;
   border:0;
-  box-shadow:0 20px 46px rgba(15,23,42,.18);
+  box-shadow:none;
 }
 .topbar h2{color:#fff;}
 .topbar .eyebrow{color:#bfdbfe;}
@@ -639,12 +639,12 @@ tbody tr.applicant-row td{
 
 /* v10.7.5: 상단 배너(hero-card) 전 페이지 공통 배경 - 개별 수정자 클래스 유무와 상관없이 항상 적용 */
 .hero-card{
-  background:linear-gradient(135deg,#fff,#eef5ff);
+  background:#fff;
 }
 
 /* v10.9.1: 클라우드 동기화 실패 시 사이드바 안내 강조 */
 .security-note.sync-warn-note{
-  background:linear-gradient(180deg,rgba(255,196,61,.28),rgba(255,196,61,.12));
+  background:rgba(255,196,61,.28);
   border-color:rgba(255,196,61,.5);
 }
 .chip.chip-alert{
@@ -682,7 +682,7 @@ tbody tr.applicant-row td{
 }
 .schedule-reminder .reminder-text span{
   font-size:13px;
-  font-weight:700;
+  font-weight:600;
   color:#8a5a00;
 }
 .schedule-reminder .reminder-actions{
@@ -699,21 +699,21 @@ tbody tr.applicant-row td{
   display:flex;
   align-items:center;
   justify-content:center;
-  background:radial-gradient(circle at 88% 15%,rgba(20,184,166,.18),transparent 40%),linear-gradient(135deg,#1c2330 0%,#1e3a8a 55%,#2757d6 100%);
+  background:#1c2330;
 }
 .login-card{
   width:min(380px,90vw);
   background:#fff;
   border-radius:22px;
   padding:28px 26px;
-  box-shadow:0 30px 80px rgba(15,23,42,.35);
+  box-shadow:none;
   display:flex;
   flex-direction:column;
   gap:10px;
 }
 .login-card h3{margin:2px 0 4px;font-size:22px;color:#1c2330;}
 .login-card label{margin-top:4px;}
-.login-error{min-height:18px;color:#b3352e;font-size:12.5px;font-weight:900;}
+.login-error{min-height:18px;color:#b3352e;font-size:12.5px;font-weight:700;}
 .login-hint{font-size:11.5px;line-height:1.5;margin-top:6px;}
 .login-card .btnLoginSkip,.login-card #btnLoginSkip{margin-top:2px;}
 
@@ -731,7 +731,7 @@ tbody tr.applicant-row td{
   justify-content:space-between;
   gap:8px;
 }
-.auth-note span{color:#d7e3f7;font-size:11.5px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.auth-note span{color:#d7e3f7;font-size:11.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
 /* v10.11.0: 면접 명단표 인쇄 - 평소엔 숨김, 인쇄할 때만 나타남
    v10.11.3: 앱의 일반 표 스타일(파란 배경, 최소너비 1460px 등)이 그대로 상속돼서
@@ -743,11 +743,11 @@ tbody tr.applicant-row td{
   background:#fff !important;
   color:#000 !important;
   font-family:"Malgun Gothic","맑은 고딕",sans-serif !important;
-  box-shadow:none !important;
+  box-shadow:none!important;
 }
 .roster-page{padding:0;page-break-after:always;width:100%;box-sizing:border-box;}
 .roster-company{margin:0 0 3px;font-size:12px;line-height:1.15;text-align:left;font-weight:400;text-decoration:underline;}
-.roster-title{margin:0 0 7px;font-size:18px;line-height:1.2;text-align:center;font-weight:700;}
+.roster-title{margin:0 0 7px;font-size:18px;line-height:1.2;text-align:center;font-weight:600;}
 .roster-oath-box{display:flex;align-items:stretch;width:100%;margin:0 0 7px;border:1px solid #000;box-sizing:border-box;min-height:98px;}
 .roster-oath-text{flex:1 1 auto;font-size:13.5px;line-height:1.6;text-align:left;font-weight:400;padding:8px 10px;box-sizing:border-box;display:flex;align-items:center;}
 .roster-oath-meta{flex:0 0 225px;font-size:13.5px;line-height:1.75;text-align:left;font-weight:400;white-space:nowrap;padding:6px 4px 6px 8px;box-sizing:border-box;display:flex;align-items:center;}
@@ -765,15 +765,15 @@ tbody tr.applicant-row td{
   white-space:normal !important;
   word-break:keep-all;
 }
-.roster-table th{font-weight:700;font-size:11.5px;padding:4px 4px;vertical-align:middle;}
+.roster-table th{font-weight:600;font-size:11.5px;padding:4px 4px;vertical-align:middle;}
 .roster-table th.roster-name-head-cell{padding:0 !important;}
-.roster-table td.roster-no{font-weight:700;font-size:11.5px;}
+.roster-table td.roster-no{font-weight:600;font-size:11.5px;}
 .roster-name-head{display:flex;flex-direction:column;align-items:stretch;justify-content:center;height:100%;min-height:100%;}
 .roster-name-head-text{display:flex;align-items:center;justify-content:center;width:100%;flex:1 1 auto;padding:0 4px;box-sizing:border-box;text-align:center;line-height:1.2;}
 .roster-name-head-divider{display:block;align-self:stretch;width:100%;border-top:1px solid #000;margin:0;box-sizing:border-box;}
 .roster-table td.roster-name{text-align:center;font-weight:400;font-size:11.5px;}
 .roster-row-top td,.roster-row-bottom td{height:42px;}
-.roster-table td.roster-pass{font-weight:700;font-size:11.5px;}
+.roster-table td.roster-pass{font-weight:600;font-size:11.5px;}
 .roster-legend{font-size:10.5px;margin:4px 0 0;font-weight:400;text-align:left;}
 @page{ size:A4 landscape; margin:12mm 23mm 15mm 23mm; }
 @media print{
@@ -789,11 +789,9 @@ tbody tr.applicant-row td{
    ========================================================= */
 .sidebar{
   color:#eef3fd;
-  background:
-    radial-gradient(circle at 20% 0,rgba(53,124,255,.18),transparent 28%),
-    linear-gradient(180deg,#071d49 0%,#08275d 52%,#061c43 100%);
+  background:#071d49;
   border-right:1px solid rgba(255,255,255,.06);
-  box-shadow:8px 0 34px rgba(4,20,55,.12);
+  box-shadow:none;
 }
 .brand{
   min-height:var(--erp-topbar-h);
@@ -813,11 +811,11 @@ tbody tr.applicant-row td{
   place-items:center;
   color:#fff;
   font-size:15px;
-  font-weight:1000;
+  font-weight:700;
   letter-spacing:-.03em;
-  background:linear-gradient(135deg,#2b7cff,#1257e8);
+  background:#2b7cff;
   border:1px solid rgba(255,255,255,.32);
-  box-shadow:0 8px 22px rgba(0,82,255,.34),inset 0 1px 0 rgba(255,255,255,.28);
+  box-shadow:none;
 }
 .brand-copy{min-width:0;}
 .brand h1{
@@ -826,13 +824,13 @@ tbody tr.applicant-row td{
   font-size:16px;
   line-height:1.15;
   letter-spacing:.015em;
-  font-weight:950;
+  font-weight:700;
 }
 .brand p{
   margin:4px 0 0;
   color:#93b4e4;
   font-size:9px;
-  font-weight:850;
+  font-weight:600;
   letter-spacing:.12em;
 }
 .nav{
@@ -856,7 +854,7 @@ tbody tr.applicant-row td{
   background:transparent;
   color:#a8bee1;
   font-size:11px;
-  font-weight:900;
+  font-weight:700;
   letter-spacing:.035em;
   cursor:pointer;
 }
@@ -877,7 +875,7 @@ tbody tr.applicant-row td{
   border-radius:10px;
   opacity:1;
   font-size:13px;
-  font-weight:850;
+  font-weight:600;
   transition:background .16s ease,color .16s ease,transform .16s ease,border-color .16s ease,box-shadow .16s ease;
 }
 .nav-btn:hover{
@@ -888,9 +886,9 @@ tbody tr.applicant-row td{
 }
 .nav-btn.active{
   color:#fff;
-  background:linear-gradient(90deg,#1264ed 0%,#1f78ff 100%);
+  background:#1264ed;
   border-color:rgba(112,176,255,.55);
-  box-shadow:0 10px 24px rgba(0,82,217,.30),inset 0 1px 0 rgba(255,255,255,.18);
+  box-shadow:none;
 }
 .nav-ico{
   width:24px;
@@ -925,8 +923,8 @@ tbody tr.applicant-row td{
   min-height:66px;
   border:1px solid rgba(138,181,244,.24);
   border-radius:13px;
-  background:linear-gradient(180deg,rgba(16,57,119,.72),rgba(10,39,88,.75));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+  background:rgba(16,57,119,.72);
+  box-shadow:none;
   position:relative;
 }
 .security-note::before{
@@ -949,11 +947,11 @@ tbody tr.applicant-row td{
   bottom:8px;
   height:3px;
   border-radius:999px;
-  background:linear-gradient(90deg,#2780ff 0 72%,rgba(255,255,255,.12) 72% 100%);
+  background:#2780ff;
 }
-.security-note strong{color:#fff;font-size:12px;font-weight:950;}
+.security-note strong{color:#fff;font-size:12px;font-weight:700;}
 .security-note span{margin-top:4px;color:#9fbae2;font-size:10px;line-height:1.35;}
-.security-note.sync-warn-note{border-color:rgba(253,164,175,.42);background:linear-gradient(180deg,rgba(112,34,59,.55),rgba(55,24,54,.65));}
+.security-note.sync-warn-note{border-color:rgba(253,164,175,.42);background:rgba(112,34,59,.55);}
 .auth-note{
   position:static;
   left:auto;
@@ -979,13 +977,13 @@ tbody tr.applicant-row td{
   display:grid;
   place-items:center;
   color:#fff;
-  background:linear-gradient(135deg,#4c91ff,#1767ec);
+  background:#4c91ff;
   font-size:11px;
-  font-weight:950;
+  font-weight:700;
 }
 .auth-user-copy{min-width:0;display:flex;flex-direction:column;gap:2px;}
 .auth-user-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e9f3ff;font-size:10px;}
-.auth-user-copy small{color:#7998c5;font-size:9px;font-weight:800;}
+.auth-user-copy small{color:#7998c5;font-size:9px;font-weight:600;}
 #btnLogout{
   width:100%;
   height:36px;
@@ -1001,9 +999,9 @@ tbody tr.applicant-row td{
   justify-content:space-between;
   gap:18px;
   color:#fff;
-  background:linear-gradient(90deg,#071d49 0%,#08265a 52%,#061a40 100%);
+  background:#071d49;
   border-bottom:1px solid rgba(3,21,54,.18);
-  box-shadow:0 8px 24px rgba(9,31,73,.13);
+  box-shadow:none;
 }
 .topbar-left{display:flex;align-items:center;gap:14px;min-width:0;}
 .topbar-menu-toggle,
@@ -1027,17 +1025,17 @@ tbody tr.applicant-row td{
   font-size:18px;
   line-height:1.15;
   letter-spacing:-.025em;
-  font-weight:950;
+  font-weight:700;
 }
-.topbar-breadcrumb{color:#7797c8;font-size:9px;font-weight:800;letter-spacing:.04em;}
+.topbar-breadcrumb{color:#7797c8;font-size:9px;font-weight:600;letter-spacing:.04em;}
 .topbar-actions-shell{display:flex;align-items:center;justify-content:flex-end;gap:14px;min-width:0;}
 .topbar-actions-shell .top-actions{gap:8px;}
 .topbar-actions-shell .primary{
   height:40px;
   border-radius:10px;
   padding:0 15px;
-  background:linear-gradient(135deg,#1a73ff,#075de4);
-  box-shadow:0 8px 18px rgba(0,85,225,.25);
+  background:#1a73ff;
+  box-shadow:none;
 }
 .topbar-actions-shell .ghost{height:40px;border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.07);color:#fff;}
 .topbar-utils{display:flex;align-items:center;gap:5px;padding-left:12px;border-left:1px solid rgba(255,255,255,.12);}
@@ -1060,14 +1058,14 @@ tbody tr.applicant-row td{
   display:grid;
   place-items:center;
   color:#fff;
-  background:linear-gradient(135deg,#1981ff,#075fe8);
+  background:#1981ff;
   font-size:10px;
-  font-weight:1000;
-  box-shadow:0 6px 15px rgba(0,94,238,.24);
+  font-weight:700;
+  box-shadow:none;
 }
 .topbar-user-copy{min-width:0;display:flex;flex-direction:column;gap:1px;}
 .topbar-user-copy strong{max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff;font-size:10px;}
-.topbar-user-copy small{color:#8faad2;font-size:9px;font-weight:800;}
+.topbar-user-copy small{color:#8faad2;font-size:9px;font-weight:600;}
 @media(max-width:760px){
   .topbar-breadcrumb,.topbar-icon-btn{display:none;}
   .topbar-utils{padding-left:8px;}
