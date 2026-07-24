@@ -550,3 +550,73 @@ input[type="checkbox"],input[type="radio"]{
 }
 /* 점수 미리보기 알약 */
 #form .score-pill{border-radius:6px!important;font-weight:500!important;border-color:var(--calm-line-strong)!important;}
+
+/* ============================================================
+   v10.47.8 — CALENDAR CONVERGENCE (일정관리 목업 수렴)
+   ============================================================ */
+
+/* 이벤트 색을 배지 체계와 통일: 면접=초록 / 입사=보라 / 직접=앰버 */
+#calendar .calendar-type-interview,.calendar-type-interview{
+  background:#ecf7f1!important;color:#1a7f57!important;border-left-color:#1a7f57!important;
+  border-radius:4px!important;font-weight:600!important;
+}
+#calendar .calendar-type-hire,.calendar-type-hire{
+  background:#f0effa!important;color:#5a51b8!important;border-left-color:#5a51b8!important;
+  border-radius:4px!important;font-weight:600!important;
+}
+#calendar .calendar-type-custom,.calendar-type-custom{
+  background:#fbf4e6!important;color:#a16a12!important;border-left-color:#a16a12!important;
+  border-radius:4px!important;font-weight:600!important;
+}
+
+/* 상단 요약 카드 (홈 KPI와 같은 리듬) */
+#calendar .calendar-summary-grid{gap:12px!important;}
+#calendar .calendar-summary-card{
+  padding:12px 14px!important;border:1px solid var(--calm-line)!important;border-radius:12px!important;
+  background:#fff!important;min-height:0!important;
+}
+#calendar .calendar-summary-card strong{font-size:22px!important;font-weight:700!important;color:var(--calm-ink)!important;letter-spacing:-.02em!important;}
+#calendar .calendar-summary-card span,#calendar .calendar-summary-card small{font-size:12px!important;color:var(--calm-ink-2)!important;font-weight:500!important;}
+
+/* 달력 셀 */
+#calendar .calendar-day{background:#fff!important;border-color:var(--calm-line)!important;}
+#calendar .calendar-date-num{font-size:12px!important;font-weight:600!important;font-variant-numeric:tabular-nums;}
+#calendar .calendar-day.is-today,#calendar .calendar-day.today{background:var(--calm-accent-bg,#eef3fd)!important;}
+#calendar .calendar-today-dot{background:var(--calm-accent,#2757d6)!important;}
+
+/* 날짜 패널: 면접자 카드 → 구분선 리스트 */
+#calendar .calendar-timeline-item{
+  border:0!important;border-bottom:1px solid var(--calm-line)!important;border-radius:0!important;
+  background:transparent!important;padding:11px 2px!important;margin:0!important;
+}
+#calendar .calendar-timeline-item:last-child{border-bottom:0!important;}
+#calendar .calendar-time-badge{
+  background:var(--calm-accent-bg,#eef3fd)!important;color:var(--calm-accent,#2757d6)!important;
+  border:0!important;border-radius:6px!important;font-weight:600!important;font-size:11px!important;
+}
+#calendar .calendar-line-main strong{font-size:13px!important;font-weight:600!important;}
+#calendar .calendar-line-side,#calendar .calendar-timeline-item small{color:var(--calm-ink-2)!important;font-weight:400!important;font-size:12px!important;}
+#calendar .calendar-timeline-actions .mini{
+  height:28px!important;padding:0 10px!important;font-size:12px!important;border-radius:6px!important;
+  background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink-2)!important;
+}
+
+/* 명단표·입사대기자 버튼: 포인트 블루 체계 */
+#calendar #btnCalendarPrintRoster{
+  background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink)!important;
+  border-radius:8px!important;font-weight:600!important;height:32px!important;padding:0 12px!important;
+}
+#calendar #btnCalendarHireWaiting,.calendar-hire-waiting-btn{
+  background:var(--calm-accent,#2757d6)!important;border:0!important;color:#fff!important;
+  border-radius:8px!important;font-weight:600!important;height:32px!important;padding:0 12px!important;
+}
+#calendar #btnCalendarHireWaiting:hover{background:var(--calm-accent-dark,#1f46b2)!important;}
+
+/* 일괄판정 바 */
+.calendar-bulk-decision-bar{
+  border:1px solid var(--calm-line)!important;border-radius:8px!important;background:var(--calm-surface-soft,#fafbfc)!important;
+  box-shadow:none!important;
+}
+.calendar-bulk-accept{background:#ecf7f1!important;color:#1a7f57!important;border:1px solid #cde8db!important;border-radius:6px!important;font-weight:600!important;}
+.calendar-bulk-reject{background:#faeeed!important;color:#b3352e!important;border:1px solid #ecc9c6!important;border-radius:6px!important;font-weight:600!important;}
+.calendar-result-tag{border-radius:6px!important;font-weight:600!important;}
