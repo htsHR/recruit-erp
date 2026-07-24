@@ -191,11 +191,40 @@ function fillForm(a){ fields.forEach(id=>{ const el=$(id); if(!el) return; const
   if(id==='interviewTime' && value && ![...el.options].some(o=>o.value===value)){ el.add(new Option(value,
   value)); } el.value = value; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords',
   a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); updateFormMode(); }
-function resetForm(){ window.__erpExcelPastePendingApplicant=''; $('applicantForm').reset(); setChecked('checkNeeds',''); setChecked('selfIntroKeywords',
-  ''); $('editId').value=''; $('applyDate').value=today(); if($('status')) $('status').value='서류검토';
-  $('duplicateBox').textContent=''; $('duplicateBox').className='wide duplicate-box'; updateScorePreview();
+function resetForm(){
+  window.__erpExcelPastePendingApplicant='';
+  const form=$('applicantForm');
+  if(form) form.reset();
+  setChecked('checkNeeds','');
+  setChecked('selfIntroKeywords','');
+  if($('editId')) $('editId').value='';
+  if($('applyDate')) $('applyDate').value=today();
+  if($('status')) $('status').value='서류검토';
+  if($('dormUse')) $('dormUse').value='확인필요';
+  if($('duplicateBox')){
+    $('duplicateBox').textContent='';
+    $('duplicateBox').className='wide duplicate-box';
+  }
+  updateScorePreview();
   dismissSchoolHint();
-  updateFormMode(); }
+  updateFormMode();
+}
+function openNewApplicantForm(){
+  const active=document.querySelector('.page.active')?.id||'';
+  const editing=!!($('editId')?.value);
+  const dirty=typeof window.erpApplicantFormIsDirty==='function' ? !!window.erpApplicantFormIsDirty() : false;
+  if(active==='form' && (dirty || editing)){
+    const message=editing
+      ? '현재 지원자 수정 화면이 열려 있습니다. 저장하지 않은 내용은 사라집니다.\n신규 지원자 등록 화면으로 초기화할까요?'
+      : '작성 중인 신규 지원자 정보가 있습니다. 저장하지 않은 내용은 사라집니다.\n새 등록 화면으로 초기화할까요?';
+    if(!confirm(message)) return false;
+  }
+  resetForm();
+  setPage('form');
+  requestAnimationFrame(()=>$('name')?.focus());
+  return true;
+}
+window.openNewApplicantForm=openNewApplicantForm;
 function editApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ fillForm(a); setPage('form'); } }
 function updateApplicantStatus(id, status){ const next=normalizeStatus(status); applicants=applicants.map(a=>a.id===id?normalize({...a,status:next,updatedAt:new Date().toISOString()}):a); save(); }
 function duplicateApplicant(id){ const a=applicants.find(x=>x.id===id); if(a){ const copy={...a,id:'',name:a.name+' 복사',phone:'',email:'',createdAt:''}; fillForm(copy); setPage('form'); } }

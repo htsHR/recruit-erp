@@ -1,5 +1,13 @@
-document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.page)));
-document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.go)));
+document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>{
+  const page=b.dataset.page;
+  if(page==='form' && typeof window.openNewApplicantForm==='function') window.openNewApplicantForm();
+  else setPage(page);
+}));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{
+  const page=b.dataset.go;
+  if(page==='form' && typeof window.openNewApplicantForm==='function') window.openNewApplicantForm();
+  else setPage(page);
+}));
 bind('applicantForm','input',()=>{ updateScorePreview(); checkDuplicate(); });
 bind('applicantForm','keydown', e=>{
   if(e.key !== 'Enter') return;

@@ -39,6 +39,13 @@ function uxFormSerialize(){
 }
 function uxSetFormBaseline(){ uxFormBaseline=uxFormSerialize(); uxFormDirty=false; document.body.classList.remove('form-dirty'); }
 function uxUpdateFormDirty(){ uxFormDirty=!!uxFormBaseline && uxFormSerialize()!==uxFormBaseline; document.body.classList.toggle('form-dirty',uxFormDirty); }
+function uxClearFormValidation(){
+  const form=uxEl('applicantForm');
+  if(!form)return;
+  form.querySelectorAll('.field-feedback').forEach(x=>x.remove());
+  form.querySelectorAll('.field-invalid,.field-valid').forEach(x=>x.classList.remove('field-invalid','field-valid'));
+}
+window.erpApplicantFormIsDirty=()=>uxFormDirty;
 function uxFieldValue(id){ return (uxEl(id)?.value||'').trim(); }
 function uxSetFieldState(id,message,type='error'){
   const el=uxEl(id); if(!el) return;
@@ -194,15 +201,20 @@ const uxBaseFillForm=fillForm;
 fillForm=function(a){ uxBaseFillForm(a); setTimeout(()=>{uxSetFormBaseline();uxUpdateFormProgress();},0); };
 window.fillForm=fillForm;
 const uxBaseResetForm=resetForm;
-resetForm=function(){ uxBaseResetForm(); setTimeout(()=>{uxSetFormBaseline();uxUpdateFormProgress();},0); };
+resetForm=function(){
+  uxBaseResetForm();
+  uxClearFormValidation();
+  uxSetFormBaseline();
+  uxUpdateFormProgress();
+};
 window.resetForm=resetForm;
 
 const uxBaseSetPage=setPage;
 setPage=function(page){
   const active=document.querySelector('.page.active')?.id;
-  if(active==='form' && page!=='form' && uxFormDirty){
-    if(!confirm('저장하지 않은 입력 내용이 있습니다.\n페이지를 이동할까요?')) return;
-    uxFormDirty=false;
+  if(active==='form' && page!=='form'){
+    if(uxFormDirty && !confirm('저장하지 않은 입력 내용이 있습니다.\n나가면 작성한 내용이 사라집니다. 계속 이동할까요?')) return;
+    resetForm();
   }
   uxBaseSetPage(page);
   if(page==='form') setTimeout(()=>{ if(!uxFormBaseline) uxSetFormBaseline(); uxUpdateFormProgress(); },0);

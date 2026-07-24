@@ -1,5 +1,5 @@
 /* =========================================================
-   v10.11.10 면접 명단표 인쇄
+   v10.46.8.4 면접 명단표 인쇄 기준 보정
    - 회사 양식(채용 면접 평가표) 그대로 재현
    - 선택 날짜에 면접 잡힌 지원자를 5명 단위로 페이지 구분
    - 이름/성별/생년월일(나이)만 자동 채움, 평가란은 인쇄 후 손으로 기입
@@ -47,8 +47,14 @@ function rosterRow(no, a){
     <td class="roster-name"></td>
   </tr>`;
 }
+function isRosterEligibleApplicant(a,dateStr){
+  return !!a && a.interviewDate===dateStr && normalizeStatus(a.status)==='면접예정';
+}
+function rosterApplicantsOn(dateStr){
+  return applicants.filter(a=>isRosterEligibleApplicant(a,dateStr)).sort((a,b)=>(a.interviewTime||'').localeCompare(b.interviewTime||''));
+}
 function buildRosterHtml(dateStr){
-  const list=applicants.filter(a=>a.interviewDate===dateStr).sort((a,b)=>(a.interviewTime||'').localeCompare(b.interviewTime||''));
+  const list=rosterApplicantsOn(dateStr);
   const numbered=list.map((a,i)=>({no:i+1,a}));
   const pages=[];
   for(let i=0;i<Math.max(numbered.length,1);i+=5){ pages.push(numbered.slice(i,i+5)); }
@@ -83,8 +89,8 @@ function buildRosterHtml(dateStr){
 function openRosterPrint(){
   const dateStr=$('rosterDate').value;
   if(!dateStr){ alert('명단표를 뽑을 면접 날짜를 먼저 선택해주세요.'); return; }
-  const list=applicants.filter(a=>a.interviewDate===dateStr);
-  if(!list.length && !confirm('선택하신 날짜에 면접 일정이 등록된 지원자가 없습니다. 빈 양식으로 출력할까요?')) return;
+  const list=rosterApplicantsOn(dateStr);
+  if(!list.length && !confirm('선택하신 날짜에 면접예정 상태인 지원자가 없습니다. 빈 양식으로 출력할까요?')) return;
   $('rosterPrintArea').innerHTML=buildRosterHtml(dateStr);
   document.body.classList.remove('school-report-printing');
   document.body.classList.add('roster-printing');

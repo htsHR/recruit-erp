@@ -1,0 +1,34 @@
+{
+  "duplicateIds": [],
+  "missingRefs": [],
+  "versionRefs": [
+    "10.46.8.4"
+  ],
+  "newScriptPresent": true,
+  "rosterUsesEligibilityHelper": true,
+  "openNewFormBound": true,
+  "defaults": {
+    "status": true,
+    "dorm": true
+  },
+  "storageKeys": {
+    "core.js": [
+      "recruit_erp_applicants_stable",
+      "recruit_erp_calendar_events",
+      "recruit_erp_employees",
+      "recruit_erp_hire_waiting_profiles",
+      "recruit_erp_last_backup_date",
+      "recruit_erp_message_templates",
+      "recruit_erp_nav_collapsed",
+      "recruit_erp_reminder_dismissed_date",
+      "recruit_erp_schools",
+      "recruit_erp_ui_operation_environment"
+    ],
+    "ui-enhancements.js": [
+      "recruit_erp_ui_operation_environment",
+      "recruit_erp_ui_school_favorites",
+      "recruit_erp_ui_template_history"
+    ],
+    "hire-waiting-list.js": []
+  }
+}
