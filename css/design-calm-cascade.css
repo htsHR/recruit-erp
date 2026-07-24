@@ -400,3 +400,38 @@ input[type="checkbox"],input[type="radio"]{
 #applicants .dorm-pill.off{background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink-2)!important;}
 #applicants .dorm-pill.pending{background:#fbf4e6!important;border:1px solid #eeddba!important;color:#a16a12!important;}
 #applicants .compact-decision{font-weight:600!important;color:var(--calm-ink)!important;}
+
+/* ============================================================
+   v10.47.3 — TABLE COLLAPSE (행 카드 → 연속 행 전환, 잔여 3건)
+   ============================================================ */
+
+/* A. 표 연속 행: 행 사이 틈 제거 = 헤더 비침 원인 제거 */
+#applicants .table-wrap,
+#applicants.ui-system-v20 .table-wrap{padding:0!important;}
+#applicants .applicant-table,
+#applicants.ui-system-v20 .applicant-table{
+  border-collapse:collapse!important;border-spacing:0!important;
+}
+#applicants .applicant-table tbody tr.applicant-row td{
+  border-top:0!important;border-left:0!important;border-right:0!important;
+  border-bottom:1px solid var(--calm-line)!important;border-radius:0!important;
+}
+#applicants .applicant-table tbody tr.applicant-row td:first-child,
+#applicants .applicant-table tbody tr.applicant-row td:last-child{
+  border-left:0!important;border-right:0!important;border-radius:0!important;
+}
+#applicants .applicant-table tbody tr:last-child td{border-bottom:0!important;}
+
+/* B. 종료/불합격 숨김 체크 가로 정렬 고정 */
+#applicants .compact-check-inline,
+#applicants.ui-system-v20 .compact-check-inline{
+  flex-direction:row!important;white-space:nowrap!important;width:auto!important;
+}
+
+/* C. 상태 알약 글자색 확정 (셀렉트 자체 색 규칙에 밀리지 않게 클래스별 명시) */
+#applicants .status-select-wrap.missed .status-inline{color:#2757d6!important;-webkit-text-fill-color:#2757d6!important;}
+#applicants .status-select-wrap.info .status-inline{color:#1a7f57!important;-webkit-text-fill-color:#1a7f57!important;}
+#applicants .status-select-wrap.good .status-inline{color:#5a51b8!important;-webkit-text-fill-color:#5a51b8!important;}
+#applicants .status-select-wrap.hold .status-inline{color:#a16a12!important;-webkit-text-fill-color:#a16a12!important;}
+#applicants .status-select-wrap.bad .status-inline,
+#applicants .status-select-wrap.neutral .status-inline{color:#5c6673!important;-webkit-text-fill-color:#5c6673!important;}
