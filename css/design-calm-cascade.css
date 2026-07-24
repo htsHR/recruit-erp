@@ -435,3 +435,63 @@ input[type="checkbox"],input[type="radio"]{
 #applicants .status-select-wrap.hold .status-inline{color:#a16a12!important;-webkit-text-fill-color:#a16a12!important;}
 #applicants .status-select-wrap.bad .status-inline,
 #applicants .status-select-wrap.neutral .status-inline{color:#5c6673!important;-webkit-text-fill-color:#5c6673!important;}
+
+/* ============================================================
+   v10.47.4 — HOME CONVERGENCE (홈 화면 목업 수렴)
+   ============================================================ */
+
+/* KPI 카드 압축: 라벨 위 · 큰 숫자 · 작은 캡션 */
+#home .dashboard-stats{gap:12px!important;margin-bottom:16px!important;}
+#home .dashboard-stats .stat{
+  padding:14px 16px!important;min-height:0!important;border-radius:12px!important;
+  display:flex!important;flex-direction:column!important;gap:4px!important;align-items:flex-start!important;text-align:left!important;
+}
+#home .stat span{font-size:12px!important;font-weight:600!important;color:var(--calm-ink-2)!important;}
+#home .stat strong{font-size:26px!important;font-weight:700!important;color:var(--calm-ink)!important;letter-spacing:-.02em!important;line-height:1.1!important;}
+#home .stat small,#home .stat a{font-size:11px!important;font-weight:500!important;color:var(--calm-ink-3)!important;}
+
+/* 오늘 처리할 업무 타일 */
+#home .home-work-queue{gap:12px!important;margin:6px 0 18px!important;}
+#home .queue-card{
+  padding:14px 16px!important;min-height:0!important;border-radius:12px!important;
+  border:1px solid var(--calm-line)!important;background:#fff!important;gap:4px!important;
+}
+#home .queue-card .queue-label{font-size:12px!important;font-weight:600!important;color:var(--calm-ink-2)!important;}
+#home .queue-card strong{font-size:26px!important;font-weight:700!important;color:var(--calm-ink)!important;letter-spacing:-.02em!important;line-height:1.1!important;}
+#home .queue-card.queue-primary strong{color:var(--calm-accent,#2757d6)!important;}
+#home .queue-card.queue-alert strong{color:#b3352e!important;}
+#home .queue-card small{font-size:11px!important;font-weight:500!important;color:var(--calm-ink-3)!important;}
+#home .queue-card:hover{border-color:var(--calm-line-strong)!important;}
+
+/* 섹션 제목 */
+#home .section-heading{margin:16px 0 10px!important;}
+#home .section-heading h3{font-size:15px!important;font-weight:700!important;margin:0!important;}
+
+/* 패널 → 헤더줄 + 구분선 리스트 */
+#home .dashboard-panels .panel{padding:0!important;border-radius:12px!important;}
+#home .panel-head{padding:13px 16px!important;margin:0!important;border-bottom:1px solid var(--calm-line)!important;}
+#home .panel-head h3{font-size:15px!important;font-weight:600!important;margin:0!important;}
+#home .panel-head .mini{
+  background:transparent!important;border:0!important;padding:0!important;
+  color:var(--calm-accent,#2757d6)!important;font-weight:600!important;font-size:12px!important;
+}
+#home .panel .card-list{padding:2px 16px 6px!important;gap:0!important;}
+#home .person-card{
+  border:0!important;border-bottom:1px solid var(--calm-line)!important;border-radius:0!important;
+  padding:11px 0!important;background:transparent!important;
+}
+#home .card-list .person-card:last-child{border-bottom:0!important;}
+#home .person-card strong{font-size:13px!important;font-weight:600!important;}
+#home .person-card small{font-size:12px!important;color:var(--calm-ink-2)!important;font-weight:400!important;margin-top:2px!important;}
+#home .person-card select{
+  height:28px!important;min-height:28px!important;width:auto!important;
+  padding:0 8px!important;font-size:12px!important;font-weight:500!important;border-radius:6px!important;
+}
+#home .person-card .mini{height:28px!important;padding:0 10px!important;font-size:12px!important;
+  background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink-2)!important;}
+
+/* 백업 안내문 조용히 */
+#home .backup-alert,#home .backup-alert.subtle{
+  border:0!important;background:transparent!important;padding:2px 2px 0!important;
+  font-size:12px!important;color:var(--calm-ink-3)!important;text-align:left!important;margin-bottom:10px!important;
+}
