@@ -4,9 +4,9 @@
    저장 키, 데이터 구조, Supabase/localStorage 로직은 변경하지 않습니다. */
 
 :root{
-  --list-focus:#1f6feb;
-  --list-line:#dbe5f1;
-  --list-muted:#718096;
+  --list-focus:#2757d6;
+  --list-line:#e3e6eb;
+  --list-muted:#6f7884;
 }
 
 .clickable-data-row{cursor:pointer;}
@@ -49,7 +49,7 @@
 #applicants .list-summary{align-items:center!important;}
 #applicants .list-interaction-hint{
   margin-left:auto!important;
-  color:#7b8798!important;
+  color:#8a93a0!important;
   font-size:11px!important;
   font-weight:650!important;
   white-space:nowrap!important;
@@ -65,8 +65,8 @@
   padding:0 10px;
   border:1px solid #dce6f1;
   border-radius:999px;
-  background:#f7faff;
-  color:#52647b;
+  background:#fafbfc;
+  color:#5c6673;
   font-size:11.5px;
   font-weight:750;
 }
@@ -88,16 +88,16 @@
 .employee-list-table .employee-name-cell small{
   display:block;
   margin-top:3px;
-  color:#7b8797;
+  color:#8a93a0;
   font-size:10.5px;
   font-weight:600;
 }
-.employee-list-table tbody tr:hover{background:#f4f8ff!important;box-shadow:inset 3px 0 0 #2b78e7!important;}
+.employee-list-table tbody tr:hover{background:#f7f8fa!important;box-shadow:inset 3px 0 0 #2757d6!important;}
 .employee-list-table .employee-row-actions{min-width:145px;}
 .employee-empty-state strong,.employee-empty-state span{display:block;margin-bottom:7px;}
 
 /* 학교 목록 */
-.school-manage-table tbody tr:hover{background:#f4f8ff!important;box-shadow:inset 3px 0 0 #2b78e7!important;}
+.school-manage-table tbody tr:hover{background:#f7f8fa!important;box-shadow:inset 3px 0 0 #2757d6!important;}
 .school-manage-table .school-row-actions{min-width:112px;}
 
 
@@ -123,14 +123,14 @@
     justify-content:center!important;
     min-height:36px!important;
     padding:0 8px!important;
-    border:1px solid #cfdbe9!important;
+    border:1px solid #d3d8df!important;
     border-radius:8px!important;
     background:#fff!important;
-    color:#41536b!important;
+    color:#5c6673!important;
     font-size:11px!important;
     font-weight:750!important;
   }
-  .row-more-menu.open>.row-more-toggle{border-color:#93b8eb!important;background:#edf5ff!important;color:#155fc3!important;}
+  .row-more-menu.open>.row-more-toggle{border-color:#93b8eb!important;background:#eef3fd!important;color:#155fc3!important;}
   .row-more-menu-panel{
     display:none!important;
     position:absolute!important;
@@ -181,20 +181,20 @@
   .employee-list-table .employee-status-cell{grid-column:2;grid-row:1;align-items:flex-end!important;}
   .employee-list-table .employee-no-cell{grid-column:1;grid-row:2;}
   .employee-list-table .employee-hire-cell{grid-column:2;grid-row:2;align-items:flex-end!important;}
-  .employee-list-table .employee-school-cell{grid-column:1/-1;grid-row:3;padding-top:9px!important;border-top:1px solid #edf1f6!important;}
+  .employee-list-table .employee-school-cell{grid-column:1/-1;grid-row:3;padding-top:9px!important;border-top:1px solid #edf0f3!important;}
   .employee-list-table .employee-discipline-cell{grid-column:1/-1;grid-row:4;}
   .employee-list-table .employee-notes-cell{grid-column:1/-1;grid-row:5;}
-  .employee-list-table .employee-list-row>.employee-row-actions{grid-column:1/-1;grid-row:6;display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:6px!important;padding-top:10px!important;border-top:1px solid #edf1f6!important;}
+  .employee-list-table .employee-list-row>.employee-row-actions{grid-column:1/-1;grid-row:6;display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:6px!important;padding-top:10px!important;border-top:1px solid #edf0f3!important;}
   .employee-list-table .employee-list-row>.employee-dept-cell,.employee-list-table .employee-list-row>.employee-role-cell{display:none!important;}
   .employee-list-table td[data-label]::before{
     content:attr(data-label);
     margin-bottom:3px;
-    color:#7b8797;
+    color:#8a93a0;
     font-size:10.5px;
     font-weight:700;
   }
   .employee-list-table .employee-name-cell::before,.employee-list-table .employee-status-cell::before{display:none!important;}
-  .employee-list-table .employee-name-link{font-size:15px!important;font-weight:800!important;color:#17233b!important;}
+  .employee-list-table .employee-name-link{font-size:15px!important;font-weight:800!important;color:#1c2330!important;}
   .employee-list-summary{margin-left:auto;}
   .employee-table-head{flex-wrap:wrap!important;gap:8px!important;}
   .employee-table-tools{width:100%;display:grid!important;grid-template-columns:1fr 1fr!important;}
@@ -233,20 +233,20 @@
   .school-manage-table .school-status-cell{grid-column:2;grid-row:1;align-items:flex-end!important;}
   .school-manage-table .school-type-cell{grid-column:1;grid-row:2;}
   .school-manage-table .school-region-cell{grid-column:2;grid-row:2;align-items:flex-end!important;}
-  .school-manage-table .school-contact-cell{grid-column:1/-1;grid-row:3;padding-top:9px!important;border-top:1px solid #edf1f6!important;}
+  .school-manage-table .school-contact-cell{grid-column:1/-1;grid-row:3;padding-top:9px!important;border-top:1px solid #edf0f3!important;}
   .school-manage-table .school-mou-cell{grid-column:1/-1;grid-row:4;}
   .school-manage-table .school-applicant-cell{grid-column:1;grid-row:5;}
   .school-manage-table .school-employee-cell{grid-column:2;grid-row:5;align-items:flex-end!important;}
-  .school-manage-table .school-manage-row>.school-row-actions{grid-column:1/-1;grid-row:6;display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important;padding-top:10px!important;border-top:1px solid #edf1f6!important;}
+  .school-manage-table .school-manage-row>.school-row-actions{grid-column:1/-1;grid-row:6;display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important;padding-top:10px!important;border-top:1px solid #edf0f3!important;}
   .school-manage-table td[data-label]::before{
     content:attr(data-label);
     margin-bottom:3px;
-    color:#7b8797;
+    color:#8a93a0;
     font-size:10.5px;
     font-weight:700;
   }
   .school-manage-table .school-name-cell::before,.school-manage-table .school-status-cell::before{display:none!important;}
-  .school-manage-table .school-name-link{font-size:15px!important;font-weight:800!important;color:#17233b!important;}
+  .school-manage-table .school-name-link{font-size:15px!important;font-weight:800!important;color:#1c2330!important;}
   .school-manage-table .school-name-sub{margin-top:3px!important;}
   .school-manage-table .count-pill{min-width:72px!important;min-height:34px!important;}
   .school-manage-table .school-row-actions>.school-action-btn,

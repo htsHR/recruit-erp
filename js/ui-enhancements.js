@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='10.40.29';
+const UX_VERSION='10.46.9.1';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -424,11 +424,21 @@ updateStorageNote=function(){
   const mode=uxGetOperationEnvironment();
   const isCompany=mode==='company';
   document.documentElement.dataset.operationEnvironment=mode;
-  el.className=`security-note operation-mode-note ${mode}`;
+  const cloudReady=!isCompany&&typeof canUseCloud==='function'&&canUseCloud();
+  const cloudFailed=!isCompany&&typeof cloudSyncStatus!=='undefined'&&cloudSyncStatus==='error';
+  const modeTitle=isCompany?'회사 · LOCAL MASTER':cloudFailed?'집 · 로컬 저장 유지':cloudReady?'집 · CLOUD SYNC':'집 · 로컬 저장';
+  const modeDescription=isCompany
+    ?'현재 브라우저 데이터가 업무 기준입니다. 퇴근 전 전체 JSON 백업을 확인하세요.'
+    :cloudFailed
+      ?'브라우저 저장은 완료됐지만 클라우드 반영에 실패했습니다. 백업센터에서 상태를 확인하세요.'
+      :cloudReady
+        ?'브라우저 저장 후 Supabase에도 동기화할 수 있는 상태입니다.'
+        :'회사 JSON을 검사·복원한 뒤 작업하고, 로그인 전에는 브라우저에만 저장합니다.';
+  el.className=`security-note operation-mode-note ${mode}${cloudFailed?' sync-warn-note':''}`;
   el.innerHTML=`
     <div class="operation-mode-copy">
-      <strong>${isCompany?'회사 로컬 운영 모드':'집 개발·복원 모드'}</strong>
-      <span>${isCompany?'현재 브라우저의 데이터가 업무 기준입니다. 퇴근 전 JSON 백업을 확인하세요.':'회사 JSON을 불러온 뒤 개발하고, 작업 완료본을 JSON으로 백업하세요.'}</span>
+      <strong>${modeTitle}</strong>
+      <span>${modeDescription}</span>
     </div>
     <div class="operation-mode-switch" role="group" aria-label="운영 환경 선택">
       <button type="button" data-operation-mode="company" class="${isCompany?'active':''}" aria-pressed="${isCompany}">회사</button>
@@ -437,10 +447,12 @@ updateStorageNote=function(){
   el.querySelectorAll('[data-operation-mode]').forEach(btn=>btn.addEventListener('click',()=>uxSetOperationEnvironment(btn.dataset.operationMode)));
   const badge=document.querySelector('.local-mode-badge');
   if(badge){
-    badge.textContent=isCompany?'COMPANY MASTER':'HOME DEV';
-    badge.title=isCompany?'회사 브라우저의 로컬 데이터를 업무 기준으로 사용합니다.':'집에서 회사 JSON을 복원하고 개발하는 환경입니다.';
+    badge.textContent=isCompany?'회사 · LOCAL MASTER':cloudFailed?'집 · CLOUD ERROR':cloudReady?'집 · CLOUD SYNC':'집 · LOCAL';
+    badge.title=modeDescription;
     badge.classList.toggle('company',isCompany);
     badge.classList.toggle('home',!isCompany);
+    badge.classList.toggle('cloud-ready',cloudReady);
+    badge.classList.toggle('cloud-error',cloudFailed);
   }
 };
 window.updateStorageNote=updateStorageNote;

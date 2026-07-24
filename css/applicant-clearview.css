@@ -5,11 +5,11 @@
 #applicants.applicant-list-clarity{
   --clarity-line:#dde3ea;
   --clarity-line-strong:#cfd7e1;
-  --clarity-text:#252d38;
+  --clarity-text:#1c2330;
   --clarity-muted:#717b88;
-  --clarity-blue-bg:#edf3fa;
-  --clarity-blue-text:#315f92;
-  --clarity-green-bg:#edf6ef;
+  --clarity-blue-bg:#eef3fd;
+  --clarity-blue-text:#2757d6;
+  --clarity-green-bg:#ecf7f1;
   --clarity-green-text:#356a48;
   --clarity-gray-bg:#f2f4f6;
   --clarity-gray-text:#606873;
@@ -57,7 +57,7 @@
 #applicants #quickFilters .chip.active,#applicants #workplaceTabs .tab.active{
   border-color:#9eb9dc!important;
   background:#eef4fb!important;
-  color:#285b96!important;
+  color:#2757d6!important;
 }
 #applicants .filter-count{
   display:inline-flex;
@@ -73,7 +73,7 @@
   font-weight:800;
   line-height:1;
 }
-#applicants .chip.active .filter-count,#applicants .tab.active .filter-count{background:#dce8f6;color:#285b96;}
+#applicants .chip.active .filter-count,#applicants .tab.active .filter-count{background:#dce8f6;color:#2757d6;}
 #applicants #duplicateFilterChip.chip-alert:not(.active){border-color:#d8cbb5!important;background:#fbf9f4!important;color:#75654a!important;}
 #applicants .applicant-list-tool-row{
   display:grid!important;
@@ -86,7 +86,7 @@
 #applicants .applicant-list-tool-row .search,#applicants .applicant-list-tool-row .sort-select{height:38px!important;min-height:38px!important;border-color:#d8dfe8!important;border-radius:8px!important;background:#fff!important;box-shadow:none!important;}
 #applicants .applicant-list-tool-row .check-inline{font-size:11.5px!important;font-weight:700!important;color:#5f6874!important;}
 #applicants .applicant-list-tool-row button{min-height:36px!important;border-radius:8px!important;}
-#applicants .list-summary{margin-top:10px!important;padding:8px 11px!important;border:1px solid #e4e9ef!important;border-radius:9px!important;background:#fafbfc!important;box-shadow:none!important;color:#66717f!important;}
+#applicants .list-summary{margin-top:10px!important;padding:8px 11px!important;border:1px solid #e4e9ef!important;border-radius:9px!important;background:#fafbfc!important;box-shadow:none!important;color:#5c6673!important;}
 #applicants .list-summary>span{border:0!important;background:transparent!important;padding:0!important;}
 #applicants .list-summary .summary-strong{color:#27313d!important;font-weight:850!important;}
 #applicants .table-wrap{border:1px solid var(--clarity-line)!important;border-radius:12px!important;background:#fff!important;box-shadow:0 4px 16px rgba(35,48,66,.04)!important;}
@@ -140,7 +140,7 @@
 #applicants .decision-pill{display:inline-flex;align-items:center;min-height:25px;padding:0 8px;border:1px solid #dde2e8;border-radius:6px;background:#f7f8fa;color:#5b6571;font-size:10.5px;font-weight:800;}
 #applicants .decision-pill.decision-good{background:#eef6f0;color:#3d6e4d;border-color:#d2e3d6;}
 #applicants .decision-pill.decision-finished{background:#f2f3f5;color:#6c737d;border-color:#dfe2e6;}
-#applicants .decision-cell small{margin:0!important;color:#929aa4!important;font-size:9.5px!important;font-weight:650!important;}
+#applicants .decision-cell small{margin:0!important;color:#8a93a0!important;font-size:9.5px!important;font-weight:650!important;}
 #applicants .stale-badge{display:inline-flex;margin-left:6px;padding:2px 6px;border-radius:5px;background:#f5f2ec;color:#756954;font-size:9px;font-weight:750;vertical-align:middle;}
 #applicants .applicant-row.is-finished td{background:#fafbfc!important;color:#7d858f!important;}
 #applicants .applicant-row.is-finished:nth-child(even) td{background:#f8f9fa!important;}

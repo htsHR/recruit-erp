@@ -5,26 +5,26 @@
    ========================================================= */
 
 :root{
-  --erp-card-radius:20px;
-  --erp-card-pad:17px;
-  --erp-card-gap:16px;
-  --erp-line:#cbd8ea;
-  --erp-line-soft:#dfe8f5;
-  --erp-input-h:42px;
-  --erp-small-input-h:36px;
-  --erp-button-h:40px;
-  --erp-section-title-size:17px;
-  --erp-label-size:14px;
-  --erp-body-size:15px;
-  --erp-table-size:14px;
-  --erp-help-size:13px;
-  --erp-radius-sm:12px;
-  --erp-radius-md:16px;
-  --erp-radius-lg:20px;
-  --erp-shadow:0 12px 30px rgba(15,23,42,.075);
-  --erp-shadow-soft:0 8px 22px rgba(15,23,42,.055);
-  --erp-blue:#2563eb;
-  --erp-navy:#14213d;
+  --erp-card-radius:12px;
+  --erp-card-pad:16px;
+  --erp-card-gap:14px;
+  --erp-line:#e3e6eb;
+  --erp-line-soft:#edf0f3;
+  --erp-input-h:38px;
+  --erp-small-input-h:32px;
+  --erp-button-h:38px;
+  --erp-section-title-size:15px;
+  --erp-label-size:12px;
+  --erp-body-size:13px;
+  --erp-table-size:13px;
+  --erp-help-size:12px;
+  --erp-radius-sm:8px;
+  --erp-radius-md:10px;
+  --erp-radius-lg:12px;
+  --erp-shadow:0 4px 14px rgba(28,35,48,.045);
+  --erp-shadow-soft:0 2px 8px rgba(28,35,48,.035);
+  --erp-blue:#2757d6;
+  --erp-navy:#1c2330;
 }
 
 /* 텍스트 기준 */
@@ -79,7 +79,7 @@
 .panel-head h3,
 .task-panel .panel-head h3{
   margin:0;
-  color:#0f172a;
+  color:#1c2330;
   font-size:16px;
   font-weight:1000;
   letter-spacing:-.035em;
@@ -110,8 +110,8 @@
 }
 .primary{background:var(--erp-blue);color:#fff;border:1px solid var(--erp-blue);}
 .ghost{background:#fff;border:1px solid var(--erp-line);color:var(--erp-navy);}
-.mini{min-height:32px;height:32px;padding:0 11px;font-size:12px;background:#eef4ff;color:#24426e;border:1px solid #d5e3ff;}
-.danger{background:#fff1f2;color:#dc2626;border:1px solid #fecdd3;}
+.mini{min-height:32px;height:32px;padding:0 11px;font-size:12px;background:#eef3fd;color:#24426e;border:1px solid #d5e3ff;}
+.danger{background:#faeeed;color:#b3352e;border:1px solid #fecdd3;}
 .file-label{background:#fff;border:1px solid var(--erp-line);color:var(--erp-navy);}
 .file-label input{display:none;}
 
@@ -122,7 +122,7 @@ label,
   display:flex;
   flex-direction:column;
   gap:7px;
-  color:#0f172a;
+  color:#1c2330;
   font-size:var(--erp-label-size);
   line-height:1.25;
   font-weight:950;
@@ -172,7 +172,7 @@ textarea:focus,
 .search:focus,
 .sort-select:focus{
   outline:3px solid rgba(37,99,235,.14);
-  border-color:#2563eb;
+  border-color:#2757d6;
 }
 
 /* 탭/칩/필터 */
@@ -199,7 +199,7 @@ textarea:focus,
   cursor:pointer;
 }
 .tab.active,
-.chip.active{background:#0f2e74;color:#fff;border-color:#0f2e74;}
+.chip.active{background:#2757d6;color:#fff;border-color:#2757d6;}
 .check-inline{display:flex;align-items:center;gap:8px;font-size:13px;color:#4b5563;white-space:nowrap;font-weight:850;}
 .check-inline input{width:auto;height:auto;min-height:0;}
 
@@ -218,45 +218,45 @@ textarea:focus,
   white-space:nowrap;
 }
 .badge{padding:5px 9px;background:#f1f3f7;color:#516071;}
-.badge.good{background:#e7f8f1;color:#0f8057;}
-.badge.info{background:#eaf2ff;color:#1d5fc9;}
-.badge.missed{background:#fff4dd;color:#986514;}
-.badge.bad{background:#ffecec;color:#c83838;}
-.badge.hold{background:#f0eefc;color:#614fd0;}
-.workplace-pill{padding:5px 9px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+.badge.good{background:#ecf7f1;color:#1a7f57;}
+.badge.info{background:#eef3fd;color:#2757d6;}
+.badge.missed{background:#fbf4e6;color:#a16a12;}
+.badge.bad{background:#faeeed;color:#b3352e;}
+.badge.hold{background:#f0effa;color:#5a51b8;}
+.workplace-pill{padding:5px 9px;background:#eef3fd;color:#2757d6;border:1px solid #bfdbfe;}
 .school-similar-hint{
   align-items:center;
   gap:8px;
   flex-wrap:wrap;
   margin-top:6px;
   padding:8px 10px;
-  background:#eff6ff;
+  background:#eef3fd;
   border:1px solid #bfdbfe;
   border-radius:10px;
   font-size:12.5px;
-  color:#1d4ed8;
+  color:#2757d6;
 }
-.school-similar-hint strong{color:#0f2e74;}
+.school-similar-hint strong{color:#2757d6;}
 .school-filter-pill{display:inline-flex;align-items:center;gap:6px;}
 .school-filter-pill button{
   border:0;
   background:transparent;
-  color:#1d4ed8;
+  color:#2757d6;
   font-weight:900;
   font-size:14px;
   line-height:1;
   cursor:pointer;
   padding:0;
 }
-.dorm-pill{padding:5px 9px;border:1px solid #cbd5e1;background:#f8fafc;color:#334155;}
-.dorm-pill.on{background:#ecfdf5;color:#047857;border-color:#bbf7d0;}
-.dorm-pill.off{background:#f8fafc;color:#334155;border-color:#cbd5e1;}
-.dorm-pill.pending{background:#fff7ed;color:#c2410c;border-color:#fed7aa;}
+.dorm-pill{padding:5px 9px;border:1px solid #d3d8df;background:#fafbfc;color:#3d4757;}
+.dorm-pill.on{background:#ecf7f1;color:#1a7f57;border-color:#bbf7d0;}
+.dorm-pill.off{background:#fafbfc;color:#3d4757;border-color:#d3d8df;}
+.dorm-pill.pending{background:#fbf4e6;color:#c2410c;border-color:#fed7aa;}
 
 /* 성별 색상 */
 .gender-male{color:#0f3f9f !important;}
 .gender-female{color:#a32035 !important;}
-.gender-unknown{color:#0f172a !important;}
+.gender-unknown{color:#1c2330 !important;}
 
 /* 카드 리스트 */
 .card-list{display:flex;flex-direction:column;gap:10px;}
@@ -268,11 +268,11 @@ textarea:focus,
   justify-content:space-between;
   align-items:center;
   gap:10px;
-  background:#fbfdff;
+  background:#ffffff;
 }
 .person-card strong{font-weight:1000;}
-.person-card small{display:block;color:#64748b;margin-top:5px;line-height:1.35;font-size:12px;font-weight:800;}
-.empty{padding:18px;border:1px dashed var(--erp-line);border-radius:14px;color:#6b7280;text-align:center;background:#fff;}
+.person-card small{display:block;color:#5c6673;margin-top:5px;line-height:1.35;font-size:12px;font-weight:800;}
+.empty{padding:18px;border:1px dashed var(--erp-line);border-radius:14px;color:#5c6673;text-align:center;background:#fff;}
 
 /* 테이블 */
 .table-wrap{overflow:auto;}
@@ -299,7 +299,7 @@ tbody td{
   vertical-align:middle;
   font-weight:700;
 }
-.no-cell{color:#64748b;font-weight:900;text-align:center;}
+.no-cell{color:#5c6673;font-weight:900;text-align:center;}
 .status-inline{
   appearance:none;
   height:26px;
@@ -313,13 +313,13 @@ tbody td{
   border:1px solid #d8e2ef;
   font-size:11.5px;
   font-weight:1000;
-  background:#f8fafc;
+  background:#fafbfc;
 }
-.status-inline.good{background:#e7f8f1;color:#0f8057;border-color:#b8ead7;}
-.status-inline.info{background:#eaf2ff;color:#1d5fc9;border-color:#bfd5ff;}
-.status-inline.missed{background:#fff4dd;color:#986514;border-color:#f5d791;}
-.status-inline.bad{background:#ffecec;color:#c83838;border-color:#ffc7c7;}
-.status-inline.hold{background:#f0eefc;color:#614fd0;border-color:#d7cffb;}
+.status-inline.good{background:#ecf7f1;color:#1a7f57;border-color:#b8ead7;}
+.status-inline.info{background:#eef3fd;color:#2757d6;border-color:#bfd5ff;}
+.status-inline.missed{background:#fbf4e6;color:#a16a12;border-color:#f5d791;}
+.status-inline.bad{background:#faeeed;color:#b3352e;border-color:#ffc7c7;}
+.status-inline.hold{background:#f0effa;color:#5a51b8;border-color:#d7cffb;}
 .name-button{
   border:0;
   background:transparent;
@@ -332,7 +332,7 @@ tbody td{
   text-align:left;
 }
 .name-button:hover{text-decoration:underline;text-underline-offset:3px;}
-.applicant-name-cell small{display:block;margin-top:4px;color:#64748b;font-size:11.5px;font-weight:850;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.applicant-name-cell small{display:block;margin-top:4px;color:#5c6673;font-size:11.5px;font-weight:850;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .stale-badge{
   display:inline-flex;
   align-items:center;
@@ -347,13 +347,13 @@ tbody td{
   white-space:nowrap;
 }
 .phone-cell strong,.schedule-cell strong,.decision-cell strong{font-size:12.8px;font-weight:1000;}
-.email-cell{font-size:12px;color:#475569;max-width:210px;overflow:hidden;text-overflow:ellipsis;}
+.email-cell{font-size:12px;color:#5c6673;max-width:210px;overflow:hidden;text-overflow:ellipsis;}
 .email-cell span{display:block;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.schedule-cell small,.decision-cell small{display:block;margin-top:4px;color:#64748b;font-size:11px;font-weight:850;}
+.schedule-cell small,.decision-cell small{display:block;margin-top:4px;color:#5c6673;font-size:11px;font-weight:850;}
 .muted-schedule{color:#94a3b8;}
 .compact-actions{display:flex;gap:5px;}
 .compact-actions button{min-height:30px;height:30px;padding:0 8px;font-size:11.5px;border-radius:9px;background:#fff;border:1px solid var(--erp-line);font-weight:950;}
-.compact-actions .delete{color:#dc2626;}
+.compact-actions .delete{color:#b3352e;}
 
 /* 리스트 요약 */
 .list-summary{
@@ -364,11 +364,11 @@ tbody td{
   align-items:center;
   gap:12px;
   flex-wrap:wrap;
-  color:#475569;
+  color:#5c6673;
   font-size:12.5px;
   box-shadow:none;
 }
-.summary-strong{color:#0f2e74;font-weight:1000;}
+.summary-strong{color:#2757d6;font-weight:1000;}
 
 /* 상세 모달 공통 */
 .modal-card{
@@ -376,11 +376,11 @@ tbody td{
   max-height:88vh;
   overflow:hidden;
   border-radius:28px;
-  background:#f8fbff;
+  background:#fafbfc;
   padding:0;
 }
-.modal-head{margin:0;padding:20px 24px;background:linear-gradient(135deg,#fff,#eef6ff);border-bottom:1px solid #dbe5f2;}
-.modal-head h3{margin:3px 0 0;font-size:24px;color:#0f172a;letter-spacing:-.04em;}
+.modal-head{margin:0;padding:20px 24px;background:linear-gradient(135deg,#fff,#eef6ff);border-bottom:1px solid #e3e6eb;}
+.modal-head h3{margin:3px 0 0;font-size:24px;color:#1c2330;letter-spacing:-.04em;}
 .detail-body{max-height:calc(88vh - 150px);overflow:auto;padding:20px 24px 0;}
 .modal-card>.form-actions{padding:0 24px 22px;justify-content:flex-end;}
 
@@ -402,19 +402,19 @@ tbody td{
 .backup-status-card{
   border:1.5px solid var(--erp-line-soft);
   border-radius:16px;
-  background:#f8fbff;
+  background:#fafbfc;
   padding:14px 15px;
 }
 .backup-status-card span{
   display:block;
-  color:#64748b;
+  color:#5c6673;
   font-size:12px;
   font-weight:1000;
   margin-bottom:6px;
 }
 .backup-status-card strong{
   display:block;
-  color:#0f172a;
+  color:#1c2330;
   font-size:15px;
   font-weight:1000;
   word-break:break-word;
@@ -423,7 +423,7 @@ tbody td{
   margin:10px 0 16px;
   padding:11px 13px;
   border:1px solid #bfdbfe;
-  background:#eff6ff;
+  background:#eef3fd;
   border-radius:14px;
   color:#24426e;
   font-size:13px;
@@ -431,12 +431,12 @@ tbody td{
 }
 .reset-filter-btn{
   background:#fff;
-  border-color:#cbd8ea;
+  border-color:#d3d8df;
   color:#24426e;
 }
 .list-empty-cell > div{
   margin-bottom:10px;
-  color:#64748b;
+  color:#5c6673;
   font-weight:900;
 }
 @media(max-width:920px){
@@ -459,8 +459,8 @@ tbody td{
   border:1px solid #dfe5ee;
 }
 .status-inline.neutral{
-  background:#f8fafc;
-  color:#718096;
+  background:#fafbfc;
+  color:#6f7884;
   border-color:#d7dee8;
 }
 .person-card.is-paper-rejected{
@@ -470,17 +470,17 @@ tbody td{
 }
 .person-card.is-paper-rejected .person-name,
 .applicant-row.is-paper-rejected .name-button{
-  color:#6b7280 !important;
+  color:#5c6673 !important;
 }
 .applicant-row.is-paper-rejected{
   background:#fff;
 }
 .applicant-row.is-paper-rejected td{
-  color:#475569;
+  color:#5c6673;
 }
 .applicant-row.is-paper-rejected .decision-cell strong,
 .applicant-row.is-paper-rejected .phone-cell strong{
-  color:#334155;
+  color:#3d4757;
 }
 .applicant-row.is-paper-rejected .workplace-pill,
 .applicant-row.is-paper-rejected .dorm-pill{
@@ -495,13 +495,13 @@ tbody td{
   white-space:nowrap;
 }
 .apply-date-cell{
-  color:#475569;
+  color:#5c6673;
   font-size:12px;
   font-weight:900;
 }
 .detail-hero-v109.is-paper-rejected,
 .detail-section-v108.is-paper-rejected{
-  background:linear-gradient(135deg,#ffffff,#f8fafc);
+  background:linear-gradient(135deg,#ffffff,#fafbfc);
   border-color:#dfe5ee;
 }
 
@@ -533,7 +533,7 @@ tbody td{
    기존 색상/구조는 그대로 두고 위에 덧붙이는 방식이라 다른 화면에 영향 없음
    ========================================================= */
 tbody tr.applicant-row:not(.is-paper-rejected):nth-child(even) td{
-  background:#f8fbff;
+  background:#fafbfc;
 }
 
 /* v10.7.4: base.css 복원 과정에서 딸려온 표 좌우 테두리/모서리 제거 (현재 플랫 테이블 디자인과 안 맞음) */
@@ -551,11 +551,11 @@ tbody tr.applicant-row td{
   border-left-width:3px;
   border-left-style:solid;
 }
-.status-inline.good{border-left-color:#0f8057;}
-.status-inline.info{border-left-color:#1d5fc9;}
-.status-inline.missed{border-left-color:#986514;}
-.status-inline.bad{border-left-color:#c83838;}
-.status-inline.hold{border-left-color:#614fd0;}
+.status-inline.good{border-left-color:#1a7f57;}
+.status-inline.info{border-left-color:#2757d6;}
+.status-inline.missed{border-left-color:#a16a12;}
+.status-inline.bad{border-left-color:#b3352e;}
+.status-inline.hold{border-left-color:#5a51b8;}
 .status-inline.neutral{border-left-color:#9aa5b1;}
 .badge{position:relative;padding-left:19px;}
 .badge:before{
@@ -627,14 +627,14 @@ tbody tr.applicant-row td{
   margin:0 0 18px;
   padding:24px 26px;
   border-radius:22px;
-  background:radial-gradient(circle at 90% 10%,rgba(20,184,166,.20),transparent 40%),linear-gradient(135deg,#0f172a 0%,#1e3a8a 48%,#264fb0 75%,#2563eb 100%);
+  background:radial-gradient(circle at 90% 10%,rgba(20,184,166,.20),transparent 40%),linear-gradient(135deg,#1c2330 0%,#1e3a8a 48%,#264fb0 75%,#2757d6 100%);
   border:0;
   box-shadow:0 20px 46px rgba(15,23,42,.18);
 }
 .topbar h2{color:#fff;}
 .topbar .eyebrow{color:#bfdbfe;}
 .top-actions .primary{background:#fff;color:#1e3a8a;}
-.top-actions .primary:hover{background:#eef4ff;}
+.top-actions .primary:hover{background:#eef3fd;}
 .top-actions .ghost{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.28);color:#fff;}
 
 /* v10.7.5: 상단 배너(hero-card) 전 페이지 공통 배경 - 개별 수정자 클래스 유무와 상관없이 항상 적용 */
@@ -648,13 +648,13 @@ tbody tr.applicant-row td{
   border-color:rgba(255,196,61,.5);
 }
 .chip.chip-alert{
-  background:#fff4dd;
+  background:#fbf4e6;
   border-color:#f5d791;
   color:#8a5a00;
 }
 .chip.chip-alert.active{
-  background:#986514;
-  border-color:#986514;
+  background:#a16a12;
+  border-color:#a16a12;
   color:#fff;
 }
 
@@ -664,7 +664,7 @@ tbody tr.applicant-row td{
   justify-content:space-between;
   gap:14px;
   flex-wrap:wrap;
-  background:#fff7ed;
+  background:#fbf4e6;
   border:1.5px solid #f5d791;
   color:#8a5a00;
   border-radius:16px;
@@ -699,7 +699,7 @@ tbody tr.applicant-row td{
   display:flex;
   align-items:center;
   justify-content:center;
-  background:radial-gradient(circle at 88% 15%,rgba(20,184,166,.18),transparent 40%),linear-gradient(135deg,#0f172a 0%,#1e3a8a 55%,#2563eb 100%);
+  background:radial-gradient(circle at 88% 15%,rgba(20,184,166,.18),transparent 40%),linear-gradient(135deg,#1c2330 0%,#1e3a8a 55%,#2757d6 100%);
 }
 .login-card{
   width:min(380px,90vw);
@@ -711,9 +711,9 @@ tbody tr.applicant-row td{
   flex-direction:column;
   gap:10px;
 }
-.login-card h3{margin:2px 0 4px;font-size:22px;color:#0f172a;}
+.login-card h3{margin:2px 0 4px;font-size:22px;color:#1c2330;}
 .login-card label{margin-top:4px;}
-.login-error{min-height:18px;color:#c83838;font-size:12.5px;font-weight:900;}
+.login-error{min-height:18px;color:#b3352e;font-size:12.5px;font-weight:900;}
 .login-hint{font-size:11.5px;line-height:1.5;margin-top:6px;}
 .login-card .btnLoginSkip,.login-card #btnLoginSkip{margin-top:2px;}
 
@@ -788,7 +788,7 @@ tbody tr.applicant-row td{
    Recruit ERP v10.36.4 — CORPORATE NAV / TOPBAR
    ========================================================= */
 .sidebar{
-  color:#eaf2ff;
+  color:#eef3fd;
   background:
     radial-gradient(circle at 20% 0,rgba(53,124,255,.18),transparent 28%),
     linear-gradient(180deg,#071d49 0%,#08275d 52%,#061c43 100%);

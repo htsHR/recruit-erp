@@ -1,0 +1,96 @@
+/* ===== Recruit ERP v10.46.9.1 — DESIGN CALM FINAL LAYER =====
+   목적: 기준본 CSS 로드 순서를 유지한 채 DESIGN CALM의 의도된 최종 시각 규칙만 명시적으로 적용
+   주의: 데이터·저장·업무 로직과 무관한 표현 계층 전용 파일
+   ============================================================ */
+/* ---------- Final page normalization: DESIGN CALM owns visual output ---------- */
+#applicants .applicant-list-filter-card::before,
+#form .resume-section-card::before,
+#form .resume-section-card::after{display:none!important;content:none!important;}
+#applicants .applicant-list-filter-card{border-top:1px solid var(--calm-line)!important;}
+#applicants .applicant-list-filter-stack{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  gap:12px!important;
+  border:0!important;
+}
+#applicants .applicant-filter-group{
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+#applicants .applicant-filter-group-head{margin-bottom:6px!important;}
+#applicants .applicant-status-filter-group{min-width:0!important;}
+#applicants .applicant-workplace-filter-group{min-width:max-content!important;}
+#applicants .applicant-list-header-metrics{gap:0!important;border:1px solid var(--calm-line)!important;border-radius:8px!important;overflow:hidden!important;}
+#applicants .applicant-header-metric{min-width:68px!important;padding:8px 10px!important;border:0!important;border-left:1px solid var(--calm-line)!important;border-radius:0!important;background:#fff!important;}
+#applicants .applicant-header-metric:first-child{border-left:0!important;}
+#applicants .applicant-header-metric strong{font-size:17px!important;}
+#applicants .applicant-pagination{border-color:var(--calm-line)!important;background:#fff!important;box-shadow:none!important;}
+
+#form .form-workflow-banner{
+  border:1px solid var(--calm-line)!important;
+  border-radius:var(--calm-radius-m)!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+#form .form-mode-pill{border-radius:6px!important;background:var(--calm-accent-bg)!important;color:var(--calm-accent)!important;box-shadow:none!important;}
+#form .form-progress-track{background:#e9edf3!important;}
+#form .form-progress-track>*{background:var(--calm-accent)!important;}
+#form .resume-section-card{border-top:1px solid var(--calm-line)!important;}
+#form .resume-section-card .section-title,#form .resume-section-card .compact-title{
+  border-top:0!important;
+  box-shadow:none!important;
+}
+#form .resume-section-card .section-title::before,#form .resume-section-card .compact-title::before{
+  width:5px!important;height:5px!important;border-radius:99px!important;background:var(--calm-accent)!important;box-shadow:none!important;
+}
+
+#calendar .calendar-control-panel{
+  padding:14px 16px!important;
+  color:var(--calm-ink)!important;
+  border:1px solid var(--calm-line)!important;
+  border-radius:var(--calm-radius-m)!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+#calendar .calendar-toolbar{padding:0 0 12px!important;border-bottom:1px solid var(--calm-line)!important;}
+#calendar .calendar-toolbar h3,#calendar #calendarMonthTitle{color:var(--calm-ink)!important;font-size:15px!important;font-weight:650!important;}
+#calendar .calendar-toolbar .ghost,#calendar .calendar-toolbar .mini{
+  color:var(--calm-ink-2)!important;background:#fff!important;border-color:var(--calm-line-strong)!important;
+}
+#calendar .calendar-toolbar .primary{background:var(--calm-accent)!important;border-color:var(--calm-accent)!important;}
+#calendar .calendar-filter-group select{color:var(--calm-ink)!important;background:#fff!important;border-color:var(--calm-line-strong)!important;}
+#calendar .calendar-summary-grid{gap:10px!important;margin:12px 0!important;}
+#calendar .calendar-summary-card{
+  padding:11px 12px!important;
+  border:1px solid var(--calm-line)!important;
+  border-radius:var(--calm-radius-s)!important;
+  color:var(--calm-ink)!important;
+  background:var(--calm-surface-soft)!important;
+  box-shadow:none!important;
+}
+#calendar .calendar-summary-card span,#calendar .calendar-summary-card small{color:var(--calm-ink-2)!important;font-weight:500!important;}
+#calendar .calendar-summary-card strong{color:var(--calm-ink)!important;font-size:20px!important;font-weight:700!important;}
+#calendar .calendar-view-tabs{padding-top:0!important;border-top:0!important;}
+#calendar .calendar-view-tabs button{color:var(--calm-ink-2)!important;background:#fff!important;border-color:var(--calm-line-strong)!important;border-radius:6px!important;}
+#calendar .calendar-view-tabs button.active{color:#fff!important;background:var(--calm-ink)!important;border-color:var(--calm-ink)!important;}
+#calendar .calendar-month-panel,#calendar .calendar-week-panel,#calendar .calendar-list-panel,#calendar .calendar-day-panel,#calendar .calendar-event-panel{
+  border:1px solid var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;background:#fff!important;box-shadow:none!important;
+}
+#calendar .calendar-weekdays{background:var(--calm-surface-soft)!important;border-color:var(--calm-line)!important;}
+#calendar .calendar-weekdays span{color:var(--calm-ink-2)!important;font-weight:600!important;}
+#calendar .calendar-day{border-color:var(--calm-line)!important;background:#fff!important;}
+#calendar .calendar-day:hover{background:#fafbfd!important;}
+#calendar .calendar-day.today{background:var(--calm-accent-bg)!important;box-shadow:inset 0 0 0 2px var(--calm-accent)!important;}
+
+#schools .school-page-hero,#employees .employee-page-hero,#backup .backup-hero,
+#dataHealth .data-health-hero,#duplicates .duplicate-hero{
+  background:#fff!important;border-color:var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;box-shadow:none!important;
+}
+
+@media(max-width:900px){
+  #applicants .applicant-list-filter-stack{grid-template-columns:1fr!important;}
+  #applicants .applicant-workplace-filter-group{min-width:0!important;}
+}

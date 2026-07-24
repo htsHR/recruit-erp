@@ -40,6 +40,7 @@ function afterLoginSuccess(email){
   cloudAuthenticated = true;
   hideLoginOverlay();
   updateAuthNote(email);
+  updateStorageNote();
   supabaseSyncOnLoad();
   supabaseSchoolsSyncOnLoad();
   supabaseEmployeesSyncOnLoad();
