@@ -620,3 +620,60 @@ input[type="checkbox"],input[type="radio"]{
 .calendar-bulk-accept{background:#ecf7f1!important;color:#1a7f57!important;border:1px solid #cde8db!important;border-radius:6px!important;font-weight:600!important;}
 .calendar-bulk-reject{background:#faeeed!important;color:#b3352e!important;border:1px solid #ecc9c6!important;border-radius:6px!important;font-weight:600!important;}
 .calendar-result-tag{border-radius:6px!important;font-weight:600!important;}
+
+/* ============================================================
+   v10.47.9 — TODAY + DETAIL POLISH (오늘 할 일 수렴 · 상세 미세조정)
+   ============================================================ */
+
+/* 오늘 할 일: 색 배경 카드 → 흰 카드 + 숫자만 색 */
+#today .daily-metric{
+  background:#fff!important;border:1px solid var(--calm-line)!important;border-radius:12px!important;
+  padding:14px 16px!important;min-height:0!important;box-shadow:none!important;
+}
+#today .daily-metric span,#today .daily-metric small{font-size:12px!important;font-weight:600!important;color:var(--calm-ink-2)!important;}
+#today .daily-metric strong{font-size:26px!important;font-weight:700!important;color:var(--calm-ink)!important;letter-spacing:-.02em!important;line-height:1.1!important;}
+#today .daily-metric.is-danger strong{color:#b3352e!important;}
+#today .daily-metric.is-primary strong{color:var(--calm-accent,#2757d6)!important;}
+#today .daily-metric.is-good strong{color:#1a7f57!important;}
+#today .daily-metric.is-danger,#today .daily-metric.is-primary,#today .daily-metric.is-good{background:#fff!important;border-color:var(--calm-line)!important;}
+
+/* 처리 목록 패널: 칩·검색·리스트 */
+#today .daily-filter-chips .chip{
+  border:1px solid transparent!important;background:transparent!important;color:var(--calm-ink-2)!important;
+  height:30px!important;padding:0 11px!important;font-weight:500!important;border-radius:8px!important;
+}
+#today .daily-filter-chips .chip:hover{background:#f0f2f5!important;}
+#today .daily-filter-chips .chip.active{background:var(--calm-accent-bg,#eef3fd)!important;color:var(--calm-accent,#2757d6)!important;font-weight:600!important;}
+#today .daily-work-item{
+  border:0!important;border-bottom:1px solid var(--calm-line)!important;border-radius:0!important;
+  background:transparent!important;padding:13px 2px!important;margin:0!important;box-shadow:none!important;
+}
+#today .daily-work-item:last-child{border-bottom:0!important;}
+#today .daily-work-person strong{font-size:14px!important;font-weight:600!important;}
+#today .daily-work-meta{color:var(--calm-ink-2)!important;font-size:12px!important;font-weight:400!important;}
+#today .daily-reason-chip{
+  border:0!important;border-radius:6px!important;font-size:11px!important;font-weight:600!important;padding:4px 8px!important;
+  background:#f0f2f5!important;color:#5c6673!important;
+}
+#today .daily-reason-chip.danger,#today .daily-reason-chip.alert{background:#faeeed!important;color:#b3352e!important;}
+#today .daily-reason-chip.warn{background:#fbf4e6!important;color:#a16a12!important;}
+#today .daily-reason-chip.info,#today .daily-reason-chip.primary{background:#eef3fd!important;color:#2757d6!important;}
+#today .daily-reason-chip.good,#today .daily-reason-chip.success{background:#ecf7f1!important;color:#1a7f57!important;}
+#today .daily-reason-chip.contact{background:#eef3fd!important;color:#2757d6!important;}
+#today .daily-reason-chip.muted{background:#f0f2f5!important;color:#8a93a0!important;}
+#today .daily-work-actions .mini,#today .daily-work-actions button{
+  height:28px!important;padding:0 10px!important;font-size:12px!important;border-radius:6px!important;
+  background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink-2)!important;
+}
+#today .daily-work-actions .mini:hover{color:var(--calm-ink)!important;border-color:var(--calm-ink-3)!important;}
+
+/* 상세 모달 미세조정 (네이비 밴드는 의도적 악센트로 유지) */
+.applicant-detail-modal .detail-row,.detail-body .detail-row{border-radius:8px!important;}
+.detail-body .mini,.modal-head .ghost{border-radius:8px!important;font-weight:600!important;}
+.detail-body .eyebrow{letter-spacing:.06em!important;font-size:11px!important;}
+.quick-log-btn,.detail-body .score-pill{border-radius:6px!important;font-weight:500!important;}
+
+/* 달 제목 미세조정 (지난 라운드 이월) */
+#calendar .calendar-month-title,#calendar .cal-title,#calendarTitle{
+  font-size:18px!important;font-weight:700!important;letter-spacing:-.02em!important;
+}
