@@ -6,10 +6,14 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='10.47.9';
+  const BC_VERSION='10.48.0';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
+  // v10.48.0: 앱 버전과 별개로 "상태값 스키마"만 추적하는 카운터.
+  // 서류합격 같은 새 상태가 추가되면 이 값을 올려, 백업이 이 버전이 모르는
+  // 상태를 담고 있을 수 있음을 appVersion 비교 없이도 판단할 수 있게 한다.
+  const BC_STATUS_SCHEMA=1;
   const BC_LAST_FULL_KEY='recruit_erp_last_full_backup_at';
   const BC_LAST_SNAPSHOT_KEY='recruit_erp_last_full_backup_snapshot_v2';
   const BC_HISTORY_KEY='recruit_erp_backup_center_history';
@@ -144,7 +148,7 @@
     let excelApplicantIds=[];
     try{excelApplicantIds=keys.includes('applicants')&&typeof window.erpGetExcelApplicantIds==='function'?window.erpGetExcelApplicantIds():[];}catch{excelApplicantIds=[];}
     const pack={
-      format:BC_FORMAT,schemaVersion:BC_SCHEMA,appVersion:BC_VERSION,
+      format:BC_FORMAT,schemaVersion:BC_SCHEMA,appVersion:BC_VERSION,statusSchemaVersion:BC_STATUS_SCHEMA,
       backupType:keys.length===DATASETS.length?'full':keys[0],createdAt,
       environment:environment(),environmentLabel:environmentLabel(environment()),reason,
       counts:countsOf(data),metadata:{excelApplicantIds},integrity:{algorithm:'fnv1a32-stable-json',datasets:integrityDatasets},data
@@ -263,7 +267,7 @@
       meta={format:'legacy-array',schemaVersion:0,appVersion:'확인 불가',backupType:key,createdAt:'',environment:'unknown'};
     }else if(parsed&&typeof parsed==='object'){
       if(parsed.format===BC_FORMAT&&parsed.data&&typeof parsed.data==='object'){
-        meta={format:parsed.format,schemaVersion:Number(parsed.schemaVersion||0),appVersion:parsed.appVersion||'확인 불가',backupType:parsed.backupType||'unknown',createdAt:parsed.createdAt||'',environment:parsed.environment||'unknown',excelApplicantIds:Array.isArray(parsed.metadata?.excelApplicantIds)?parsed.metadata.excelApplicantIds.map(String):[]};
+        meta={format:parsed.format,schemaVersion:Number(parsed.schemaVersion||0),appVersion:parsed.appVersion||'확인 불가',statusSchemaVersion:Number(parsed.statusSchemaVersion||0),backupType:parsed.backupType||'unknown',createdAt:parsed.createdAt||'',environment:parsed.environment||'unknown',excelApplicantIds:Array.isArray(parsed.metadata?.excelApplicantIds)?parsed.metadata.excelApplicantIds.map(String):[]};
         DATASETS.forEach(d=>{if(Object.prototype.hasOwnProperty.call(parsed.data,d.key)){data[d.key]=parsed.data[d.key];included.push(d.key);}});
       }else{
         legacy=true;
@@ -301,6 +305,18 @@
 
     if(meta.schemaVersion>BC_SCHEMA)warnings.push('현재 프로그램보다 새로운 백업 스키마입니다. 적용 전 호환성을 확인하세요.');
     if(meta.appVersion!=='확인 불가'&&compareVersions(meta.appVersion,BC_VERSION)>0)warnings.push(`백업 버전(${meta.appVersion})이 현재 프로그램(${BC_VERSION})보다 새롭습니다.`);
+    // v10.48.0: 상태 스키마 버전이 더 높거나(미래 백업), 지원자 데이터에 이 버전이 모르는
+    // 상태값이 섞여 있으면 자동 변환 없이 그대로 경고만 표시한다.
+    if(meta.statusSchemaVersion>BC_STATUS_SCHEMA)warnings.push(`백업의 상태값 스키마(${meta.statusSchemaVersion})가 현재 프로그램(${BC_STATUS_SCHEMA})보다 새롭습니다. 이 버전이 모르는 상태가 있을 수 있습니다.`);
+    if(data.applicants&&Array.isArray(data.applicants)&&typeof normalizeStatus==='function'){
+      const known=new Set([...(typeof STATUS_OPTIONS!=='undefined'?STATUS_OPTIONS:[]),...(typeof LEGACY_STATUS_OPTIONS!=='undefined'?LEGACY_STATUS_OPTIONS:[])]);
+      const unknown=new Set();
+      data.applicants.forEach(a=>{const s=String(a&&a.status||'').trim();if(s&&!known.has(s))unknown.add(s);});
+      if(unknown.size){
+        const sample=[...unknown].slice(0,5).join(', ');
+        warnings.push(`이 버전이 모르는 상태값 ${unknown.size}종이 포함되어 있습니다(예: ${sample}). 자동 변환 없이 원문 그대로 복원됩니다.`);
+      }
+    }
     const full=DATASETS.filter(d=>!d.optional).every(d=>included.includes(d.key));
     return {meta,data,included,warnings,errors,invalid,full,legacy,counts:actualCounts,valid:errors.length===0,routeBlocked:false,fileType};
   }
@@ -363,6 +379,7 @@
         <div class="backup-file-meta"><span>파일 크기</span><strong>${formatBytes(inspected.file.size)}</strong></div>
         <div class="backup-file-meta backup-file-type"><span>파일 유형</span><strong>${escHtml(type.label)}</strong><small>${escHtml(type.summary||'')}</small></div>
         <div class="backup-file-meta"><span>백업 버전</span><strong>${escHtml(c.meta.appVersion)}</strong></div>
+        <div class="backup-file-meta"><span>상태값 스키마</span><strong>${c.meta.statusSchemaVersion||0}</strong></div>
         <div class="backup-file-meta"><span>백업 일시</span><strong>${escHtml(formatDate(c.meta.createdAt))}</strong></div>
         <div class="backup-file-meta"><span>생성 환경</span><strong>${escHtml(c.meta.environment==='company'?'회사':c.meta.environment==='home'?'집':'확인 불가')}</strong></div>
       </div>

@@ -84,9 +84,19 @@ function supabaseDeleteSchool(id){
 }
 function supabaseSchoolsSyncOnLoad(){
   if(!canUseCloud()) return;
-  window.sb.from('schools').select('*').then(function(res){
-    if(res && res.error){ console.warn('학교마스터 불러오기 실패, 로컬 데이터로 계속 진행:', res.error.message); return; }
-    const cloud = (res && res.data) ? res.data.map(normalizeSchool) : [];
+  // v10.48.0: 학교가 이미 1,000행을 넘어 Supabase 기본 제한에 걸릴 수 있으므로
+  // employees.js·cloud-sync.js(지원자)와 동일한 500건 페이지 재귀 조회로 변경.
+  const PAGE_SIZE=500;
+  function loadPage(from,collected){
+    return window.sb.from('schools').select('*').order('id',{ascending:true}).range(from,from+PAGE_SIZE-1).then(function(res){
+      if(res&&res.error) throw new Error(res.error.message);
+      const rows=(res&&res.data)?res.data:[];
+      const merged=collected.concat(rows);
+      return rows.length<PAGE_SIZE?merged:loadPage(from+PAGE_SIZE,merged);
+    });
+  }
+  loadPage(0,[]).then(function(cloudRaw){
+    const cloud = cloudRaw.map(normalizeSchool);
     const local = schools;
     const map = {};
     local.forEach(function(s){ map[s.id] = s; });
@@ -100,7 +110,8 @@ function supabaseSchoolsSyncOnLoad(){
     schools = Object.keys(map).map(function(k){ return map[k]; });
     localStorage.setItem(SCHOOLS_KEY, JSON.stringify(schools));
     populateSchoolDatalist(); renderSchoolManage(); renderSchools();
-  }).catch(function(e){ console.warn('학교마스터 Supabase 연결 실패, 로컬 데이터로 계속 진행:', e); });
+    console.info('학교마스터 Supabase 페이지 조회 완료: 클라우드 '+cloud.length+'개 -> 병합 후 '+schools.length+'개');
+  }).catch(function(e){ console.warn('학교마스터 Supabase 페이지 조회 중 실패 — 기존 로컬 데이터 유지:', e); });
 }
 function findSchoolByText(text){
   const t = String(text||'').trim().toLowerCase();

@@ -189,7 +189,13 @@ function getForm(){ const o=fields.reduce((obj,id)=>{ if($(id)) obj[id]=$(id).va
   return o; }
 function fillForm(a){ fields.forEach(id=>{ const el=$(id); if(!el) return; const value = id==='editId' ? (a.id||a.editId||'') : (id==='status' ? normalizeStatus(a.status) : (id==='dormUse' ? normalizeDorm(a.dormUse) : (a[id]||'')));
   if(id==='interviewTime' && value && ![...el.options].some(o=>o.value===value)){ el.add(new Option(value,
-  value)); } el.value = value; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords',
+  value)); }
+  // v10.48.0: 상태 셀렉트에 없는 값(이 버전이 모르는 미래 상태)이면 임시 옵션을 만들어
+  // 값이 사라지지 않게 하고, 사용자가 직접 다른 상태를 고르기 전까지 유지되게 한다.
+  if(id==='status' && value && ![...el.options].some(o=>o.value===value)){
+    el.add(new Option(value+' — 현재 버전에서 정의되지 않은 상태', value, true, true));
+  }
+  el.value = value; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords',
   a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); updateFormMode(); }
 function resetForm(){
   window.__erpExcelPastePendingApplicant='';

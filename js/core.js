@@ -49,13 +49,18 @@ function normalizeStatus(v){
     '부적합':'서류탈락','전형마감':'서류탈락','입사포기':'입사철회','포기':'입사철회','취소':'철회'
   };
   const out=map[s] || s || '서류검토';
-  if(STATUS_OPTIONS.includes(out) || LEGACY_STATUS_OPTIONS.includes(out)) return out;
-  return '서류검토';
+  if(!out) return '서류검토';
+  // v10.48.0: 알 수 없는(미래) 상태값은 서류검토로 뭉개지 않고 원문 그대로 보존한다.
+  return out;
 }
 function statusOptionsHtml(current){
   const cur=normalizeStatus(current);
-  const legacy=LEGACY_STATUS_OPTIONS.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'';
-  return legacy+STATUS_OPTIONS.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('');
+  const isKnown=STATUS_OPTIONS.includes(cur)||LEGACY_STATUS_OPTIONS.includes(cur);
+  // v10.48.0: 이 버전이 모르는 상태값(미래 상태)도 legacy와 동일하게 임시 옵션으로 보존해
+  // 사용자가 직접 다른 상태를 고르기 전까지 값이 유지되게 한다.
+  const extra=!isKnown?`<option value="${esc(cur)}" selected>${esc(cur)} — 현재 버전에서 정의되지 않은 상태</option>`
+    :(LEGACY_STATUS_OPTIONS.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:'');
+  return extra+STATUS_OPTIONS.map(v=>`<option value="${esc(v)}" ${v===cur?'selected':''}>${esc(v)}</option>`).join('');
 }
 function normalizeDorm(v){
   const s=String(v||'').trim();

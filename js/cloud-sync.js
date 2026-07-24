@@ -116,10 +116,20 @@ function restoreSnapshot(id){
 }
 function supabaseSyncOnLoad(){
   if(!canUseCloud()) return;
-  window.sb.from('applicants').select('*').then(function(res){
-    if(res && res.error){ console.warn('Supabase 불러오기 실패, 로컬 데이터로 계속 진행:', res.error.message); setCloudSyncStatus('error'); return; }
+  // v10.48.0: 1,000행 이상일 때 Supabase 기본 제한에 걸려 일부 지원자가 누락되는 것을 막기 위해
+  // employees.js와 동일한 500건 페이지 재귀 조회로 변경. 조회만 하며 클라우드에 다시 쓰지 않음.
+  var PAGE_SIZE=500;
+  function loadPage(from,collected){
+    return window.sb.from('applicants').select('*').order('id',{ascending:true}).range(from,from+PAGE_SIZE-1).then(function(res){
+      if(res&&res.error) throw new Error(res.error.message);
+      var rows=(res&&res.data)?res.data:[];
+      var merged=collected.concat(rows);
+      return rows.length<PAGE_SIZE?merged:loadPage(from+PAGE_SIZE,merged);
+    });
+  }
+  loadPage(0,[]).then(function(cloudRaw){
     setCloudSyncStatus('ok');
-    var cloud = (res && res.data) ? res.data.map(normalize) : [];
+    var cloud = cloudRaw.map(normalize);
     var local = applicants;
 
     // v10.8.1: 무조건 덮어쓰기(위험) -> id 기준 병합(안전)으로 변경
