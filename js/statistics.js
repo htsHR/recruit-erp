@@ -106,7 +106,8 @@ function renderStatsStatus(){
   $('statsStatusList').innerHTML = scope.length ? STATUS_OPTIONS.map(s=>barRow(s, map[s], max)).join('') : `<div class="empty">등록된 지원자가 없습니다.</div>`;
 }
 function applyMonthOf(a){ return a.applyDate ? a.applyDate.slice(0,7) : ''; }
-function isInterviewed(a){ return !!a.interviewDate && daysUntil(a.interviewDate) <= 0; }
+// v10.48.1.1: 지난 면접일 존재만으로 판정하면 서류합격에 남은 과거 면접일도 잡히므로 상태 확인 추가
+function isInterviewed(a){ return a.status!=='서류합격' && !!a.interviewDate && daysUntil(a.interviewDate) <= 0; }
 function isPassed(a){ return ['입사예정','출근'].includes(a.status); }
 function funnelRowCells(v){
   const rate = v.apply ? Math.round((v.pass/v.apply)*100) : 0;

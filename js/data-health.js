@@ -166,8 +166,11 @@ function buildHealthIssues(){
   const staleDays=parseInt(byId('healthStaleDays')?.value||'30',10);
   const interviewStatuses=['면접예정','면접완료','다음면접'];
   const hireStatuses=['입사예정','출근'];
-  const pendingStatuses=['서류검토','부재중','면접예정','면접완료','다음면접'];
-  const earlyStatuses=['서류검토','부재중','서류탈락','불합격','철회','연락두절'];
+  // v10.48.1: 서류합격은 아직 면접 확정 전 단계이므로 '오래된 미처리' 추적 대상에 포함하고,
+  // 면접일·입사일이 이미 들어있으면(서류합격인데 날짜가 있음) 상태·날짜 불일치 경고 대상에도 포함한다.
+  // 단 interviewStatuses/hireStatuses에는 넣지 않아 '면접일 누락' 오류로는 절대 잡히지 않게 한다.
+  const pendingStatuses=['서류검토','서류합격','부재중','면접예정','면접완료','다음면접'];
+  const earlyStatuses=['서류검토','서류합격','부재중','서류탈락','불합격','철회','연락두절'];
   const todayValue=typeof today==='function'?today():new Date().toISOString().slice(0,10);
   const dupMembership=new Map();
   buildDuplicateGroups().forEach(g=>g.members.forEach(a=>dupMembership.set(String(a.id),true)));

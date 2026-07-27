@@ -6,14 +6,16 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='10.48.0';
+  const BC_VERSION='10.49.0';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
-  // v10.48.0: 앱 버전과 별개로 "상태값 스키마"만 추적하는 카운터.
+  // v10.49.0: 앱 버전과 별개로 "상태값 스키마"만 추적하는 카운터.
   // 서류합격 같은 새 상태가 추가되면 이 값을 올려, 백업이 이 버전이 모르는
   // 상태를 담고 있을 수 있음을 appVersion 비교 없이도 판단할 수 있게 한다.
-  const BC_STATUS_SCHEMA=1;
+  // v10.49.0: 서류합격 상태가 공식 도입되어 상태값 스키마를 2로 올림.
+  // v10.49.0 이하 백업은 필드가 없어 0(레거시)으로 자동 판단되며, 여전히 정상 복원 가능.
+  const BC_STATUS_SCHEMA=2;
   const BC_LAST_FULL_KEY='recruit_erp_last_full_backup_at';
   const BC_LAST_SNAPSHOT_KEY='recruit_erp_last_full_backup_snapshot_v2';
   const BC_HISTORY_KEY='recruit_erp_backup_center_history';
@@ -305,7 +307,7 @@
 
     if(meta.schemaVersion>BC_SCHEMA)warnings.push('현재 프로그램보다 새로운 백업 스키마입니다. 적용 전 호환성을 확인하세요.');
     if(meta.appVersion!=='확인 불가'&&compareVersions(meta.appVersion,BC_VERSION)>0)warnings.push(`백업 버전(${meta.appVersion})이 현재 프로그램(${BC_VERSION})보다 새롭습니다.`);
-    // v10.48.0: 상태 스키마 버전이 더 높거나(미래 백업), 지원자 데이터에 이 버전이 모르는
+    // v10.49.0: 상태 스키마 버전이 더 높거나(미래 백업), 지원자 데이터에 이 버전이 모르는
     // 상태값이 섞여 있으면 자동 변환 없이 그대로 경고만 표시한다.
     if(meta.statusSchemaVersion>BC_STATUS_SCHEMA)warnings.push(`백업의 상태값 스키마(${meta.statusSchemaVersion})가 현재 프로그램(${BC_STATUS_SCHEMA})보다 새롭습니다. 이 버전이 모르는 상태가 있을 수 있습니다.`);
     if(data.applicants&&Array.isArray(data.applicants)&&typeof normalizeStatus==='function'){

@@ -10,9 +10,16 @@ let schoolDetailInitialHistory='';
 function schoolRecruitStats(schoolId){
   const list = applicants.filter(a=>a.schoolId===schoolId);
   const total = list.length;
-  const docPassStatuses=['면접예정','면접완료','다음면접','입사예정','출근'];
+  // v10.48.1.1: 화면에 "서류합격"이라 표시되는 이 KPI가 실제 서류합격 상태를 세지 않아
+  // 이름과 의미가 어긋나 있었다. 서류합격 상태 자체를 포함한 "서류합격 이상 단계 누계"로 통일.
+  const docPassStatuses=['서류합격','면접예정','면접완료','다음면접','입사예정','출근'];
   const docPass = list.filter(a=>docPassStatuses.includes(normalizeStatus(a.status))).length;
-  const interview = list.filter(a=>['면접완료','다음면접','입사예정','출근'].includes(normalizeStatus(a.status)) || isInterviewed(a)).length;
+  const interview = list.filter(a=>{
+    const st=normalizeStatus(a.status);
+    // v10.48.1: 서류합격은 면접 확정 전 단계라 면접일이 들어있어도 '면접 인원'으로 잡지 않는다.
+    if(st==='서류합격') return false;
+    return ['면접완료','다음면접','입사예정','출근'].includes(st) || isInterviewed(a);
+  }).length;
   const hireConfirmed = list.filter(a=>['입사예정','출근'].includes(normalizeStatus(a.status))).length;
   const started = list.filter(a=>normalizeStatus(a.status)==='출근').length;
   let latestApply='';
@@ -38,6 +45,23 @@ function schoolNextContactStatus(date){
 function schoolKpiItem(label, value, action='', help=''){
   const attrs=action ? ` role="button" tabindex="0" onclick="${action}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${action}}"` : '';
   return `<div class="school-kpi-item${action?' is-clickable':''}"${attrs}><span>${esc(label)}</span><strong>${esc(String(value ?? '-'))}</strong>${help?`<small>${esc(help)}</small>`:''}${action?'<em>목록 보기 →</em>':''}</div>`;
+}
+function schoolFunnelHtml(rec){
+  // v10.48.1.3: 채용성과 숫자 나열 위에 막대 퍼널을 얹어 어느 단계에서 인원이 줄어드는지
+  // 한눈에 보이게 한다. 표시만 담당하며 rec 계산 로직은 그대로 사용.
+  const base=Math.max(1, rec.total);
+  const stages=[
+    {label:'지원', v:rec.total, tone:'neutral'},
+    {label:'서류합격', v:rec.docPass, tone:'pass'},
+    {label:'면접', v:rec.interview, tone:'info'},
+    {label:'입사확정', v:rec.hireConfirmed, tone:'good'},
+  ];
+  if(!rec.total) return '';
+  const rows=stages.map(s=>{
+    const pct=Math.max(s.v>0?4:0, Math.round(s.v/base*100));
+    return `<div class="school-funnel-row"><span>${esc(s.label)}</span><div class="school-funnel-track"><i class="school-funnel-bar tone-${s.tone}" style="width:${pct}%"></i></div><b>${s.v}</b></div>`;
+  }).join('');
+  return `<div class="school-funnel">${rows}</div>`;
 }
 function openSchoolDetail(schoolId){
   const s=schools.find(x=>x.id===schoolId);
@@ -75,7 +99,7 @@ function renderSchoolDetail(){
   ].join('');
   const recruitRows=[
     schoolKpiItem('총 지원자', rec.total+'명', `closeSchoolDetail(true);viewSchoolApplicants('${s.id}')`, '연결된 지원자 전체'),
-    schoolKpiItem('서류합격', rec.docPass+'명', '', '면접 단계 이상'),
+    schoolKpiItem('서류합격', rec.docPass+'명', '', '서류합격 이상 단계'),
     schoolKpiItem('면접 실시', rec.interview+'명', '', '면접일 경과 또는 면접완료'),
     schoolKpiItem('입사 확정', rec.hireConfirmed+'명', '', `출근완료 ${rec.started}명`),
     schoolKpiItem('입사 확정률', rec.hireRate!=null ? rec.hireRate+'%' : '-', '', '총 지원자 대비'),
@@ -99,7 +123,7 @@ function renderSchoolDetail(){
       </div>
     </section>
     <section class="summary-card school-detail-section"><div class="school-detail-section-head"><div><h4>기본정보</h4><p>학교와 담당자 정보를 확인합니다.</p></div></div><div class="detail-grid school-basic-grid">${basicRows}</div></section>
-    <section class="summary-card school-detail-section"><div class="school-detail-section-head"><div><h4>채용성과</h4><p>지원부터 입사 확정까지의 흐름입니다.</p></div></div><div class="school-detail-kpi-grid">${recruitRows}</div></section>
+    <section class="summary-card school-detail-section"><div class="school-detail-section-head"><div><h4>채용성과</h4><p>지원부터 입사 확정까지의 흐름입니다.</p></div></div>${schoolFunnelHtml(rec)}<div class="school-detail-kpi-grid">${recruitRows}</div></section>
     <section class="summary-card school-detail-section"><div class="school-detail-section-head"><div><h4>재직성과</h4><p>사원명부에 연결된 인원의 재직 결과입니다.</p></div></div>${hr ? `<div class="school-detail-kpi-grid school-detail-hr-grid">${hrRows}</div>` : '<div class="empty">사원명부에 연결된 직원이 없습니다.</div>'}</section>
     <section class="summary-card school-detail-section school-history-card">
       <div class="school-detail-section-head"><div><h4>관리이력</h4><p>최근 학교 연락과 다음 할 일을 기록합니다. 이 부분만 직접 수정됩니다.</p></div></div>

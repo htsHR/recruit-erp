@@ -59,6 +59,7 @@ function badgeClass(status){
   if(status==='서류탈락') return 'neutral';
   if(['입사예정','출근'].includes(status)) return 'good';
   if(['면접예정','다음면접','면접완료'].includes(status)) return 'info';
+  if(status==='서류합격') return 'pass';
   if(['서류검토','부재중'].includes(status)) return 'missed';
   return 'hold';
 }
@@ -86,6 +87,7 @@ function decisionToneClass(a){
 }
 function nextAction(a){
   if(!a.status || a.status==='서류검토') return '서류 검토·첫 연락';
+  if(a.status==='서류합격') return '면접 일정 조율';
   if(a.status==='부재중') return '재연락';
   if(a.status==='면접예정') return '면접 일정 확인';
   if(a.status==='면접완료') return a.finalDecision ? a.finalDecision : '판정 입력';
@@ -123,6 +125,9 @@ function isDormPending(a){
   return isActive(a) && (d === '미확인' || d === '확인필요');
 }
 function isHireSoon(a){
+  // v10.48.1.1: 서류합격 상태로 되돌려도 과거 입사일이 남아있을 수 있어(자동 삭제 안 됨),
+  // 상태를 명시적으로 확인해 입사 단계가 아닌 서류합격을 입사 임박에서 제외한다.
+  if(a.status==='서류합격') return false;
   const d = daysUntil(a.hireDate);
   return d !== null && d >= 0 && d <= 7 && isActive(a);
 }
@@ -161,9 +166,12 @@ function setPage(page){
 }
 function taskGroups(){
   const t=today();
-  const todayInterviews=applicants.filter(a=>isActive(a) && a.interviewDate===t);
+  // v10.48.1: 오늘/임박 면접은 면접일 존재로만 판정하던 기존 로직인데, 서류합격은 아직
+  // 면접 확정 전 단계라 면접일이 우연히 들어있어도 이 집계엔 넣지 않는다(홈 KPI·통계 공용).
+  const todayInterviews=applicants.filter(a=>isActive(a) && a.interviewDate===t && a.status!=='서류합격');
   const upcomingInterviews=applicants.filter(a=>{
     if(!isActive(a)) return false;
+    if(a.status==='서류합격') return false;
     if(a.interviewDate && a.interviewDate!==t && daysUntil(a.interviewDate) >= 0) return true;
     return ['면접예정','다음면접'].includes(a.status) && !a.interviewDate;
   }).sort((a,b)=>{
@@ -178,12 +186,13 @@ function taskGroups(){
     return next===t || (statusNeeds && (!next || next<=t));
   });
   const dorms=applicants.filter(isDormPending);
-  const hireD7=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===7);
-  const hireD3=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===3);
-  const hireToday=applicants.filter(a=>isActive(a) && daysUntil(a.hireDate)===0);
+  // v10.48.1.1: D-7/D-3/당일 입사 집계도 입사일 존재 여부만 보던 것이라 동일하게 서류합격 제외
+  const hireD7=applicants.filter(a=>isActive(a) && a.status!=='서류합격' && daysUntil(a.hireDate)===7);
+  const hireD3=applicants.filter(a=>isActive(a) && a.status!=='서류합격' && daysUntil(a.hireDate)===3);
+  const hireToday=applicants.filter(a=>isActive(a) && a.status!=='서류합격' && daysUntil(a.hireDate)===0);
   const hireSoon=applicants.filter(isHireSoon);
   const decisions=applicants.filter(isDecisionNeeded);
-  const weekInterviews=applicants.filter(a=>isActive(a) && a.interviewDate && daysUntil(a.interviewDate)>=0 && daysUntil(a.interviewDate)<=6);
+  const weekInterviews=applicants.filter(a=>isActive(a) && a.interviewDate && a.status!=='서류합격' && daysUntil(a.interviewDate)>=0 && daysUntil(a.interviewDate)<=6);
   const overdue=applicants.filter(a=>{
     if(!isActive(a)) return false;
     const contactOverdue=a.nextContactDate && daysUntil(a.nextContactDate)<0;
@@ -225,6 +234,17 @@ function backupNotice(){
 }
 function shortNeeds(a){ return displayCheckNeeds(a.checkNeeds).split(',').map(x=>x.trim()).filter(Boolean).slice(0,2); }
 function needsHtml(a){ const needs=shortNeeds(a); return needs.length?`<div class="need-tags">${needs.map(n=>`<span class="need-tag">${esc(n)}</span>`).join('')}</div>`:'-'; }
+function miniStepperHtml(a){
+  // v10.48.1.3: 홈 카드에 진행 위치를 점 4개로 표시. 종료 상태는 이미 카드 자체가 흐리게
+  // 처리되므로 스텝퍼는 생략(혼동 방지). 서류/서류합격/면접/입사 4단계로 단순화.
+  if(isFinished(a)) return '';
+  const stage =
+    ['입사예정','출근'].includes(a.status) ? 3 :
+    ['면접예정','다음면접','면접완료'].includes(a.status) ? 2 :
+    a.status==='서류합격' ? 1 : 0;
+  const dots=[0,1,2,3].map(i=>`<i class="${i<=stage?'on':''}"></i>`).join('<em></em>');
+  return `<div class="mini-stepper" aria-hidden="true">${dots}</div>`;
+}
 function card(a){
   const score=calcScore(a), decision=finalDecisionOf(a), dorm=dormLabel(a);
   const schedule=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
@@ -232,7 +252,8 @@ function card(a){
   return `<div class="person-card compact-person-card ${statusToneClass(a)}">
     <div><strong><span class="person-name ${genderClass(a)}">${esc(a.name||'이름없음')}</span>
     <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong>
-    <small>${esc(scheduleText)}${esc(a.workplace||'근무지 미입력')} · ${esc(dorm)} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)}</small></div>
+    <small>${esc(scheduleText)}${esc(a.workplace||'근무지 미입력')} · ${esc(dorm)} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)}</small>
+    ${miniStepperHtml(a)}</div>
     <button class="mini" onclick="editApplicant('${a.id}')">수정</button></div>`;
 }
 /* =========================================================
@@ -267,8 +288,10 @@ function renderScheduleReminder(){
 function dismissScheduleReminder(){ localStorage.setItem(REMINDER_DISMISS_KEY, today()); renderScheduleReminder(); }
 function renderHomeLists(){
   const todayStr=today();
+  // v10.48.1.2: 필터·정렬 둘 다 면접일=오늘만 보고 있어 서류합격에 남은 과거(오늘 포함) 면접일이
+  // "오늘 우선 처리" 최상단에 잘못 노출됐다. 다른 오늘 면접 집계와 동일하게 서류합격을 명시 제외.
   const priority = applicants.filter(a=>
-    (a.interviewDate===todayStr) ||
+    (a.status!=='서류합격' && a.interviewDate===todayStr) ||
     ['서류검토','부재중'].includes(a.status) ||
     isDormPending(a) ||
     isHireSoon(a) ||
@@ -276,8 +299,8 @@ function renderHomeLists(){
     (a.hireDate && daysUntil(a.hireDate)<0 && a.status==='입사예정') ||
     (a.status==='면접완료' && !a.finalDecision)
   ).sort((a,b)=>{
-    const ap = a.interviewDate===todayStr ? 0 : isHireSoon(a) ? 1 : ['서류검토','부재중'].includes(a.status) ? 2 : isDormPending(a) ? 3 : 4;
-    const bp = b.interviewDate===todayStr ? 0 : isHireSoon(b) ? 1 : ['서류검토','부재중'].includes(b.status) ? 2 : isDormPending(b) ? 3 : 4;
+    const ap = (a.status!=='서류합격' && a.interviewDate===todayStr) ? 0 : isHireSoon(a) ? 1 : ['서류검토','부재중'].includes(a.status) ? 2 : isDormPending(a) ? 3 : 4;
+    const bp = (b.status!=='서류합격' && b.interviewDate===todayStr) ? 0 : isHireSoon(b) ? 1 : ['서류검토','부재중'].includes(b.status) ? 2 : isDormPending(b) ? 3 : 4;
     return ap-bp;
   }).slice(0,6);
   const recent=[...applicants].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,6);
@@ -302,6 +325,7 @@ function filtered(){
     let filterOk=true;
     if(currentFilter==='priority') filterOk=finalDecisionOf(a)==='우선검토';
     if(currentFilter==='contact') filterOk=['서류검토','부재중'].includes(a.status);
+    if(currentFilter==='docpass') filterOk=a.status==='서류합격';
     if(currentFilter==='interview') filterOk=['면접예정','다음면접'].includes(a.status);
     if(currentFilter==='decision') filterOk=isDecisionNeeded(a);
     if(currentFilter==='hold') filterOk=a.finalDecision==='보류';
@@ -349,6 +373,7 @@ function updateApplicantListFilterCounts(){
     hire:applicants.filter(a=>['입사예정','출근'].includes(a.status) || a.finalDecision==='합격').length,
     finished:applicants.filter(isFinished).length,
     contact:applicants.filter(a=>['서류검토','부재중'].includes(a.status)).length,
+    docpass:applicants.filter(a=>a.status==='서류합격').length,
     decision:applicants.filter(isDecisionNeeded).length,
     duplicate:applicants.filter(a=>duplicateSet.has(normalizePhone(a.phone))).length
   };
@@ -420,7 +445,8 @@ function renderTable(){
   }
   const sortName=$('sortSelect')?.selectedOptions?.[0]?.textContent || '최근 등록순';
   const contactCount=allRows.filter(a=>['서류검토','부재중'].includes(a.status)).length;
-  const interviewCount=allRows.filter(a=>['면접예정','다음면접'].includes(a.status) || a.interviewDate).length;
+  // v10.48.1.1: 면접일 존재만으로 카운트하면 서류합격에 남은 과거 면접일도 잡히므로 명시 제외
+  const interviewCount=allRows.filter(a=>a.status!=='서류합격' && (['면접예정','다음면접'].includes(a.status) || a.interviewDate)).length;
   const pageText=`${currentApplicantPage} / ${totalPages}페이지`;
   const schoolFilterName = currentSchoolFilterId ? (schools.find(s=>s.id===currentSchoolFilterId)?.name || '선택한 학교') : '';
   $('listSummary').innerHTML = `

@@ -261,6 +261,9 @@ input[type="checkbox"],input[type="radio"]{
 #applicants #quickFilters .chip.active{
   background:var(--calm-accent-bg,#eef3fd)!important;color:var(--calm-accent,#2757d6)!important;font-weight:600!important;
 }
+/* v10.48.1.3: 서류합격 칩은 다른 칩과 구분되게 배지와 동일한 청록(pass) 톤 사용 */
+#applicants #quickFilters .chip-pass.active{background:#e3f6f5!important;color:#0f766e!important;}
+#applicants #quickFilters .chip-pass.active .filter-count{color:#0f766e!important;}
 #applicants .filter-count{background:transparent!important;border:0!important;padding:0!important;color:var(--calm-ink-3)!important;font-weight:600!important;}
 #applicants .chip.active .filter-count{color:var(--calm-accent)!important;}
 #applicants .applicant-filter-group-title{font-size:12px!important;font-weight:600!important;color:var(--calm-ink-3)!important;}
@@ -374,6 +377,7 @@ input[type="checkbox"],input[type="radio"]{
 /* 상태군별 알약 색 (calm 토큰) */
 #applicants .status-select-wrap.missed{background:#eef3fd!important;color:#2757d6!important;}   /* 서류검토·부재중 */
 #applicants .status-select-wrap.info{background:#ecf7f1!important;color:#1a7f57!important;}     /* 면접 트랙 */
+#applicants .status-select-wrap.pass{background:#e3f6f5!important;color:#0f766e!important;}     /* 서류합격 */
 #applicants .status-select-wrap.good{background:#f0effa!important;color:#5a51b8!important;}     /* 입사예정·출근 */
 #applicants .status-select-wrap.hold{background:#fbf4e6!important;color:#a16a12!important;}     /* 보류·기타 */
 #applicants .status-select-wrap.bad,
@@ -431,6 +435,7 @@ input[type="checkbox"],input[type="radio"]{
 /* C. 상태 알약 글자색 확정 (셀렉트 자체 색 규칙에 밀리지 않게 클래스별 명시) */
 #applicants .status-select-wrap.missed .status-inline{color:#2757d6!important;-webkit-text-fill-color:#2757d6!important;}
 #applicants .status-select-wrap.info .status-inline{color:#1a7f57!important;-webkit-text-fill-color:#1a7f57!important;}
+#applicants .status-select-wrap.pass .status-inline{color:#0f766e!important;-webkit-text-fill-color:#0f766e!important;}
 #applicants .status-select-wrap.good .status-inline{color:#5a51b8!important;-webkit-text-fill-color:#5a51b8!important;}
 #applicants .status-select-wrap.hold .status-inline{color:#a16a12!important;-webkit-text-fill-color:#a16a12!important;}
 #applicants .status-select-wrap.bad .status-inline,
@@ -490,6 +495,12 @@ input[type="checkbox"],input[type="radio"]{
 #home .person-card .mini{height:28px!important;padding:0 10px!important;font-size:12px!important;
   background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink-2)!important;}
 
+/* v10.48.1.3: 홈 카드 미니 진행 스텝퍼(4단계: 서류·서류합격·면접·입사) */
+#home .mini-stepper{display:flex!important;align-items:center!important;margin-top:7px!important;}
+#home .mini-stepper i{width:6px;height:6px;border-radius:99px;background:var(--calm-line-strong,#d3d8df);flex:0 0 auto;}
+#home .mini-stepper i.on{background:#0f766e;}
+#home .mini-stepper em{width:14px;height:1px;background:var(--calm-line-strong,#d3d8df);flex:0 0 auto;}
+
 /* 백업 안내문 조용히 */
 #home .backup-alert,#home .backup-alert.subtle{
   border:0!important;background:transparent!important;padding:2px 2px 0!important;
@@ -502,6 +513,7 @@ input[type="checkbox"],input[type="radio"]{
    ============================================================ */
 .badge.missed{background:#eef3fd!important;color:#2757d6!important;}
 .badge.info{background:#ecf7f1!important;color:#1a7f57!important;}
+.badge.pass{background:#e3f6f5!important;color:#0f766e!important;}
 .badge.good{background:#f0effa!important;color:#5a51b8!important;}
 .badge.hold{background:#fbf4e6!important;color:#a16a12!important;}
 .badge.bad,.badge.neutral{background:#f0f2f5!important;color:#5c6673!important;}
@@ -677,3 +689,105 @@ input[type="checkbox"],input[type="radio"]{
 #calendar .calendar-month-title,#calendar .cal-title,#calendarTitle{
   font-size:18px!important;font-weight:700!important;letter-spacing:-.02em!important;
 }
+
+/* ============================================================
+   v10.48.1.3 — SCHOOL FUNNEL + PASS QUICK FILTER + MINI STEPPER
+   ============================================================ */
+
+/* 학교 상세: 채용 퍼널(막대) */
+.school-funnel{display:flex;flex-direction:column;gap:8px;padding:14px 20px 4px;}
+.school-funnel-row{display:grid;grid-template-columns:56px 1fr 30px;align-items:center;gap:10px;}
+.school-funnel-row span{font-size:11.5px;font-weight:600;color:#5c6673;}
+.school-funnel-track{height:14px;background:#f5f6f8;border-radius:4px;overflow:hidden;}
+.school-funnel-bar{display:block;height:100%;border-radius:4px;background:#8a93a0;}
+.school-funnel-bar.tone-neutral{background:#8a93a0;}
+.school-funnel-bar.tone-pass{background:#0f766e;}
+.school-funnel-bar.tone-info{background:#1a7f57;}
+.school-funnel-bar.tone-good{background:#5a51b8;}
+.school-funnel-row b{font-size:12px;font-weight:700;color:#1c2330;text-align:right;font-variant-numeric:tabular-nums;}
+
+/* ============================================================
+   v10.48.1.3 — SCREEN DRIFT FIXES (백업센터·사원명부 잔여 이색 요소)
+   ============================================================ */
+
+/* 백업센터: 다른 화면과 다른 색 계열을 쓰던 지점만 calm 톤으로 정리 */
+#backup .backup-center-hero-badge{
+  background:transparent!important;color:#8a93a0!important;border:1px solid #d3d8df!important;
+  font-weight:600!important;letter-spacing:.04em!important;
+}
+#backup .backup-primary-action{
+  background:#eef3fd!important;border:1px solid #c9d8f5!important;
+}
+#backup .backup-primary-action h4{color:#1c2330!important;}
+#backup .backup-primary-action p{color:#3d4757!important;}
+#backup .backup-section-number{background:#eef3fd!important;color:#2757d6!important;}
+#backup .backup-center-hero{border-color:#e3e6eb!important;}
+#backup .backup-validation-banner.ok{background:#ecf7f1!important;color:#1a7f57!important;border-color:#cde8db!important;}
+#backup .backup-validation-banner.warn{background:#fbf4e6!important;color:#a16a12!important;border-color:#eeddba!important;}
+#backup .backup-validation-banner.error{background:#faeeed!important;color:#b3352e!important;border-color:#ecc9c6!important;}
+
+/* 사원명부: 히어로 반경을 카드 표준(12px)에 맞추고 장식용 원형 블롭 제거 */
+#employees .employee-page-hero{border-radius:12px!important;border-color:#e3e6eb!important;}
+#employees .emp-summary-grid .stat::after{display:none!important;}
+
+/* ============================================================
+   v10.48.2 — SCREENING WORKBENCH (기존 modal/panel/badge/button 재사용)
+   ============================================================ */
+#screeningWorkbenchModal .wb-modal-card{width:min(1180px,96vw)!important;padding:0!important;}
+#screeningWorkbenchModal .wb-head{padding:20px 24px!important;margin:0!important;}
+.wb-progress-track{height:4px;background:#e3e6eb;margin:0 24px;}
+.wb-progress-bar{height:100%;background:#2757d6;transition:width .2s ease;}
+#wbUndoBanner{padding:0 24px;}
+.wb-undo-banner{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 14px;background:#fbf4e6;border:1px solid #eeddba;border-radius:10px;font-size:13px;color:#a16a12;font-weight:600;}
+.wb-undo-banner .mini{background:#fff!important;}
+
+.wb-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:0;padding:16px 24px 24px;}
+.wb-queue-panel{border-right:1px solid #e3e6eb;padding-right:16px;}
+.wb-queue-head{font-size:12px;font-weight:600;color:#5c6673;margin-bottom:10px;}
+.wb-queue-list{display:flex;flex-direction:column;gap:4px;max-height:520px;overflow-y:auto;}
+.wb-queue-item{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:8px 10px;border:0;border-radius:8px;background:transparent;text-align:left;cursor:pointer;}
+.wb-queue-item:hover{background:#f0f2f5;}
+.wb-queue-item.is-current{background:#eef3fd;}
+.wb-queue-name{font-size:13px;font-weight:600;color:#1c2330;}
+.wb-queue-meta{font-size:11px;color:#8a93a0;}
+.wb-queue-item.is-done{opacity:.5;cursor:default;}
+.wb-queue-tag{font-size:10px;font-weight:600;color:#5c6673;background:#f0f2f5;border-radius:4px;padding:1px 6px;margin-top:2px;}
+
+.wb-main-panel{padding-left:20px;min-width:0;}
+.wb-candidate-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.wb-candidate-head strong{font-size:18px;font-weight:700;margin-right:8px;}
+.wb-nav-btns{display:flex;gap:6px;}
+
+.wb-dup-note{background:#fbf4e6;border:1px solid #eeddba;border-radius:10px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#a16a12;}
+.wb-dup-note strong{display:block;margin-bottom:4px;}
+
+.wb-section-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:20px;}
+.wb-section-grid h5{margin:0 0 8px;font-size:12px;font-weight:700;color:#8a93a0;letter-spacing:.04em;}
+.wb-section-grid .detail-row{margin-bottom:6px;}
+
+.wb-decision-bar{border-top:1px solid #e3e6eb;padding-top:16px;}
+.wb-fail-reason{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:#5c6673;margin-bottom:12px;max-width:280px;}
+.wb-decision-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.wb-btn-pass{background:#0f766e!important;border-color:#0f766e!important;}
+.wb-btn-fail,.wb-btn-fail-confirm{background:#faeeed!important;color:#b3352e!important;border-color:#ecc9c6!important;}
+
+.wb-empty{padding:60px 24px;text-align:center;color:#5c6673;}
+.wb-empty strong{display:block;font-size:16px;color:#1c2330;margin-bottom:6px;}
+
+@media(max-width:900px){
+  .wb-layout{grid-template-columns:1fr;}
+  .wb-queue-panel{border-right:0;border-bottom:1px solid #e3e6eb;padding-right:0;padding-bottom:12px;margin-bottom:12px;}
+  .wb-queue-list{max-height:160px;}
+  .wb-section-grid{grid-template-columns:1fr;}
+}
+
+/* ============================================================
+   v10.49.0 — PHONE INTERVIEW WORKFLOW (wb-* 컴포넌트 대부분 재사용, 최소 신규)
+   ============================================================ */
+.pi-form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px;padding-top:16px;border-top:1px solid #e3e6eb;}
+.pi-form-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#5c6673;}
+.pi-form-grid input,.pi-form-grid select,.pi-form-grid textarea{border:1px solid #d3d8df;border-radius:8px;padding:9px 10px;font-size:13px;color:#1c2330;background:#fff;}
+.pi-form-grid .wide{grid-column:1/-1;}
+.pi-sub-row{display:flex;align-items:flex-end;gap:10px;margin-top:12px;padding:12px;background:#fafbfc;border:1px solid #e3e6eb;border-radius:10px;flex-wrap:wrap;}
+.pi-sub-row label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#5c6673;}
+.pi-sub-row input,.pi-sub-row select{border:1px solid #d3d8df;border-radius:8px;padding:8px 10px;font-size:13px;}

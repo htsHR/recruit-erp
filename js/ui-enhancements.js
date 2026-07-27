@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='10.48.0';
+const UX_VERSION='10.49.0';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -232,7 +232,7 @@ viewApplicant=function(id){
   const print=uxEl('btnDetailPrint'); if(print) print.onclick=()=>window.print();
   const body=uxEl('detailBody');
   if(body && !body.querySelector('.detail-progress-strip')){
-    const steps=['서류검토','면접예정','면접완료','입사예정','출근'];
+    const steps=['서류검토','서류합격','면접예정','면접완료','입사예정','출근'];
     const cur=steps.indexOf(normalizeStatus(a.status));
     const strip=document.createElement('div'); strip.className='detail-progress-strip';
     strip.innerHTML=steps.map((x,i)=>`<span class="${i<=cur?'done':''} ${i===cur?'current':''}">${x}</span>`).join('');

@@ -90,8 +90,10 @@ function dailyWorkflowGroups(){
     return next===t || (statusNeeds && (!next || next<=t));
   });
   const contactOverdue=active.filter(a=>a.nextContactDate && a.nextContactDate<t);
-  const interviewToday=active.filter(a=>a.interviewDate===t);
-  const interviewTomorrow=active.filter(a=>a.interviewDate===tomorrow);
+  // v10.48.1: 오늘/내일 면접은 면접일 존재 여부로만 판정하던 기존 로직인데,
+  // 서류합격은 아직 면접 확정 전 단계라 면접일이 우연히 들어있어도 이 집계엔 넣지 않는다(요구사항 방어적 반영).
+  const interviewToday=active.filter(a=>a.interviewDate===t && a.status!=='서류합격');
+  const interviewTomorrow=active.filter(a=>a.interviewDate===tomorrow && a.status!=='서류합격');
   const resultPending=active.filter(a=>{
     const past=a.interviewDate && a.interviewDate<t;
     const statusPending=['면접예정','다음면접','면접완료'].includes(a.status);
