@@ -11,8 +11,8 @@
   function schoolEmps(s){return (Array.isArray(employees)?employees:[]).filter(e=>String(e.schoolId||'')===String(s.id));}
   function appDate(a){return a.applyDate||a.createdAt||'';}
   function empHireDate(e){return e.hireDate||e.startDate||e.createdAt||'';}
-  function isInterview(a){const st=typeof normalizeStatus==='function'?normalizeStatus(a.status):String(a.status||'');if(st==='서류합격')return false;return !!a.interviewDate||['면접완료','다음면접','입사예정','출근'].includes(st);}
-  function isHire(a){const st=typeof normalizeStatus==='function'?normalizeStatus(a.status):String(a.status||'');if(st==='서류합격')return false;return !!a.hireDate||['입사예정','출근'].includes(st);}
+  function isInterview(a){if(typeof isInterviewDateMeaningful==='function')return isInterviewDateMeaningful(a);const st=typeof normalizeStatus==='function'?normalizeStatus(a.status):String(a.status||'');return !!a.interviewDate&&['면접예정','면접완료','다음면접','입사예정','출근','불합격','면접불참'].includes(st);}
+  function isHire(a){const st=typeof normalizeStatus==='function'?normalizeStatus(a.status):String(a.status||'');return ['입사예정','출근'].includes(st);}
   function isActive(e){return ['재직','재직중','휴직'].includes(String(e.status||'').trim());}
   function isRetired(e){return ['퇴사','퇴직'].includes(String(e.status||'').trim());}
   function tenure(e){const s=d(empHireDate(e));if(!s)return null;let end=new Date();if(isRetired(e)&&e.leaveDate){const x=d(e.leaveDate);if(x)end=x;}return Math.max(0,(end.getFullYear()-s.getFullYear())*12+end.getMonth()-s.getMonth());}

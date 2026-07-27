@@ -310,8 +310,8 @@
   }
 
   // ---------- 열기/닫기 ----------
-  function wbOpen(source){
-    wbQueueIds = source==='home' ? wbComputeHomeQueue() : wbComputeListQueue();
+  function wbOpen(source, singleId){
+    wbQueueIds = singleId ? [singleId] : (source==='home' ? wbComputeHomeQueue() : wbComputeListQueue());
     wbDoneIds=new Set();
     wbUndo=null;
     wbIndex = wbQueueIds.length ? 0 : 0;
@@ -332,6 +332,10 @@
     wbRefreshEntryButtons();
     if(typeof renderHomeLists==='function') renderHomeLists();
   }
+
+
+  window.openScreeningWorkbenchForApplicant=function(id){ wbOpen('list', id); };
+  window.openScreeningWorkbenchQueue=function(source){ wbOpen(source==='home'?'home':'list'); };
 
   // ---------- 단축키 (보조 기능, input/textarea/select/조합중에는 절대 미동작) ----------
   function wbKeyHandler(e){

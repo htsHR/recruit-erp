@@ -99,6 +99,21 @@ function nextAction(a){
 }
 function isFinished(a){ return ['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절'].includes(a.status) || ['불합격','입사포기','입사철회'].includes(a.finalDecision); }
 function isActive(a){ return !isFinished(a); }
+// v10.49.0.1: 면접일이 남아 있다는 이유만으로 '면접 확정'으로 취급하지 않는다.
+// 현재 상태가 면접 단계 이상이거나, 진행 이력상 실제 면접 단계에 진입했던 경우만 유효한 면접일로 본다.
+const INTERVIEW_STAGE_STATUSES=new Set(['면접예정','면접완료','다음면접','입사예정','출근','불합격','면접불참']);
+const INTERVIEW_ACTIVE_STATUSES=new Set(['면접예정','다음면접']);
+function hasInterviewStageHistory(a){
+  const history=Array.isArray(a?.progressHistory)?a.progressHistory:[];
+  return history.some(h=>h && h.type==='status' && INTERVIEW_STAGE_STATUSES.has(normalizeStatus(h.after||'')));
+}
+function isInterviewScheduleActive(a){ return !!a?.interviewDate && INTERVIEW_ACTIVE_STATUSES.has(normalizeStatus(a?.status)); }
+function isInterviewDateMeaningful(a){
+  if(!a?.interviewDate) return false;
+  const st=normalizeStatus(a?.status);
+  return INTERVIEW_STAGE_STATUSES.has(st) || hasInterviewStageHistory(a);
+}
+function isHireDateMeaningful(a){ return !!a?.hireDate && ['입사예정','출근'].includes(normalizeStatus(a?.status)); }
 function hasFinalDecision(a){ return !!String(a?.finalDecision || '').trim(); }
 function isDecisionNeeded(a){ return isActive(a) && a.status === '면접완료' && !hasFinalDecision(a); }
 function finalDecisionOf(a){ return a.finalDecision || grade(calcScore(a)); }
@@ -125,11 +140,11 @@ function isDormPending(a){
   return isActive(a) && (d === '미확인' || d === '확인필요');
 }
 function isHireSoon(a){
-  // v10.48.1.1: 서류합격 상태로 되돌려도 과거 입사일이 남아있을 수 있어(자동 삭제 안 됨),
-  // 상태를 명시적으로 확인해 입사 단계가 아닌 서류합격을 입사 임박에서 제외한다.
-  if(a.status==='서류합격') return false;
+  // v10.49.0.1: 입사일 잔존값이 부재중/면접거절 등 다른 상태를 입사 임박으로 오인하지 않게
+  // 실제 입사 대기 상태인 '입사예정'만 집계한다.
+  if(normalizeStatus(a?.status)!=='입사예정') return false;
   const d = daysUntil(a.hireDate);
-  return d !== null && d >= 0 && d <= 7 && isActive(a);
+  return d !== null && d >= 0 && d <= 7;
 }
 function countText(n){ return `${n}명`; }
 function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
@@ -168,12 +183,13 @@ function taskGroups(){
   const t=today();
   // v10.48.1: 오늘/임박 면접은 면접일 존재로만 판정하던 기존 로직인데, 서류합격은 아직
   // 면접 확정 전 단계라 면접일이 우연히 들어있어도 이 집계엔 넣지 않는다(홈 KPI·통계 공용).
-  const todayInterviews=applicants.filter(a=>isActive(a) && a.interviewDate===t && a.status!=='서류합격');
+  const todayInterviews=applicants.filter(a=>isActive(a) && a.interviewDate===t && isInterviewScheduleActive(a));
   const upcomingInterviews=applicants.filter(a=>{
     if(!isActive(a)) return false;
-    if(a.status==='서류합격') return false;
+    const st=normalizeStatus(a.status);
+    if(!INTERVIEW_ACTIVE_STATUSES.has(st)) return false;
     if(a.interviewDate && a.interviewDate!==t && daysUntil(a.interviewDate) >= 0) return true;
-    return ['면접예정','다음면접'].includes(a.status) && !a.interviewDate;
+    return !a.interviewDate;
   }).sort((a,b)=>{
     const av=a.interviewDate || '9999-12-31';
     const bv=b.interviewDate || '9999-12-31';
@@ -187,12 +203,12 @@ function taskGroups(){
   });
   const dorms=applicants.filter(isDormPending);
   // v10.48.1.1: D-7/D-3/당일 입사 집계도 입사일 존재 여부만 보던 것이라 동일하게 서류합격 제외
-  const hireD7=applicants.filter(a=>isActive(a) && a.status!=='서류합격' && daysUntil(a.hireDate)===7);
-  const hireD3=applicants.filter(a=>isActive(a) && a.status!=='서류합격' && daysUntil(a.hireDate)===3);
-  const hireToday=applicants.filter(a=>isActive(a) && a.status!=='서류합격' && daysUntil(a.hireDate)===0);
+  const hireD7=applicants.filter(a=>normalizeStatus(a.status)==='입사예정' && daysUntil(a.hireDate)===7);
+  const hireD3=applicants.filter(a=>normalizeStatus(a.status)==='입사예정' && daysUntil(a.hireDate)===3);
+  const hireToday=applicants.filter(a=>normalizeStatus(a.status)==='입사예정' && daysUntil(a.hireDate)===0);
   const hireSoon=applicants.filter(isHireSoon);
   const decisions=applicants.filter(isDecisionNeeded);
-  const weekInterviews=applicants.filter(a=>isActive(a) && a.interviewDate && a.status!=='서류합격' && daysUntil(a.interviewDate)>=0 && daysUntil(a.interviewDate)<=6);
+  const weekInterviews=applicants.filter(a=>isActive(a) && isInterviewScheduleActive(a) && daysUntil(a.interviewDate)>=0 && daysUntil(a.interviewDate)<=6);
   const overdue=applicants.filter(a=>{
     if(!isActive(a)) return false;
     const contactOverdue=a.nextContactDate && daysUntil(a.nextContactDate)<0;
@@ -291,7 +307,7 @@ function renderHomeLists(){
   // v10.48.1.2: 필터·정렬 둘 다 면접일=오늘만 보고 있어 서류합격에 남은 과거(오늘 포함) 면접일이
   // "오늘 우선 처리" 최상단에 잘못 노출됐다. 다른 오늘 면접 집계와 동일하게 서류합격을 명시 제외.
   const priority = applicants.filter(a=>
-    (a.status!=='서류합격' && a.interviewDate===todayStr) ||
+    (isInterviewScheduleActive(a) && a.interviewDate===todayStr) ||
     ['서류검토','부재중'].includes(a.status) ||
     isDormPending(a) ||
     isHireSoon(a) ||
@@ -299,8 +315,8 @@ function renderHomeLists(){
     (a.hireDate && daysUntil(a.hireDate)<0 && a.status==='입사예정') ||
     (a.status==='면접완료' && !a.finalDecision)
   ).sort((a,b)=>{
-    const ap = (a.status!=='서류합격' && a.interviewDate===todayStr) ? 0 : isHireSoon(a) ? 1 : ['서류검토','부재중'].includes(a.status) ? 2 : isDormPending(a) ? 3 : 4;
-    const bp = (b.status!=='서류합격' && b.interviewDate===todayStr) ? 0 : isHireSoon(b) ? 1 : ['서류검토','부재중'].includes(b.status) ? 2 : isDormPending(b) ? 3 : 4;
+    const ap = (isInterviewScheduleActive(a) && a.interviewDate===todayStr) ? 0 : isHireSoon(a) ? 1 : ['서류검토','부재중'].includes(a.status) ? 2 : isDormPending(a) ? 3 : 4;
+    const bp = (isInterviewScheduleActive(b) && b.interviewDate===todayStr) ? 0 : isHireSoon(b) ? 1 : ['서류검토','부재중'].includes(b.status) ? 2 : isDormPending(b) ? 3 : 4;
     return ap-bp;
   }).slice(0,6);
   const recent=[...applicants].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,6);
@@ -446,7 +462,7 @@ function renderTable(){
   const sortName=$('sortSelect')?.selectedOptions?.[0]?.textContent || '최근 등록순';
   const contactCount=allRows.filter(a=>['서류검토','부재중'].includes(a.status)).length;
   // v10.48.1.1: 면접일 존재만으로 카운트하면 서류합격에 남은 과거 면접일도 잡히므로 명시 제외
-  const interviewCount=allRows.filter(a=>a.status!=='서류합격' && (['면접예정','다음면접'].includes(a.status) || a.interviewDate)).length;
+  const interviewCount=allRows.filter(a=>INTERVIEW_ACTIVE_STATUSES.has(normalizeStatus(a.status)) || isInterviewDateMeaningful(a)).length;
   const pageText=`${currentApplicantPage} / ${totalPages}페이지`;
   const schoolFilterName = currentSchoolFilterId ? (schools.find(s=>s.id===currentSchoolFilterId)?.name || '선택한 학교') : '';
   $('listSummary').innerHTML = `

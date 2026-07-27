@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='10.49.0';
+const UX_VERSION='10.50.0';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -145,7 +145,14 @@ const uxBaseRenderStats=renderStats;
 renderStats=function(){
   const total=applicants.length, active=applicants.filter(isActive).length, g=taskGroups();
   if(uxEl('statsGrid')) uxEl('statsGrid').innerHTML=[['전체 지원자',total,'applicants'],['진행중',active,'active'],['오늘 면접',g.todayInterviews.length,'today'],['기한 경과',g.overdue.length,'overdue']].map(([k,v,key])=>`<button type="button" class="stat stat-button" data-dashboard-target="${key}"><span>${k}</span><strong>${v}</strong><small>목록 확인 →</small></button>`).join('');
-  const map={homeTodayInterviewCount:g.todayInterviews.length,homeOverdueCount:g.overdue.length,homeContactCount:g.recalls.length,homeDecisionCount:g.decisions.length,homeHireSoonCount:g.hireSoon.length};
+  const dg=typeof dailyWorkflowGroups==='function'?dailyWorkflowGroups():null;
+  const map={
+    homeTodayInterviewCount:dg?dg.interviewToday.length:g.todayInterviews.length,
+    homeOverdueCount:dg?dg.overdue.length:g.overdue.length,
+    homeContactCount:dg?dg.contact.length:g.recalls.length,
+    homeDecisionCount:dg?dg.resultPending.length:g.decisions.length,
+    homeHireSoonCount:dg?dg.hireUpcoming.length:g.hireSoon.length
+  };
   Object.entries(map).forEach(([id,v])=>{ if(uxEl(id)) uxEl(id).textContent=v; });
 };
 window.renderStats=renderStats;
@@ -161,10 +168,12 @@ function uxOpenApplicantFilter(filter){
   setPage('applicants'); renderTable();
 }
 function uxFocusTaskPanel(key){
+  const map={today:'interviewToday',overdue:'overdue',contact:'contact',decision:'resultPending',hire:'hireUpcoming'};
   setPage('today');
+  if(typeof setDailyWorkflowFilter==='function') setDailyWorkflowFilter(map[key]||'all');
   setTimeout(()=>{
-    const panel=document.querySelector(`[data-task-panel="${key}"]`);
-    if(panel){ panel.classList.add('task-panel-focus'); panel.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(()=>panel.classList.remove('task-panel-focus'),1700); }
+    const panel=document.querySelector('.daily-workflow-panel');
+    if(panel) panel.scrollIntoView({behavior:'smooth',block:'start'});
   },20);
 }
 
@@ -293,8 +302,12 @@ renderStatsSummary=function(){
   const passed=monthApply.filter(isPassed);
   const hired=monthApply.filter(a=>a.status==='출근');
   const rate=monthApply.length?Math.round(passed.length/monthApply.length*100):0;
-  const leadRows=scope.filter(a=>a.applyDate&&(a.hireDate||a.interviewDate)).map(a=>{
-    const end=a.hireDate||a.interviewDate; const d1=new Date(a.applyDate+'T00:00:00'),d2=new Date(end+'T00:00:00'); return Math.max(0,Math.round((d2-d1)/86400000));
+  const leadRows=scope.filter(a=>{
+    if(!a.applyDate) return false;
+    return (typeof isHireDateMeaningful==='function'&&isHireDateMeaningful(a)) || (typeof isInterviewDateMeaningful==='function'&&isInterviewDateMeaningful(a));
+  }).map(a=>{
+    const useHire=typeof isHireDateMeaningful==='function'&&isHireDateMeaningful(a);
+    const end=useHire?a.hireDate:a.interviewDate; const d1=new Date(a.applyDate+'T00:00:00'),d2=new Date(end+'T00:00:00'); return Math.max(0,Math.round((d2-d1)/86400000));
   }).filter(Number.isFinite);
   const avg=leadRows.length?Math.round(leadRows.reduce((x,y)=>x+y,0)/leadRows.length):0;
   const data=[['이번 달 지원',monthApply.length,'지원일 기준'],['이번 달 면접',interviewed.length,'면접일 경과'],['이번 달 합격',passed.length,'입사예정+출근'],['이번 달 출근',hired.length,'입사 완료'],['합격률',rate+'%','이번 달 지원 대비'],['평균 진행일',avg+'일','지원→면접/입사']];

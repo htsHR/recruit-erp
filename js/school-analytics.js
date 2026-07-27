@@ -7,16 +7,13 @@
   function yearOf(v){const m=String(v||'').match(/^(\d{4})/);return m?m[1]:'';}
   function todayYear(){return String(new Date().getFullYear());}
   function isInterview(a){
-    // v10.48.1.1: 면접일 존재를 최우선으로 보던 로직이라 서류합격에 남은 과거 면접일도 걸렸다. 상태부터 확인.
+    if(typeof isInterviewDateMeaningful==='function') return isInterviewDateMeaningful(a);
     const st=typeof normalizeStatus==='function'?normalizeStatus(a.status):String(a.status||'');
-    if(st==='서류합격') return false;
-    if(a.interviewDate) return true;
-    return ['면접완료','다음면접','입사예정','출근'].includes(st);
+    return !!a.interviewDate && ['면접예정','면접완료','다음면접','입사예정','출근','불합격','면접불참'].includes(st);
   }
   function isApplicantHire(a){
     const st=typeof normalizeStatus==='function'?normalizeStatus(a.status):String(a.status||'');
-    if(st==='서류합격') return false;
-    return ['입사예정','출근'].includes(st)||!!a.hireDate;
+    return ['입사예정','출근'].includes(st);
   }
   function tenureMonths(e){
     if(!e.hireDate)return null;

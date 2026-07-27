@@ -1,8 +1,8 @@
 /* =========================================================
-   Recruit ERP v10.46.2 PRINT_SCOPE_FIX
-   - 기존 지원자 데이터만 사용해 오늘 처리할 업무를 자동 구성
-   - 추가 입력/별도 회차/자동 상태변경 없음
-   - 한 지원자가 여러 조건에 걸리면 한 줄에 사유를 합쳐 중복 표시 방지
+   Recruit ERP v10.50.0 TODAY WORK OPERATIONS
+   - 오늘 할 일을 서류검토 → 전화 → 재연락 → 면접 → 결과 → 입사 순으로 분리
+   - 각 지원자 행에서 기존 워크벤치/전화 인터뷰/일정/수정 화면으로 바로 이동
+   - 새 데이터 필드·새 저장 구조 없이 기존 applicants 상태/일정/이력만 사용
    ========================================================= */
 const DAILY_WORKFLOW_STALE_DAYS = 14;
 let dailyWorkflowFilter = 'all';
@@ -82,37 +82,43 @@ function dailyUnique(rows){
 }
 function dailyWorkflowGroups(){
   const t=today();
-  const tomorrow=datePlus(1);
   const active=applicants.filter(isActive);
-  const contact=active.filter(a=>{
+  const screening=active.filter(a=>normalizeStatus(a.status)==='서류검토');
+  const phone=active.filter(a=>normalizeStatus(a.status)==='서류합격');
+  const recall=active.filter(a=>{
+    if(normalizeStatus(a.status)!=='부재중') return false;
     const next=a.nextContactDate||'';
-    const statusNeeds=['서류검토','부재중'].includes(a.status);
-    return next===t || (statusNeeds && (!next || next<=t));
+    return !next || next<=t;
   });
-  const contactOverdue=active.filter(a=>a.nextContactDate && a.nextContactDate<t);
-  // v10.48.1: 오늘/내일 면접은 면접일 존재 여부로만 판정하던 기존 로직인데,
-  // 서류합격은 아직 면접 확정 전 단계라 면접일이 우연히 들어있어도 이 집계엔 넣지 않는다(요구사항 방어적 반영).
-  const interviewToday=active.filter(a=>a.interviewDate===t && a.status!=='서류합격');
-  const interviewTomorrow=active.filter(a=>a.interviewDate===tomorrow && a.status!=='서류합격');
+  const contact=dailyUnique([...phone,...recall]);
+  const contactOverdue=active.filter(a=>{
+    const st=normalizeStatus(a.status);
+    return ['서류합격','부재중'].includes(st) && a.nextContactDate && a.nextContactDate<t;
+  });
+  const interviewToday=active.filter(a=>a.interviewDate===t && typeof isInterviewScheduleActive==='function' && isInterviewScheduleActive(a));
   const resultPending=active.filter(a=>{
     const past=a.interviewDate && a.interviewDate<t;
-    const statusPending=['면접예정','다음면접','면접완료'].includes(a.status);
+    const statusPending=['면접예정','다음면접','면접완료'].includes(normalizeStatus(a.status));
     return past && statusPending && !hasFinalDecision(a);
   });
   const hireUpcoming=active.filter(a=>{
     const d=daysUntil(a.hireDate);
-    return d!==null && d>=0 && d<=7 && a.status==='입사예정';
+    return d!==null && d>=0 && d<=7 && normalizeStatus(a.status)==='입사예정';
   });
-  const attendancePending=active.filter(a=>a.hireDate && a.hireDate<t && a.status==='입사예정');
+  const attendancePending=active.filter(a=>a.hireDate && a.hireDate<t && normalizeStatus(a.status)==='입사예정');
   const stagnant=active.filter(a=>{
     const days=dailyDaysSince(dailyLatestActivity(a));
     return days!==null && days>=DAILY_WORKFLOW_STALE_DAYS;
   });
+  const overdue=dailyUnique([...contactOverdue,...resultPending,...attendancePending]);
   return {
-    contact:dailyUnique(contact),
+    screening:dailyUnique(screening),
+    phone:dailyUnique(phone),
+    recall:dailyUnique(recall),
+    contact,
     contactOverdue:dailyUnique(contactOverdue),
+    overdue,
     interviewToday:dailyUnique(interviewToday),
-    interviewTomorrow:dailyUnique(interviewTomorrow),
     resultPending:dailyUnique(resultPending),
     hireUpcoming:dailyUnique(hireUpcoming),
     attendancePending:dailyUnique(attendancePending),
@@ -121,10 +127,10 @@ function dailyWorkflowGroups(){
 }
 
 const DAILY_REASON_META={
-  contact:{label:'연락 필요',tone:'contact',priority:2},
-  contactOverdue:{label:'연락기한 경과',tone:'danger',priority:1},
+  screening:{label:'서류검토 필요',tone:'info',priority:2},
+  phone:{label:'전화 인터뷰 필요',tone:'contact',priority:2},
+  recall:{label:'재연락 필요',tone:'danger',priority:1},
   interviewToday:{label:'오늘 면접',tone:'primary',priority:1},
-  interviewTomorrow:{label:'내일 면접',tone:'info',priority:3},
   resultPending:{label:'면접 결과 미입력',tone:'danger',priority:1},
   hireUpcoming:{label:'입사 예정',tone:'good',priority:3},
   attendancePending:{label:'출근 확인 지연',tone:'danger',priority:1},
@@ -135,6 +141,7 @@ function dailyWorkflowRows(groups){
   const map=new Map();
   Object.entries(groups).forEach(([key,rows])=>{
     const meta=DAILY_REASON_META[key];
+    if(!meta) return;
     rows.forEach(a=>{
       const id=String(a.id);
       if(!map.has(id)) map.set(id,{applicant:a,reasons:[],priority:99});
@@ -176,11 +183,61 @@ function dailyApplicantMeta(a){
   if(elapsed!==null) parts.push(`마지막 변경 ${elapsed===0?'오늘':`${elapsed}일 전`}`);
   return parts.join(' · ')||'등록된 일정 없음';
 }
+const DAILY_ACTION_RANK={recall:1,interviewToday:2,resultPending:3,screening:4,phone:5,attendancePending:6,hireUpcoming:7,stagnant:8};
+function dailyPrimaryReason(row){
+  return [...row.reasons].sort((a,b)=>a.priority-b.priority || (DAILY_ACTION_RANK[a.key]||99)-(DAILY_ACTION_RANK[b.key]||99))[0]||null;
+}
+function dailyActionDescriptor(row){
+  const r=dailyPrimaryReason(row);
+  if(!r) return {kind:'detail',label:'상세 확인'};
+  const map={
+    screening:{kind:'screening',label:'서류검토'},
+    phone:{kind:'phone',label:'전화 시작'},
+    recall:{kind:'recall',label:'재연락'},
+    interviewToday:{kind:'calendar',label:'일정 보기'},
+    resultPending:{kind:'decision',label:'결과 입력'},
+    hireUpcoming:{kind:'hire',label:'입사 확인'},
+    attendancePending:{kind:'attendance',label:'출근 확인'},
+    stagnant:{kind:'detail',label:'상세 확인'}
+  };
+  return map[r.key]||{kind:'detail',label:'상세 확인'};
+}
+function dailyRunApplicantAction(kind,applicantId){
+  const a=applicants.find(x=>String(x.id)===String(applicantId));
+  if(!a) return;
+  if(kind==='screening' && typeof window.openScreeningWorkbenchForApplicant==='function'){
+    window.openScreeningWorkbenchForApplicant(a.id); return;
+  }
+  if((kind==='phone'||kind==='recall') && typeof window.openPhoneInterviewForApplicant==='function'){
+    window.openPhoneInterviewForApplicant(a.id); return;
+  }
+  if(kind==='calendar'){
+    setPage('calendar');
+    if(a.interviewDate && typeof selectCalendarDate==='function') selectCalendarDate(a.interviewDate);
+    return;
+  }
+  if(['decision','hire','attendance'].includes(kind)){
+    editApplicant(a.id); return;
+  }
+  viewApplicant(a.id);
+}
+window.dailyRunApplicantAction=dailyRunApplicantAction;
+function dailyStartFirstWork(){
+  const groups=dailyWorkflowGroups();
+  const allRows=dailyWorkflowRows(groups);
+  const visible=dailyFilterRows(allRows,groups);
+  const row=visible[0];
+  if(!row){ if(typeof uxToast==='function') uxToast('현재 조건에서 처리할 업무가 없습니다.'); else alert('현재 조건에서 처리할 업무가 없습니다.'); return; }
+  const action=dailyActionDescriptor(row);
+  dailyRunApplicantAction(action.kind,row.applicant.id);
+}
+window.dailyStartFirstWork=dailyStartFirstWork;
 function dailyWorkflowCard(row){
   const a=row.applicant;
   const reasonHtml=row.reasons
     .sort((x,y)=>x.priority-y.priority)
     .map(r=>`<span class="daily-reason-chip ${r.tone}">${esc(r.label)}</span>`).join('');
+  const action=dailyActionDescriptor(row);
   return `<article class="daily-work-item" data-applicant-id="${esc(a.id)}">
     <div class="daily-work-main">
       <div class="daily-work-reasons">${reasonHtml}</div>
@@ -192,13 +249,13 @@ function dailyWorkflowCard(row){
     </div>
     <div class="daily-work-actions">
       <button class="mini" type="button" onclick="viewApplicant('${a.id}')">상세</button>
-      <button class="primary mini" type="button" onclick="editApplicant('${a.id}')">수정</button>
+      <button class="primary mini" type="button" onclick="dailyRunApplicantAction('${action.kind}','${a.id}')">${esc(action.label)}</button>
     </div>
   </article>`;
 }
 function updateDailyFilterChips(groups,allRows){
   const counts={all:allRows.length};
-  Object.keys(DAILY_REASON_META).forEach(key=>{counts[key]=(groups[key]||[]).length;});
+  Object.keys(groups).forEach(key=>{counts[key]=(groups[key]||[]).length;});
   document.querySelectorAll('[data-daily-filter]').forEach(btn=>{
     const key=btn.dataset.dailyFilter;
     btn.classList.toggle('active',key===dailyWorkflowFilter);
@@ -211,10 +268,10 @@ function renderToday(){
   const allRows=dailyWorkflowRows(groups);
   const visible=dailyFilterRows(allRows,groups);
   const metricMap={
-    dailyContactCount:groups.contact.length,
-    dailyContactOverdueCount:groups.contactOverdue.length,
+    dailyScreeningCount:groups.screening.length,
+    dailyPhoneCount:groups.phone.length,
+    dailyRecallCount:groups.recall.length,
     dailyInterviewTodayCount:groups.interviewToday.length,
-    dailyInterviewTomorrowCount:groups.interviewTomorrow.length,
     dailyResultPendingCount:groups.resultPending.length,
     dailyHireUpcomingCount:groups.hireUpcoming.length,
     dailyAttendancePendingCount:groups.attendancePending.length,
@@ -238,6 +295,7 @@ window.setDailyWorkflowFilter=setDailyWorkflowFilter;
   document.addEventListener('click',e=>{
     const filterButton=e.target.closest('[data-daily-filter]');
     if(filterButton){setDailyWorkflowFilter(filterButton.dataset.dailyFilter);return;}
+    if(e.target.closest('#btnDailyStartFirst')){dailyStartFirstWork();return;}
     if(e.target.closest('#btnDailyWorkflowRefresh')){renderToday();renderEmployeeLinkTask();}
   });
   const search=$('dailyWorkflowSearch');

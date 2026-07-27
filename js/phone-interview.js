@@ -1,4 +1,4 @@
-/* Recruit ERP v10.49.0 PHONE INTERVIEW WORKFLOW
+/* Recruit ERP v10.49.0.1 PHONE FOLLOW-UP & CONTACT CONSISTENCY
    - 서류검토 워크벤치와 별도 파일(요청서 §5), 검증된 큐/Undo 알고리즘만 재사용
    - 새 필드 없음: 전화내용=consult, 재연락일=nextContactDate(기존 progressHistory 추적 필드),
      면접거절/지원포기=기존 공식 상태(면접거절/입사철회) 그대로 사용
@@ -69,7 +69,7 @@
   }
 
   // ---------- 판정 스냅샷/적용 ----------
-  const SNAP_FIELDS=['status','interviewDate','interviewTime','dormUse','consult','nextContactDate','failureReason','decisionReason','withdrawalReason','updatedAt','lastChangedBy','lastChangedAt'];
+  const SNAP_FIELDS=['status','interviewDate','interviewTime','dormUse','consult','lastContactDate','nextContactDate','failureReason','decisionReason','withdrawalReason','updatedAt','lastChangedBy','lastChangedAt'];
   function piSnapshot(a){
     const s={}; SNAP_FIELDS.forEach(k=>{ s[k]=a[k]||''; });
     s.progressHistory=JSON.parse(JSON.stringify(a.progressHistory||[]));
@@ -231,6 +231,8 @@
         interviewTime:piEl('piInterviewTime')?.value||'',
         dormUse:piEl('piDormUse')?.value||'',
         consult:piEl('piConsult')?.value||'',
+        lastContactDate:today(),
+        nextContactDate:'',
         decisionReason:'전화 인터뷰 참석 확정'
       };
       if(piApply(a, changes)){ piGoNext(); piRenderUndoBanner(); }
@@ -239,8 +241,12 @@
       piEl('piSubPanel').innerHTML=`<div class="pi-sub-row"><label>다음 연락 예정일(선택)<input id="piNextContact" type="date"/></label><button class="primary" id="btnPiMissedConfirm" type="button">부재중 처리</button></div>`;
       piEl('btnPiMissedConfirm')?.addEventListener('click', ()=>{
         const next=piEl('piNextContact')?.value||'';
-        const changes={status:'부재중', consult:piEl('piConsult')?.value||a.consult||''};
-        if(next) changes.nextContactDate=next;
+        const changes={
+          status:'부재중',
+          consult:piEl('piConsult')?.value||a.consult||'',
+          lastContactDate:today(),
+          nextContactDate:next
+        };
         if(piApply(a, changes)){ piGoNext(); piRenderUndoBanner(); }
       });
     });
@@ -248,7 +254,7 @@
       piEl('piSubPanel').innerHTML=`<div class="pi-sub-row"><label>면접거절 사유<select id="piRejectReason">${REJECT_REASONS.map(r=>`<option>${esc(r)}</option>`).join('')}</select></label><button class="ghost wb-btn-fail" id="btnPiRejectConfirm" type="button">면접거절 확정</button></div>`;
       piEl('btnPiRejectConfirm')?.addEventListener('click', ()=>{
         const reason=piEl('piRejectReason')?.value||REJECT_REASONS[0];
-        if(piApply(a, {status:'면접거절', failureReason:reason})){ piGoNext(); piRenderUndoBanner(); }
+        if(piApply(a, {status:'면접거절', failureReason:reason, consult:piEl('piConsult')?.value||a.consult||'', lastContactDate:today(), nextContactDate:''})){ piGoNext(); piRenderUndoBanner(); }
       });
     });
     piEl('btnPiWithdraw')?.addEventListener('click', ()=>{
@@ -257,7 +263,7 @@
         const reason=piEl('piWithdrawReason')?.value||WITHDRAW_REASONS[0];
         // v10.49.0: '지원포기'는 공식 상태가 아니며, 기존 core.js 별칭표가 이미 '입사포기'를
         // '입사철회'로 매핑해 사용 중이므로(§12 기존 상태 재사용) 동일하게 입사철회를 사용한다.
-        if(piApply(a, {status:'입사철회', withdrawalReason:reason})){ piGoNext(); piRenderUndoBanner(); }
+        if(piApply(a, {status:'입사철회', withdrawalReason:reason, consult:piEl('piConsult')?.value||a.consult||'', lastContactDate:today(), nextContactDate:''})){ piGoNext(); piRenderUndoBanner(); }
       });
     });
     piRenderUndoBanner();
@@ -293,6 +299,10 @@
     if(typeof renderHomeLists==='function') renderHomeLists();
   }
 
+
+  window.openPhoneInterviewForApplicant=function(id){ piOpen('list', id); };
+  window.openPhoneInterviewQueue=function(source){ piOpen(source==='home'?'home':'list'); };
+
   // ---------- 단축키(보조, 입력 중 절대 무동작) ----------
   function piKeyHandler(e){
     if(e.isComposing) return;
@@ -313,7 +323,7 @@
     piRefreshEntryButtons();
   });
 
-  // 상세 모달에 '전화 인터뷰' 버튼: 뷰 렌더 시마다 노출 여부를 서류합격 상태 기준으로 갱신
+  // 상세 모달에 '전화 인터뷰' 버튼: 최초 연락(서류합격)과 재연락(부재중)에서 모두 진입 가능
   const baseView=window.viewApplicant;
   if(typeof baseView==='function'){
     window.viewApplicant=function(id){
@@ -321,7 +331,7 @@
       const btn=piEl('btnDetailPhoneInterview');
       if(btn){
         const a=applicants.find(x=>String(x.id)===String(id));
-        btn.style.display = (a && a.status==='서류합격') ? '' : 'none';
+        btn.style.display = (a && ['서류합격','부재중'].includes(normalizeStatus(a.status))) ? '' : 'none';
         btn.onclick=()=>{ if(typeof closeDetail==='function') closeDetail(); piOpen('list', id); };
       }
       return result;

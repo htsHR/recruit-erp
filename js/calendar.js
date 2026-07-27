@@ -58,12 +58,12 @@ function calendarFilterOk(item){
 function calendarAutoItems(){
   const items=[];
   applicants.forEach(a=>{
-    // v10.48.1.1: 서류합격 상태로 되돌려도 과거 면접일/입사일이 자동 삭제되지 않으므로,
-    // 날짜만 보고 일정을 만들던 기존 로직에 상태 확인을 추가해 서류합격은 자동 일정에서 제외한다.
-    if(a.interviewDate && a.status!=='서류합격'){
+    // v10.49.0.1: 잔존 날짜만으로 부재중·면접거절·지원포기 등을 확정 일정처럼 보이지 않는다.
+    // 면접은 실제 면접 단계에 진입한 이력이 있는 경우, 입사는 실제 입사예정/출근 상태일 때만 자동 일정 생성.
+    if(typeof isInterviewDateMeaningful==='function' && isInterviewDateMeaningful(a)){
       items.push({kind:'auto',type:'면접',date:a.interviewDate,time:a.interviewTime||'',title:`${a.name||'이름없음'} 면접`,workplace:a.workplace||'',status:a.status||'',applicantId:a.id,memo:[a.phone,a.region,dormLabel(a)].filter(Boolean).join(' · ')});
     }
-    if(a.hireDate && a.status!=='서류합격'){
+    if(typeof isHireDateMeaningful==='function' && isHireDateMeaningful(a)){
       items.push({kind:'auto',type:'입사',date:a.hireDate,time:'',title:`${a.name||'이름없음'} 입사 예정`,workplace:a.workplace||'',status:a.status||'',applicantId:a.id,memo:[a.phone,a.region,dormLabel(a)].filter(Boolean).join(' · ')});
     }
   });
