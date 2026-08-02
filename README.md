@@ -2,9 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.59.0**입니다.
-
-- 개발 중 릴리스 후보: **v10.60.0**
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.60.0**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -71,12 +69,12 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
 
-## v10.60.0 암호화 백업·복원 (개발 후보)
+## v10.60.0 암호화 백업·복원
 
 - 전체·지원자·사원·학교·입사대기 백업을 `.erpbackup` 암호화 파일로 저장합니다.
 - AES-GCM 256비트와 PBKDF2-SHA-256 310,000회를 사용하며, 파일마다 새로운 salt와 IV를 만듭니다.
 - 비밀번호와 암호화 키는 localStorage, sessionStorage, IndexedDB, 감사로그에 저장하지 않습니다.
-- 암호화 파일은 메모리에서 복호화한 뒤 기존 백업 구조·건수·FNV 무결성 검사를 그대로 통과해야 미리보기가 열립니다.
+- 암호화 파일은 메모리에서 복호화한 뒤 안전 트리·행 ID·기존 백업 구조·건수·FNV 무결성 검사를 모두 통과해야 미리보기가 열립니다.
 - 복원 직전에는 같은 비밀번호로 현재 ERP의 암호화 안전 백업을 먼저 다운로드합니다.
 - 기존 평문 JSON은 이전 업무 호환을 위해 관리자용 고급 메뉴와 레거시 복원으로만 유지합니다.
 
