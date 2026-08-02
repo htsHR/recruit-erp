@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.55.0 TODAY WORK OPERATIONS
+   Recruit ERP v10.56.0 TODAY WORK OPERATIONS
    - 오늘 할 일을 서류검토 → 전화 → 재연락 → 면접 → 결과 → 입사 순으로 분리
    - 각 지원자 행에서 기존 워크벤치/전화 인터뷰/일정/수정 화면으로 바로 이동
    - 새 데이터 필드·새 저장 구조 없이 기존 applicants 상태/일정/이력만 사용
@@ -45,8 +45,8 @@ function renderEmployeeLinkTask(){
     <div><strong>${esc(a.name||'이름없음')}</strong>
     <small>${esc(a.school||'출신학교 미입력')} · 입사일 ${esc(a.hireDate||a.applyDate||'미입력')} · ${esc(a.workplace||'근무지 미입력')}</small></div>
     <div class="row-actions">
-      <button class="mini" onclick="linkApplicantToEmployee('${a.id}')">사원명부 등록</button>
-      <button class="mini" onclick="dismissApplicantEmployeeLink('${a.id}')">제외</button>
+      <button class="mini" data-erp-handler="linkApplicantToEmployee('${a.id}')">사원명부 등록</button>
+      <button class="mini" data-erp-handler="dismissApplicantEmployeeLink('${a.id}')">제외</button>
     </div>
   </div>`).join('') : '<div class="empty">출근 후 사원명부 등록이 필요한 지원자가 없습니다.</div>';
 }
@@ -248,8 +248,8 @@ function dailyWorkflowCard(row){
       <div class="daily-work-meta">${esc(dailyApplicantMeta(a))}</div>
     </div>
     <div class="daily-work-actions">
-      <button class="mini" type="button" onclick="viewApplicant('${a.id}')">상세</button>
-      <button class="primary mini" type="button" onclick="dailyRunApplicantAction('${action.kind}','${a.id}')">${esc(action.label)}</button>
+      <button class="mini" type="button" data-erp-handler="viewApplicant('${a.id}')">상세</button>
+      <button class="primary mini" type="button" data-erp-handler="dailyRunApplicantAction('${action.kind}','${a.id}')">${esc(action.label)}</button>
     </div>
   </article>`;
 }

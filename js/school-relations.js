@@ -162,9 +162,9 @@ function renderSchools(){
   if(!rows.length){ body.innerHTML=`<tr><td colspan="9" class="empty">${schoolRankTypeFilter==='all'?'출신학교가 입력된 지원자가 없습니다. 지원자 입력 화면에서 "출신학교" 칸을 채워주세요.':'이 구분에 해당하는 학교가 없습니다. 학교 관리에서 구분을 지정해주세요.'}</td></tr>`; return; }
   body.innerHTML = rows.map(g=>`<tr class="${schoolTierClass(g)}">
     <td class="school-rank-num">${g.rank}</td>
-    <td>${g.schoolId ? `<button class="link-like" onclick="openSchoolDetail('${g.schoolId}')">${esc(g.school)}</button>` : esc(g.school)}${g.lowSample?' <small class="muted">(표본 적음)</small>':''}</td>
+    <td>${g.schoolId ? `<button class="link-like" data-erp-handler="openSchoolDetail('${g.schoolId}')">${esc(g.school)}</button>` : esc(g.school)}${g.lowSample?' <small class="muted">(표본 적음)</small>':''}</td>
     <td>${esc(schoolTypeGroup(g.type))||'<span class="muted">미분류</span>'}</td>
-    <td><button class="mini" onclick="viewSchoolEmployees('${g.schoolId}','${escJs(g.school)}')"><strong>${g.totalHeadcount}명</strong></button></td>
+    <td><button class="mini" data-erp-handler="viewSchoolEmployees('${g.schoolId}','${escJs(g.school)}')"><strong>${g.totalHeadcount}명</strong></button></td>
     <td>${g.hrStats?(g.hrStats.activeCount||0):0}명</td>
     <td>${g.domains.tenureQuality!=null ? Math.round(g.hrStats.avgTenureMonths)+'개월' : '<span class="muted">-</span>'}</td>
     <td>${g.domains.conduct!=null ? Math.round(g.domains.conduct)+'%' : '<span class="muted">-</span>'}</td>

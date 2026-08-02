@@ -33,5 +33,5 @@ let pending=sync.mergePendingIds({},'applicants',[{id:'test-1'},{id:'test-2'}]);
 pending=sync.mergePendingIds(pending,'applicants',[{id:'test-2'},{id:'test-3'}]);
 assert.deepEqual(pending.applicants,['test-1','test-2','test-3']);
 
-assert.equal(sync.VERSION,'10.55.0');
+assert.equal(sync.VERSION,'10.56.0');
 console.log('sync-safety tests: passed');

@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const root=path.resolve(__dirname,'..');
-const version='10.55.0';
+const version='10.56.0';
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const packageJson=JSON.parse(read('package.json'));
 const index=read('index.html');
@@ -34,5 +34,7 @@ assert.equal(headers['X-Content-Type-Options'],'nosniff');
 assert.equal(headers['X-Frame-Options'],'DENY');
 assert.equal(headers['Referrer-Policy'],'no-referrer');
 assert.ok(headers['Permissions-Policy']);
+assert.match(headers['Content-Security-Policy'],/script-src-attr 'none'/);
+assert.match(headers['Content-Security-Policy'],/object-src 'none'/);
 
 console.log('release.test.js: 버전·자동 검사·Vercel 보안 설정 확인 완료');

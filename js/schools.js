@@ -16,18 +16,23 @@ function normalizeSchoolType(type){
   if(t==='기타') return '기타';
   return '';
 }
+function normalizeSchoolRelationItems(rows){
+  return (Array.isArray(rows)?rows:[]).filter(row=>row&&typeof row==='object'&&!Array.isArray(row)).map(row=>({
+    ...row,id:window.erpSecurity?.isValidId(row.id)?String(row.id):uid()
+  }));
+}
 function normalizeSchool(s){
   return {
-    id: s.id || uid(),
+    id: window.erpSecurity?.isValidId(s.id) ? String(s.id) : uid(),
     name: (s.name||'').trim(),
     type: normalizeSchoolType(s.type),
     aliases: Array.isArray(s.aliases) ? s.aliases.map(x=>String(x||'').trim()).filter(Boolean) : String(s.aliases||'').split(',').map(x=>x.trim()).filter(Boolean),
     region: s.region||'', contact: s.contact||'', contactPhone: s.contactPhone||'', mouDate: s.mouDate||'', notes: s.notes||'',
     managementStatus: s.managementStatus||'',
     lastContactDate: s.lastContactDate||'', nextContactDate: s.nextContactDate||'', lastRequestNote: s.lastRequestNote||'',
-    memoHistory: Array.isArray(s.memoHistory)?s.memoHistory:[], contacts: Array.isArray(s.contacts)?s.contacts:[], activities: Array.isArray(s.activities)?s.activities:[],
-    recommendationRequests: Array.isArray(s.recommendationRequests)?s.recommendationRequests:[],
-    departments: Array.isArray(s.departments)?s.departments:[],
+    memoHistory: normalizeSchoolRelationItems(s.memoHistory), contacts: normalizeSchoolRelationItems(s.contacts), activities: normalizeSchoolRelationItems(s.activities),
+    recommendationRequests: normalizeSchoolRelationItems(s.recommendationRequests),
+    departments: normalizeSchoolRelationItems(s.departments),
     mouInfo: s.mouInfo && typeof s.mouInfo==='object' ? {
       status:s.mouInfo.status||'', signedDate:s.mouInfo.signedDate||s.mouDate||'', expireDate:s.mouInfo.expireDate||'',
       type:s.mouInfo.type||'', department:s.mouInfo.department||'', owner:s.mouInfo.owner||'', note:s.mouInfo.note||''
@@ -171,7 +176,7 @@ function renderSchoolSimilarHintFor(inputId, hintId){
   const candidates=findSimilarSchools(input.value);
   if(!candidates.length){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='flex';
-  el.innerHTML = candidates.slice(0,2).map(s=>`<span>혹시 <strong>${esc(s.name)}</strong>을(를) 말씀하시는 건가요?</span><button type="button" class="mini" onclick="acceptSchoolHint('${s.id}','${inputId}','${hintId}')">예, 맞아요</button><button type="button" class="mini" onclick="dismissSchoolHintFor('${hintId}')">아니요</button>`).join('');
+  el.innerHTML = candidates.slice(0,2).map(s=>`<span>혹시 <strong>${esc(s.name)}</strong>을(를) 말씀하시는 건가요?</span><button type="button" class="mini" data-erp-handler="acceptSchoolHint('${s.id}','${inputId}','${hintId}')">예, 맞아요</button><button type="button" class="mini" data-erp-handler="dismissSchoolHintFor('${hintId}')">아니요</button>`).join('');
 }
 function renderSchoolSimilarHint(){ renderSchoolSimilarHintFor('school','schoolSimilarHint'); }
 function acceptSchoolHint(schoolId, inputId, hintId){
@@ -486,8 +491,8 @@ function renderSchoolUnmatched(){
         <option value="">연결할 기존 학교 선택…</option>
         ${schoolOptionsHtml()}
       </select>
-      <button class="mini" onclick="mergeUnmatchedText('${escJs(r.text)}')">기존 학교에 연결</button>
-      <button class="mini" onclick="createSchoolFromText('${escJs(r.text)}')">새 학교 등록</button>
+      <button class="mini" data-erp-handler="mergeUnmatchedText('${escJs(r.text)}')">기존 학교에 연결</button>
+      <button class="mini" data-erp-handler="createSchoolFromText('${escJs(r.text)}')">새 학교 등록</button>
     </div>
   </div>`).join('');
 }
@@ -504,7 +509,7 @@ function toggleSchoolUnmatchedPanel(){
   }
 }
 function uidSafe(text){ return String(text).replace(/[^a-zA-Z0-9가-힣]/g,'_'); }
-function escJs(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+function escJs(s){ return esc(String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")); }
 function mergeUnmatchedText(text){
   const sel=$('mergeTarget_'+uidSafe(text));
   const targetId=sel ? sel.value : '';
@@ -700,30 +705,30 @@ function renderSchoolManage(){
       : '<span class="muted">검색 조건 없이 전체 학교를 표시하고 있습니다.</span>';
   }
   const thead=$('schoolManageHead');
-  if(thead) thead.innerHTML=`<tr><th class="sticky-col sticky-left"><button class="table-sort-btn" onclick="setSchoolManageSort('name')">학교명 ${schoolManageSortIcon('name')}</button></th><th>지역</th><th>구분</th><th>MOU</th><th>담당자</th><th>지원자</th><th>재직 사원</th><th>누적 입사</th><th>최근 관리일</th><th>관리상태</th><th class="sticky-col sticky-right">관리</th></tr>`;
+  if(thead) thead.innerHTML=`<tr><th class="sticky-col sticky-left"><button class="table-sort-btn" data-erp-handler="setSchoolManageSort('name')">학교명 ${schoolManageSortIcon('name')}</button></th><th>지역</th><th>구분</th><th>MOU</th><th>담당자</th><th>지원자</th><th>재직 사원</th><th>누적 입사</th><th>최근 관리일</th><th>관리상태</th><th class="sticky-col sticky-right">관리</th></tr>`;
   body.innerHTML = pageList.length ? pageList.map(s=>{
     const schoolAlias=(s.aliases||[]).filter(Boolean).slice(0,2).join(' · ');
     const alerts=[schoolHasBrokenLinks(s)?'연결 누락':'',schoolIsDuplicateSuspect(s)?'중복 의심':''].filter(Boolean);
-    return `<tr class="school-manage-row clickable-data-row" tabindex="0" onclick="if(!event.target.closest('button,a,input,label')) openSchoolDetail('${s.id}')">
-      <td class="sticky-col sticky-left school-name-cell" data-label="학교명"><button class="link-like school-name-link" onclick="openSchoolDetail('${s.id}')">${esc(s.name)}</button></td>
+    return `<tr class="school-manage-row clickable-data-row" tabindex="0" data-erp-handler="if(!event.target.closest('button,a,input,label')) openSchoolDetail('${s.id}')">
+      <td class="sticky-col sticky-left school-name-cell" data-label="학교명"><button class="link-like school-name-link" data-erp-handler="openSchoolDetail('${s.id}')">${esc(s.name)}</button></td>
       <td data-label="지역">${esc(s.region)||'-'}</td><td data-label="구분">${schoolTypeBadge(s.type)}</td><td data-label="MOU">${s.mouDate?`<span class="school-mou-badge yes">체결</span><small>${formatSchoolDate(s.mouDate)}</small>`:'<span class="school-mou-badge no">미체결</span>'}</td>
       <td data-label="담당자"><div class="school-inline-stack"><strong>${esc(s.contact)||'미등록'}</strong><small>${esc(s.contactPhone)||'연락처 없음'}</small></div></td>
-      <td data-label="지원자"><button class="count-pill" onclick="viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
-      <td data-label="재직 사원"><button class="count-pill employee" onclick="viewSchoolEmployees('${s.id}','${escJs(s.name)}')">${schoolActiveEmployeeCount(s.id)}명</button></td>
+      <td data-label="지원자"><button class="count-pill" data-erp-handler="viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
+      <td data-label="재직 사원"><button class="count-pill employee" data-erp-handler="viewSchoolEmployees('${s.id}','${escJs(s.name)}')">${schoolActiveEmployeeCount(s.id)}명</button></td>
       <td data-label="누적 입사">${schoolCumulativeHireCount(s.id)}명</td><td data-label="최근 관리일"><strong>${formatSchoolDate(schoolLastManagedDate(s))}</strong><small>${schoolIsRecentlyManaged(s)?'최근 관리':'관리 점검 필요'}</small></td><td data-label="관리상태">${schoolManagementStatusBadge(s.managementStatus)}</td>
-      <td class="row-actions sticky-col sticky-right school-row-actions" data-label="관리"><button class="school-action-btn detail" onclick="openSchoolDetail('${s.id}')">상세</button><button class="school-action-btn edit" onclick="editSchoolPrompt('${s.id}')">수정</button></td></tr>`;
-  }).join('') : `<tr><td colspan="11" class="empty school-empty-state"><strong>조건에 맞는 학교가 없습니다.</strong><span>검색어 또는 필터를 바꾸거나 검색조건을 초기화해 주세요.</span><button type="button" class="ghost" onclick="resetSchoolManageFilters()">검색조건 초기화</button></td></tr>`;
+      <td class="row-actions sticky-col sticky-right school-row-actions" data-label="관리"><button class="school-action-btn detail" data-erp-handler="openSchoolDetail('${s.id}')">상세</button><button class="school-action-btn edit" data-erp-handler="editSchoolPrompt('${s.id}')">수정</button></td></tr>`;
+  }).join('') : `<tr><td colspan="11" class="empty school-empty-state"><strong>조건에 맞는 학교가 없습니다.</strong><span>검색어 또는 필터를 바꾸거나 검색조건을 초기화해 주세요.</span><button type="button" class="ghost" data-erp-handler="resetSchoolManageFilters()">검색조건 초기화</button></td></tr>`;
   const pager=$('schoolManagePagination');
   if(pager){
     const first=totalFiltered?startIndex+1:0;
     const last=Math.min(startIndex+schoolManagePageSize,totalFiltered);
     pager.innerHTML=`<div class="school-page-summary">${first}-${last} / ${totalFiltered}개교</div>
       <div class="school-page-controls">
-        <button type="button" ${schoolManagePage<=1?'disabled':''} onclick="setSchoolManagePage(1)">처음</button>
-        <button type="button" ${schoolManagePage<=1?'disabled':''} onclick="setSchoolManagePage(${schoolManagePage-1})">이전</button>
+        <button type="button" ${schoolManagePage<=1?'disabled':''} data-erp-handler="setSchoolManagePage(1)">처음</button>
+        <button type="button" ${schoolManagePage<=1?'disabled':''} data-erp-handler="setSchoolManagePage(${schoolManagePage-1})">이전</button>
         <span><strong>${schoolManagePage}</strong> / ${totalPages}</span>
-        <button type="button" ${schoolManagePage>=totalPages?'disabled':''} onclick="setSchoolManagePage(${schoolManagePage+1})">다음</button>
-        <button type="button" ${schoolManagePage>=totalPages?'disabled':''} onclick="setSchoolManagePage(${totalPages})">마지막</button>
+        <button type="button" ${schoolManagePage>=totalPages?'disabled':''} data-erp-handler="setSchoolManagePage(${schoolManagePage+1})">다음</button>
+        <button type="button" ${schoolManagePage>=totalPages?'disabled':''} data-erp-handler="setSchoolManagePage(${totalPages})">마지막</button>
       </div>`;
   }
   const panel=$('schoolFilterContent');
@@ -925,9 +930,9 @@ function renderSchoolManageFocus(){
         </div>
       </div>
       <div class="school-focus-actions">
-        <button type="button" class="ghost" onclick="openSchoolManagementCore('${s.id}')">관계관리</button>
-        <button type="button" class="ghost" onclick="editSchoolPrompt('${s.id}')">수정</button>
-        <button type="button" class="primary" onclick="openSchoolDetail('${s.id}')">상세</button>
+        <button type="button" class="ghost" data-erp-handler="openSchoolManagementCore('${s.id}')">관계관리</button>
+        <button type="button" class="ghost" data-erp-handler="editSchoolPrompt('${s.id}')">수정</button>
+        <button type="button" class="primary" data-erp-handler="openSchoolDetail('${s.id}')">상세</button>
       </div>
     </div>
     <div class="school-focus-metrics">
@@ -950,7 +955,7 @@ function renderSchoolManageFocus(){
   }else{
     const applicantList=schoolFocusRelatedApplicants(s);
     const employeeList=schoolFocusRelatedEmployees(s);
-    body.innerHTML=`<div class="school-focus-related-grid"><section><div class="school-focus-list-head split"><strong>지원자</strong><button type="button" class="mini" onclick="viewSchoolApplicants('${s.id}')">전체 보기</button></div>${applicantList.length?`<ul>${applicantList.map(a=>`<li><strong>${esc(a.name||'-')}</strong><span>${esc(a.status||'-')}</span></li>`).join('')}</ul>`:'<div class="empty small">연결된 지원자가 없습니다.</div>'}</section><section><div class="school-focus-list-head split"><strong>사원</strong><button type="button" class="mini" onclick="viewSchoolEmployees('${s.id}','${escJs(s.name)}')">전체 보기</button></div>${employeeList.length?`<ul>${employeeList.map(e=>`<li><strong>${esc(e.name||'-')}</strong><span>${esc(e.status||'-')}</span></li>`).join('')}</ul>`:'<div class="empty small">연결된 사원이 없습니다.</div>'}</section></div>`;
+    body.innerHTML=`<div class="school-focus-related-grid"><section><div class="school-focus-list-head split"><strong>지원자</strong><button type="button" class="mini" data-erp-handler="viewSchoolApplicants('${s.id}')">전체 보기</button></div>${applicantList.length?`<ul>${applicantList.map(a=>`<li><strong>${esc(a.name||'-')}</strong><span>${esc(a.status||'-')}</span></li>`).join('')}</ul>`:'<div class="empty small">연결된 지원자가 없습니다.</div>'}</section><section><div class="school-focus-list-head split"><strong>사원</strong><button type="button" class="mini" data-erp-handler="viewSchoolEmployees('${s.id}','${escJs(s.name)}')">전체 보기</button></div>${employeeList.length?`<ul>${employeeList.map(e=>`<li><strong>${esc(e.name||'-')}</strong><span>${esc(e.status||'-')}</span></li>`).join('')}</ul>`:'<div class="empty small">연결된 사원이 없습니다.</div>'}</section></div>`;
   }
 }
 function renderSchoolManage(){
@@ -1009,8 +1014,8 @@ function renderSchoolManage(){
     const latest=schoolLatestActivityInfo(s);
     const request=schoolRequestStatusInfo(s);
     const alias=(s.aliases||[]).filter(Boolean).slice(0,2).join(' · ');
-    return `<tr class="school-manage-row is-practical ${schoolManageSelectedId===s.id?'is-selected':''}" tabindex="0" onclick="selectSchoolManage('${s.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectSchoolManage('${s.id}');}">
-      <td class="sticky-col sticky-left school-name-cell" data-label="학교명"><div class="school-name-stack"><button class="link-like school-name-link" onclick="event.stopPropagation();openSchoolDetail('${s.id}')">${esc(s.name)}</button>${alias?`<small>${esc(alias)}</small>`:''}</div></td>
+    return `<tr class="school-manage-row is-practical ${schoolManageSelectedId===s.id?'is-selected':''}" tabindex="0" data-erp-handler="selectSchoolManage('${s.id}')" data-erp-key-handler="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectSchoolManage('${s.id}');}">
+      <td class="sticky-col sticky-left school-name-cell" data-label="학교명"><div class="school-name-stack"><button class="link-like school-name-link" data-erp-handler="event.stopPropagation();openSchoolDetail('${s.id}')">${esc(s.name)}</button>${alias?`<small>${esc(alias)}</small>`:''}</div></td>
       <td data-label="지역">${esc(s.region)||'-'}</td>
       <td data-label="학교구분">${schoolTypeBadge(s.type)}</td>
       <td data-label="관리상태">${schoolManagementStatusBadge(s.managementStatus)}</td>
@@ -1018,16 +1023,16 @@ function renderSchoolManage(){
       <td data-label="최근 활동"><div class="school-inline-stack"><strong>${esc(latest?latest.type:'기록 없음')}</strong><small>${esc(latest?latest.date:'관리 이력 없음')}</small></div></td>
       <td data-label="다음 연락 예정"><div class="school-inline-stack"><strong>${formatSchoolDate(s.nextContactDate)}</strong><small>${schoolNextContactPill(s.nextContactDate)}</small></div></td>
       <td data-label="추천 요청"><div class="school-inline-stack"><span class="school-request-badge ${request.className}">${esc(request.label)}</span><small>${esc(request.detail)}</small></div></td>
-      <td data-label="지원자"><button class="count-pill" onclick="event.stopPropagation();viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
+      <td data-label="지원자"><button class="count-pill" data-erp-handler="event.stopPropagation();viewSchoolApplicants('${s.id}')">${schoolApplicantCount(s.id)}명</button></td>
       <td data-label="누적 입사">${schoolCumulativeHireCount(s.id)}명</td>
-      <td data-label="재직자"><button class="count-pill employee" onclick="event.stopPropagation();viewSchoolEmployees('${s.id}','${escJs(s.name)}')">${schoolActiveEmployeeCount(s.id)}명</button></td>
-      <td class="row-actions sticky-col sticky-right school-row-actions" data-label="관리"><button class="school-action-btn detail" onclick="event.stopPropagation();openSchoolDetail('${s.id}')">상세</button><button class="school-action-btn edit" onclick="event.stopPropagation();editSchoolPrompt('${s.id}')">수정</button><button class="school-action-btn ghost" onclick="event.stopPropagation();openSchoolManagementCore('${s.id}')">관계</button></td></tr>`;
-  }).join('') : `<tr><td colspan="12" class="empty school-empty-state"><strong>조건에 맞는 학교가 없습니다.</strong><span>검색어 또는 필터를 바꾸거나 검색조건을 초기화해 주세요.</span><button type="button" class="ghost" onclick="resetSchoolManageFilters()">검색조건 초기화</button></td></tr>`;
+      <td data-label="재직자"><button class="count-pill employee" data-erp-handler="event.stopPropagation();viewSchoolEmployees('${s.id}','${escJs(s.name)}')">${schoolActiveEmployeeCount(s.id)}명</button></td>
+      <td class="row-actions sticky-col sticky-right school-row-actions" data-label="관리"><button class="school-action-btn detail" data-erp-handler="event.stopPropagation();openSchoolDetail('${s.id}')">상세</button><button class="school-action-btn edit" data-erp-handler="event.stopPropagation();editSchoolPrompt('${s.id}')">수정</button><button class="school-action-btn ghost" data-erp-handler="event.stopPropagation();openSchoolManagementCore('${s.id}')">관계</button></td></tr>`;
+  }).join('') : `<tr><td colspan="12" class="empty school-empty-state"><strong>조건에 맞는 학교가 없습니다.</strong><span>검색어 또는 필터를 바꾸거나 검색조건을 초기화해 주세요.</span><button type="button" class="ghost" data-erp-handler="resetSchoolManageFilters()">검색조건 초기화</button></td></tr>`;
   const pager=$('schoolManagePagination');
   if(pager){
     const first=totalFiltered?startIndex+1:0;
     const last=Math.min(startIndex+schoolManagePageSize,totalFiltered);
-    pager.innerHTML=`<div class="school-page-summary">${first}-${last} / ${totalFiltered}개교</div><div class="school-page-controls"><button type="button" ${schoolManagePage<=1?'disabled':''} onclick="setSchoolManagePage(1)">처음</button><button type="button" ${schoolManagePage<=1?'disabled':''} onclick="setSchoolManagePage(${schoolManagePage-1})">이전</button><span><strong>${schoolManagePage}</strong> / ${totalPages}</span><button type="button" ${schoolManagePage>=totalPages?'disabled':''} onclick="setSchoolManagePage(${schoolManagePage+1})">다음</button><button type="button" ${schoolManagePage>=totalPages?'disabled':''} onclick="setSchoolManagePage(${totalPages})">마지막</button></div>`;
+    pager.innerHTML=`<div class="school-page-summary">${first}-${last} / ${totalFiltered}개교</div><div class="school-page-controls"><button type="button" ${schoolManagePage<=1?'disabled':''} data-erp-handler="setSchoolManagePage(1)">처음</button><button type="button" ${schoolManagePage<=1?'disabled':''} data-erp-handler="setSchoolManagePage(${schoolManagePage-1})">이전</button><span><strong>${schoolManagePage}</strong> / ${totalPages}</span><button type="button" ${schoolManagePage>=totalPages?'disabled':''} data-erp-handler="setSchoolManagePage(${schoolManagePage+1})">다음</button><button type="button" ${schoolManagePage>=totalPages?'disabled':''} data-erp-handler="setSchoolManagePage(${totalPages})">마지막</button></div>`;
   }
   const panel=$('schoolFilterContent');
   const btn=$('btnToggleSchoolFilters');

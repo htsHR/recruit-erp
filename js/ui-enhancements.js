@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='10.55.0';
+const UX_VERSION='10.56.0';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -132,11 +132,11 @@ card=function(a){
   if(isDormPending(a)) needs.push('출근방법');
   if(isDecisionNeeded(a)) needs.push('판정');
   return `<article class="person-card workflow-person-card ${statusToneClass(a)}">
-    <button class="workflow-person-main" type="button" onclick="viewApplicant('${a.id}')">
+    <button class="workflow-person-main" type="button" data-erp-handler="viewApplicant('${a.id}')">
       <span class="workflow-name-line"><strong>${esc(a.name||'이름없음')}</strong><span class="badge ${badgeClass(a.status)}">${esc(a.status)}</span></span>
       <small>${esc(a.workplace||'근무지 미입력')} · ${esc(dateText)}${needs.length?` · 확인 ${esc(needs.join('/'))}`:''}</small>
     </button>
-    <div class="workflow-card-actions"><select aria-label="${esc(a.name||'지원자')} 상태 변경" onchange="updateApplicantStatus('${a.id}',this.value)">${statusOptionsHtml(a.status)}</select><button class="mini" type="button" onclick="viewApplicant('${a.id}')">상세</button></div>
+    <div class="workflow-card-actions"><select aria-label="${esc(a.name||'지원자')} 상태 변경" data-erp-change-handler="updateApplicantStatus('${a.id}',this.value)">${statusOptionsHtml(a.status)}</select><button class="mini" type="button" data-erp-handler="viewApplicant('${a.id}')">상세</button></div>
   </article>`;
 };
 window.card=card;
@@ -263,7 +263,7 @@ calendarAllItems=function(){
 window.calendarAllItems=calendarAllItems;
 function uxCalendarItemHtml(item){
   const onclick=item.kind==='auto'?`viewApplicant('${item.applicantId}')`:(item.id?`editCalendarEvent('${item.id}')`:'');
-  return `<button type="button" class="calendar-alt-item ${calendarTypeClass(item)}" onclick="${onclick}"><span>${esc(item.time||'시간미정')} · ${esc(item.type)}</span><strong>${esc(item.title)}</strong><small>${esc([item.workplace,item.memo].filter(Boolean).join(' · ')||'추가 정보 없음')}</small></button>`;
+  return `<button type="button" class="calendar-alt-item ${calendarTypeClass(item)}" data-erp-handler="${onclick}"><span>${esc(item.time||'시간미정')} · ${esc(item.type)}</span><strong>${esc(item.title)}</strong><small>${esc([item.workplace,item.memo].filter(Boolean).join(' · ')||'추가 정보 없음')}</small></button>`;
 }
 function uxRenderCalendarWeek(){
   const el=uxEl('calendarWeekGrid'); if(!el) return;
@@ -273,7 +273,7 @@ function uxRenderCalendarWeek(){
   el.innerHTML=Array.from({length:7},(_,i)=>{
     const d=new Date(start); d.setDate(start.getDate()+i); const key=calendarDateKey(d);
     const items=all.filter(x=>x.date===key);
-    return `<section class="calendar-week-day ${key===today()?'today':''}"><button type="button" class="calendar-week-date" onclick="selectCalendarDate('${key}')"><span>${['일','월','화','수','목','금','토'][d.getDay()]}</span><strong>${d.getMonth()+1}.${d.getDate()}</strong><small>${items.length}건</small></button><div>${items.length?items.map(uxCalendarItemHtml).join(''):'<span class="calendar-alt-empty">일정 없음</span>'}</div></section>`;
+    return `<section class="calendar-week-day ${key===today()?'today':''}"><button type="button" class="calendar-week-date" data-erp-handler="selectCalendarDate('${key}')"><span>${['일','월','화','수','목','금','토'][d.getDay()]}</span><strong>${d.getMonth()+1}.${d.getDate()}</strong><small>${items.length}건</small></button><div>${items.length?items.map(uxCalendarItemHtml).join(''):'<span class="calendar-alt-empty">일정 없음</span>'}</div></section>`;
   }).join('');
 }
 function uxRenderCalendarList(){
@@ -394,7 +394,7 @@ renderSchoolManage=function(){
   uxBaseRenderSchoolManage();
   const fav=uxSchoolFavorites();
   document.querySelectorAll('#schoolManageBody tr.school-manage-row').forEach(row=>{
-    const onclick=row.getAttribute('onclick')||''; const m=onclick.match(/openSchoolDetail\('([^']+)'\)/); if(!m) return;
+    const onclick=row.getAttribute('data-erp-handler')||''; const m=onclick.match(/openSchoolDetail\('([^']+)'\)/); if(!m) return;
     const id=m[1], s=schools.find(x=>x.id===id); if(!s) return;
     row.classList.toggle('school-favorite-row',fav.has(id));
     const nameCell=row.querySelector('.school-name-cell'); if(!nameCell) return;

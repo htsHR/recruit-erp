@@ -34,7 +34,7 @@ function normalizeEmployee(e={}){
   const status=normalizeEmployeeStatus(e.status,e.leaveDate);
   return {
     ...e,
-    id:e.id||uid(),
+    id:window.erpSecurity?.isValidId(e.id)?String(e.id):uid(),
     empNo:String(e.empNo||'').trim(),
     name:String(e.name||'').trim(),
     gender:String(e.gender||'').trim(),
@@ -488,11 +488,11 @@ function renderEmployeePagination(totalPages,totalCount){
   setText('employeePaginationCount',totalCount);
   if(totalPages<=1){el.innerHTML='';return;}
   let start=Math.max(1,employeePage-2),end=Math.min(totalPages,start+4);start=Math.max(1,end-4);
-  let html=`<button class="mini" ${employeePage===1?'disabled':''} onclick="goEmployeePage(1)">«</button>`;
-  html+=`<button class="mini" ${employeePage===1?'disabled':''} onclick="goEmployeePage(${employeePage-1})">‹</button>`;
-  for(let p=start;p<=end;p++)html+=`<button class="mini ${p===employeePage?'active':''}" onclick="goEmployeePage(${p})">${p}</button>`;
-  html+=`<button class="mini" ${employeePage===totalPages?'disabled':''} onclick="goEmployeePage(${employeePage+1})">›</button>`;
-  html+=`<button class="mini" ${employeePage===totalPages?'disabled':''} onclick="goEmployeePage(${totalPages})">»</button>`;
+  let html=`<button class="mini" ${employeePage===1?'disabled':''} data-erp-handler="goEmployeePage(1)">«</button>`;
+  html+=`<button class="mini" ${employeePage===1?'disabled':''} data-erp-handler="goEmployeePage(${employeePage-1})">‹</button>`;
+  for(let p=start;p<=end;p++)html+=`<button class="mini ${p===employeePage?'active':''}" data-erp-handler="goEmployeePage(${p})">${p}</button>`;
+  html+=`<button class="mini" ${employeePage===totalPages?'disabled':''} data-erp-handler="goEmployeePage(${employeePage+1})">›</button>`;
+  html+=`<button class="mini" ${employeePage===totalPages?'disabled':''} data-erp-handler="goEmployeePage(${totalPages})">»</button>`;
   el.innerHTML=html;
 }
 function parseEmployeeDate(value){
@@ -584,20 +584,20 @@ function renderEmployees(){
   const totalPages=Math.max(1,Math.ceil(all.length/employeePageSize));if(employeePage>totalPages)employeePage=totalPages;
   const rows=all.slice((employeePage-1)*employeePageSize,employeePage*employeePageSize);
   renderEmployeePagination(totalPages,all.length);renderEmployeeDeptView();
-  if(!all.length){body.innerHTML='<tr><td colspan="9" class="empty employee-empty-state"><strong>조건에 맞는 사원이 없습니다.</strong><span>검색어 또는 필터를 바꿔주세요.</span><button class="ghost" onclick="resetEmployeeFilters()">검색조건 초기화</button></td></tr>';return;}
+  if(!all.length){body.innerHTML='<tr><td colspan="9" class="empty employee-empty-state"><strong>조건에 맞는 사원이 없습니다.</strong><span>검색어 또는 필터를 바꿔주세요.</span><button class="ghost" data-erp-handler="resetEmployeeFilters()">검색조건 초기화</button></td></tr>';return;}
   body.innerHTML=rows.map(e=>{
     const secondary=employeeOrgSecondary(e);
     const rankSub=e.position&&e.position!==e.rank?e.position:(e.role&&e.role!==e.rank?e.role:'');
-    return `<tr class="employee-list-row clickable-data-row" tabindex="0" onclick="if(!event.target.closest('button,select,a,input,label,summary,details')) openEmployeeDetail('${e.id}')" onkeydown="listRowKeyActivate(event,()=>openEmployeeDetail('${e.id}'))">
+    return `<tr class="employee-list-row clickable-data-row" tabindex="0" data-erp-handler="if(!event.target.closest('button,select,a,input,label,summary,details')) openEmployeeDetail('${e.id}')" data-erp-key-handler="listRowKeyActivate(event,()=>openEmployeeDetail('${e.id}'))">
       <td class="employee-no-cell" data-label="사번">${esc(e.empNo)||'-'}</td>
-      <td class="employee-name-cell" data-label="성명"><button class="link-like employee-name-link" onclick="openEmployeeDetail('${e.id}')">${esc(e.name)}</button><small>${esc(e.gender||'성별 미입력')}</small></td>
+      <td class="employee-name-cell" data-label="성명"><button class="link-like employee-name-link" data-erp-handler="openEmployeeDetail('${e.id}')">${esc(e.name)}</button><small>${esc(e.gender||'성별 미입력')}</small></td>
       <td class="employee-org-cell" data-label="소속"><strong>${esc(employeeOrgPrimary(e))}</strong>${secondary?`<small>${esc(secondary)}</small>`:''}</td>
       <td class="employee-rank-cell" data-label="직급"><strong>${esc(employeeRankDisplay(e))}</strong>${rankSub?`<small>${esc(rankSub)}</small>`:''}</td>
       <td class="employee-hire-cell" data-label="입사일">${esc(e.hireDate)||'-'}</td>
       <td class="employee-tenure-cell" data-label="근속기간">${esc(employeeTenureText(e))}</td>
       <td class="employee-school-cell" data-label="출신학교">${esc(e.school)||'<span class="muted">미입력</span>'}</td>
-      <td class="employee-status-cell" data-label="재직상태"><span class="badge ${employeeStatusBadgeClass(e.status)}">${esc(e.status)}</span>${employeeStatusIssuesFor(e).length?`<button class="employee-status-issue ${employeeStatusIssueClass(employeeStatusIssuesFor(e))}" title="${esc(employeeStatusIssuesFor(e).map(i=>i.message).join(' / '))}" onclick="openEmployeeStatusManager('${e.id}')">! ${employeeStatusIssuesFor(e).length}</button>`:''}</td>
-      <td class="row-actions employee-row-actions" data-label="관리"><button class="view" onclick="openEmployeeDetail('${e.id}')">상세</button><button onclick="editEmployeePrompt('${e.id}')">수정</button></td>
+      <td class="employee-status-cell" data-label="재직상태"><span class="badge ${employeeStatusBadgeClass(e.status)}">${esc(e.status)}</span>${employeeStatusIssuesFor(e).length?`<button class="employee-status-issue ${employeeStatusIssueClass(employeeStatusIssuesFor(e))}" title="${esc(employeeStatusIssuesFor(e).map(i=>i.message).join(' / '))}" data-erp-handler="openEmployeeStatusManager('${e.id}')">! ${employeeStatusIssuesFor(e).length}</button>`:''}</td>
+      <td class="row-actions employee-row-actions" data-label="관리"><button class="view" data-erp-handler="openEmployeeDetail('${e.id}')">상세</button><button data-erp-handler="editEmployeePrompt('${e.id}')">수정</button></td>
     </tr>`;
   }).join('');
 }
@@ -900,7 +900,7 @@ function employeeOrgImportReadFile(file){
   reader.onerror=()=>alert('파일을 읽지 못했습니다. 다시 선택해주세요.');
   reader.onload=()=>{
     try{
-      const parsed=validateEmployeeOrgImportPayload(JSON.parse(String(reader.result||'')));
+      const parsed=validateEmployeeOrgImportPayload(window.erpSecurity.parseJson(String(reader.result||'')));
       const rows=buildEmployeeOrgImportRows(parsed.rows);
       const selected=new Set(rows.filter(r=>r.status==='changed').map(r=>r.key));
       employeeOrgImportState={fileName:file.name,meta:parsed,rows,filter:'changed',page:1,pageSize:50,selected};
@@ -1064,7 +1064,7 @@ function renderEmployeeStatusAuditModal(){
   setText('employeeStatusAuditCount',`${rows.length}건`);
   const list=$('employeeStatusAuditList');if(!list)return;
   if(!rows.length){list.innerHTML='<div class="employee-audit-empty"><strong>해당 조건의 문제가 없습니다.</strong><span>필터를 변경하거나 전체 사원을 확인하세요.</span></div>';return;}
-  list.innerHTML=rows.map(issue=>`<div class="employee-audit-item ${employeeAuditSeverityClass(issue.severity)}"><div class="employee-audit-severity">${employeeAuditSeverityLabel(issue.severity)}</div><div class="employee-audit-main"><strong>${esc(issue.name||'-')} <small>${esc(issue.empNo||'사번 없음')}</small></strong><span>${esc(issue.message)}</span></div><div class="employee-audit-actions"><button class="mini" onclick="closeEmployeeStatusAudit();openEmployeeStatusManager('${issue.employeeId}')">상태 검토</button><button class="ghost" onclick="editEmployeePrompt('${issue.employeeId}');closeEmployeeStatusAudit()">수정</button></div></div>`).join('');
+  list.innerHTML=rows.map(issue=>`<div class="employee-audit-item ${employeeAuditSeverityClass(issue.severity)}"><div class="employee-audit-severity">${employeeAuditSeverityLabel(issue.severity)}</div><div class="employee-audit-main"><strong>${esc(issue.name||'-')} <small>${esc(issue.empNo||'사번 없음')}</small></strong><span>${esc(issue.message)}</span></div><div class="employee-audit-actions"><button class="mini" data-erp-handler="closeEmployeeStatusAudit();openEmployeeStatusManager('${issue.employeeId}')">상태 검토</button><button class="ghost" data-erp-handler="editEmployeePrompt('${issue.employeeId}');closeEmployeeStatusAudit()">수정</button></div></div>`).join('');
 }
 function openEmployeeStatusAudit(){const modal=$('employeeStatusAuditModal');if(!modal)return;modal.classList.add('show');modal.setAttribute('aria-hidden','false');renderEmployeeStatusAuditModal();}
 function closeEmployeeStatusAudit(){const modal=$('employeeStatusAuditModal');if(!modal)return;modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
