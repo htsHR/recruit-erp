@@ -288,14 +288,17 @@ bind('jsonImportMerge','change',e=>{
   r.readAsText(file);
 });
 bind('btnClearAll','click',()=>{
+  if(!applicants.length){alert('삭제할 지원자가 없습니다.');return;}
   if(!confirm(`현재 브라우저의 지원자 ${applicants.length}명을 모두 삭제할까요?\n\n삭제 직전 자동으로 클라우드에 백업을 남겨둡니다.`)) return;
   const phrase=prompt('정말 삭제하려면 아래 문구를 그대로 입력하세요.\n\n전체삭제');
   if(phrase !== '전체삭제'){ alert('삭제가 취소되었습니다.'); return; }
   supabaseSnapshotSave('전체삭제 직전 자동 백업').then(()=>{
+    const queued=supabaseDeleteAll({defer:true});
+    if(!queued.ok){alert('삭제 안전정보를 저장하지 못해 전체 삭제를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;}
     const previous=applicants;
     applicants=[];
-    if(!save()){applicants=previous;return;}
-    supabaseDeleteAll();
+    if(!save()){applicants=previous;window.erpSyncSafety.cancelDelete(queued.key);return;}
+    window.erpSyncSafety.retryDeletes('applicants');
     renderSnapshotList();
     alert('전체 삭제 완료 (삭제 전 상태는 백업/내보내기 화면에서 복원 가능합니다)');
   });

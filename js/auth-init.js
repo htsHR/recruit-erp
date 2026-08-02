@@ -41,12 +41,17 @@ function afterLoginSuccess(email){
   hideLoginOverlay();
   updateAuthNote(email);
   updateStorageNote();
-  supabaseSyncOnLoad();
-  supabaseSchoolsSyncOnLoad();
-  supabaseEmployeesSyncOnLoad();
   renderSnapshotList();
   supabaseSnapshotDailyCheck();
-  if(window.erpSyncSafety&&typeof window.erpSyncSafety.retryAll==='function')window.erpSyncSafety.retryAll();
+  var startDataSync=function(){
+    supabaseSyncOnLoad();
+    supabaseSchoolsSyncOnLoad();
+    supabaseEmployeesSyncOnLoad();
+    if(window.erpSyncSafety&&typeof window.erpSyncSafety.retryUploads==='function')window.erpSyncSafety.retryUploads();
+  };
+  if(window.erpSyncSafety&&typeof window.erpSyncSafety.retryDeletes==='function'){
+    Promise.resolve(window.erpSyncSafety.retryDeletes()).catch(function(error){console.warn('로그인 직후 삭제 재시도 실패:',error);}).finally(startDataSync);
+  }else startDataSync();
 }
 function initAuth(){
   if(!window.sb) return;

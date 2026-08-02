@@ -106,11 +106,16 @@ function supabaseSyncEmployees(list){
     return {saved,count:batch.length,legacy:useLegacy};
   });
 }
-function supabaseDeleteEmployee(id){
-  if(!canUseCloud()) return;
-  window.sb.from('employees').delete().eq('id',id).then(function(res){
-    if(res&&res.error) console.warn('직원명부 삭제 실패(로컬에는 정상 삭제됨):',res.error.message);
-  }).catch(function(e){console.warn('직원명부 삭제 실패(로컬에는 정상 삭제됨):',e);});
+async function supabaseDeleteEmployeeOperation(operation){
+  if(!canUseCloud())throw new Error('클라우드에 로그인되어 있지 않습니다.');
+  const res=await window.sb.from('employees').delete().eq('id',operation.id);
+  if(res&&res.error)throw res.error;
+  return {deleted:true,id:operation.id};
+}
+function supabaseDeleteEmployee(id,label,options){
+  const queued=window.erpSyncSafety.enqueueDelete('employees',{id,label:label||id,scope:'one'});
+  if(queued.ok&&!options?.defer)window.erpSyncSafety.retryDeletes('employees');
+  return queued;
 }
 function supabaseEmployeesSyncOnLoad(){
   if(!canUseCloud()) return;
@@ -124,7 +129,7 @@ function supabaseEmployeesSyncOnLoad(){
     });
   }
   loadPage(0,[]).then(function(cloudRaw){
-    const local=employees,cloud=cloudRaw.map(normalizeEmployee),mergeResult=window.erpSyncSafety.mergeAndTrack('employees',local,cloud);
+    const local=employees,cloud=window.erpSyncSafety.filterPendingDeletes('employees',cloudRaw,window.erpSyncSafety.readPendingDeletes()).map(normalizeEmployee),mergeResult=window.erpSyncSafety.mergeAndTrack('employees',local,cloud);
     employees=mergeResult.rows.map(normalizeEmployee);
     if(!safeLocalStorageSet(EMPLOYEES_KEY,JSON.stringify(employees))){employees=local;throw new Error('사원명부 클라우드 병합 결과의 로컬 저장 실패');}
     renderEmployees();
@@ -138,6 +143,7 @@ if(window.erpSyncSafety)window.erpSyncSafety.registerDataset('employees',{
   normalize:normalizeEmployee,
   storageKey:function(){return EMPLOYEES_KEY;},
   upload:supabaseSyncEmployees,
+  remove:supabaseDeleteEmployeeOperation,
   render:function(){renderEmployees();renderSchools();}
 });
 
@@ -268,10 +274,11 @@ function deleteEmployee(id){
   if(!confirm(`"${e.name}" 사원 기록을 삭제할까요?\n\n목록에서는 삭제할 수 없으며, 현재 수정 중인 사원만 삭제됩니다.`))return;
   const phrase=prompt('삭제하려면 사원명을 그대로 입력하세요.',e.name);
   if(phrase!==e.name){alert('삭제가 취소됐습니다.');return;}
-  employees=employees.filter(x=>x.id!==id);
-  supabaseDeleteEmployee(id);
-  resetEmployeeForm();
-  saveEmployees();
+  const queued=supabaseDeleteEmployee(id,e.name,{defer:true});
+  if(!queued.ok){alert('삭제 안전정보를 저장하지 못해 삭제를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;}
+  const previous=employees;employees=employees.filter(x=>x.id!==id);
+  if(!saveEmployees()){employees=previous;window.erpSyncSafety.cancelDelete(queued.key);renderEmployees();return;}
+  resetEmployeeForm();window.erpSyncSafety.retryDeletes('employees');
 }
 function deleteEditingEmployee(){if(editingEmployeeId)deleteEmployee(editingEmployeeId);}
 
@@ -1271,7 +1278,22 @@ function applyEmployeeExcelCompare(){
   });
   writeEmployeeExcelUndo({at:now,fileName:employeeExcelCompareState.fileName,before,newIds});saveEmployees(affected);employeeExcelCompareState.selected.clear();employeeExcelCompareState.lastResult={newCount,updatedCount,fieldCount};if($('employeeExcelConfirm'))$('employeeExcelConfirm').checked=false;const records=employeeExcelCompareState.rows.filter(r=>r.record).map(r=>r.record);employeeExcelCompareState.rows=employeeExcelBuildRows(records,employeeExcelCompareState.meta||{});renderEmployeeExcelCompare();const result=$('employeeExcelResult');if(result){result.className='employee-excel-result is-ready';result.innerHTML=`<strong>반영 완료</strong><span>신규 ${newCount}명 · 수정 ${updatedCount}명 · 변경 필드 ${fieldCount}개를 저장했습니다. 직전 반영은 실행 취소할 수 있습니다.</span>`;}alert(`사원명부 반영 완료\n\n신규 ${newCount}명\n수정 ${updatedCount}명\n변경 필드 ${fieldCount}개\n\n로컬 저장을 완료했고 로그인 상태이면 Supabase 저장도 시도했습니다.`);
 }
-function undoEmployeeExcelApply(){const undo=readEmployeeExcelUndo();if(!undo){alert('실행 취소할 직전 반영 기록이 없습니다.');return;}if(!confirm(`직전 사원명부 반영을 취소할까요?\n\n파일: ${undo.fileName||'-'}\n기존 복원 ${undo.before.length}명 · 신규 제거 ${undo.newIds.length}명`))return;const beforeMap=new Map(undo.before.map(x=>[x.id,normalizeEmployee(x.data)]));employees=employees.filter(e=>!undo.newIds.includes(e.id)).map(e=>beforeMap.has(e.id)?beforeMap.get(e.id):e);undo.newIds.forEach(id=>supabaseDeleteEmployee(id));saveEmployees(Array.from(beforeMap.values()));localStorage.removeItem(EMPLOYEE_EXCEL_UNDO_KEY);if(employeeExcelCompareState.rows.length){const records=employeeExcelCompareState.rows.filter(r=>r.record).map(r=>r.record);employeeExcelCompareState.rows=employeeExcelBuildRows(records,employeeExcelCompareState.meta||{});}renderEmployeeExcelCompare();if(typeof uxToast==='function')uxToast('직전 사원명부 엑셀 반영을 취소했습니다.');}
+function undoEmployeeExcelApply(){
+  const undo=readEmployeeExcelUndo();if(!undo){alert('실행 취소할 직전 반영 기록이 없습니다.');return;}
+  if(!confirm(`직전 사원명부 반영을 취소할까요?\n\n파일: ${undo.fileName||'-'}\n기존 복원 ${undo.before.length}명 · 신규 제거 ${undo.newIds.length}명`))return;
+  const deleteRequests=undo.newIds.map(id=>{const employee=employees.find(e=>e.id===id);return supabaseDeleteEmployee(id,employee?.name||id,{defer:true});});
+  if(deleteRequests.some(request=>!request.ok)){
+    deleteRequests.filter(request=>request.ok).forEach(request=>window.erpSyncSafety.cancelDelete(request.key));
+    alert('삭제 안전정보를 저장하지 못해 실행 취소를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;
+  }
+  const previous=employees,beforeMap=new Map(undo.before.map(x=>[x.id,normalizeEmployee(x.data)]));
+  employees=employees.filter(e=>!undo.newIds.includes(e.id)).map(e=>beforeMap.has(e.id)?beforeMap.get(e.id):e);
+  if(!saveEmployees(Array.from(beforeMap.values()))){employees=previous;deleteRequests.forEach(request=>window.erpSyncSafety.cancelDelete(request.key));renderEmployees();return;}
+  if(deleteRequests.length)window.erpSyncSafety.retryDeletes('employees');
+  localStorage.removeItem(EMPLOYEE_EXCEL_UNDO_KEY);
+  if(employeeExcelCompareState.rows.length){const records=employeeExcelCompareState.rows.filter(r=>r.record).map(r=>r.record);employeeExcelCompareState.rows=employeeExcelBuildRows(records,employeeExcelCompareState.meta||{});}
+  renderEmployeeExcelCompare();if(typeof uxToast==='function')uxToast('직전 사원명부 엑셀 반영을 취소했습니다.');
+}
 
 
 /* =========================================================

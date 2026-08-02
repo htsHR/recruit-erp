@@ -81,11 +81,16 @@ function supabaseSyncSchools(list){
     throw new Error(msg||'학교마스터 Supabase 저장 실패');
   });
 }
-function supabaseDeleteSchool(id){
-  if(!canUseCloud()) return;
-  window.sb.from('schools').delete().eq('id', id).then(function(res){
-    if(res && res.error) console.warn('학교마스터 삭제 실패(로컬엔 정상 삭제됨):', res.error.message);
-  }).catch(function(e){ console.warn('학교마스터 삭제 실패(로컬엔 정상 삭제됨):', e); });
+async function supabaseDeleteSchoolOperation(operation){
+  if(!canUseCloud())throw new Error('클라우드에 로그인되어 있지 않습니다.');
+  const res=await window.sb.from('schools').delete().eq('id',operation.id);
+  if(res&&res.error)throw res.error;
+  return {deleted:true,id:operation.id};
+}
+function supabaseDeleteSchool(id,label,options){
+  const queued=window.erpSyncSafety.enqueueDelete('schools',{id,label:label||id,scope:'one'});
+  if(queued.ok&&!options?.defer)window.erpSyncSafety.retryDeletes('schools');
+  return queued;
 }
 function supabaseSchoolsSyncOnLoad(){
   if(!canUseCloud()) return;
@@ -101,7 +106,7 @@ function supabaseSchoolsSyncOnLoad(){
     });
   }
   loadPage(0,[]).then(function(cloudRaw){
-    const cloud = cloudRaw.map(normalizeSchool);
+    const cloud = window.erpSyncSafety.filterPendingDeletes('schools',cloudRaw,window.erpSyncSafety.readPendingDeletes()).map(normalizeSchool);
     const local = schools;
     const mergeResult=window.erpSyncSafety.mergeAndTrack('schools',local,cloud);
     schools=mergeResult.rows.map(normalizeSchool);
@@ -117,6 +122,7 @@ if(window.erpSyncSafety)window.erpSyncSafety.registerDataset('schools',{
   normalize:normalizeSchool,
   storageKey:function(){return SCHOOLS_KEY;},
   upload:supabaseSyncSchools,
+  remove:supabaseDeleteSchoolOperation,
   render:function(){populateSchoolDatalist();renderSchoolManage();renderSchools();}
 });
 function findSchoolByText(text){
@@ -338,7 +344,11 @@ function deleteSchool(id){
   const appCount=schoolApplicantCount(id), empCount=schoolEmployeeCount(id);
   if(appCount||empCount){alert(`연결된 학교는 삭제할 수 없습니다.\n지원자 ${appCount}명 · 사원 ${empCount}명의 schoolId 연결을 먼저 연결 관리에서 확인해 주세요.`);return;}
   if(!confirm(`"${s.name}" 학교를 삭제할까요?\n연결 데이터가 없는 학교만 삭제됩니다.`))return;
-  schools=schools.filter(x=>x.id!==id); supabaseDeleteSchool(id); if(editingSchoolId===id)resetSchoolForm(); saveSchools();
+  const queued=supabaseDeleteSchool(id,s.name,{defer:true});
+  if(!queued.ok){alert('삭제 안전정보를 저장하지 못해 삭제를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;}
+  const previous=schools;schools=schools.filter(x=>x.id!==id);
+  if(!saveSchools()){schools=previous;window.erpSyncSafety.cancelDelete(queued.key);renderSchoolManage();renderSchools();return;}
+  if(editingSchoolId===id)resetSchoolForm();window.erpSyncSafety.retryDeletes('schools');
 }
 function schoolLinkTextKey(text){ return String(text||'').trim().toLocaleLowerCase('ko-KR'); }
 function schoolHasValidId(entity){ return !!schools.find(s=>String(s.id)===String(entity?.schoolId||'')); }

@@ -38,17 +38,29 @@ function supabaseSyncAll(list){
     return {saved:saved,count:batch.length,legacy:useLegacy};
   });
 }
-function supabaseDeleteOne(id){
-  if(!canUseCloud()) return;
-  window.sb.from('applicants').delete().eq('id', id).then(function(res){
-    if(res && res.error) console.warn('Supabase 삭제 실패(로컬엔 정상 삭제됨):', res.error.message);
-  }).catch(function(e){ console.warn('Supabase 삭제 실패(로컬엔 정상 삭제됨):', e); });
+async function supabaseDeleteApplicantOperation(operation){
+  if(!canUseCloud())throw new Error('클라우드에 로그인되어 있지 않습니다.');
+  if(operation.scope==='all'){
+    var ids=Array.isArray(operation.ids)?operation.ids:[];
+    for(var start=0;start<ids.length;start+=100){
+      var batch=ids.slice(start,start+100),bulkRes=await window.sb.from('applicants').delete().in('id',batch);
+      if(bulkRes&&bulkRes.error)throw bulkRes.error;
+    }
+  }else{
+    var res=await window.sb.from('applicants').delete().eq('id',operation.id);
+    if(res&&res.error)throw res.error;
+  }
+  return {deleted:true,scope:operation.scope,id:operation.id};
 }
-function supabaseDeleteAll(){
-  if(!canUseCloud()) return;
-  window.sb.from('applicants').delete().neq('id','__none__').then(function(res){
-    if(res && res.error) console.warn('Supabase 전체삭제 실패(로컬엔 정상 삭제됨):', res.error.message);
-  }).catch(function(e){ console.warn('Supabase 전체삭제 실패(로컬엔 정상 삭제됨):', e); });
+function supabaseDeleteOne(id,label,options){
+  var queued=window.erpSyncSafety.enqueueDelete('applicants',{id:id,label:label||id,scope:'one'});
+  if(queued.ok&&!options?.defer)window.erpSyncSafety.retryDeletes('applicants');
+  return queued;
+}
+function supabaseDeleteAll(options){
+  var queued=window.erpSyncSafety.enqueueDelete('applicants',{scope:'all',ids:applicants.map(function(item){return item.id;}),label:'지원자 전체 자료'});
+  if(queued.ok&&!options?.defer)window.erpSyncSafety.retryDeletes('applicants');
+  return queued;
 }
 /* =========================================================
    v10.9.0 자동 백업 스냅샷
@@ -130,7 +142,7 @@ function supabaseSyncOnLoad(){
     });
   }
   loadPage(0,[]).then(function(cloudRaw){
-    var cloud = cloudRaw.map(normalize);
+    var cloud = window.erpSyncSafety.filterPendingDeletes('applicants',cloudRaw,window.erpSyncSafety.readPendingDeletes()).map(normalize);
     var local = applicants;
     var mergeResult=window.erpSyncSafety.mergeAndTrack('applicants',local,cloud);
     var merged=mergeResult.rows.map(normalize);
@@ -152,5 +164,6 @@ if(window.erpSyncSafety)window.erpSyncSafety.registerDataset('applicants',{
   normalize:normalize,
   storageKey:function(){return STORAGE_KEY;},
   upload:supabaseSyncAll,
+  remove:supabaseDeleteApplicantOperation,
   render:function(){renderAll();}
 });
