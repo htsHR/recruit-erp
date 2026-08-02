@@ -33,7 +33,7 @@ const $ = id => document.getElementById(id);
 function bind(id, event, handler){ const el=$(id); if(el) el.addEventListener(event, handler); }
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
-function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function uid(){ return globalThis.crypto?.randomUUID?.() || ('erp_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10)); }
 let calendarEvents = [];
 let calendarCursor = new Date(today() + 'T00:00:00');
 calendarCursor.setDate(1);
@@ -73,7 +73,7 @@ function dormLabel(a){ return normalizeDorm(a?.dormUse) || '미확인'; }
 function dormClass(v){ const d=normalizeDorm(v); if(d==='기숙사') return 'on'; if(d==='출퇴근') return 'off'; return 'pending'; }
 function displayCheckNeeds(v){ return String(v||'').replaceAll('근무형태 확인','출근방법 확인').replaceAll('근무형태','출근방법'); }
 function normalize(a){ return {
-  id:a.id||uid(), createdAt:a.createdAt||new Date().toISOString(), updatedAt:a.updatedAt||'',
+  id:window.erpSecurity?.isValidId(a.id)?String(a.id):uid(), createdAt:a.createdAt||new Date().toISOString(), updatedAt:a.updatedAt||'',
   applyDate:a.applyDate||'', source:a.source||'', extra:a.extra||a.etc||'', status:normalizeStatus(a.status), workplace:a.workplace||'',
   batch:a.batch||'',
   name:a.name||'', phone:formatPhoneDisplay(a.phone||''), email:a.email||'', gender:normalizeGender(a.gender), birthYear:formatBirthDisplay(a.birthYear||''),

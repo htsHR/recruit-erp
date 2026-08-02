@@ -112,18 +112,18 @@
         <div class="contact-focus-card ${nextClass}"><span>다음 연락 예정일</span><strong>${safe(a.nextContactDate||'미정')}</strong><small>${isOverdue(a.nextContactDate)?'예정일 경과 · 확인 필요':(a.nextContactDate?'오늘 할 일에 자동 표시됩니다':'필요한 경우 기록과 함께 지정')}</small></div>
         <div class="applicant-quick-log-actions">
           <span>빠른 기록</span>
-          <div><button type="button" class="quick-log phone" data-quick-log-type="phone" onclick="openApplicantQuickLog('${a.id}','phone')">전화</button><button type="button" class="quick-log sms" data-quick-log-type="sms" onclick="openApplicantQuickLog('${a.id}','sms')">문자</button><button type="button" class="quick-log memo" data-quick-log-type="memo" onclick="openApplicantQuickLog('${a.id}','memo')">메모</button></div>
+          <div><button type="button" class="quick-log phone" data-quick-log-type="phone" data-erp-handler="openApplicantQuickLog('${a.id}','phone')">전화</button><button type="button" class="quick-log sms" data-quick-log-type="sms" data-erp-handler="openApplicantQuickLog('${a.id}','sms')">문자</button><button type="button" class="quick-log memo" data-quick-log-type="memo" data-erp-handler="openApplicantQuickLog('${a.id}','memo')">메모</button></div>
         </div>
       </div>
       <div class="applicant-quick-log-composer" id="aphQuickComposer" hidden>
-        <div class="quick-log-composer-head"><div><strong id="aphQuickTitle">진행 기록 추가</strong><span id="aphQuickHelp">처리 결과와 다음 액션을 간단히 남겨주세요.</span></div><button type="button" class="mini" onclick="closeApplicantQuickLog()">입력 닫기</button></div>
+        <div class="quick-log-composer-head"><div><strong id="aphQuickTitle">진행 기록 추가</strong><span id="aphQuickHelp">처리 결과와 다음 액션을 간단히 남겨주세요.</span></div><button type="button" class="mini" data-erp-handler="closeApplicantQuickLog()">입력 닫기</button></div>
         <input id="aphType" type="hidden" value="memo">
         <div class="quick-log-grid">
           <label>처리일<input id="aphDate" type="date" value="${new Date().toISOString().slice(0,10)}"></label>
           <label>다음 연락 예정일<input id="aphNextDate" type="date" value="${safe(a.nextContactDate||'')}"></label>
           <label>변경 담당자<input id="aphActor" value="${safe(currentActor(a))}" placeholder="담당자명"></label>
           <label class="wide">처리 내용<textarea id="aphNote" rows="2" placeholder="처리 결과와 다음 액션을 입력"></textarea></label>
-          <button type="button" class="primary quick-log-save" onclick="saveApplicantQuickLog('${a.id}')">기록 저장</button>
+          <button type="button" class="primary quick-log-save" data-erp-handler="saveApplicantQuickLog('${a.id}')">기록 저장</button>
         </div>
       </div>
       ${reasonCards?`<div class="applicant-reason-summary">${reasonCards}</div>`:''}

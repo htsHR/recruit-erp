@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='10.55.0';
+  const BC_VERSION='10.56.0';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
@@ -507,7 +507,7 @@
     if(file.size>BC_MAX_FILE_BYTES){alert('백업 파일이 50MB를 초과합니다. 파일을 다시 확인해주세요.');return;}
     if(!/\.json$/i.test(file.name||'')){alert('JSON 파일만 검사할 수 있습니다.');return;}
     try{
-      const text=await file.text();const parsed=JSON.parse(text);const canonical=canonicalize(parsed);
+      const text=await file.text();const parsed=window.erpSecurity.parseJson(text,{maxBytes:BC_MAX_FILE_BYTES});const canonical=canonicalize(parsed);
       inspected={file,parsed,canonical};renderInspection();
       recordHistory('백업 파일 검사',`${file.name} · ${canonical.fileType?.label||canonical.included.map(k=>datasetInfo(k).label).join(', ')} · ${canonical.valid?'적용 가능':'적용 불가'}`);
     }catch(err){inspected=null;renderInspection();alert(`백업 파일 검사 실패\n\n${err.message||err}`);}

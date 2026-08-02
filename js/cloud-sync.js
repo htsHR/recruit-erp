@@ -109,7 +109,7 @@ function renderSnapshotList(){
     el.innerHTML = res.data.map(function(s){
       var dt = new Date(s.created_at);
       var label = dt.toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-      return '<div class="snapshot-row"><span class="snapshot-time">'+esc(label)+'</span><span class="snapshot-reason">'+esc(s.reason||'')+'</span><span class="snapshot-count">'+s.count+'명</span><button class="mini" onclick="restoreSnapshot('+s.id+')">이 시점으로 복원</button></div>';
+      return '<div class="snapshot-row"><span class="snapshot-time">'+esc(label)+'</span><span class="snapshot-reason">'+esc(s.reason||'')+'</span><span class="snapshot-count">'+s.count+'명</span><button class="mini" data-erp-handler="restoreSnapshot('+s.id+')">이 시점으로 복원</button></div>';
     }).join('');
   }).catch(function(){ el.innerHTML = '<div class="empty">백업 이력을 불러오지 못했습니다.</div>'; });
 }

@@ -35,7 +35,7 @@ function selectedApplicants(){return applicants.filter(a=>selected.has(a.id))}
 function updateBulkDock(){const rows=selectedApplicants(),dock=el('bulkDock');el('bulkSelectedCount').textContent=rows.length;el('bulkSelectedNames').textContent=rows.slice(0,5).map(a=>a.name||'이름없음').join(', ')+(rows.length>5?` 외 ${rows.length-5}명`:'');dock.classList.toggle('show',rows.length>0);dock.setAttribute('aria-hidden',rows.length?'false':'true');decorateRows()}
 function decorateRows(){
  qa('#applicantTbody tr.applicant-row').forEach(tr=>{
-  const onclick=tr.getAttribute('onclick')||'';
+  const onclick=tr.getAttribute('data-erp-handler')||'';
   const m=onclick.match(/viewApplicant\('([^']+)'\)/);
   if(!m)return;
   const id=m[1];

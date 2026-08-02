@@ -126,8 +126,7 @@ bind('schoolJsonImport','change',e=>{
   const r=new FileReader();
   r.onload=()=>{
     try{
-      const parsed=JSON.parse(r.result);
-      const data=Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.schools) ? parsed.schools : []);
+      const {rows:data}=window.erpSecurity.parseImportJson(r.result,{collection:'schools'});
       if(!confirm(`학교 ${data.length}개를 가져올까요? 기존 학교는 지워지지 않고, 이름이 같으면 별칭/구분 정보만 보강됩니다.`)) return;
       importSchoolsJson(data);
     }catch{ alert('학교 JSON 파일을 확인해주세요.'); }
@@ -141,8 +140,7 @@ bind('schoolHrStatsImport','change',e=>{
   const r=new FileReader();
   r.onload=()=>{
     try{
-      const parsed=JSON.parse(r.result);
-      const data=Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.stats) ? parsed.stats : []);
+      const {rows:data}=window.erpSecurity.parseImportJson(r.result,{collection:'stats'});
       if(!confirm(`학교 HR 통계 ${data.length}건을 반영할까요? 개인정보는 담겨있지 않은 학교 단위 집계 수치입니다.`)) return;
       importSchoolHrStats(data);
     }catch{ alert('HR 통계 JSON 파일을 확인해주세요.'); }
@@ -171,7 +169,7 @@ bind('employeeJsonImport','change',e=>{
   const r=new FileReader();
   r.onload=()=>{
     try{
-      const parsed=JSON.parse(r.result);
+      const parsed=window.erpSecurity.parseJson(r.result);
       if(parsed&&parsed.format==='recruit-erp-employee-org-import'){
         alert('이 파일은 사원 조직정보 반영용 JSON입니다.\n\n사원명부 상단의 “엑셀 조직정보 반영” 메뉴에서 사용해주세요.');
         return;
@@ -185,6 +183,8 @@ bind('employeeJsonImport','change',e=>{
         return;
       }
       const data=Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.employees) ? parsed.employees : []);
+      window.erpSecurity.validateRowIds(data);
+      if(data.length>window.erpSecurity.MAX_IMPORT_ROWS)throw new Error('한 번에 가져올 수 있는 사원 수를 초과했습니다.');
       if(!data.length){alert('사원명부 JSON 형식이 아니거나 사원 데이터가 없습니다.');return;}
       importEmployeesJson(data);
     }catch{ alert('직원명부 JSON 파일을 확인해주세요.'); }
@@ -235,8 +235,7 @@ bind('jsonImport','change',e=>{
   const r=new FileReader();
   r.onload=()=>{
     try{
-      const parsed=JSON.parse(r.result);
-      const data=Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.applicants) ? parsed.applicants : []);
+      const {rows:data}=window.erpSecurity.parseImportJson(r.result,{collection:'applicants',requireId:true});
       if(!Array.isArray(data) || !data.length){ alert('지원자 백업 JSON 형식이 아니거나 데이터가 비어 있습니다.'); return; }
       const ok=confirm(`JSON 가져오기 전 확인\n\n현재 저장된 지원자: ${applicants.length}명\n가져올 지원자: ${data.length}명\n\n가져오면 현재 브라우저의 지원자 목록이 가져온 파일 기준으로 교체됩니다. 진행할까요?`);
       if(!ok) return;
@@ -258,8 +257,7 @@ bind('jsonImportMerge','change',e=>{
   const r=new FileReader();
   r.onload=()=>{
     try{
-      const parsed=JSON.parse(r.result);
-      const data=Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.applicants) ? parsed.applicants : []);
+      const {rows:data}=window.erpSecurity.parseImportJson(r.result,{collection:'applicants',requireId:true});
       if(!Array.isArray(data) || !data.length){ alert('지원자 백업 JSON 형식이 아니거나 데이터가 비어 있습니다.'); return; }
       const incoming=data.map(normalize);
       const map={};

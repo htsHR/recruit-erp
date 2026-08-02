@@ -26,7 +26,7 @@ function calendarCurrentActor(){
 function calendarClearBulkSelection(){ calendarSelectedInterviewIds.clear(); }
 function normalizeCalendarEvent(e){
   return {
-    id:e.id||uid(), title:String(e.title||'').trim(), date:e.date||today(), time:e.time||'', type:e.type||'중요',
+    id:window.erpSecurity?.isValidId(e.id)?String(e.id):uid(), title:String(e.title||'').trim(), date:e.date||today(), time:e.time||'', type:e.type||'중요',
     workplace:e.workplace||'전체', importance:e.importance||'normal', memo:e.memo||'',
     createdAt:e.createdAt||new Date().toISOString(), updatedAt:e.updatedAt||''
   };
@@ -143,7 +143,7 @@ function renderCalendar(){
     if(hireCount) lines.push(`<span class="calendar-day-line calendar-type-hire"><span class="calendar-line-main">입사 ${hireCount}</span></span>`);
     if(urgentCount) lines.push(`<span class="calendar-day-line calendar-type-urgent"><span class="calendar-line-main">매우중요 ${urgentCount}</span></span>`);
     else if(customCount) lines.push(`<span class="calendar-day-line calendar-type-custom"><span class="calendar-line-main">직접 ${customCount}</span></span>`);
-    cells.push(`<button type="button" class="calendar-day ${inMonth?'':'other-month'} ${dateStr===today()?'today':''} ${dateStr===selectedCalendarDate?'selected':''}" onclick="selectCalendarDate('${dateStr}')">
+    cells.push(`<button type="button" class="calendar-day ${inMonth?'':'other-month'} ${dateStr===today()?'today':''} ${dateStr===selectedCalendarDate?'selected':''}" data-erp-handler="selectCalendarDate('${dateStr}')">
       <span class="calendar-date-num"><span>${d.getDate()}</span>${dateStr===today()?'<span class="calendar-today-dot">오늘</span>':''}</span>
       <span class="calendar-day-lines">${lines.join('')}</span>
     </button>`);
@@ -164,12 +164,12 @@ function renderCalendarBulkDecisionBar(list){
   const completed=interviews.length-selectable.length;
   bar.hidden=false;
   bar.innerHTML=`<div class="calendar-bulk-left">
-    <label class="calendar-bulk-select-all"><input type="checkbox" ${allSelected?'checked':''} ${selectable.length?'':'disabled'} onchange="toggleCalendarInterviewSelectAll(this.checked)"/> 면접자 전체 선택</label>
+    <label class="calendar-bulk-select-all"><input type="checkbox" ${allSelected?'checked':''} ${selectable.length?'':'disabled'} data-erp-change-handler="toggleCalendarInterviewSelectAll(this.checked)"/> 면접자 전체 선택</label>
     <span class="calendar-bulk-count"><strong>${selectedCount}</strong>명 선택</span>
     ${completed?`<span class="calendar-processed-note">처리 완료 ${completed}명 제외</span>`:''}
   </div><div class="calendar-bulk-actions">
-    <button class="calendar-bulk-accept" type="button" ${selectedCount?'':'disabled'} onclick="openCalendarBulkDecision('accept')">합격 처리</button>
-    <button class="calendar-bulk-reject" type="button" ${selectedCount?'':'disabled'} onclick="openCalendarBulkDecision('reject')">불합격 처리</button>
+    <button class="calendar-bulk-accept" type="button" ${selectedCount?'':'disabled'} data-erp-handler="openCalendarBulkDecision('accept')">합격 처리</button>
+    <button class="calendar-bulk-reject" type="button" ${selectedCount?'':'disabled'} data-erp-handler="openCalendarBulkDecision('reject')">불합격 처리</button>
   </div>`;
 }
 function toggleCalendarInterviewSelection(id,checked){
@@ -198,10 +198,10 @@ function renderCalendarTimeline(){
     const result=calendarResultLabel(a);
     const resultClass=result==='합격'?'accept':result==='불합격'?'reject':'done';
     const resultTag=result?`<span class="calendar-result-tag ${resultClass}">${esc(result)}</span>`:'';
-    const check=selectable?`<label class="calendar-item-select" title="${esc(a?.name||'지원자')} 선택"><input type="checkbox" ${selected?'checked':''} onchange="toggleCalendarInterviewSelection('${item.applicantId}',this.checked)"/></label>`:'';
+    const check=selectable?`<label class="calendar-item-select" title="${esc(a?.name||'지원자')} 선택"><input type="checkbox" ${selected?'checked':''} data-erp-change-handler="toggleCalendarInterviewSelection('${item.applicantId}',this.checked)"/></label>`:'';
     const actions=item.kind==='custom'
-      ? `<button class="mini" onclick="editCalendarEvent('${item.id}')">수정</button><button class="mini danger" onclick="deleteCalendarEvent('${item.id}')">삭제</button>`
-      : `<button class="mini" onclick="viewApplicant('${item.applicantId}')">상세</button><button class="mini" onclick="editApplicant('${item.applicantId}')">지원자 수정</button>`;
+      ? `<button class="mini" data-erp-handler="editCalendarEvent('${item.id}')">수정</button><button class="mini danger" data-erp-handler="deleteCalendarEvent('${item.id}')">삭제</button>`
+      : `<button class="mini" data-erp-handler="viewApplicant('${item.applicantId}')">상세</button><button class="mini" data-erp-handler="editApplicant('${item.applicantId}')">지원자 수정</button>`;
     return `<div class="calendar-timeline-item ${calendarTypeClass(item)} ${selected?'is-bulk-selected':''} ${result?'is-processed':''}"><div class="calendar-timeline-main-wrap">${check}<div class="calendar-timeline-main">${badge}<strong>${esc(item.title)}${resultTag}</strong><small>${esc(detail||'추가 정보 없음')}</small></div></div><div class="calendar-timeline-actions">${actions}</div></div>`;
   }).join(''):`<div class="empty">선택한 날짜에 등록된 일정이 없습니다. 오른쪽에서 직접 일정을 추가할 수 있어요.</div>`;
 }

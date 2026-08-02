@@ -270,7 +270,7 @@ function card(a){
     <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong>
     <small>${esc(scheduleText)}${esc(a.workplace||'근무지 미입력')} · ${esc(dorm)} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)}</small>
     ${miniStepperHtml(a)}</div>
-    <button class="mini" onclick="editApplicant('${a.id}')">수정</button></div>`;
+    <button class="mini" data-erp-handler="editApplicant('${a.id}')">수정</button></div>`;
 }
 /* =========================================================
    v10.12.5 일정 리마인더 배너
@@ -299,7 +299,7 @@ function renderScheduleReminder(){
   if(hasToday) segs.push(`오늘: ${[todayInterview&&`면접 ${todayInterview}건`, todayHire&&`입사 ${todayHire}건`].filter(Boolean).join(' · ')}`);
   if(hasTomorrow) segs.push(`내일(${tomorrowStr.slice(5).replace('-','.')}): ${[tomorrowInterview&&`면접 ${tomorrowInterview}건`, tomorrowHire&&`입사 ${tomorrowHire}건`, tomorrowImportant&&`중요일정 ${tomorrowImportant}건`].filter(Boolean).join(' · ')}`);
   el.style.display='flex';
-  el.innerHTML = `<div class="reminder-text"><strong>일정 알림</strong><span>${esc(segs.join('  ·  '))}</span></div><div class="reminder-actions"><button class="mini" onclick="setPage('calendar')">캘린더 보기</button><button class="mini" onclick="dismissScheduleReminder()">오늘은 닫기</button></div>`;
+  el.innerHTML = `<div class="reminder-text"><strong>일정 알림</strong><span>${esc(segs.join('  ·  '))}</span></div><div class="reminder-actions"><button class="mini" data-erp-handler="setPage('calendar')">캘린더 보기</button><button class="mini" data-erp-handler="dismissScheduleReminder()">오늘은 닫기</button></div>`;
 }
 function dismissScheduleReminder(){ localStorage.setItem(REMINDER_DISMISS_KEY, today()); renderScheduleReminder(); }
 function renderHomeLists(){
@@ -442,8 +442,8 @@ function renderApplicantPagination(totalRows){
   const totalPages=Math.max(1,Math.ceil(totalRows/applicantPageSize));
   const start=totalRows?(currentApplicantPage-1)*applicantPageSize+1:0;
   const end=Math.min(totalRows,currentApplicantPage*applicantPageSize);
-  const pages=applicantPageWindow(totalPages,currentApplicantPage).map(p=>p==='…'?'<span class="page-ellipsis">…</span>':`<button type="button" class="applicant-page-btn ${p===currentApplicantPage?'active':''}" onclick="goApplicantPage(${p})" ${p===currentApplicantPage?'aria-current="page"':''}>${p}</button>`).join('');
-  host.innerHTML=`<div class="applicant-page-summary">${totalRows?`${start}–${end}명 표시`:'표시 인원 없음'} · 전체 ${totalRows}명</div><div class="applicant-page-controls"><button type="button" class="applicant-page-btn" onclick="goApplicantPage(${currentApplicantPage-1})" ${currentApplicantPage<=1?'disabled':''}>이전</button>${pages}<button type="button" class="applicant-page-btn" onclick="goApplicantPage(${currentApplicantPage+1})" ${currentApplicantPage>=totalPages?'disabled':''}>다음</button></div><label class="applicant-page-size">페이지당 <select onchange="changeApplicantPageSize(this.value)"><option value="30" ${applicantPageSize===30?'selected':''}>30명</option><option value="50" ${applicantPageSize===50?'selected':''}>50명</option><option value="100" ${applicantPageSize===100?'selected':''}>100명</option></select></label>`;
+  const pages=applicantPageWindow(totalPages,currentApplicantPage).map(p=>p==='…'?'<span class="page-ellipsis">…</span>':`<button type="button" class="applicant-page-btn ${p===currentApplicantPage?'active':''}" data-erp-handler="goApplicantPage(${p})" ${p===currentApplicantPage?'aria-current="page"':''}>${p}</button>`).join('');
+  host.innerHTML=`<div class="applicant-page-summary">${totalRows?`${start}–${end}명 표시`:'표시 인원 없음'} · 전체 ${totalRows}명</div><div class="applicant-page-controls"><button type="button" class="applicant-page-btn" data-erp-handler="goApplicantPage(${currentApplicantPage-1})" ${currentApplicantPage<=1?'disabled':''}>이전</button>${pages}<button type="button" class="applicant-page-btn" data-erp-handler="goApplicantPage(${currentApplicantPage+1})" ${currentApplicantPage>=totalPages?'disabled':''}>다음</button></div><label class="applicant-page-size">페이지당 <select data-erp-change-handler="changeApplicantPageSize(this.value)"><option value="30" ${applicantPageSize===30?'selected':''}>30명</option><option value="50" ${applicantPageSize===50?'selected':''}>50명</option><option value="100" ${applicantPageSize===100?'selected':''}>100명</option></select></label>`;
 }
 function renderTable(){
   const allRows=filtered();
@@ -473,7 +473,7 @@ function renderTable(){
       <span>· 연락 필요 ${contactCount}명</span>
       <span>· 면접/예정 ${interviewCount}명</span>
       ${hideFinished ? '<span>· 종료 숨김 적용</span>' : ''}
-      ${schoolFilterName ? `<span class="school-filter-inline">· 학교 ${esc(schoolFilterName)} <button type="button" onclick="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}
+      ${schoolFilterName ? `<span class="school-filter-inline">· 학교 ${esc(schoolFilterName)} <button type="button" data-erp-handler="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}
     </div>
     <div class="list-summary-side">
       <span>${pageText}</span>
@@ -488,10 +488,10 @@ function renderTable(){
     const typeLine = [a.careerType, a.education].filter(Boolean).join(' · ') || '기본정보 미입력';
     const staleDays = ['서류검토','부재중'].includes(a.status) ? daysSinceApply(a) : null;
     const staleBadge = (staleDays!==null && staleDays>=3) ? `<span class="stale-badge" title="지원일 기준 ${staleDays}일째 연락 안 됨">${staleDays}일째</span>` : '';
-    return `<tr class="applicant-row compact-row clickable-data-row ${applicantRowToneClass(a)}" data-applicant-id="${a.id}" tabindex="0" onclick="if(!event.target.closest('button,select,a,input,label,summary,details')) viewApplicant('${a.id}')" onkeydown="listRowKeyActivate(event,()=>viewApplicant('${a.id}'))">
+    return `<tr class="applicant-row compact-row clickable-data-row ${applicantRowToneClass(a)}" data-applicant-id="${esc(a.id)}" tabindex="0" data-erp-handler="if(!event.target.closest('button,select,a,input,label,summary,details')) viewApplicant('${a.id}')" data-erp-key-handler="listRowKeyActivate(event,()=>viewApplicant('${a.id}'))">
       <td class="no-cell sticky-app-col sticky-app-no" data-label="번호">${pageStart+idx+1}</td>
-      <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><div class="applicant-name-line"><button class="name-button ${genderClass(a)}" onclick="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button><span class="workplace-pill ${workplaceBadgeClass(a.workplace)}">${esc(a.workplace||'미지정')}</span>${staleBadge}</div><small>${esc(typeLine)}</small></td>
-      <td class="status-cell sticky-app-col sticky-app-status" data-label="상태"><span class="status-select-wrap ${badgeClass(a.status)}" title="${LEGACY_STATUS_OPTIONS.includes(normalizeStatus(a.status))?'기존 상태 · 재분류 필요':'눌러서 상태 변경'}"><select class="status-inline ${badgeClass(a.status)}" aria-label="${esc(a.name||'지원자')} 상태 변경" onchange="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></span></td>
+      <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><div class="applicant-name-line"><button class="name-button ${genderClass(a)}" data-erp-handler="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button><span class="workplace-pill ${workplaceBadgeClass(a.workplace)}">${esc(a.workplace||'미지정')}</span>${staleBadge}</div><small>${esc(typeLine)}</small></td>
+      <td class="status-cell sticky-app-col sticky-app-status" data-label="상태"><span class="status-select-wrap ${badgeClass(a.status)}" title="${LEGACY_STATUS_OPTIONS.includes(normalizeStatus(a.status))?'기존 상태 · 재분류 필요':'눌러서 상태 변경'}"><select class="status-inline ${badgeClass(a.status)}" aria-label="${esc(a.name||'지원자')} 상태 변경" data-erp-change-handler="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></span></td>
       <td class="apply-date-cell" data-label="지원일">${esc(a.applyDate||'-')}</td>
       <td class="schedule-cell" data-label="면접일정"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
       <td class="hire-date-cell" data-label="입사예정일"><strong>${esc(a.hireDate||'-')}</strong></td>
@@ -500,12 +500,13 @@ function renderTable(){
       <td class="region-cell" data-label="지역">${esc(a.region||'')}</td>
       <td class="commute-cell" data-label="출근방법"><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
       <td class="decision-cell" data-label="판정"><span class="decision-pill ${decisionToneClass(a)}">${esc(decision)}</span><small>${score}점</small></td>
-      <td class="row-actions compact-actions applicant-actions sticky-app-actions" data-label="관리"><button class="view" onclick="event.stopPropagation();viewApplicant('${a.id}')">상세</button><button onclick="event.stopPropagation();editApplicant('${a.id}')">수정</button><button class="delete" onclick="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></td>
+      <td class="row-actions compact-actions applicant-actions sticky-app-actions" data-label="관리"><button class="view" data-erp-handler="event.stopPropagation();viewApplicant('${a.id}')">상세</button><button data-erp-handler="event.stopPropagation();editApplicant('${a.id}')">수정</button><button class="delete" data-erp-handler="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="12" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" onclick="resetAndRenderList()">필터 초기화</button></td></tr>`;
+  }).join(''):`<tr><td colspan="12" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" data-erp-handler="resetAndRenderList()">필터 초기화</button></td></tr>`;
   renderApplicantPagination(allRows.length);
 }
 function resetAndRenderList(){ resetListFiltersToAll(); renderTable(); }
+function clearApplicantSchoolFilter(){ currentSchoolFilterId=''; renderTable(); }
 
 /* =========================================================
    v10.40.7 엑셀 다중 행·지원자 UI 안정화

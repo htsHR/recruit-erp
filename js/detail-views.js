@@ -43,7 +43,7 @@ function schoolNextContactStatus(date){
   return `<span class="school-date-status upcoming">D-${d}</span>`;
 }
 function schoolKpiItem(label, value, action='', help=''){
-  const attrs=action ? ` role="button" tabindex="0" onclick="${action}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${action}}"` : '';
+  const attrs=action ? ` role="button" tabindex="0" data-erp-handler="${action}" data-erp-key-handler="if(event.key==='Enter'||event.key===' '){event.preventDefault();${action}}"` : '';
   return `<div class="school-kpi-item${action?' is-clickable':''}"${attrs}><span>${esc(label)}</span><strong>${esc(String(value ?? '-'))}</strong>${help?`<small>${esc(help)}</small>`:''}${action?'<em>목록 보기 →</em>':''}</div>`;
 }
 function schoolFunnelHtml(rec){
@@ -222,12 +222,12 @@ function renderEmployeeDetail(){
     detailRow('입사경위',employeeDetailValue(e.recruitType)),
     detailRow('채용채널',employeeDetailValue(e.recruitChannel)),
     linked
-      ? `<div class="detail-item wide-row"><span>지원자 기록</span><strong><button class="link-like" type="button" onclick="openEmployeeLinkedApplicant('${linked.id}')">${esc(linked.name)} · ${esc(linked.applyDate||'지원일 미입력')} · ${esc(linked.workplace||'근무지 미입력')}</button></strong></div>`
+      ? `<div class="detail-item wide-row"><span>지원자 기록</span><strong><button class="link-like" type="button" data-erp-handler="openEmployeeLinkedApplicant('${linked.id}')">${esc(linked.name)} · ${esc(linked.applyDate||'지원일 미입력')} · ${esc(linked.workplace||'근무지 미입력')}</button></strong></div>`
       : detailRow('지원자 기록','연결되지 않음','wide-row'),
   ].join('');
   const linkedSchool=e.schoolId&&typeof schools!=='undefined'?schools.find(s=>String(s.id)===String(e.schoolId)):null;
   const schoolLinkValue=linkedSchool
-    ? `<button class="link-like" type="button" onclick="closeEmployeeDetail();openSchoolDetail('${linkedSchool.id}')">${esc(linkedSchool.name)} · ${esc(normalizeSchoolType(linkedSchool.type)||'구분 미확인')}</button>`
+    ? `<button class="link-like" type="button" data-erp-handler="closeEmployeeDetail();openSchoolDetail('${linkedSchool.id}')">${esc(linkedSchool.name)} · ${esc(normalizeSchoolType(linkedSchool.type)||'구분 미확인')}</button>`
     : (e.schoolId?'존재하지 않는 학교 ID':'미연결');
   const educationRows=[
     detailRow('최종학력',employeeDetailValue(e.education)),
