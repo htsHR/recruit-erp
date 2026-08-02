@@ -1,5 +1,9 @@
 # Recruit ERP
 
+> 개발 중 릴리스 후보: **v10.61.0 저장소·속도 개선**
+>
+> 운영 `main`은 v10.60.0이며, 검토와 Preview 확인 전에는 운영 버전으로 보지 않습니다.
+
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
 채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.60.0**입니다.
@@ -55,7 +59,7 @@ npm run check
 npm run test:ui-layout
 ```
 
-로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v10.60.0`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
+로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v10.61.0`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
 
 ### GitHub CI 테스트
 
