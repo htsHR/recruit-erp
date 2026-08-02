@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='10.58.0';
+const UX_VERSION='10.59.0';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -76,43 +76,84 @@ function uxFormatPhoneInput(el){
   else el.value=`${d.slice(0,3)}-${d.slice(3,d.length-4)}-${d.slice(-4)}`;
 }
 function uxUpdateFormProgress(){
-  const ids=['name','phone','applyDate','workplace','source','education','school','careerType','status','dormUse','interviewDate','hireDate','memo'];
-  const filled=ids.filter(id=>uxFieldValue(id)).length;
-  const pct=Math.round(filled/ids.length*100);
-  if(uxEl('formProgressText')) uxEl('formProgressText').textContent=`작성 ${pct}%`;
-  if(uxEl('formProgressBar')) uxEl('formProgressBar').style.width=`${pct}%`;
-  document.querySelectorAll('[data-form-step]').forEach(sec=>{
-    const controls=[...sec.querySelectorAll('input:not([type=hidden]),select,textarea')];
-    const count=controls.filter(el=>String(el.value||'').trim()).length;
-    const ratio=controls.length?count/controls.length:0;
-    sec.classList.toggle('step-complete',ratio>=0.7);
+  const status=uxFieldValue('status')||'서류검토';
+  const terminal=['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절','연락거절','연락 거절'].includes(status);
+  const definitions=[
+    {step:'1',started:['name','phone','applyDate','workplace'],required:['name','phone','applyDate','workplace']},
+    {step:'2',started:['education','school','major','certs','languageEtc','career'],required:[]},
+    {step:'3',started:['dormUse','interviewDate','interviewTime','hireDate','consult','memo'],required:[
+      ...(['면접예정','다음면접'].includes(status)?['interviewDate']:[]),
+      ...(status==='입사예정'?['hireDate']:[])
+    ],forceStarted:status!=='서류검토'||terminal}
+  ];
+  let complete=0;
+  definitions.forEach(def=>{
+    const sec=document.querySelector(`[data-form-step="${def.step}"]`);if(!sec)return;
+    const started=!!def.forceStarted||def.started.some(id=>uxFieldValue(id));
+    const missing=def.required.filter(id=>!uxFieldValue(id));
+    let state='not-started',label='미작성';
+    if(started&&missing.length){state='needs-review';label='확인 필요';}
+    else if(started){state='complete';label='완료';complete+=1;}
+    sec.classList.remove('step-complete','step-needs-review','step-not-started');
+    sec.classList.add(`step-${state}`);
+    let badge=sec.querySelector('[data-form-step-status]');
+    if(!badge){badge=document.createElement('span');badge.dataset.formStepStatus='';badge.className='form-step-status';sec.querySelector('.section-title')?.appendChild(badge);}
+    if(badge){badge.className=`form-step-status is-${state}`;badge.textContent=label;badge.title=missing.length?`필수 확인: ${missing.join(', ')}`:'';}
   });
+  const pct=Math.round(complete/definitions.length*100);
+  if(uxEl('formProgressText')) uxEl('formProgressText').textContent=`${complete}/3 단계 완료`;
+  if(uxEl('formProgressBar')) uxEl('formProgressBar').style.width=`${pct}%`;
 }
 
 /* ---------- Status workflow ---------- */
-function uxPromptStatusData(a,next){
-  const patch={status:next,updatedAt:new Date().toISOString()};
-  if(['면접예정','다음면접'].includes(next) && !a.interviewDate){
-    const d=prompt(`${a.name||'지원자'}님의 면접 날짜를 입력하세요.\n예: 2026-07-20`,today());
-    if(d===null) return null;
-    if(d.trim()) patch.interviewDate=d.trim();
-  }
-  if(next==='입사예정' && !a.hireDate){
-    const d=prompt(`${a.name||'지원자'}님의 입사 예정일을 입력하세요.\n예: 2026-07-27`,today());
-    if(d===null) return null;
-    if(d.trim()) patch.hireDate=d.trim();
-  }
-  if(['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절'].includes(next)){
-    const reason=prompt('사유 또는 참고 메모를 입력하세요. (선택)',a.decisionReason||'');
-    if(reason===null) return null;
-    if(reason.trim()) patch.decisionReason=reason.trim();
-  }
-  return patch;
+let uxStatusModalState=null;
+function uxEnsureStatusModal(){
+  let modal=uxEl('applicantStatusModal');if(modal)return modal;
+  modal=document.createElement('div');modal.id='applicantStatusModal';modal.className='modal applicant-status-modal';modal.setAttribute('aria-hidden','true');
+  modal.innerHTML=`<div class="modal-backdrop" data-status-cancel></div><section class="modal-card applicant-status-card" role="dialog" aria-modal="true" aria-labelledby="applicantStatusTitle"><div class="modal-head"><div><p class="eyebrow">STATUS WORKFLOW</p><h3 id="applicantStatusTitle">지원자 상태 변경</h3><p id="applicantStatusDescription" class="status-modal-description"></p></div><button class="ghost" type="button" data-status-cancel>닫기</button></div><form id="applicantStatusForm"><div class="status-modal-summary"><span>변경할 상태</span><strong id="applicantStatusNext"></strong></div><div class="status-modal-fields"><label data-status-field="interviewDate">면접 날짜 <em class="req">*</em><input id="statusInterviewDate" type="date"></label><label data-status-field="interviewTime">면접 시간<select id="statusInterviewTime"><option value="">시간 미정</option>${Array.from({length:25},(_,i)=>{const mins=8*60+i*30;const h=String(Math.floor(mins/60)).padStart(2,'0'),m=String(mins%60).padStart(2,'0');return `<option>${h}:${m}</option>`;}).join('')}</select></label><label data-status-field="workplace">근무지 확인<select id="statusWorkplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label><label data-status-field="hireDate">입사 날짜 <em class="req">*</em><input id="statusHireDate" type="date"></label><label data-status-field="commute">출근 방법<select id="statusCommute"><option value="">확인 필요</option><option>기숙사</option><option>출퇴근</option><option>확인필요</option></select></label><label data-status-field="reason" class="wide">사유<input id="statusReason" maxlength="200" placeholder="상태 변경 사유"></label><label data-status-field="memo" class="wide">메모<textarea id="statusMemo" rows="3" maxlength="500" placeholder="담당자 참고사항 (선택)"></textarea></label></div><div class="status-modal-error" id="applicantStatusError" role="alert"></div><div class="form-actions status-modal-actions"><button class="ghost" type="button" data-status-cancel>취소</button><button class="primary" id="btnSaveApplicantStatus" type="submit">상태 변경 저장</button></div></form></section>`;
+  document.body.appendChild(modal);
+  modal.querySelectorAll('[data-status-cancel]').forEach(el=>el.addEventListener('click',()=>uxCloseStatusModal(null)));
+  modal.querySelector('form').addEventListener('submit',event=>{event.preventDefault();uxSubmitStatusModal();});
+  modal.addEventListener('keydown',event=>{
+    if(event.key==='Escape'){event.preventDefault();uxCloseStatusModal(null);return;}
+    if(event.key==='Enter'&&event.target.tagName!=='TEXTAREA'){event.preventDefault();uxSubmitStatusModal();return;}
+    if(event.key==='Tab'){
+      const focusable=[...modal.querySelectorAll('button:not([disabled]),input:not([hidden]),select,textarea')].filter(el=>el.offsetParent!==null);
+      if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];
+      if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+    }
+  });
+  return modal;
 }
-function uxUpdateApplicantStatus(id,status){
+function uxCloseStatusModal(value){
+  const state=uxStatusModalState;if(!state)return;uxStatusModalState=null;
+  state.modal.classList.remove('show');state.modal.setAttribute('aria-hidden','true');document.body.classList.remove('status-modal-open');
+  state.resolve(value);state.trigger?.focus?.();
+}
+function uxSubmitStatusModal(){
+  const state=uxStatusModalState;if(!state)return;const {modal,next}=state;
+  const interview=['면접예정','다음면접'].includes(next),hire=next==='입사예정';
+  const interviewDate=modal.querySelector('#statusInterviewDate').value,hireDate=modal.querySelector('#statusHireDate').value;
+  const error=modal.querySelector('#applicantStatusError');
+  if(interview&&!interviewDate){error.textContent='면접 날짜를 입력해 주세요.';modal.querySelector('#statusInterviewDate').focus();return;}
+  if(hire&&!hireDate){error.textContent='입사 날짜를 입력해 주세요.';modal.querySelector('#statusHireDate').focus();return;}
+  const patch={status:next,updatedAt:new Date().toISOString()};
+  const values={interviewDate,interviewTime:modal.querySelector('#statusInterviewTime').value,workplace:modal.querySelector('#statusWorkplace').value,hireDate,dormUse:modal.querySelector('#statusCommute').value,decisionReason:modal.querySelector('#statusReason').value.trim(),memo:modal.querySelector('#statusMemo').value.trim()};
+  Object.entries(values).forEach(([key,value])=>{if(value)patch[key]=value;});uxCloseStatusModal(patch);
+}
+function uxRequestStatusData(a,next){
+  const modal=uxEnsureStatusModal(),interview=['면접예정','다음면접'].includes(next),hire=next==='입사예정',terminal=['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절','연락거절','연락 거절'].includes(next);
+  modal.querySelectorAll('[data-status-field]').forEach(el=>{const key=el.dataset.statusField;el.hidden=!((interview&&['interviewDate','interviewTime','workplace','memo'].includes(key))||(hire&&['hireDate','commute','memo'].includes(key))||(terminal&&['reason','memo'].includes(key))||(!interview&&!hire&&!terminal&&key==='memo'));});
+  modal.querySelector('#applicantStatusNext').textContent=next;modal.querySelector('#applicantStatusDescription').textContent=`${a.name||'지원자'}님의 상태를 변경합니다. 저장 전 필요한 정보를 확인하세요.`;
+  modal.querySelector('#statusInterviewDate').value=a.interviewDate||today();modal.querySelector('#statusInterviewTime').value=a.interviewTime||'';modal.querySelector('#statusWorkplace').value=['천안','평택','기타'].includes(a.workplace)?a.workplace:'';modal.querySelector('#statusHireDate').value=a.hireDate||today();modal.querySelector('#statusCommute').value=a.dormUse||'';modal.querySelector('#statusReason').value=a.decisionReason||'';modal.querySelector('#statusMemo').value='';modal.querySelector('#applicantStatusError').textContent='';
+  modal.classList.add('show');modal.setAttribute('aria-hidden','false');document.body.classList.add('status-modal-open');
+  return new Promise(resolve=>{uxStatusModalState={modal,next,resolve,trigger:document.activeElement};requestAnimationFrame(()=>modal.querySelector('[data-status-field]:not([hidden]) input, [data-status-field]:not([hidden]) select, [data-status-field]:not([hidden]) textarea')?.focus());});
+}
+async function uxUpdateApplicantStatus(id,status){
   const a=applicants.find(x=>x.id===id); if(!a) return;
   const next=normalizeStatus(status);
-  const patch=uxPromptStatusData(a,next); if(!patch){ renderAll(); return; }
+  const patch=await uxRequestStatusData(a,next); if(!patch){ renderAll(); return; }
   const previous=applicants;
   applicants=applicants.map(x=>x.id===id?normalize({...x,...patch}):x);
   if(!save()){applicants=previous;return;}
@@ -482,8 +523,8 @@ function uxReplaceButton(id,handler){
 function uxInit(){
   document.documentElement.dataset.erpVersion=UX_VERSION;
   updateStorageNote();
-  // Suppress nonfunctional utility icons in this local-first UI build.
-  document.querySelectorAll('.topbar-icon-btn').forEach(x=>x.style.display='none');
+  // 기존 안내 문구를 안전 화면의 공통 인트로 카드로 사용합니다. 문구나 데이터는 복제하지 않습니다.
+  ['#dataHealth .health-hero','#duplicates .duplicate-hero','#backup .backup-center-hero','#employees .employee-workspace-header','#employeeOrgImportModal .employee-org-import-notice','#hireWaitingModal .hire-waiting-guide'].forEach(selector=>document.querySelector(selector)?.classList.add('page-intro-card'));
   // Dashboard interactions
   document.addEventListener('click',e=>{
     const q=e.target.closest('[data-task-target]'); if(q) uxFocusTaskPanel(q.dataset.taskTarget);

@@ -1,4 +1,4 @@
-/* Recruit ERP v10.58.0 AUDIT HISTORY
+/* Recruit ERP v10.59.0 AUDIT HISTORY
  * Audit records are append-only. Sensitive values are summarized, never copied verbatim.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpAudit=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='10.58.0';
+  const VERSION='10.59.0';
   const STORAGE_KEY='recruit_erp_audit_logs_v1';
   const MAX_LOCAL_RECORDS=2000;
   const DATASETS={
@@ -26,6 +26,9 @@
   let pendingContext={};
   let cloudSyncing=false;
   let pageRows=[];
+  let auditPage=1;
+  const AUDIT_PAGE_SIZE=20;
+  const auditFilters={type:'all',action:'all',query:''};
 
   function uid(){return root.crypto?.randomUUID?.()||('audit_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,12));}
   function asArray(value){return Array.isArray(value)?value:[];}
@@ -149,11 +152,18 @@
     const host=root.document?.getElementById('auditPageBody');if(!host)return;
     if(!root.erpPermissions?.has?.('audit.read')){host.textContent='관리자만 변경 이력을 볼 수 있습니다.';return;}
     const rows=pageRows.length?pageRows:readLocal();host.replaceChildren();
-    const summary=root.document.createElement('div');summary.className='audit-summary';summary.textContent=`최근 기록 ${Math.min(rows.length,200)}건 · 민감정보 원문 미기록`;
+    const controls=root.document.createElement('div');controls.className='audit-controls';controls.innerHTML='<label>대상<select id="auditTypeFilter"><option value="all">전체</option><option value="applicant">지원자</option><option value="employee">사원</option><option value="school">협력학교</option><option value="schedule">일정</option><option value="user">사용자</option></select></label><label>작업<select id="auditActionFilter"><option value="all">전체</option><option value="create">등록</option><option value="update">수정</option><option value="delete">삭제</option><option value="restore">복원</option><option value="export">내보내기</option><option value="role_change">권한 변경</option><option value="batch">일괄 변경</option></select></label><label class="audit-search-label">검색<input id="auditSearch" placeholder="사용자·대상·변경 항목 검색"></label>';
+    controls.querySelector('#auditTypeFilter').value=auditFilters.type;controls.querySelector('#auditActionFilter').value=auditFilters.action;controls.querySelector('#auditSearch').value=auditFilters.query;
+    controls.querySelectorAll('select').forEach(select=>select.addEventListener('change',()=>{auditFilters.type=controls.querySelector('#auditTypeFilter').value;auditFilters.action=controls.querySelector('#auditActionFilter').value;auditPage=1;renderPage();}));
+    controls.querySelector('#auditSearch').addEventListener('change',event=>{auditFilters.query=event.target.value.trim();auditPage=1;renderPage();});
+    const query=auditFilters.query.toLowerCase();const filtered=rows.filter(row=>(auditFilters.type==='all'||row.entity_type===auditFilters.type)&&(auditFilters.action==='all'||row.action===auditFilters.action)&&(!query||[row.actor_label,row.entity_label,row.action,...asArray(row.changed_fields)].join(' ').toLowerCase().includes(query)));
+    const totalPages=Math.max(1,Math.ceil(filtered.length/AUDIT_PAGE_SIZE));auditPage=Math.min(auditPage,totalPages);const visible=filtered.slice((auditPage-1)*AUDIT_PAGE_SIZE,auditPage*AUDIT_PAGE_SIZE);
+    const summary=root.document.createElement('div');summary.className='audit-summary';summary.textContent=`검색 결과 ${filtered.length}건 · 민감정보 원문 미기록`;
     const wrap=root.document.createElement('div');wrap.className='audit-table-wrap';const table=root.document.createElement('table');table.className='audit-table';
-    const thead=root.document.createElement('thead'),headRow=root.document.createElement('tr');['일시','사용자','대상','작업','변경 항목','사유'].forEach(text=>{const th=root.document.createElement('th');th.textContent=text;headRow.appendChild(th);});thead.appendChild(headRow);table.appendChild(thead);
-    const tbody=root.document.createElement('tbody');rows.slice(0,200).forEach(row=>{const tr=root.document.createElement('tr');const fields=[new Date(row.occurred_at).toLocaleString('ko-KR'),row.actor_label||'-',`${typeLabel(row.entity_type)} · ${row.entity_label||'-'}`,actionLabel(row.action),asArray(row.changed_fields).join(', ')||'-',row.reason||'-'];fields.forEach(value=>{const td=root.document.createElement('td');td.textContent=String(value);tr.appendChild(td);});tbody.appendChild(tr);});
-    if(!rows.length){const tr=root.document.createElement('tr'),td=root.document.createElement('td');td.colSpan=6;td.textContent='아직 기록된 변경이 없습니다.';tr.appendChild(td);tbody.appendChild(tr);}table.appendChild(tbody);wrap.appendChild(table);host.append(summary,wrap);
+    const labels=['일시','사용자','대상','작업','변경 항목','사유','상세'];const thead=root.document.createElement('thead'),headRow=root.document.createElement('tr');labels.forEach(text=>{const th=root.document.createElement('th');th.textContent=text;headRow.appendChild(th);});thead.appendChild(headRow);table.appendChild(thead);
+    const tbody=root.document.createElement('tbody');visible.forEach(row=>{const tr=root.document.createElement('tr');const fields=[new Date(row.occurred_at).toLocaleString('ko-KR'),row.actor_label||'-',`${typeLabel(row.entity_type)} · ${row.entity_label||'-'}`,actionLabel(row.action),asArray(row.changed_fields).join(', ')||'-',row.reason||'-'];fields.forEach((value,index)=>{const td=root.document.createElement('td');td.dataset.label=labels[index];td.textContent=String(value);tr.appendChild(td);});const detailTd=root.document.createElement('td');detailTd.dataset.label='상세';const details=root.document.createElement('details');details.className='audit-detail';const summaryEl=root.document.createElement('summary');summaryEl.textContent='안전 요약 보기';const body=root.document.createElement('div');body.className='audit-detail-body';const changed=asArray(row.changed_fields);if(!changed.length)body.textContent='변경 항목 상세 없음';else changed.forEach(field=>{const line=root.document.createElement('p'),strong=root.document.createElement('strong'),span=root.document.createElement('span');strong.textContent=field;span.textContent=`${row.before_values?.[field]||'비어 있음'} → ${row.after_values?.[field]||'비어 있음'}`;line.append(strong,span);body.appendChild(line);});details.append(summaryEl,body);detailTd.appendChild(details);tr.appendChild(detailTd);tbody.appendChild(tr);});
+    if(!visible.length){const tr=root.document.createElement('tr'),td=root.document.createElement('td');td.colSpan=7;td.textContent='조건에 맞는 변경 이력이 없습니다.';tr.appendChild(td);tbody.appendChild(tr);}table.appendChild(tbody);wrap.appendChild(table);
+    const pager=root.document.createElement('div');pager.className='audit-pagination';const prev=root.document.createElement('button'),next=root.document.createElement('button'),label=root.document.createElement('span');prev.type=next.type='button';prev.className=next.className='ghost';prev.textContent='이전';next.textContent='다음';prev.disabled=auditPage<=1;next.disabled=auditPage>=totalPages;label.textContent=`${auditPage} / ${totalPages} 페이지`;prev.addEventListener('click',()=>{auditPage-=1;renderPage();});next.addEventListener('click',()=>{auditPage+=1;renderPage();});pager.append(prev,label,next);host.append(controls,summary,wrap,pager);
   }
   function init(){if(!root.document)return;ensureUi();root.document.addEventListener('erp:permission-change',()=>{ensureUi();syncCloud();renderPage();});root.addEventListener?.('online',syncCloud);syncCloud();renderPage();}
   const api={VERSION,STORAGE_KEY,MAX_LOCAL_RECORDS,DATASETS,SAFE_FIELDS,scrubText,maskName,maskEmail,valueSummary,capture,setNextContext,clearNextContext,buildDatasetRecords,commitSave,recordEvent,readLocal,syncCloud,loadCloud,renderPage,init};

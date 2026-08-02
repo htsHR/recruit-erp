@@ -148,8 +148,9 @@ button:hover,.stat:hover,.queue-card:hover,.today-tile:hover,tbody tr:hover,.for
 .form-hero-tags span{background:var(--calm-surface-soft,#fafbfc)!important;border:1px solid var(--calm-line)!important;color:var(--calm-ink-2)!important;backdrop-filter:none!important;font-weight:500!important;}
 .form-hero-actions .hero-reset{background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink)!important;}
 
-/* ---------- B1. 위계 압축: 인트로 카드·부연 문구 숨김 ---------- */
-.page-intro-card,.page-intro-badge{display:none!important;}
+/* ---------- B1. 안전·업무 설명은 공통 인트로 카드가 소유 ---------- */
+.page-intro-card{display:flex!important;}
+.page-intro-badge{display:inline-flex!important;}
 .section-heading p,.applicant-list-header-copy p,.applicant-filter-group-head small{display:none!important;}
 .section-heading{margin:18px 0 10px!important;}
 .applicant-list-header-row{margin-bottom:10px!important;}
@@ -390,10 +391,11 @@ input[type="checkbox"],input[type="radio"]{
   background:var(--calm-surface-soft,#fafbfc)!important;
   box-shadow:inset 0 -1px 0 var(--calm-line)!important;
 }
-#applicants .applicant-table thead th:nth-child(1),
-#applicants .applicant-table thead th:nth-child(2),
-#applicants .applicant-table thead th:nth-child(3),
-#applicants .applicant-table thead th:nth-child(4){z-index:12!important;}
+#applicants .applicant-table thead .no-head,
+#applicants .applicant-table thead .name-head,
+#applicants .applicant-table thead .workplace-head,
+#applicants .applicant-table thead .status-head,
+#applicants .applicant-table thead .actions-head{z-index:12!important;}
 
 /* 6. 판정·출근 알약 감산 (calm 톤) */
 #applicants .fit-tag{background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink-2)!important;border-radius:6px!important;font-weight:500!important;}
@@ -791,3 +793,11 @@ input[type="checkbox"],input[type="radio"]{
 .pi-sub-row{display:flex;align-items:flex-end;gap:10px;margin-top:12px;padding:12px;background:#fafbfc;border:1px solid #e3e6eb;border-radius:10px;flex-wrap:wrap;}
 .pi-sub-row label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:#5c6673;}
 .pi-sub-row input,.pi-sub-row select{border:1px solid #d3d8df;border-radius:8px;padding:8px 10px;font-size:13px;}
+
+/* v10.59.0 — core readability and interaction floor */
+.main button,.topbar button{min-height:36px}
+.main label,.main input,.main select,.main textarea,.main td{font-size:max(12.5px,1em)}
+.main small,.main .muted,.main [class*="helper"],.main [class*="hint"]{font-size:max(11.5px,1em)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{outline:3px solid rgba(37,99,235,.32)!important;outline-offset:2px!important}
+.page-intro-card{min-width:0}.page-intro-card>div{min-width:0}.page-intro-card p,.page-intro-card span{overflow-wrap:anywhere}
+@media(max-width:760px){.main button,.topbar button,.privacy-shield-button{min-height:44px;min-width:44px}.main .mini{min-height:42px}.page-intro-badge{display:none!important}}

@@ -1,4 +1,4 @@
-/* Recruit ERP v10.58.0 cloud sync conflict, retry, and delete safety */
+/* Recruit ERP v10.59.0 cloud sync conflict, retry, and delete safety */
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -6,7 +6,7 @@
 })(typeof window!=='undefined'?window:null,function(root){
   'use strict';
 
-  const VERSION='10.58.0';
+  const VERSION='10.59.0';
   const BASE_KEY='recruit_erp_cloud_sync_bases_v1053';
   const PENDING_KEY='recruit_erp_cloud_sync_pending_v1053';
   const CONFLICT_KEY='recruit_erp_cloud_sync_conflicts_v1053';
@@ -243,7 +243,7 @@
   function ensureModal(){
     if(!root?.document?.body||root.document.getElementById('syncConflictModal'))return;
     const modal=root.document.createElement('div');modal.id='syncConflictModal';modal.className='sync-conflict-modal';modal.hidden=true;
-    modal.innerHTML='<div class="sync-conflict-backdrop"></div><section class="sync-conflict-card" role="dialog" aria-modal="true" aria-labelledby="syncConflictTitle"><div class="sync-conflict-head"><div><p>SYNC CONFLICT CENTER</p><h2 id="syncConflictTitle">클라우드 충돌 확인</h2><span>두 곳에서 모두 바뀐 항목만 표시합니다. 선택하기 전에는 이 브라우저 값을 유지합니다.</span></div><button class="ghost" id="btnCloseSyncConflicts" type="button">닫기</button></div><div class="sync-conflict-list" id="syncConflictList"></div><div class="sync-conflict-footer"><span id="syncConflictSelection">선택된 항목 없음</span><button class="primary" id="btnApplySyncConflicts" type="button">선택 결과 적용</button></div></section>';
+    modal.innerHTML='<div class="sync-conflict-backdrop"></div><section class="sync-conflict-card" role="dialog" aria-modal="true" aria-labelledby="syncConflictTitle"><div class="sync-conflict-head page-intro-card"><div><p>SYNC CONFLICT CENTER</p><h2 id="syncConflictTitle">클라우드 충돌 확인</h2><span>두 곳에서 모두 바뀐 항목만 표시합니다. 선택하기 전에는 이 브라우저 값을 유지합니다.</span></div><button class="ghost" id="btnCloseSyncConflicts" type="button">닫기</button></div><div class="sync-conflict-list" id="syncConflictList"></div><div class="sync-conflict-footer"><span id="syncConflictSelection">선택된 항목 없음</span><button class="primary" id="btnApplySyncConflicts" type="button">선택 결과 적용</button></div></section>';
     root.document.body.appendChild(modal);
     modal.querySelector('.sync-conflict-backdrop').addEventListener('click',closeConflicts);
     root.document.getElementById('btnCloseSyncConflicts').addEventListener('click',closeConflicts);
@@ -287,7 +287,7 @@
   function ensureDeleteModal(){
     if(!root?.document?.body||root.document.getElementById('syncDeleteModal'))return;
     const modal=root.document.createElement('div');modal.id='syncDeleteModal';modal.className='sync-conflict-modal';modal.hidden=true;
-    modal.innerHTML='<div class="sync-conflict-backdrop"></div><section class="sync-conflict-card" role="dialog" aria-modal="true" aria-labelledby="syncDeleteTitle"><div class="sync-conflict-head"><div><p>DELETE RECOVERY CENTER</p><h2 id="syncDeleteTitle">클라우드 삭제 대기</h2><span>로컬에서는 삭제됐지만 클라우드 전송이 끝나지 않은 항목입니다. 연결이 복구되면 자동으로 다시 시도합니다.</span></div><button class="ghost" id="btnCloseSyncDeletes" type="button">닫기</button></div><div class="sync-conflict-list sync-delete-list" id="syncDeleteList"></div><div class="sync-conflict-footer"><span id="syncDeleteSummary">삭제 대기 없음</span><button class="primary" id="btnRetrySyncDeletes" type="button">지금 다시 시도</button></div></section>';
+    modal.innerHTML='<div class="sync-conflict-backdrop"></div><section class="sync-conflict-card" role="dialog" aria-modal="true" aria-labelledby="syncDeleteTitle"><div class="sync-conflict-head page-intro-card"><div><p>DELETE RECOVERY CENTER</p><h2 id="syncDeleteTitle">클라우드 삭제 대기</h2><span>로컬에서는 삭제됐지만 클라우드 전송이 끝나지 않은 항목입니다. 연결이 복구되면 자동으로 다시 시도합니다.</span></div><button class="ghost" id="btnCloseSyncDeletes" type="button">닫기</button></div><div class="sync-conflict-list sync-delete-list" id="syncDeleteList"></div><div class="sync-conflict-footer"><span id="syncDeleteSummary">삭제 대기 없음</span><button class="primary" id="btnRetrySyncDeletes" type="button">지금 다시 시도</button></div></section>';
     root.document.body.appendChild(modal);
     modal.querySelector('.sync-conflict-backdrop').addEventListener('click',closeDeletes);
     root.document.getElementById('btnCloseSyncDeletes').addEventListener('click',closeDeletes);

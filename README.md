@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.58.0**입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 릴리스 후보 버전은 **v10.59.0**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -56,6 +56,17 @@ npm run check
 3. GitHub 변경 요청에서 자동 검사와 Vercel 미리보기를 확인합니다.
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
+
+## v10.59.0 UI·UX 레이아웃 안정화
+
+- 홈의 오늘 업무 카드 5개를 모두 표시하고 각 카드가 정확한 오늘 할 일 필터로 이동합니다.
+- 지원자 목록의 번호·성명·근무지·상태·관리 열을 의미 클래스 기준으로 고정했습니다.
+- 사용자 권한과 변경 이력 화면을 휴대폰에서도 읽고 조작할 수 있게 정리했습니다.
+- 지원자 등록 진행도를 업무 필수값 기준 3단계 상태로 표시합니다.
+- 지원자 상태 변경의 브라우저 입력창을 키보드 접근이 가능한 ERP 팝업으로 교체했습니다.
+- 위험 작업 화면의 기존 설명을 공통 안내 카드로 다시 표시했습니다.
+
+자세한 변경 내역은 `CHANGELOG_v10.59.0.md`, CSS 관리 기준은 `docs/UI_STYLE_OWNERSHIP_v10.59.0.md`를 확인하세요.
 
 ## v10.58.0 변경 이력 설치
 

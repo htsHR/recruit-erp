@@ -359,7 +359,6 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
 .dashboard-stats .stat strong{display:block!important;margin-top:7px!important;color:var(--calm-ink)!important;font-size:25px!important;font-weight:600!important;}
 .backup-alert.subtle{margin:9px 0 0!important;padding:0 2px!important;border:0!important;background:transparent!important;box-shadow:none!important;color:var(--calm-ink-3)!important;font-size:10.5px!important;font-weight:400!important;text-align:right!important;}
 .home-work-queue{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:10px!important;margin:0 0 17px!important;}
-.home-work-queue .queue-card:nth-child(4),.home-work-queue .queue-card:nth-child(6){display:none!important;}
 .queue-card{
   min-height:96px!important;
   padding:14px 15px!important;
@@ -509,13 +508,16 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
   .topbar{padding:0 16px!important;}
   .main>.page{width:calc(100% - 28px)!important;padding-top:18px!important;}
 }
+@media(max-width:1366px) and (min-width:761px){
+  .topbar{gap:12px!important}.topbar-left,.topbar-title-wrap{min-width:0!important}.topbar-title-wrap{max-width:340px!important}.topbar h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap!important}.topbar-breadcrumb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap!important}.topbar-actions-shell{min-width:0!important;flex-wrap:nowrap!important}.topbar-utils{min-width:0!important}.topbar-user-copy{max-width:150px!important}.topbar-user-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap!important}
+}
 @media(max-width:760px){
   body{font-size:13px!important;}
   .topbar{height:64px!important;min-height:64px!important;padding:0 10px!important;}
   .topbar h2{font-size:17px!important;}
   .topbar-breadcrumb{display:none!important;}
   .topbar-actions-shell{gap:6px!important;}
-  .topbar-actions-shell .primary,.topbar-actions-shell .ghost{height:36px!important;min-height:36px!important;padding:0 10px!important;font-size:11px!important;}
+  .topbar-actions-shell .primary,.topbar-actions-shell .ghost{height:44px!important;min-height:44px!important;padding:0 10px!important;font-size:12.5px!important;}
   .local-mode-badge{display:none!important;}
   .main>.page{width:calc(100% - 20px)!important;padding:14px 0 28px!important;}
   .page-intro-card{align-items:flex-start!important;padding:14px!important;margin-bottom:12px!important;}

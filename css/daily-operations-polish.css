@@ -29,26 +29,7 @@
 .hire-waiting-editable input,.hire-waiting-editable select{min-width:0!important;padding:0 6px!important;}
 .hire-waiting-resident-cell,.hire-waiting-remarks-cell,.hire-waiting-remarks-cell input{min-width:0!important;}
 
-/* 지원자 목록: 이름과 근무지를 한 칸으로 합치고 페이지 단위로 표시 */
-#applicants .table-wrap{max-height:calc(100vh - 355px)!important;min-height:360px!important;overflow:auto!important;}
-#applicants .applicant-table thead{position:sticky!important;top:0!important;z-index:12!important;}
-#applicants .applicant-name-line{display:flex;align-items:center;gap:7px;min-width:0;}
-#applicants .applicant-name-line .name-button{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-#applicants .applicant-name-line .workplace-pill{flex:0 0 auto;min-width:45px!important;padding:3px 7px!important;font-size:10px!important;}
-@media(min-width:761px){
- #applicants .applicant-table{min-width:1115px!important;table-layout:fixed!important;}
- #applicants .applicant-table .workplace-head,#applicants .applicant-table .workplace-cell{display:none!important;}
- #applicants .applicant-table .no-head,#applicants .applicant-table .no-cell{width:48px!important;min-width:48px!important;max-width:48px!important;}
- #applicants .applicant-table .name-head,#applicants .applicant-table .applicant-name-cell{width:210px!important;min-width:210px!important;max-width:210px!important;}
- #applicants .applicant-table .status-head,#applicants .applicant-table .status-cell{width:118px!important;min-width:118px!important;max-width:118px!important;}
- #applicants .applicant-table .sticky-app-no{position:sticky!important;left:0!important;}
- #applicants .applicant-table .sticky-app-name{position:sticky!important;left:48px!important;}
- #applicants .applicant-table .sticky-app-status{position:sticky!important;left:258px!important;box-shadow:none!important;}
- #applicants .applicant-table thead .no-head{position:sticky!important;left:0!important;}
- #applicants .applicant-table thead .name-head{position:sticky!important;left:48px!important;}
- #applicants .applicant-table thead .status-head{position:sticky!important;left:258px!important;}
- #applicants .status-inline{width:104px!important;min-width:104px!important;}
-}
+/* 지원자 표의 열·고정 위치는 applicant-clearview.css가 단독 소유합니다. */
 #applicants .applicant-pagination{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-top:10px;padding:10px 12px;border:1px solid #e0e6ed;border-radius:10px;background:#fff;color:#5c6673;font-size:11.5px;}
 #applicants .applicant-page-controls{display:flex;align-items:center;justify-content:center;gap:5px;}
 #applicants .applicant-page-btn{min-width:34px;height:32px;padding:0 8px;border:1px solid #d9e0e8;border-radius:7px;background:#fff;color:#4b5663;font-size:11px;font-weight:600;}
@@ -60,8 +41,6 @@
 #applicants .applicant-page-size select{height:32px;border:1px solid #d9e0e8;border-radius:7px;background:#fff;padding:0 8px;font:inherit;color:#4b5663;}
 #applicants .status-inline.bad,#applicants .status-inline.neutral{background:#f2f4f6!important;color:#606873!important;border-color:#dadddf!important;}
 @media(max-width:760px){
- #applicants .table-wrap{max-height:none!important;min-height:0!important;overflow:visible!important;}
- #applicants .applicant-table tr.applicant-row td.workplace-cell{display:none!important;}
  #applicants .applicant-pagination{grid-template-columns:1fr;}
  #applicants .applicant-page-summary,#applicants .applicant-page-size{justify-self:center;}
  #applicants .applicant-page-controls{max-width:100%;overflow-x:auto;justify-content:flex-start;padding-bottom:3px;}
@@ -95,31 +74,7 @@
 .message-library-actions>div{display:flex;gap:8px;}
 @media(max-width:900px){.message-library-shell{grid-template-columns:1fr;}.message-library-list{max-height:320px;}.message-body-field textarea{min-height:330px;}.message-library-actions{align-items:stretch;flex-direction:column-reverse;}.message-library-actions>div{display:grid;grid-template-columns:1fr;}.message-library-actions button{width:100%;}}
 
-/* 현재 12열 지원자 목록 전용 최종 정렬: 과거 nth-child 규칙 완전 무효화 */
-@media(min-width:761px){
- #applicants .applicant-table{width:100%!important;min-width:1267px!important;table-layout:fixed!important;}
- #applicants .applicant-table th:nth-child(1),#applicants .applicant-table td:nth-child(1){width:52px!important;min-width:52px!important;max-width:52px!important;}
- #applicants .applicant-table th:nth-child(2),#applicants .applicant-table td:nth-child(2){width:200px!important;min-width:200px!important;max-width:200px!important;}
- #applicants .applicant-table th:nth-child(3),#applicants .applicant-table td:nth-child(3){width:120px!important;min-width:120px!important;max-width:120px!important;}
- #applicants .applicant-table th:nth-child(4),#applicants .applicant-table td:nth-child(4){width:105px!important;min-width:105px!important;max-width:105px!important;}
- #applicants .applicant-table th:nth-child(5),#applicants .applicant-table td:nth-child(5){width:150px!important;min-width:150px!important;max-width:150px!important;}
- #applicants .applicant-table th:nth-child(6),#applicants .applicant-table td:nth-child(6){width:110px!important;min-width:110px!important;max-width:110px!important;}
- #applicants .applicant-table th:nth-child(7),#applicants .applicant-table td:nth-child(7){width:130px!important;min-width:130px!important;max-width:130px!important;}
- #applicants .applicant-table th:nth-child(8),#applicants .applicant-table td:nth-child(8){width:180px!important;min-width:180px!important;max-width:180px!important;}
- #applicants .applicant-table th:nth-child(9),#applicants .applicant-table td:nth-child(9){width:100px!important;min-width:100px!important;max-width:100px!important;}
- #applicants .applicant-table th:nth-child(10),#applicants .applicant-table td:nth-child(10){width:95px!important;min-width:95px!important;max-width:95px!important;}
- #applicants .applicant-table th:nth-child(11),#applicants .applicant-table td:nth-child(11){width:130px!important;min-width:130px!important;max-width:130px!important;}
- #applicants .applicant-table th:nth-child(12),#applicants .applicant-table td:nth-child(12){width:175px!important;min-width:175px!important;max-width:175px!important;}
- #applicants .applicant-table thead th:nth-child(1),#applicants .applicant-table td:nth-child(1){position:sticky!important;left:0!important;z-index:8!important;}
- #applicants .applicant-table thead th:nth-child(2),#applicants .applicant-table td:nth-child(2){position:sticky!important;left:52px!important;z-index:8!important;}
- #applicants .applicant-table thead th:nth-child(3),#applicants .applicant-table td:nth-child(3){position:sticky!important;left:252px!important;z-index:8!important;box-shadow:none!important;}
- #applicants .applicant-table thead th:nth-child(12),#applicants .applicant-table td:nth-child(12){position:sticky!important;right:0!important;z-index:9!important;}
- #applicants .status-inline{width:104px!important;min-width:104px!important;max-width:104px!important;}
-}
-@media(max-width:1700px) and (min-width:761px){
- #applicants .applicant-table th:nth-child(8),#applicants .applicant-table td:nth-child(8),#applicants .applicant-table th:nth-child(9),#applicants .applicant-table td:nth-child(9){display:none!important;}
- #applicants .applicant-table{min-width:987px!important;}
-}
+/* 지원자 열 폭·고정·반응형 숨김은 applicant-clearview.css에서만 관리합니다. */
 .message-favorite-check input{width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;margin:0!important;accent-color:#2757d6;}
 
 /* 모바일 지원자 목록: 데스크톱 열 너비/고정 높이의 영향을 완전히 제거한 카드형 배치 */
@@ -259,23 +214,6 @@
   background-image:none!important;
 }
 #applicants .status-select-wrap .status-inline::-ms-expand{display:none!important;}
-@media(min-width:761px){
-  #applicants .applicant-table .status-head,
-  #applicants .applicant-table .status-cell,
-  #applicants .applicant-table th:nth-child(3),
-  #applicants .applicant-table td:nth-child(3){
-    width:136px!important;
-    min-width:136px!important;
-    max-width:136px!important;
-  }
-  #applicants .applicant-table thead th:nth-child(4),
-  #applicants .applicant-table td:nth-child(4){
-    padding-left:16px!important;
-  }
-  #applicants .applicant-table .sticky-app-status{
-    box-shadow:none!important;
-  }
-}
 @media(max-width:760px){
   #applicants .applicant-table .status-select-wrap{
     width:118px!important;
