@@ -56,6 +56,20 @@
       if(!isValidId(raw))throw new Error(`${index+1}번째 항목의 ID 형식이 안전하지 않습니다.`);
     });
   }
+  function validateBackupPayload(parsed,options={}){
+    assertSafeTree(parsed);
+    const datasetKeys=Array.isArray(options.datasetKeys)?options.datasetKeys:[];
+    const collections=[];const seen=new Set();
+    const add=rows=>{if(Array.isArray(rows)&&!seen.has(rows)){seen.add(rows);collections.push(rows);}};
+    add(parsed);
+    if(isPlainObject(parsed)){
+      add(parsed.rows);
+      datasetKeys.forEach(key=>add(parsed[key]));
+      if(isPlainObject(parsed.data))datasetKeys.forEach(key=>add(parsed.data[key]));
+    }
+    collections.forEach(rows=>validateRowIds(rows,{requireId:false}));
+    return true;
+  }
   function parseJson(raw,options={}){
     const text=String(raw??'');
     if(!text.trim())throw new Error('JSON 파일이 비어 있습니다.');
@@ -181,7 +195,7 @@
     });
   }
 
-  const api={VERSION,MAX_IMPORT_BYTES,MAX_IMPORT_ROWS,ID_PATTERN,ALLOWED_ACTIONS,escapeAttribute,isPlainObject,isValidId,assertSafeTree,validateRowIds,parseJson,parseImportJson,actionAttrs,actionArgs,splitLegacyArgs,invokeLegacy};
+  const api={VERSION,MAX_IMPORT_BYTES,MAX_IMPORT_ROWS,ID_PATTERN,ALLOWED_ACTIONS,escapeAttribute,isPlainObject,isValidId,assertSafeTree,validateRowIds,validateBackupPayload,parseJson,parseImportJson,actionAttrs,actionArgs,splitLegacyArgs,invokeLegacy};
   root.erpSecurity=api;root.erpAction=actionAttrs;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

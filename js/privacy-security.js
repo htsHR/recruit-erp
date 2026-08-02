@@ -86,6 +86,7 @@
       if(reasonEl)reasonEl.textContent=reason==='idle'?'10분 동안 사용하지 않아 개인정보 화면을 자동으로 가렸습니다.':'지원자와 사원 정보가 보이지 않도록 화면을 가렸습니다.';
       if(overlay){overlay.hidden=false;doc.body.classList.add('privacy-shield-active');}
       win.clearTimeout(idleTimer);
+      doc.dispatchEvent(new win.CustomEvent('erp:privacy-lock',{detail:{reason}}));
       doc.getElementById('btnPrivacyUnlock')?.focus();
     }
     function unlock(){

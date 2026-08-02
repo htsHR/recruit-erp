@@ -38,6 +38,9 @@ async function rejectsCode(fn,code){await assert.rejects(fn,error=>error?.code==
   ])await rejectsCode(()=>encrypted.decryptEnvelope(tampered,password,{crypto:webcrypto}),field==='payload'?'DECRYPT_FAILED':'DECRYPT_FAILED');
 
   assert.throws(()=>encrypted.validateEnvelope({...envelope,cryptoSchemaVersion:2}),error=>error.code==='UNSUPPORTED_SCHEMA');
+  assert.throws(()=>encrypted.validateEnvelope({...envelope,unexpected:true}),error=>error.code==='INVALID_ENVELOPE');
+  assert.throws(()=>encrypted.validateEnvelope({...envelope,kdf:{...envelope.kdf,unexpected:true}}),error=>error.code==='INVALID_ENVELOPE');
+  assert.throws(()=>encrypted.validateEnvelope({...envelope,cipher:{...envelope.cipher,unexpected:true}}),error=>error.code==='INVALID_ENVELOPE');
   assert.throws(()=>encrypted.validateEnvelope({...envelope,payload:'%%%='}),error=>error.code==='INVALID_ENVELOPE');
   assert.throws(()=>encrypted.parseEnvelope(''),error=>error.code==='INVALID_ENVELOPE');
   assert.throws(()=>encrypted.parseEnvelope('x'.repeat(1025),{maxBytes:1024}),error=>error.code==='FILE_TOO_LARGE');

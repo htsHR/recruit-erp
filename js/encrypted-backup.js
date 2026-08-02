@@ -17,6 +17,9 @@
   const SALT_BYTES=16;
   const IV_BYTES=12;
   const MAX_FILE_BYTES=50*1024*1024;
+  const ENVELOPE_KEYS=new Set(['format','cryptoSchemaVersion','appVersion','kdf','cipher','payload']);
+  const KDF_KEYS=new Set(['name','hash','iterations','salt']);
+  const CIPHER_KEYS=new Set(['name','iv']);
   const encoder=new TextEncoder();
   const decoder=new TextDecoder('utf-8',{fatal:true});
 
@@ -57,12 +60,19 @@
     return {valid:errors.length===0,errors,warnings,length:value.length};
   }
   function validateIterations(value){const n=Number(value);if(!Number.isInteger(n)||n<MIN_ITERATIONS||n>MAX_ITERATIONS)fail('UNSUPPORTED_SCHEMA','지원하지 않는 암호화 반복 횟수입니다.');return n;}
+  function assertAllowedKeys(value,allowed){
+    if(!value||Object.prototype.toString.call(value)!=='[object Object]')fail('INVALID_ENVELOPE','암호화 백업 파일 구조가 올바르지 않습니다.');
+    const proto=Object.getPrototypeOf(value);if(proto!==Object.prototype&&proto!==null)fail('INVALID_ENVELOPE','암호화 백업 파일 구조가 올바르지 않습니다.');
+    if(Object.keys(value).some(key=>!allowed.has(key)))fail('INVALID_ENVELOPE','암호화 백업 파일에 허용되지 않은 항목이 있습니다.');
+  }
   async function deriveKey(password,salt,iterations,override){
     const api=requireCrypto(override);const material=await api.subtle.importKey('raw',encoder.encode(String(password)),'PBKDF2',false,['deriveKey']);
     return api.subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt,iterations},material,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
   }
   function validateEnvelope(value,maxBytes=MAX_FILE_BYTES){
-    if(!value||typeof value!=='object'||Array.isArray(value))fail('INVALID_ENVELOPE','암호화 백업 파일 형식이 올바르지 않습니다.');
+    assertAllowedKeys(value,ENVELOPE_KEYS);
+    assertAllowedKeys(value.kdf,KDF_KEYS);
+    assertAllowedKeys(value.cipher,CIPHER_KEYS);
     if(value.format!==FORMAT)fail('INVALID_ENVELOPE','Recruit ERP 암호화 백업 파일이 아닙니다.');
     if(Number(value.cryptoSchemaVersion)!==CRYPTO_SCHEMA_VERSION)fail('UNSUPPORTED_SCHEMA','현재 버전에서 지원하지 않는 암호화 파일 버전입니다.');
     if(value.kdf?.name!=='PBKDF2'||value.kdf?.hash!=='SHA-256'||value.cipher?.name!=='AES-GCM')fail('UNSUPPORTED_SCHEMA','지원하지 않는 암호화 방식입니다.');

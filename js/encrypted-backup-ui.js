@@ -1,10 +1,16 @@
 /* Recruit ERP v10.60.0 encrypted backup user interface. */
 (function(root){
   'use strict';
-  const core=root.erpEncryptedBackup;let modal=null;let previousFocus=null;let busy=false;let task=null;
+  const core=root.erpEncryptedBackup;let modal=null;let previousFocus=null;let busy=false;let task=null;let sessionEpoch=0;
   const el=id=>root.document.getElementById(id);
   const hasPermission=()=>!root.erpPermissions||root.erpPermissions.require('backup.manage');
-  const safeError=error=>error?.code==='DECRYPT_FAILED'?'비밀번호가 맞지 않거나 파일이 손상되었습니다.':String(error?.message||'암호화 작업을 완료하지 못했습니다.');
+  const safeError=error=>{
+    if(error?.code==='DECRYPT_FAILED')return '비밀번호가 맞지 않거나 파일이 손상되었습니다.';
+    if(error?.code==='UNSAFE_BACKUP')return '복호화된 백업의 안전 검사에 실패했습니다.';
+    if(error?.code==='INVALID_ENVELOPE')return '암호화 백업 파일 구조가 올바르지 않습니다.';
+    if(error?.code==='FILE_TOO_LARGE')return '백업 파일이 허용 크기를 초과합니다.';
+    return '암호화 작업을 완료하지 못했습니다.';
+  };
   function clearSensitive(){
     ['encryptedBackupPassword','encryptedBackupConfirm'].forEach(id=>{const input=el(id);if(input)input.value='';});
     if(task?.password)task.password='';
@@ -48,20 +54,25 @@
   }
   function closeDialog(cancelled=false){
     if(!modal||modal.hidden||busy)return;if(cancelled&&task?.kind==='decrypt')root.erpBackupCenter?.recordAudit?.('restore','복원 취소',{encrypted:true,success:false});
-    clearSensitive();task=null;modal.hidden=true;root.document.body.classList.remove('modal-open');const focus=previousFocus;previousFocus=null;focus?.focus?.();
+    endSession({restoreFocus:true});
+  }
+  function endSession(options={}){
+    sessionEpoch++;clearSensitive();task=null;busy=false;
+    if(modal){['encryptedBackupPassword','encryptedBackupConfirm','encryptedBackupToggle','encryptedBackupSubmit','encryptedBackupCancel','encryptedBackupClose'].forEach(id=>{const node=el(id);if(node)node.disabled=false;});modal.querySelector('.encrypted-backup-dialog')?.classList.remove('is-busy');modal.hidden=true;}
+    root.document.body.classList.remove('modal-open');const focus=previousFocus;previousFocus=null;if(options.restoreFocus)focus?.focus?.();
   }
   function setBusy(value,message=''){busy=value;['encryptedBackupPassword','encryptedBackupConfirm','encryptedBackupToggle','encryptedBackupSubmit','encryptedBackupCancel','encryptedBackupClose'].forEach(id=>{el(id).disabled=value;});el('encryptedBackupProgress').textContent=message;modal?.querySelector('.encrypted-backup-dialog')?.classList.toggle('is-busy',value);}
   async function submit(){
-    if(!task||busy)return;const password=el('encryptedBackupPassword').value;const assessment=core.passwordAssessment(password,task.kind==='export'?el('encryptedBackupConfirm').value:undefined);if(!assessment.valid){renderAssessment();el('encryptedBackupPassword').focus();return;}
-    setBusy(true,task.kind==='decrypt'?'파일을 안전하게 복호화하고 검사하는 중입니다…':'파일을 암호화하는 중입니다…');
+    if(!task||busy)return;const currentTask=task;const epoch=sessionEpoch;const password=el('encryptedBackupPassword').value;const assessment=core.passwordAssessment(password,currentTask.kind==='export'?el('encryptedBackupConfirm').value:undefined);if(!assessment.valid){renderAssessment();el('encryptedBackupPassword').focus();return;}
+    setBusy(true,currentTask.kind==='decrypt'?'파일을 안전하게 복호화하고 검사하는 중입니다…':'파일을 암호화하는 중입니다…');
     try{
-      if(task.kind==='export'){
-        await root.erpBackupCenter.exportEncrypted(task.type,password);setBusy(false,'암호화 백업 파일 다운로드를 요청했습니다. 저장된 파일을 확인하세요.');clearSensitive();setTimeout(()=>closeDialog(false),700);
+      if(currentTask.kind==='export'){
+        await root.erpBackupCenter.exportEncrypted(currentTask.type,password);if(epoch!==sessionEpoch)return;setBusy(false,'암호화 백업 파일 다운로드를 요청했습니다. 저장된 파일을 확인하세요.');clearSensitive();setTimeout(()=>closeDialog(false),700);
       }else{
-        const parsed=await core.decryptEnvelope(task.envelope,password);root.erpBackupCenter.inspectDecryptedFile(task.file,parsed,password);
-        task.password='';setBusy(false,'복호화와 무결성 검사를 완료했습니다.');clearSensitive();setTimeout(()=>closeDialog(false),450);
+        const parsed=await core.decryptEnvelope(currentTask.envelope,password);if(epoch!==sessionEpoch)return;root.erpBackupCenter.inspectDecryptedFile(currentTask.file,parsed,password);if(epoch!==sessionEpoch)return;
+        setBusy(false,'복호화와 무결성 검사를 완료했습니다.');clearSensitive();setTimeout(()=>closeDialog(false),450);
       }
-    }catch(error){setBusy(false,'');root.erpBackupCenter?.recordAudit?.('restore',task.kind==='decrypt'?'암호화 백업 파일 검사 실패':'암호화 백업 생성 실패',{encrypted:true,backupType:task.type||'restore',success:false});el('encryptedBackupHelp').textContent=safeError(error);el('encryptedBackupHelp').className='encrypted-password-help error';clearSensitive();el('encryptedBackupPassword').focus();}
+    }catch(error){if(epoch!==sessionEpoch)return;setBusy(false,'');if(currentTask.kind==='decrypt')root.erpBackupCenter?.recordAudit?.('restore','암호화 백업 파일 검사 실패',{encrypted:true,backupType:'restore',success:false});el('encryptedBackupHelp').textContent=safeError(error);el('encryptedBackupHelp').className='encrypted-password-help error';clearSensitive();el('encryptedBackupPassword').focus();}
   }
   function openExportDialog(type='full'){if(!hasPermission())return;if(!core?.isSupported()){root.alert(supportMessage());return;}openDialog({kind:'export',type});}
   async function inspectFile(file){
@@ -71,5 +82,5 @@
   }
   function init(){installPanel();installModal();root.erpPermissions?.applyUi?.();}
   if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-  root.erpEncryptedBackupUI={openExportDialog,inspectFile,clearSensitive,closeDialog,__test:{openDialog,renderAssessment,supportMessage}};
+  root.erpEncryptedBackupUI={openExportDialog,inspectFile,clearSensitive,endSession,closeDialog,__test:{openDialog,renderAssessment,supportMessage}};
 })(typeof window!=='undefined'?window:globalThis);

@@ -482,6 +482,7 @@ function uxGetOperationEnvironment(){
 function uxSetOperationEnvironment(mode){
   const next=mode==='company'?'company':'home';
   if(!safeLocalStorageSet(OPERATION_ENV_KEY,next))return;
+  document.dispatchEvent(new CustomEvent('erp:operation-environment-change',{detail:{mode:next}}));
   updateStorageNote();
   if(typeof window.erpHandleOperationEnvironmentChange==='function') window.erpHandleOperationEnvironmentChange(next);
   uxToast(next==='company'?'회사 운영 모드로 전환했습니다. Supabase 연결을 중단했습니다.':'집 개발 모드로 전환했습니다. 로그인 후에만 Supabase를 사용합니다.');

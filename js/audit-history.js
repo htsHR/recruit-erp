@@ -131,7 +131,7 @@
     if(response?.error)throw response.error;pageRows=asArray(response.data);renderPage();return pageRows;
   }
   function actionLabel(value){return ({create:'등록',update:'수정',delete:'삭제',restore:'복원',export:'내보내기',role_change:'권한 변경',batch:'일괄 변경'})[value]||value||'-';}
-  function typeLabel(value){return DATASETS[value]?.label||({system:'시스템',export:'내보내기',user:'사용자'})[value]||value||'-';}
+  function typeLabel(value){return DATASETS[value]?.label||({system:'시스템',export:'백업·내보내기',user:'사용자'})[value]||value||'-';}
   function ensureUi(){
     if(!root.document)return;
     const systemItems=root.document.querySelector('[data-navgroup="system"] .nav-group-items');
@@ -152,7 +152,7 @@
     const host=root.document?.getElementById('auditPageBody');if(!host)return;
     if(!root.erpPermissions?.has?.('audit.read')){host.textContent='관리자만 변경 이력을 볼 수 있습니다.';return;}
     const rows=pageRows.length?pageRows:readLocal();host.replaceChildren();
-    const controls=root.document.createElement('div');controls.className='audit-controls';controls.innerHTML='<label>대상<select id="auditTypeFilter"><option value="all">전체</option><option value="applicant">지원자</option><option value="employee">사원</option><option value="school">협력학교</option><option value="schedule">일정</option><option value="user">사용자</option></select></label><label>작업<select id="auditActionFilter"><option value="all">전체</option><option value="create">등록</option><option value="update">수정</option><option value="delete">삭제</option><option value="restore">복원</option><option value="export">내보내기</option><option value="role_change">권한 변경</option><option value="batch">일괄 변경</option></select></label><label class="audit-search-label">검색<input id="auditSearch" placeholder="사용자·대상·변경 항목 검색"></label>';
+    const controls=root.document.createElement('div');controls.className='audit-controls';controls.innerHTML='<label>대상<select id="auditTypeFilter"><option value="all">전체</option><option value="applicant">지원자</option><option value="employee">사원</option><option value="school">협력학교</option><option value="schedule">일정</option><option value="user">사용자</option><option value="export">백업·내보내기</option></select></label><label>작업<select id="auditActionFilter"><option value="all">전체</option><option value="create">등록</option><option value="update">수정</option><option value="delete">삭제</option><option value="restore">복원</option><option value="export">내보내기</option><option value="role_change">권한 변경</option><option value="batch">일괄 변경</option></select></label><label class="audit-search-label">검색<input id="auditSearch" placeholder="사용자·대상·변경 항목 검색"></label>';
     controls.querySelector('#auditTypeFilter').value=auditFilters.type;controls.querySelector('#auditActionFilter').value=auditFilters.action;controls.querySelector('#auditSearch').value=auditFilters.query;
     controls.querySelectorAll('select').forEach(select=>select.addEventListener('change',()=>{auditFilters.type=controls.querySelector('#auditTypeFilter').value;auditFilters.action=controls.querySelector('#auditActionFilter').value;auditPage=1;renderPage();}));
     controls.querySelector('#auditSearch').addEventListener('change',event=>{auditFilters.query=event.target.value.trim();auditPage=1;renderPage();});

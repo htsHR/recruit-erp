@@ -462,7 +462,7 @@
   }
   function normalizeRows(key,rows){
     const valid=(Array.isArray(rows)?rows:[]).filter(x=>x&&typeof x==='object'&&!Array.isArray(x));
-    return valid.map(row=>{
+    return valid.map((row,index)=>{
       try{
         if(key==='applicants')return typeof normalize==='function'?normalize(row):row;
         if(key==='schools')return typeof normalizeSchool==='function'?normalizeSchool(row):row;
@@ -471,7 +471,7 @@
         if(key==='hireWaitingProfiles')return typeof normalizeHireWaitingProfile==='function'?normalizeHireWaitingProfile(row):row;
         if(key==='messageTemplates')return typeof normalizeMessageTemplate==='function'?normalizeMessageTemplate(row):row;
         return row;
-      }catch(err){console.warn(`Backup normalize failed: ${key}`,err,row);return null;}
+      }catch{console.warn(`백업 데이터 정규화 실패: ${key}, ${index+1}번째 행`);return null;}
     }).filter(Boolean).filter(row=>{
       if(key==='schools')return !!row.name;
       if(key==='employees')return !!(row.name||row.empNo);
@@ -571,13 +571,18 @@
   }
   function inspectDecryptedFile(file,parsed,password){
     if(!assertHomeImport())return null;
+    try{window.erpSecurity.validateBackupPayload(parsed,{datasetKeys:DATASETS.map(dataset=>dataset.key)});}
+    catch{
+      inspected=null;renderInspection();const input=bcEl('bcFileInput');if(input)input.value='';
+      const error=new Error('복호화된 백업의 안전 검사에 실패했습니다.');error.code='UNSAFE_BACKUP';throw error;
+    }
     const canonical=canonicalize(parsed);inspected={file,parsed:null,canonical,encrypted:true,password:String(password)};renderInspection();
     recordHistory('암호화 백업 파일 검사',`${file.name} · ${canonical.fileType?.label||'백업'} · ${canonical.valid?'적용 가능':'적용 불가'}`);
     recordAudit('restore','암호화 백업 파일 검사',{encrypted:true,fileType:canonical.fileType?.kind||'unknown',datasets:canonical.included,counts:canonical.counts,success:canonical.valid});
     return canonical;
   }
   function clearInspection(resetInput=true){
-    if(inspected?.password)inspected.password='';inspected=null;window.erpEncryptedBackupUI?.clearSensitive?.();renderInspection();if(resetInput&&bcEl('bcFileInput'))bcEl('bcFileInput').value='';
+    if(inspected?.password)inspected.password='';inspected=null;window.erpEncryptedBackupUI?.endSession?.();renderInspection();if(resetInput&&bcEl('bcFileInput'))bcEl('bcFileInput').value='';
   }
 
   function localStorageCheck(){
@@ -779,6 +784,14 @@
       zone.addEventListener('drop',e=>{if(!assertHomeImport())return;inspectFile(e.dataTransfer.files&&e.dataTransfer.files[0]);});
     }
     document.addEventListener('click',e=>{if(e.target.closest('[data-page="backup"], [data-go="backup"], [data-operation-mode]'))setTimeout(()=>{refreshCounts();renderHistory();renderPreflight();renderCloudPanel();},0);});
+    ['erp:privacy-lock','erp:auth-logout','erp:permission-change','erp:operation-environment-change'].forEach(name=>document.addEventListener(name,()=>clearInspection()));
+    window.addEventListener('pagehide',()=>clearInspection());
+    const previousSetPage=window.setPage;
+    if(typeof previousSetPage==='function'&&!previousSetPage.__backupInspectionGuard){
+      const guardedSetPage=function(page){if(document.querySelector('.page.active')?.id==='backup'&&page!=='backup')clearInspection();return previousSetPage.apply(this,arguments);};
+      guardedSetPage.__backupInspectionGuard=true;window.setPage=guardedSetPage;
+      try{setPage=guardedSetPage;}catch{}
+    }
     window.addEventListener('storage',()=>{refreshCounts();renderHistory();renderCloudPanel();});
   }
   function init(){
@@ -790,6 +803,6 @@
   window.erpBackupCenter={
     exportFull:()=>exportBackup('full'),exportEncrypted:exportEncryptedBackup,safetyBackup:(reason='manual safety backup')=>backupCurrentBeforeChange(reason),inspectFile,inspectDecryptedFile,clearInspection,recordAudit,runPreflight,syncPendingToCloud,version:BC_VERSION,
     getStatus:()=>({environment:environment(),changes:changesSinceBackup(),pendingCloud:readPendingCloud(),inspection:inspected&&inspected.canonical}),
-    __test:{canonicalize,classifyJsonPayload,datasetDiff,snapshotOf,compareFingerprints,packageFor,importRisks,encryptedFileName}
+    __test:{canonicalize,classifyJsonPayload,datasetDiff,snapshotOf,compareFingerprints,packageFor,importRisks,encryptedFileName,normalizeRows}
   };
 })();
