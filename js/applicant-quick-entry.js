@@ -39,6 +39,7 @@ function resetPersonFields(){
 }
 function submitQuick(e){
   e.preventDefault();
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
   normalizeQuickPhone();
   const name=String(el('quickName')?.value||'').trim();
   if(!name){alert('성명을 입력해주세요.');el('quickName')?.focus();return;}

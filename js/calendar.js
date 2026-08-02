@@ -38,7 +38,7 @@ function loadCalendarEvents(){
     return Array.isArray(data)?data.map(normalizeCalendarEvent).filter(e=>e.title&&e.date):[];
   }catch(e){ console.warn('일정관리 데이터 로드 실패:', e); return []; }
 }
-function saveCalendarEvents(){ localStorage.setItem(CALENDAR_EVENTS_KEY, JSON.stringify(calendarEvents)); renderCalendar(); }
+function saveCalendarEvents(){ if(window.erpPermissions&&!window.erpPermissions.require('schedule.write'))return false;localStorage.setItem(CALENDAR_EVENTS_KEY, JSON.stringify(calendarEvents)); renderCalendar();return true; }
 function calendarDateKey(d){ const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); }
 function calendarDateLabel(dateStr){
   const d=new Date(dateStr+'T00:00:00');
@@ -237,6 +237,7 @@ function closeCalendarBulkDecisionModal(){
   calendarBulkDecisionType='';
 }
 function applyCalendarBulkDecision(){
+  if(window.erpPermissions&&!window.erpPermissions.require('schedule.write'))return;
   const selected=calendarSelectedApplicants();
   if(!selected.length){ closeCalendarBulkDecisionModal(); calendarClearBulkSelection(); renderCalendarTimeline(); alert('선택한 지원자를 다시 확인해주세요.'); return; }
   const isAccept=calendarBulkDecisionType==='accept';
@@ -287,6 +288,7 @@ function getCalendarForm(){
 }
 function saveCalendarEventFromForm(e){
   e.preventDefault();
+  if(window.erpPermissions&&!window.erpPermissions.require('schedule.write'))return;
   const item=getCalendarForm();
   if(!item.title){ alert('일정명을 입력해주세요.'); return; }
   if(!item.date){ alert('날짜를 선택해주세요.'); return; }
@@ -300,6 +302,7 @@ function saveCalendarEventFromForm(e){
   resetCalendarEventForm();
 }
 function editCalendarEvent(id){
+  if(window.erpPermissions&&!window.erpPermissions.require('schedule.write'))return;
   const e=calendarEvents.find(x=>x.id===id);
   if(!e) return;
   selectedCalendarDate=e.date;
@@ -317,6 +320,7 @@ function editCalendarEvent(id){
   renderCalendar();
 }
 function deleteCalendarEvent(id){
+  if(window.erpPermissions&&!window.erpPermissions.require('schedule.write'))return;
   const target=id || $('calendarEventId')?.value;
   if(!target) return;
   if(!confirm('이 일정을 삭제할까요?')) return;

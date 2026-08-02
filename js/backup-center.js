@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='10.56.0';
+  const BC_VERSION='10.57.0';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
@@ -55,6 +55,7 @@
   function environmentLabel(mode){return mode==='company'?'회사 로컬 운영':'집 개발·복원';}
   function isHomeMode(){return environment()!=='company';}
   function assertHomeImport(){
+    if(window.erpPermissions&&!window.erpPermissions.require('backup.restore'))return false;
     if(isHomeMode())return true;
     alert('회사 모드에서는 JSON 업로드·검사·병합·전체교체·복원 코드를 실행할 수 없습니다. 집 모드에서 진행하세요.');
     return false;
@@ -169,6 +170,7 @@
     renderHistory();
   }
   function exportBackup(type,reason='manual'){
+    if(window.erpPermissions&&!window.erpPermissions.require('backup.manage'))return null;
     try{
       const keys=type==='full'?DATASETS.map(d=>d.key):[type];
       const pack=packageFor(keys,reason);
@@ -191,6 +193,7 @@
     }
   }
   function backupCurrentBeforeChange(reason){
+    if(window.erpPermissions&&!window.erpPermissions.require('backup.manage'))return null;
     const pack=packageFor(DATASETS.map(d=>d.key),reason);
     downloadFile(`recruit_erp_safety_before_${localIso()}.json`,JSON.stringify(pack,null,2));
     recordHistory('적용 직전 안전 백업 다운로드 요청',reason);

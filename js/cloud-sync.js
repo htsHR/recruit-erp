@@ -17,6 +17,7 @@ function applicantEmployeeIdColumnError(error){
 }
 
 function supabaseSyncAll(list){
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write',{notify:false})) return Promise.resolve({skipped:true,reason:'permission',count:0});
   if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
   var targets=Array.isArray(list)?list.filter(Boolean):[];
   if(!targets.length) return Promise.resolve({skipped:true,count:0});
@@ -39,6 +40,7 @@ function supabaseSyncAll(list){
   });
 }
 async function supabaseDeleteApplicantOperation(operation){
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.delete',{notify:false}))throw new Error('지원자 삭제 권한이 없습니다.');
   if(!canUseCloud())throw new Error('클라우드에 로그인되어 있지 않습니다.');
   if(operation.scope==='all'){
     var ids=Array.isArray(operation.ids)?operation.ids:[];
@@ -53,11 +55,13 @@ async function supabaseDeleteApplicantOperation(operation){
   return {deleted:true,scope:operation.scope,id:operation.id};
 }
 function supabaseDeleteOne(id,label,options){
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.delete'))return {ok:false,reason:'permission'};
   var queued=window.erpSyncSafety.enqueueDelete('applicants',{id:id,label:label||id,scope:'one'});
   if(queued.ok&&!options?.defer)window.erpSyncSafety.retryDeletes('applicants');
   return queued;
 }
 function supabaseDeleteAll(options){
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.delete'))return {ok:false,reason:'permission'};
   var queued=window.erpSyncSafety.enqueueDelete('applicants',{scope:'all',ids:applicants.map(function(item){return item.id;}),label:'지원자 전체 자료'});
   if(queued.ok&&!options?.defer)window.erpSyncSafety.retryDeletes('applicants');
   return queued;
@@ -70,6 +74,7 @@ function supabaseDeleteAll(options){
    - 전부 실패해도 로컬 동작에는 영향 없음(try/catch)
    ========================================================= */
 function supabaseSnapshotSave(reason){
+  if(window.erpPermissions&&!window.erpPermissions.require('backup.manage',{notify:false})) return Promise.resolve({skipped:true,reason:'permission'});
   if(!canUseCloud() || !applicants.length) return Promise.resolve();
   return window.sb.from('applicant_snapshots').insert({
     reason: reason || '',
@@ -81,6 +86,7 @@ function supabaseSnapshotSave(reason){
   }).catch(function(e){ console.warn('스냅샷 저장 실패:', e); });
 }
 function supabaseSnapshotCleanup(){
+  if(window.erpPermissions&&!window.erpPermissions.has('backup.manage')) return;
   if(!canUseCloud()) return;
   window.sb.from('applicant_snapshots').select('id,created_at').order('created_at',{ascending:false}).then(function(res){
     if(!res || res.error || !res.data) return;
@@ -91,6 +97,7 @@ function supabaseSnapshotCleanup(){
   }).catch(function(){});
 }
 function supabaseSnapshotDailyCheck(){
+  if(window.erpPermissions&&!window.erpPermissions.has('backup.manage')) return;
   if(!canUseCloud()) return;
   window.sb.from('applicant_snapshots').select('created_at').order('created_at',{ascending:false}).limit(1).then(function(res){
     if(res && res.error) return;
@@ -103,6 +110,7 @@ function supabaseSnapshotDailyCheck(){
 function renderSnapshotList(){
   var el = $('snapshotList');
   if(!el) return;
+  if(window.erpPermissions&&!window.erpPermissions.has('backup.manage')){el.innerHTML='<div class="empty">관리자만 클라우드 백업 이력을 확인할 수 있습니다.</div>';return;}
   if(!canUseCloud()){ el.innerHTML = '<div class="empty">회사 로컬 모드이거나 로그인되지 않아 클라우드 백업 이력을 사용하지 않습니다.</div>'; return; }
   window.sb.from('applicant_snapshots').select('id,created_at,reason,count').order('created_at',{ascending:false}).limit(14).then(function(res){
     if(!res || res.error || !res.data || !res.data.length){ el.innerHTML = '<div class="empty">아직 저장된 백업 이력이 없습니다. (자동으로 하루 단위로 쌓여요)</div>'; return; }
@@ -114,6 +122,7 @@ function renderSnapshotList(){
   }).catch(function(){ el.innerHTML = '<div class="empty">백업 이력을 불러오지 못했습니다.</div>'; });
 }
 function restoreSnapshot(id){
+  if(window.erpPermissions&&!window.erpPermissions.require('backup.restore')) return;
   if(!canUseCloud()) return;
   if(!confirm('이 시점으로 복원하면 현재 데이터('+applicants.length+'명)가 그 시점 데이터로 교체됩니다.\n\n복원 전에 현재 상태도 자동으로 백업해둘게요. 진행할까요?')) return;
   supabaseSnapshotSave('복원 직전 자동 백업').then(function(){

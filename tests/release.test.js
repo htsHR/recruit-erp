@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const root=path.resolve(__dirname,'..');
-const version='10.56.0';
+const version='10.57.0';
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const packageJson=JSON.parse(read('package.json'));
 const index=read('index.html');

@@ -7,6 +7,7 @@ function loadMessageTemplates(){
   try{const parsed=JSON.parse(localStorage.getItem(MESSAGE_TEMPLATES_KEY)||'[]');return Array.isArray(parsed)?parsed.map(normalizeMessageTemplate).filter(x=>x.title||x.body):[];}catch(err){console.warn('문구함 로드 실패:',err);return [];}
 }
 function saveMessageTemplates(){
+  if(window.erpPermissions&&!window.erpPermissions.require('message.write'))return false;
   try{localStorage.setItem(MESSAGE_TEMPLATES_KEY,JSON.stringify(messageTemplates.map(normalizeMessageTemplate)));return true;}catch(err){console.error('문구함 저장 실패:',err);return false;}
 }
 let messageTemplateCurrentId='';
@@ -44,6 +45,7 @@ function openMessageTemplate(id){
   messageTemplateCount();renderMessageTemplateList();
 }
 function saveMessageTemplateFromEditor(){
+  if(window.erpPermissions&&!window.erpPermissions.require('message.write'))return;
   const title=String(messageTemplateEl('messageTemplateTitle')?.value||'').trim();
   const body=String(messageTemplateEl('messageTemplateBody')?.value||'').trim();
   const category=String(messageTemplateEl('messageTemplateCategory')?.value||'기타').trim();
@@ -63,6 +65,7 @@ async function copyMessageTemplate(){
   catch{messageTemplateEl('messageTemplateBody')?.select();document.execCommand?.('copy');if(typeof uxToast==='function')uxToast('문구를 선택했습니다. Ctrl+C로 복사해주세요.','warn');}
 }
 function deleteMessageTemplate(){
+  if(window.erpPermissions&&!window.erpPermissions.require('message.write'))return;
   const row=messageTemplateSelected();if(!row)return;
   if(!confirm(`“${row.title}” 문구를 삭제할까요?`))return;
   messageTemplates=messageTemplates.filter(x=>String(x.id)!==String(row.id));saveMessageTemplates();clearMessageTemplateEditor();if(typeof uxToast==='function')uxToast('문구를 삭제했습니다.');

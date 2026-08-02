@@ -1,0 +1,55 @@
+const assert=require('assert');
+const fs=require('fs');
+const path=require('path');
+
+const root=path.join(__dirname,'..');
+const permissions=require(path.join(root,'js','permissions.js'));
+const sql=fs.readFileSync(path.join(root,'supabase_migration_v10.57.0_rbac_rls.sql'),'utf8');
+const core=fs.readFileSync(path.join(root,'js','core.js'),'utf8');
+const cloud=fs.readFileSync(path.join(root,'js','cloud-sync.js'),'utf8');
+const employees=fs.readFileSync(path.join(root,'js','employees.js'),'utf8');
+const schools=fs.readFileSync(path.join(root,'js','schools.js'),'utf8');
+const hireWaiting=fs.readFileSync(path.join(root,'js','hire-waiting-list.js'),'utf8');
+const auth=fs.readFileSync(path.join(root,'js','auth-init.js'),'utf8');
+const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
+
+assert.strictEqual(permissions.VERSION,'10.57.0');
+assert(permissions.has('applicant.write','admin'));
+assert(permissions.has('applicant.delete','admin'));
+assert(permissions.has('applicant.write','recruiter'));
+assert(permissions.has('schedule.write','recruiter'));
+assert(!permissions.has('applicant.delete','recruiter'));
+assert(!permissions.has('employee.write','recruiter'));
+assert(permissions.has('applicant.read','viewer'));
+assert(permissions.has('stats.read','viewer'));
+assert(!permissions.has('applicant.write','viewer'));
+assert(!permissions.has('backup.restore','viewer'));
+assert(!permissions.has('sensitive.read','viewer'));
+
+assert.match(sql,/create table if not exists public\.user_roles/i);
+assert.match(sql,/alter table public\.user_roles enable row level security/i);
+assert.match(sql,/security definer[\s\S]*set search_path = ''/i);
+assert.match(sql,/private\.erp_current_role\(\)/i);
+assert.match(sql,/policy erp_applicants_read[\s\S]*'admin','recruiter','viewer'/i);
+assert.match(sql,/policy erp_applicants_insert[\s\S]*'admin','recruiter'/i);
+assert.match(sql,/policy erp_applicants_delete[\s\S]*= 'admin'/i);
+assert.match(sql,/policy erp_employees_admin_update[\s\S]*= 'admin'/i);
+assert.match(sql,/policy erp_schools_admin_delete[\s\S]*= 'admin'/i);
+assert.match(sql,/policy erp_snapshots_admin_read[\s\S]*= 'admin'/i);
+assert.match(sql,/pg_policies[\s\S]*drop policy if exists/i);
+assert.match(sql,/revoke all on public\.%I from anon/i);
+assert.match(sql,/erp_prevent_last_admin_loss/i);
+
+assert.match(core,/erpPermissions\.require\('applicant\.write'\)/);
+assert.match(cloud,/erpPermissions\.require\('applicant\.delete'/);
+assert.match(employees,/erpPermissions\.require\('employee\.write'/);
+assert.match(employees,/erpPermissions\.require\('employee\.delete'/);
+assert.match(schools,/erpPermissions\.require\('school\.write'/);
+assert.match(schools,/erpPermissions\.require\('school\.delete'/);
+assert.match(hireWaiting,/placeholder="관리자만 조회"/);
+assert.match(hireWaiting,/erpPermissions\.require\('sensitive\.read'/);
+assert.match(auth,/await window\.erpPermissions\.load/);
+assert.match(index,/js\/permissions\.js\?v=10\.57\.0/);
+assert.match(index,/css\/permissions\.css\?v=10\.57\.0/);
+
+console.log('permissions.test.js: 역할표·화면 보호·민감정보 마스킹·Supabase RLS 확인 완료');

@@ -154,6 +154,7 @@ function hireWaitingCellValue(row,key){ return row[key]==null?'':String(row[key]
 function hireWaitingInputHtml(row,rowIndex,col,colIndex){
   const value=hireWaitingCellValue(row,col.key);
   const common=`data-hire-row="${rowIndex}" data-hire-field="${col.key}" data-hire-col="${colIndex}" autocomplete="off"`;
+  if(col.sensitive&&window.erpPermissions&&!window.erpPermissions.has('sensitive.read'))return `<input class="hire-waiting-sensitive-input" type="password" value="" placeholder="관리자만 조회" ${common} disabled aria-label="관리자만 조회 가능"/>`;
   if(col.key==='pmtc') return `<select ${common}><option value="" ${value?'':'selected'}>-</option><option value="O" ${value==='O'?'selected':''}>O</option></select>`;
   if(col.key==='commuteMethod') return `<select ${common}><option value="" ${value?'':'selected'}>선택</option><option value="출퇴근" ${value==='출퇴근'?'selected':''}>출퇴근</option><option value="기숙사" ${value==='기숙사'?'selected':''}>기숙사</option></select>`;
   const cls=col.sensitive?' hire-waiting-sensitive-input':'';
@@ -234,6 +235,7 @@ function updateHireWaitingSummary(){
 }
 function markHireWaitingDirty(){ hireWaitingDirty=true; updateHireWaitingSummary(); }
 function saveHireWaitingGrid(showMessage=true){
+  if(window.erpPermissions&&(!window.erpPermissions.require('employee.write')||!window.erpPermissions.require('sensitive.read')))return false;
   const checked=validateHireWaitingGrid();
   if(checked.invalid){ alert('빨간색으로 표시된 주민등록번호 또는 중복 사원번호를 먼저 수정해주세요.'); return false; }
   const stamp=new Date().toISOString(); const currentById=new Map(hireWaitingProfiles.map(p=>[String(p.applicantId),p]));
@@ -254,6 +256,7 @@ function saveHireWaitingGrid(showMessage=true){
   return true;
 }
 function openHireWaitingList(dateStr){
+  if(window.erpPermissions&&!window.erpPermissions.require('sensitive.read'))return false;
   hireWaitingCurrentDate=dateStr||selectedCalendarDate||today();
   const modal=$('hireWaitingModal'); if(!modal) return;
   renderHireWaitingTable();
@@ -394,6 +397,7 @@ function hireWaitingWorkbookFiles(rows){
   };
 }
 function hireWaitingExportExcel(){
+  if(window.erpPermissions&&!window.erpPermissions.require('sensitive.read'))return;
   const checked=validateHireWaitingGrid(); if(!checked.rows.length){alert('출력할 입사예정자가 없습니다.');return;}
   if(checked.invalid){alert('빨간색 오류를 먼저 수정해주세요.');return;}
   const incomplete=checked.rows.filter(row=>!HIRE_WAITING_REQUIRED_FIELDS.every(field=>String(row[field]||'').trim()));

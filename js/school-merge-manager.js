@@ -98,6 +98,7 @@ function schoolMergeSafetyBackup(){
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`Recruit_ERP_학교통합전_안전백업_${today()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return payload;
 }
 async function applySchoolMerge(){
+  if(window.erpPermissions&&(!window.erpPermissions.require('school.write')||!window.erpPermissions.require('school.delete')))return;
   if(schoolMergeBusy)return;
   const target=schools.find(s=>String(s.id)===String(byId('schoolMergeTarget')?.value));
   const source=schools.find(s=>String(s.id)===String(byId('schoolMergeSource')?.value));

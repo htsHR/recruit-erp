@@ -1,4 +1,4 @@
-/* Recruit ERP v10.56.0 cloud sync conflict, retry, and delete safety */
+/* Recruit ERP v10.57.0 cloud sync conflict, retry, and delete safety */
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -6,7 +6,7 @@
 })(typeof window!=='undefined'?window:null,function(root){
   'use strict';
 
-  const VERSION='10.56.0';
+  const VERSION='10.57.0';
   const BASE_KEY='recruit_erp_cloud_sync_bases_v1053';
   const PENDING_KEY='recruit_erp_cloud_sync_pending_v1053';
   const CONFLICT_KEY='recruit_erp_cloud_sync_conflicts_v1053';
