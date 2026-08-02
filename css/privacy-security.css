@@ -1,0 +1,13 @@
+.privacy-shield-button{display:inline-grid!important;width:36px!important;height:36px!important;place-items:center!important;color:#dbeafe!important;background:rgba(255,255,255,.08)!important;border:1px solid rgba(255,255,255,.16)!important}
+.privacy-shield-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.privacy-shield-overlay{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:24px;background:#101a2d;color:#fff}
+.privacy-shield-overlay[hidden]{display:none}
+.privacy-shield-card{width:min(460px,100%);text-align:center;padding:38px 32px;border:1px solid rgba(255,255,255,.18);border-radius:28px;background:#172743;box-shadow:0 24px 80px rgba(0,0,0,.35)}
+.privacy-shield-mark{width:58px;height:58px;margin:0 auto 18px;display:grid;place-items:center;border-radius:18px;background:#2757d6;color:#fff;font-size:24px;font-weight:800}
+.privacy-shield-card .eyebrow{color:#9dbdff}
+.privacy-shield-card h2{margin:8px 0 10px;font-size:27px;letter-spacing:-.04em}
+.privacy-shield-card p:not(.eyebrow){margin:0 auto 22px;max-width:350px;color:#d5e2f6;line-height:1.6}
+.privacy-shield-card .primary{min-width:180px}
+.privacy-shield-card small{display:block;margin-top:18px;color:#aebfd9;line-height:1.55}
+.privacy-shield-active .app-shell,.privacy-shield-active .login-overlay{visibility:hidden}
+@media(max-width:700px){.privacy-shield-card{padding:30px 22px}.privacy-shield-card h2{font-size:23px}}
