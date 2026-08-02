@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='10.59.0';
+  const BC_VERSION='10.60.0';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
@@ -144,6 +144,9 @@
     const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
+  function recordAudit(action,reason,metadata={}){
+    try{window.erpAudit?.recordEvent({entityType:'export',entityId:'backup-center',entityLabel:'백업센터',action,fields:[],reason,metadata});}catch{}
+  }
   function packageFor(keys,reason='manual'){
     const all=currentData();const data={};keys.forEach(k=>data[k]=deepClone(all[k]||[]));
     const integrityDatasets={};keys.forEach(k=>integrityDatasets[k]=datasetFingerprint(k,data[k]).digest);
@@ -163,6 +166,10 @@
     const names={full:'full_backup',applicants:'applicants',schools:'schools',employees:'employees',calendarEvents:'manual_calendar',hireWaitingProfiles:'hire_waiting_profiles',messageTemplates:'message_templates'};
     return `${prefix}_${names[type]||type}_${localIso()}.json`;
   }
+  function encryptedFileName(type,prefix='recruit_erp'){
+    const names={full:'full_backup',applicants:'applicants',schools:'schools',employees:'employees',calendarEvents:'manual_calendar',hireWaitingProfiles:'hire_waiting_profiles',messageTemplates:'message_templates'};
+    return `${prefix}_${names[type]||type}_${localIso()}.erpbackup`;
+  }
   function recordHistory(action,detail){
     let list=[];try{list=JSON.parse(localStorage.getItem(BC_HISTORY_KEY)||'[]');if(!Array.isArray(list))list=[];}catch{list=[];}
     list.unshift({at:new Date().toISOString(),action,detail});
@@ -175,6 +182,7 @@
       const keys=type==='full'?DATASETS.map(d=>d.key):[type];
       const pack=packageFor(keys,reason);
       downloadFile(fileName(type),JSON.stringify(pack,null,2));
+      recordAudit('export','레거시 평문 백업 다운로드 요청',{encrypted:false,backupType:type,datasets:keys,counts:pack.counts,success:true});
       if(type==='full'){
         localStorage.setItem(BC_LAST_FULL_KEY,pack.createdAt);
         localStorage.setItem('recruit_erp_last_backup_date',pack.createdAt.slice(0,10));
@@ -188,9 +196,38 @@
       return pack;
     }catch(err){
       console.error('Backup export error',err);
+      recordAudit('export','레거시 평문 백업 생성 실패',{encrypted:false,backupType:type,success:false});
       alert(`백업 파일 생성 중 오류가 발생했습니다.\n\n${err.message||err}`);
       return null;
     }
+  }
+  function markFullBackup(pack){
+    localStorage.setItem(BC_LAST_FULL_KEY,pack.createdAt);
+    localStorage.setItem('recruit_erp_last_backup_date',pack.createdAt.slice(0,10));
+    localStorage.setItem(BC_LAST_SNAPSHOT_KEY,JSON.stringify(snapshotOf(pack.data,pack.createdAt)));
+    preflightResult=null;refreshCounts();runPreflight(false);
+  }
+  async function exportEncryptedBackup(type,password,reason='manual encrypted backup'){
+    if(window.erpPermissions&&!window.erpPermissions.require('backup.manage'))return null;
+    if(!window.erpEncryptedBackup?.isSupported())throw new Error('이 브라우저는 안전한 암호화 백업을 지원하지 않습니다.');
+    const keys=type==='full'?DATASETS.map(d=>d.key):[type];const pack=packageFor(keys,reason);
+    try{
+      const envelope=await window.erpEncryptedBackup.encryptObject(pack,password,{appVersion:BC_VERSION});
+      downloadFile(encryptedFileName(type),JSON.stringify(envelope),'application/json');
+      if(type==='full')markFullBackup(pack);
+      recordHistory(type==='full'?'암호화 ERP 전체 백업 다운로드 요청':`암호화 ${datasetInfo(type)?.label||type} 백업 다운로드 요청`,keys.map(k=>`${datasetInfo(k).label} ${pack.counts[k]}건`).join(' · '));
+      recordAudit('export','암호화 백업 다운로드 요청',{encrypted:true,backupType:type,datasets:keys,counts:pack.counts,success:true});
+      return {envelope,pack};
+    }catch(error){recordAudit('export','암호화 백업 생성 실패',{encrypted:true,backupType:type,datasets:keys,success:false});throw error;}
+  }
+  async function backupCurrentBeforeChangeEncrypted(reason,password){
+    if(window.erpPermissions&&!window.erpPermissions.require('backup.manage'))throw new Error('백업 권한이 없습니다.');
+    const pack=packageFor(DATASETS.map(d=>d.key),reason);
+    const envelope=await window.erpEncryptedBackup.encryptObject(pack,password,{appVersion:BC_VERSION});
+    downloadFile(`recruit_erp_safety_before_${localIso()}.erpbackup`,JSON.stringify(envelope),'application/json');
+    recordHistory('암호화 적용 직전 안전 백업 다운로드 요청',reason);
+    recordAudit('export','암호화 적용 직전 안전 백업 다운로드 요청',{encrypted:true,backupType:'safety',datasets:DATASETS.map(d=>d.key),counts:pack.counts,success:true});
+    return pack;
   }
   function backupCurrentBeforeChange(reason){
     if(window.erpPermissions&&!window.erpPermissions.require('backup.manage'))return null;
@@ -401,7 +438,7 @@
       if(typeof setPage==='function')setPage('employees');
       setTimeout(()=>document.getElementById('btnOpenEmployeeOrgImport')?.focus(),120);
     });
-    bcEl('bcClearInspection')?.addEventListener('click',clearInspection);
+    bcEl('bcClearInspection')?.addEventListener('click',()=>{if(inspected?.encrypted)recordAudit('restore','복원 취소',{encrypted:true,success:false});clearInspection();});
   }
 
   function mergeObjects(existing,incoming){
@@ -425,7 +462,7 @@
   }
   function normalizeRows(key,rows){
     const valid=(Array.isArray(rows)?rows:[]).filter(x=>x&&typeof x==='object'&&!Array.isArray(x));
-    return valid.map(row=>{
+    return valid.map((row,index)=>{
       try{
         if(key==='applicants')return typeof normalize==='function'?normalize(row):row;
         if(key==='schools')return typeof normalizeSchool==='function'?normalizeSchool(row):row;
@@ -434,7 +471,7 @@
         if(key==='hireWaitingProfiles')return typeof normalizeHireWaitingProfile==='function'?normalizeHireWaitingProfile(row):row;
         if(key==='messageTemplates')return typeof normalizeMessageTemplate==='function'?normalizeMessageTemplate(row):row;
         return row;
-      }catch(err){console.warn(`Backup normalize failed: ${key}`,err,row);return null;}
+      }catch{console.warn(`백업 데이터 정규화 실패: ${key}, ${index+1}번째 행`);return null;}
     }).filter(Boolean).filter(row=>{
       if(key==='schools')return !!row.name;
       if(key==='employees')return !!(row.name||row.empNo);
@@ -463,7 +500,20 @@
   function readPendingCloud(){try{return JSON.parse(localStorage.getItem(BC_PENDING_CLOUD_KEY)||'null');}catch{return null;}}
   function savePendingCloud(state){localStorage.setItem(BC_PENDING_CLOUD_KEY,JSON.stringify(state));renderCloudPanel();}
 
-  function applyImport(mode){
+  function restoreSnapshot(snapshot,excelIds){
+    writeDatasets(snapshot);
+    if(typeof window.erpSetExcelApplicantIds==='function')window.erpSetExcelApplicantIds(excelIds||[]);
+  }
+  async function ensureSafetyBackup(title){
+    if(inspected?.encrypted){
+      try{await backupCurrentBeforeChangeEncrypted(`${title} 직전`,inspected.password);}
+      catch(error){recordAudit('restore','복원 전 암호화 안전 백업 실패',{encrypted:true,mode:title,success:false});alert(`안전 백업을 만들지 못해 적용을 중단했습니다.\n\n${error.message||error}`);clearInspection();return false;}
+      if(!confirm('현재 ERP의 암호화 안전 백업 다운로드를 요청했습니다.\n\n다운로드 목록에서 .erpbackup 파일을 확인한 뒤 적용을 계속할까요?')){recordAudit('restore','안전 백업 후 복원 취소',{encrypted:true,mode:title,success:false});clearInspection();return false;}
+      return true;
+    }
+    backupCurrentBeforeChange(`${title} 직전`);return true;
+  }
+  async function applyImport(mode){
     if(!assertHomeImport())return;
     if(!inspected)return;
     const c=inspected.canonical;if(!c.valid){alert('검사 오류가 있는 파일은 적용할 수 없습니다.');return;}
@@ -471,36 +521,34 @@
     const current=countsOf(currentData());const incoming=c.counts;const risks=importRisks(c);
     if(mode==='merge'){
       const summary=c.included.map(k=>`${datasetInfo(k).label}: 현재 ${current[k]}건 / 파일 ${incoming[k]}건`).join('\n');
-      if(!confirm(`데이터 병합 가져오기 전 확인\n\n${summary}\n\n기존 데이터는 지우지 않고 같은 ID의 최근 수정본을 반영합니다. 진행할까요?`))return;
-      backupCurrentBeforeChange('병합 가져오기 직전');
-      const next={};const results=[];const now=currentData();
-      c.included.forEach(k=>{const merged=mergeDataset(k,now[k]||[],normalizeRows(k,c.data[k]));next[k]=merged.rows;results.push(`${datasetInfo(k).label}: 신규 ${merged.added} · 갱신 ${merged.updated} · 유지 ${merged.kept}`);});
-      const finalCounts=writeDatasets(next);
-      if(c.included.includes('applicants')&&typeof window.erpSetExcelApplicantIds==='function'){
-        const currentIds=typeof window.erpGetExcelApplicantIds==='function'?window.erpGetExcelApplicantIds():[];
-        window.erpSetExcelApplicantIds([...currentIds,...(c.meta.excelApplicantIds||[])]);
-      }
-      recordHistory('데이터 병합 가져오기',results.join(' / '));
-      setPendingCloud({mode,included:c.included});
-      alert(`로컬 병합 완료\n\n${results.join('\n')}\n\n현재 브라우저에 반영했습니다. 백업센터의 클라우드 저장 상태에서 Supabase 저장을 확인하세요.`);
-      console.info('Backup merge final counts',finalCounts);
+      if(!confirm(`데이터 병합 가져오기 전 확인\n\n${summary}\n\n기존 데이터는 지우지 않고 같은 ID의 최근 수정본을 반영합니다. 진행할까요?`)){recordAudit('restore','복원 취소',{encrypted:!!inspected.encrypted,mode,success:false});clearInspection();return;}
+      if(!(await ensureSafetyBackup('병합 가져오기')))return;
+      const before=deepClone(currentData());const beforeExcel=typeof window.erpGetExcelApplicantIds==='function'?window.erpGetExcelApplicantIds():[];
+      try{
+        const next={};const results=[];const now=currentData();
+        c.included.forEach(k=>{const merged=mergeDataset(k,now[k]||[],normalizeRows(k,c.data[k]));next[k]=merged.rows;results.push(`${datasetInfo(k).label}: 신규 ${merged.added} · 갱신 ${merged.updated} · 유지 ${merged.kept}`);});
+        writeDatasets(next);
+        if(c.included.includes('applicants')&&typeof window.erpSetExcelApplicantIds==='function')window.erpSetExcelApplicantIds([...beforeExcel,...(c.meta.excelApplicantIds||[])]);
+        recordHistory('데이터 병합 가져오기',results.join(' / '));recordAudit('restore','암호화 백업 병합 적용',{encrypted:!!inspected.encrypted,mode,datasets:c.included,counts:c.counts,success:true});
+        setPendingCloud({mode,included:c.included});alert(`로컬 병합 완료\n\n${results.join('\n')}\n\n현재 브라우저에 반영했습니다. 백업센터의 클라우드 저장 상태에서 Supabase 저장을 확인하세요.`);
+      }catch(error){try{restoreSnapshot(before,beforeExcel);}catch{}recordAudit('restore','백업 병합 적용 실패 및 원상복구',{encrypted:!!inspected.encrypted,mode,datasets:c.included,success:false});alert(`적용에 실패해 이전 상태로 되돌렸습니다.\n\n${error.message||error}`);clearInspection();return;}
     }else{
       const isRestore=mode==='restore';const title=isRestore?'전체 ERP 복원':'포함 데이터 전체교체';const normalPhrase=isRestore?'전체복원':'전체교체';const severe=risks.some(r=>r.level==='danger');const phrase=severe?`위험 ${normalPhrase}`:normalPhrase;
       const keys=isRestore?DATASETS.map(d=>d.key):c.included;
       const targets=keys.map(k=>`${datasetInfo(k).label}: ${current[k]}건 → ${incoming[k]}건`).join('\n');
-      if(!confirm(`${title} 전 확인\n\n${targets}\n\n작업 직전에 현재 ERP 전체 안전 백업이 다운로드됩니다.${severe?'\n\n0건 교체 위험이 포함되어 있습니다.':''}`))return;
+      if(!confirm(`${title} 전 확인\n\n${targets}\n\n작업 직전에 현재 ERP 전체 안전 백업이 다운로드됩니다.${severe?'\n\n0건 교체 위험이 포함되어 있습니다.':''}`)){recordAudit('restore','복원 취소',{encrypted:!!inspected.encrypted,mode,success:false});clearInspection();return;}
       const typed=prompt(`정말 진행하려면 아래 문구를 그대로 입력하세요.\n\n${phrase}`);
-      if(typed!==phrase){alert('작업이 취소되었습니다.');return;}
-      backupCurrentBeforeChange(`${title} 직전`);
-      const next={};keys.forEach(k=>next[k]=c.data[k]||[]);
-      const finalCounts=writeDatasets(next);
-      if(keys.includes('applicants')&&typeof window.erpSetExcelApplicantIds==='function')window.erpSetExcelApplicantIds(c.meta.excelApplicantIds||[]);
-      recordHistory(title,targets.replace(/\n/g,' / '));
-      setPendingCloud({mode,included:keys});
-      alert(`${title} 로컬 적용을 완료했습니다.\n\nSupabase에는 아직 자동 삭제·교체하지 않았습니다. 백업센터의 클라우드 저장 상태에서 전체 일치 저장을 직접 확인하세요.`);
-      console.info('Backup replace final counts',finalCounts);
+      if(typed!==phrase){recordAudit('restore','복원 취소',{encrypted:!!inspected.encrypted,mode,success:false});alert('작업이 취소되었습니다.');clearInspection();return;}
+      if(!(await ensureSafetyBackup(title)))return;
+      const before=deepClone(currentData());const beforeExcel=typeof window.erpGetExcelApplicantIds==='function'?window.erpGetExcelApplicantIds():[];
+      try{
+        const next={};keys.forEach(k=>next[k]=c.data[k]||[]);writeDatasets(next);
+        if(keys.includes('applicants')&&typeof window.erpSetExcelApplicantIds==='function')window.erpSetExcelApplicantIds(c.meta.excelApplicantIds||[]);
+        recordHistory(title,targets.replace(/\n/g,' / '));recordAudit('restore',`${title} 적용`,{encrypted:!!inspected.encrypted,mode,datasets:keys,counts:c.counts,success:true});
+        setPendingCloud({mode,included:keys});alert(`${title} 로컬 적용을 완료했습니다.\n\nSupabase에는 아직 자동 삭제·교체하지 않았습니다. 백업센터의 클라우드 저장 상태에서 전체 일치 저장을 직접 확인하세요.`);
+      }catch(error){try{restoreSnapshot(before,beforeExcel);}catch{}recordAudit('restore',`${title} 실패 및 원상복구`,{encrypted:!!inspected.encrypted,mode,datasets:keys,success:false});alert(`적용에 실패해 이전 상태로 되돌렸습니다.\n\n${error.message||error}`);clearInspection();return;}
     }
-    renderInspection();
+    clearInspection();
   }
 
   async function inspectFile(file){
@@ -508,14 +556,34 @@
     clearInspection(false);
     if(!file)return;
     if(file.size>BC_MAX_FILE_BYTES){alert('백업 파일이 50MB를 초과합니다. 파일을 다시 확인해주세요.');return;}
-    if(!/\.json$/i.test(file.name||'')){alert('JSON 파일만 검사할 수 있습니다.');return;}
+    if(!/\.(json|erpbackup)$/i.test(file.name||'')){alert('.erpbackup 또는 JSON 파일만 검사할 수 있습니다.');return;}
+    if(/\.erpbackup$/i.test(file.name||'')){
+      if(!window.erpEncryptedBackupUI?.inspectFile){alert('암호화 백업 기능을 불러오지 못했습니다. 새로고침 후 다시 시도하세요.');return;}
+      return window.erpEncryptedBackupUI.inspectFile(file);
+    }
     try{
       const text=await file.text();const parsed=window.erpSecurity.parseJson(text,{maxBytes:BC_MAX_FILE_BYTES});const canonical=canonicalize(parsed);
+      canonical.warnings.unshift('이 파일은 암호화되지 않은 이전 백업입니다. 안전한 저장 위치에서만 사용하세요.');
       inspected={file,parsed,canonical};renderInspection();
       recordHistory('백업 파일 검사',`${file.name} · ${canonical.fileType?.label||canonical.included.map(k=>datasetInfo(k).label).join(', ')} · ${canonical.valid?'적용 가능':'적용 불가'}`);
+      recordAudit('restore','레거시 평문 백업 파일 검사',{encrypted:false,fileType:canonical.fileType?.kind||'unknown',datasets:canonical.included,counts:canonical.counts,success:canonical.valid});
     }catch(err){inspected=null;renderInspection();alert(`백업 파일 검사 실패\n\n${err.message||err}`);}
   }
-  function clearInspection(resetInput=true){inspected=null;renderInspection();if(resetInput&&bcEl('bcFileInput'))bcEl('bcFileInput').value='';}
+  function inspectDecryptedFile(file,parsed,password){
+    if(!assertHomeImport())return null;
+    try{window.erpSecurity.validateBackupPayload(parsed,{datasetKeys:DATASETS.map(dataset=>dataset.key)});}
+    catch{
+      inspected=null;renderInspection();const input=bcEl('bcFileInput');if(input)input.value='';
+      const error=new Error('복호화된 백업의 안전 검사에 실패했습니다.');error.code='UNSAFE_BACKUP';throw error;
+    }
+    const canonical=canonicalize(parsed);inspected={file,parsed:null,canonical,encrypted:true,password:String(password)};renderInspection();
+    recordHistory('암호화 백업 파일 검사',`${file.name} · ${canonical.fileType?.label||'백업'} · ${canonical.valid?'적용 가능':'적용 불가'}`);
+    recordAudit('restore','암호화 백업 파일 검사',{encrypted:true,fileType:canonical.fileType?.kind||'unknown',datasets:canonical.included,counts:canonical.counts,success:canonical.valid});
+    return canonical;
+  }
+  function clearInspection(resetInput=true){
+    if(inspected?.password)inspected.password='';inspected=null;window.erpEncryptedBackupUI?.endSession?.();renderInspection();if(resetInput&&bcEl('bcFileInput'))bcEl('bcFileInput').value='';
+  }
 
   function localStorageCheck(){
     try{const key='__recruit_erp_backup_test__';localStorage.setItem(key,'ok');const ok=localStorage.getItem(key)==='ok';localStorage.removeItem(key);return ok;}
@@ -551,15 +619,15 @@
     if(notice){
       notice.className=`backup-mode-notice ${home?'home':'company'}`;
       notice.innerHTML=home
-        ? '<strong>집 개발·복원 모드</strong><span>회사 JSON을 먼저 검사·비교한 뒤 로컬에 적용합니다. 적용 후 별도 확인 버튼으로 Supabase 저장 결과를 검증합니다.</span>'
-        : '<strong>회사 로컬 운영 모드</strong><span>JSON 업로드·검사·복원 코드는 차단됩니다. 퇴근 전 점검 후 ERP 전체 JSON 다운로드만 진행하세요.</span>';
+        ? '<strong>집 개발·복원 모드</strong><span>암호화 백업을 복호화·검사·비교한 뒤 로컬에 적용합니다. 적용 후 별도 확인 버튼으로 Supabase 저장 결과를 검증합니다.</span>'
+        : '<strong>회사 로컬 운영 모드</strong><span>업로드·검사·복원 코드는 차단됩니다. 퇴근 전 점검 후 암호화 전체 백업을 내려받으세요.</span>';
     }
     const title=bcEl('bcCompanyTitle');const desc=bcEl('bcCompanyDescription');const exportTitle=bcEl('bcExportTitle');const exportDesc=bcEl('bcExportDescription');const exportBtn=bcEl('bcExportFull');
-    if(title)title.textContent=home?'집 모드 · 현재 ERP 안전 백업':'회사 모드 · 퇴근 전 JSON 다운로드';
-    if(desc)desc.textContent=home?'회사 JSON 적용 전후 또는 개발 완료 후 현재 ERP 전체 데이터를 별도 보관하세요.':'회사에서는 업로드·복원하지 않습니다. 업무 종료 후 점검하고 ERP 전체 JSON만 다운로드하세요.';
-    if(exportTitle)exportTitle.textContent=home?'현재 ERP 전체 안전 백업':'ERP 전체 백업';
-    if(exportDesc)exportDesc.textContent=home?'지원자·협력학교·사원명부·수동 일정·입사대기 입력정보를 현재 상태 그대로 저장합니다. 입사대기 입력정보에는 주민등록번호가 포함될 수 있으므로 백업 파일을 안전하게 보관하세요.':'지원자·협력학교·사원명부·수동 일정·입사대기 입력정보와 백업 버전·일시·환경 정보를 포함합니다. 입사대기 입력정보에는 주민등록번호가 포함될 수 있으므로 백업 파일을 안전하게 보관하세요.';
-    if(exportBtn)exportBtn.textContent=home?'현재 ERP 전체 JSON 다운로드':'ERP 전체 JSON 다운로드';
+    if(title)title.textContent=home?'백업 점검 · 이전 평문 호환':'퇴근 전 백업 점검 · 이전 평문 호환';
+    if(desc)desc.textContent=home?'암호화 백업을 우선 사용하고, 이전 업무에 평문 JSON이 꼭 필요할 때만 고급 메뉴를 여세요.':'업무 종료 전 상태를 점검하세요. 평문 JSON은 이전 업무 호환이 꼭 필요한 경우에만 사용합니다.';
+    if(exportTitle)exportTitle.textContent='레거시 ERP 전체 평문 백업';
+    if(exportDesc)exportDesc.textContent='파일을 열면 개인정보를 읽을 수 있습니다. 암호화 백업을 사용할 수 없는 이전 업무 호환에만 제한적으로 사용하세요.';
+    if(exportBtn)exportBtn.textContent='레거시 전체 JSON 다운로드';
     if(!home){clearInspection();}
     renderCloudPanel();
   }
@@ -716,6 +784,14 @@
       zone.addEventListener('drop',e=>{if(!assertHomeImport())return;inspectFile(e.dataTransfer.files&&e.dataTransfer.files[0]);});
     }
     document.addEventListener('click',e=>{if(e.target.closest('[data-page="backup"], [data-go="backup"], [data-operation-mode]'))setTimeout(()=>{refreshCounts();renderHistory();renderPreflight();renderCloudPanel();},0);});
+    ['erp:privacy-lock','erp:auth-logout','erp:permission-change','erp:operation-environment-change'].forEach(name=>document.addEventListener(name,()=>clearInspection()));
+    window.addEventListener('pagehide',()=>clearInspection());
+    const previousSetPage=window.setPage;
+    if(typeof previousSetPage==='function'&&!previousSetPage.__backupInspectionGuard){
+      const guardedSetPage=function(page){if(document.querySelector('.page.active')?.id==='backup'&&page!=='backup')clearInspection();return previousSetPage.apply(this,arguments);};
+      guardedSetPage.__backupInspectionGuard=true;window.setPage=guardedSetPage;
+      try{setPage=guardedSetPage;}catch{}
+    }
     window.addEventListener('storage',()=>{refreshCounts();renderHistory();renderCloudPanel();});
   }
   function init(){
@@ -725,8 +801,8 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 
   window.erpBackupCenter={
-    exportFull:()=>exportBackup('full'),safetyBackup:(reason='manual safety backup')=>backupCurrentBeforeChange(reason),inspectFile,runPreflight,syncPendingToCloud,version:BC_VERSION,
+    exportFull:()=>exportBackup('full'),exportEncrypted:exportEncryptedBackup,safetyBackup:(reason='manual safety backup')=>backupCurrentBeforeChange(reason),inspectFile,inspectDecryptedFile,clearInspection,recordAudit,runPreflight,syncPendingToCloud,version:BC_VERSION,
     getStatus:()=>({environment:environment(),changes:changesSinceBackup(),pendingCloud:readPendingCloud(),inspection:inspected&&inspected.canonical}),
-    __test:{canonicalize,classifyJsonPayload,datasetDiff,snapshotOf,compareFingerprints,packageFor,importRisks}
+    __test:{canonicalize,classifyJsonPayload,datasetDiff,snapshotOf,compareFingerprints,packageFor,importRisks,encryptedFileName,normalizeRows}
   };
 })();

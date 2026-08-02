@@ -1,8 +1,8 @@
-/* Recruit ERP v10.59.0 screen, import, and declarative event security */
+/* Recruit ERP v10.60.0 screen, import, and declarative event security */
 (function(root){
   'use strict';
 
-  const VERSION='10.59.0';
+  const VERSION='10.60.0';
   const MAX_IMPORT_BYTES=50*1024*1024;
   const MAX_IMPORT_ROWS=10000;
   const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -55,6 +55,20 @@
       if((raw===undefined||raw===null||raw==='')&&!requireId)return;
       if(!isValidId(raw))throw new Error(`${index+1}번째 항목의 ID 형식이 안전하지 않습니다.`);
     });
+  }
+  function validateBackupPayload(parsed,options={}){
+    assertSafeTree(parsed);
+    const datasetKeys=Array.isArray(options.datasetKeys)?options.datasetKeys:[];
+    const collections=[];const seen=new Set();
+    const add=rows=>{if(Array.isArray(rows)&&!seen.has(rows)){seen.add(rows);collections.push(rows);}};
+    add(parsed);
+    if(isPlainObject(parsed)){
+      add(parsed.rows);
+      datasetKeys.forEach(key=>add(parsed[key]));
+      if(isPlainObject(parsed.data))datasetKeys.forEach(key=>add(parsed.data[key]));
+    }
+    collections.forEach(rows=>validateRowIds(rows,{requireId:false}));
+    return true;
   }
   function parseJson(raw,options={}){
     const text=String(raw??'');
@@ -181,7 +195,7 @@
     });
   }
 
-  const api={VERSION,MAX_IMPORT_BYTES,MAX_IMPORT_ROWS,ID_PATTERN,ALLOWED_ACTIONS,escapeAttribute,isPlainObject,isValidId,assertSafeTree,validateRowIds,parseJson,parseImportJson,actionAttrs,actionArgs,splitLegacyArgs,invokeLegacy};
+  const api={VERSION,MAX_IMPORT_BYTES,MAX_IMPORT_ROWS,ID_PATTERN,ALLOWED_ACTIONS,escapeAttribute,isPlainObject,isValidId,assertSafeTree,validateRowIds,validateBackupPayload,parseJson,parseImportJson,actionAttrs,actionArgs,splitLegacyArgs,invokeLegacy};
   root.erpSecurity=api;root.erpAction=actionAttrs;
   if(typeof module!=='undefined'&&module.exports)module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

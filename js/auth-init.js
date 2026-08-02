@@ -75,6 +75,7 @@ function doLogin(){
   }).catch(function(){ showLoginOverlay('로그인 중 오류가 발생했습니다.'); });
 }
 function doLogout(){
+  document.dispatchEvent(new CustomEvent('erp:auth-logout'));
   if(!window.sb) return;
   window.sb.auth.signOut().then(function(){
     cloudAuthenticated=false;
