@@ -1,0 +1,29 @@
+name: ERP 자동 검사
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: 저장·보안·동기화 회귀 검사
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: 코드 받기
+        uses: actions/checkout@v4
+      - name: Node.js 준비
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 전체 자동 검사
+        run: npm run check
