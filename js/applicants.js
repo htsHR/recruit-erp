@@ -152,7 +152,7 @@ function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 function setPage(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'고급검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업/내보내기',permissions:'사용자 권한'};
+  const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'고급검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업/내보내기',permissions:'사용자 권한',auditHistory:'변경 이력'};
   const descMap = {
     home:'오늘의 채용 업무와 주요 현황을 확인합니다.',
     applicants:'지원자 진행상태와 면접·입사 일정을 관리합니다.',
@@ -167,7 +167,8 @@ function setPage(page){
     dataHealth:'데이터 누락과 상태 불일치를 읽기 전용으로 점검합니다.',
     duplicates:'중복 후보와 재지원 기록을 사용자 확인 방식으로 검토합니다.',
     backup:'ERP 데이터를 안전하게 백업하고 복원합니다.',
-    permissions:'로그인 계정별 조회·수정·삭제 권한을 관리합니다.'
+    permissions:'로그인 계정별 조회·수정·삭제 권한을 관리합니다.',
+    auditHistory:'누가 언제 무엇을 바꿨는지 확인합니다. 민감정보 원문은 기록하지 않습니다.'
   };
   $('page-title').textContent = titleMap[page] || '홈';
   const breadcrumb=document.querySelector('.topbar-breadcrumb');

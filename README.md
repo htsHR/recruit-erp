@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.57.0**입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.58.0**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -56,6 +56,18 @@ npm run check
 3. GitHub 변경 요청에서 자동 검사와 Vercel 미리보기를 확인합니다.
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
+
+## v10.58.0 변경 이력 설치
+
+`supabase/migrations/20260802094828_audit_history_v10_58_0.sql`을 Supabase SQL Editor에서 한 번 실행해야 합니다.
+
+- 지원자·사원·협력학교·일정의 등록·수정·삭제 기록
+- 삭제 사유, 백업 복원, 내보내기, 사용자 권한 변경 기록
+- 관리자 전용 변경 이력 화면과 Supabase RLS
+- 주민등록번호·연락처·이메일·주소·급여·메모 등 민감값 원문 미기록
+- 오프라인 기록 보관 및 연결 후 자동 재시도
+
+자세한 변경 내역은 `CHANGELOG_v10.58.0.md`를 확인하세요.
 
 ## v10.57.0 사용자 권한 설치
 

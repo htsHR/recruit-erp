@@ -131,7 +131,8 @@ function restoreSnapshot(id){
     if(!res || res.error || !res.data){ alert('복원 실패: 스냅샷을 찾을 수 없습니다.'); return; }
     var previous=applicants;
     applicants = (res.data.data || []).map(normalize);
-    if(!save()){applicants=previous;return;}
+    window.erpAudit?.setNextContext('applicant',{action:'restore',batchSummary:true,reason:'클라우드 스냅샷 복원',metadata:{snapshotId:String(id),snapshotCreatedAt:res.data.created_at||''}});
+    if(!save()){applicants=previous;window.erpAudit?.clearNextContext('applicant');return;}
     renderSnapshotList();
     alert('복원 완료: '+applicants.length+'명 ('+new Date(res.data.created_at).toLocaleString('ko-KR')+' 시점)');
   }).catch(function(e){ alert('복원 중 오류가 발생했습니다: '+e); });

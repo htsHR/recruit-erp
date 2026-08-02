@@ -79,7 +79,9 @@ function employeeCloudRow(employee,legacy=false){
 }
 function saveEmployees(syncList){
   if(window.erpPermissions&&!window.erpPermissions.require('employee.write'))return false;
+  const auditBefore=window.erpAudit?.capture('employee');
   if(!safeLocalStorageSet(EMPLOYEES_KEY,JSON.stringify(employees)))return false;
+  window.erpAudit?.commitSave('employee',auditBefore,employees);
   supabaseSyncEmployees(Array.isArray(syncList)?syncList:employees);
   renderEmployees();
   renderSchools();
@@ -281,10 +283,12 @@ function deleteEmployee(id){
   if(!confirm(`"${e.name}" 사원 기록을 삭제할까요?\n\n목록에서는 삭제할 수 없으며, 현재 수정 중인 사원만 삭제됩니다.`))return;
   const phrase=prompt('삭제하려면 사원명을 그대로 입력하세요.',e.name);
   if(phrase!==e.name){alert('삭제가 취소됐습니다.');return;}
+  const auditReason=auditDeletionReason();if(!auditReason)return;
   const queued=supabaseDeleteEmployee(id,e.name,{defer:true});
   if(!queued.ok){alert('삭제 안전정보를 저장하지 못해 삭제를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;}
   const previous=employees;employees=employees.filter(x=>x.id!==id);
-  if(!saveEmployees()){employees=previous;window.erpSyncSafety.cancelDelete(queued.key);renderEmployees();return;}
+  window.erpAudit?.setNextContext('employee',{action:'delete',reason:auditReason});
+  if(!saveEmployees()){employees=previous;window.erpAudit?.clearNextContext('employee');window.erpSyncSafety.cancelDelete(queued.key);renderEmployees();return;}
   resetEmployeeForm();window.erpSyncSafety.retryDeletes('employees');
 }
 function deleteEditingEmployee(){if(editingEmployeeId)deleteEmployee(editingEmployeeId);}

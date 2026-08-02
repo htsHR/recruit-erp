@@ -1,4 +1,4 @@
-/* Recruit ERP v10.57.0 USER PERMISSIONS
+/* Recruit ERP v10.58.0 USER PERMISSIONS
  * UI guards are usability protection. Supabase RLS is the security boundary.
  */
 (function(root,factory){
@@ -7,11 +7,11 @@
   root.erpPermissions=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='10.57.0';
+  const VERSION='10.58.0';
   const ROLE_LABELS={admin:'관리자',recruiter:'채용담당자',viewer:'조회 전용',local_admin:'로컬 관리자',legacy_admin:'설정 전 관리자'};
   const PERMISSIONS={
     admin:['*'],local_admin:['*'],legacy_admin:['*'],
-    recruiter:['applicant.read','applicant.write','schedule.read','schedule.write','school.read','employee.read','stats.read','export.standard','message.write'],
+    recruiter:['applicant.read','applicant.write','schedule.read','schedule.write','school.read','employee.read','stats.read','export.standard','message.write','audit.write'],
     viewer:['applicant.read','schedule.read','school.read','employee.read','stats.read']
   };
   let state={role:'local_admin',email:'',userId:'',ready:true,source:'local',setupRequired:false,error:''};
@@ -70,6 +70,7 @@
     const handler=element.getAttribute?.('data-erp-handler')||'';
     const page=element.dataset?.page||element.dataset?.go||'';
     if(page==='permissions')return 'user.manage';
+    if(page==='auditHistory')return 'audit.read';
     if(page==='backup')return 'backup.manage';
     if(page==='form')return 'applicant.write';
     if(/deleteApplicant|btnDeleteAll|btnClearAll/i.test(handler+' '+id))return 'applicant.delete';
@@ -106,6 +107,7 @@
       mark('[data-page="form"],[data-go="form"],#btnDetailEdit,#btnDetailEditTop,#btnHomeStartScreening,#btnHomeStartPhoneInterview,#btnStartScreeningWorkbench,#btnStartPhoneInterview','applicant.write');
       mark('[data-page="backup"],[data-go="backup"]','backup.manage');
       mark('[data-page="permissions"],[data-go="permissions"]','user.manage');
+      mark('[data-page="auditHistory"],[data-go="auditHistory"]','audit.read');
       mark('#btnDeleteAll,#btnClearAll,[data-erp-handler*="deleteApplicant"]','applicant.delete');
       mark('[data-erp-handler*="deleteEmployee"],#btnDeleteEditingEmployee','employee.delete');
       mark('[data-erp-handler*="deleteSchool"],#btnApplySchoolMerge','school.delete');
@@ -120,7 +122,7 @@
       const note=root.document.getElementById('permissionCurrentBadge'),badge=badgeHtml();if(note&&note.innerHTML!==badge)note.innerHTML=badge;
       root.document.documentElement.dataset.erpRole=state.role;
       if(!has('sensitive.read'))root.document.body?.classList.add('erp-sensitive-masked');else root.document.body?.classList.remove('erp-sensitive-masked');
-      const active=root.document.querySelector('.page.active');if(active&&((active.id==='form'&&!has('applicant.write'))||(active.id==='backup'&&!has('backup.manage'))||(active.id==='permissions'&&!has('user.manage'))))root.setPage?.('home');
+      const active=root.document.querySelector('.page.active');if(active&&((active.id==='form'&&!has('applicant.write'))||(active.id==='backup'&&!has('backup.manage'))||(active.id==='permissions'&&!has('user.manage'))||(active.id==='auditHistory'&&!has('audit.read'))))root.setPage?.('home');
     }finally{applying=false;}
   }
 
@@ -140,6 +142,7 @@
     if(target.role==='admin'&&role!=='admin'&&adminCount<=1){root.alert?.('마지막 관리자 계정은 다른 권한으로 바꿀 수 없습니다.');renderPage();return false;}
     const response=await root.sb.from('user_roles').update({role}).eq('user_id',userId).select('user_id,email,display_name,role,created_at,updated_at').single();
     if(response?.error){root.alert?.(`권한 변경 실패: ${response.error.message||response.error}`);renderPage();return false;}
+    root.erpAudit?.recordEvent({entityType:'user',entityId:userId,entityLabel:root.erpAudit.maskEmail(target.email||''),action:'role_change',fields:['role'],before:{role:target.role},after:{role},reason:'관리자 권한 변경'});
     users=users.map(user=>user.user_id===userId?response.data:user);
     if(userId===state.userId)setState({role:response.data.role});else renderPage();
     return true;
