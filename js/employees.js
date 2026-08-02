@@ -88,11 +88,12 @@ function supabaseSyncEmployees(list){
   if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
   const targets=Array.isArray(list)?list.filter(Boolean):[];
   if(!targets.length) return Promise.resolve({skipped:true,count:0});
+  setCloudSyncStatus('syncing');
   const CHUNK_SIZE=250;
-  return (async function(){
+  return window.erpSyncSafety.runUpload('employees',targets,async function(batch){
     let useLegacy=employeeExtendedCloudUnsupported,saved=0;
-    for(let start=0;start<targets.length;start+=CHUNK_SIZE){
-      const chunk=targets.slice(start,start+CHUNK_SIZE);
+    for(let start=0;start<batch.length;start+=CHUNK_SIZE){
+      const chunk=batch.slice(start,start+CHUNK_SIZE);
       let res=await window.sb.from('employees').upsert(chunk.map(e=>employeeCloudRow(e,useLegacy)));
       if(res&&res.error&&!useLegacy){
         employeeExtendedCloudUnsupported=true;useLegacy=true;
@@ -102,8 +103,8 @@ function supabaseSyncEmployees(list){
       if(res&&res.error) throw new Error(res.error.message||'사원명부 Supabase 저장 실패');
       saved+=chunk.length;
     }
-    return {saved,count:targets.length,legacy:useLegacy};
-  })().catch(function(e){console.warn('직원명부 Supabase 저장 실패(로컬에는 정상 저장됨):',e);return {error:e,count:targets.length};});
+    return {saved,count:batch.length,legacy:useLegacy};
+  });
 }
 function supabaseDeleteEmployee(id){
   if(!canUseCloud()) return;
@@ -123,20 +124,22 @@ function supabaseEmployeesSyncOnLoad(){
     });
   }
   loadPage(0,[]).then(function(cloudRaw){
-    const local=employees,cloud=cloudRaw.map(normalizeEmployee),map={};
-    employees.forEach(e=>{map[e.id]=e;});
-    cloud.forEach(c=>{
-      const l=map[c.id];
-      if(!l){map[c.id]=c;return;}
-      const lt=l.updatedAt||l.createdAt||'',ct=c.updatedAt||c.createdAt||'';
-      map[c.id]=(ct>lt)?c:l;
-    });
-    employees=Object.keys(map).map(k=>normalizeEmployee(map[k]));
+    const local=employees,cloud=cloudRaw.map(normalizeEmployee),mergeResult=window.erpSyncSafety.mergeAndTrack('employees',local,cloud);
+    employees=mergeResult.rows.map(normalizeEmployee);
     if(!safeLocalStorageSet(EMPLOYEES_KEY,JSON.stringify(employees))){employees=local;throw new Error('사원명부 클라우드 병합 결과의 로컬 저장 실패');}
     renderEmployees();
-    console.info('직원명부 Supabase 페이지 조회 완료: 클라우드 '+cloud.length+'명 -> 병합 후 '+employees.length+'명');
+    setCloudSyncStatus('ok');
+    console.info('직원명부 Supabase 안전 병합 완료: 클라우드 '+cloud.length+'명 -> 병합 후 '+employees.length+'명 · 충돌 '+mergeResult.conflicts.length+'건');
   }).catch(function(e){console.warn('직원명부 페이지 조회 중 실패 — 기존 로컬 데이터 유지:',e);});
 }
+if(window.erpSyncSafety)window.erpSyncSafety.registerDataset('employees',{
+  getRows:function(){return employees;},
+  setRows:function(rows){employees=rows.map(normalizeEmployee);},
+  normalize:normalizeEmployee,
+  storageKey:function(){return EMPLOYEES_KEY;},
+  upload:supabaseSyncEmployees,
+  render:function(){renderEmployees();renderSchools();}
+});
 
 let employeeStatusFilter='all';
 let employeeSearchName='';

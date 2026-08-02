@@ -184,6 +184,7 @@ function updateStorageNote(){
     el.className='security-note sync-progress-note';
     el.innerHTML='<strong>클라우드 동기화 중</strong><span>클라우드 상태를 확인하고 있습니다.</span>'+last;
   }
+  if(window.erpSyncSafety&&typeof window.erpSyncSafety.decorateStatus==='function')window.erpSyncSafety.decorateStatus(el);
 }
 function save(){
   if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants)))return false;

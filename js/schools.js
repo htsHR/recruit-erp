@@ -49,32 +49,37 @@ function loadSchools(){
   }catch(e){ console.error('학교마스터 load error', e); return []; }
 }
 function saveSchools(){
-  localStorage.setItem(SCHOOLS_KEY, JSON.stringify(schools));
+  if(!safeLocalStorageSet(SCHOOLS_KEY,JSON.stringify(schools)))return false;
   supabaseSyncSchools(schools);
   populateSchoolDatalist();
   renderSchoolManage();
   renderSchools();
+  return true;
 }
 function supabaseSyncSchools(list){
-  if(!canUseCloud()) return;
-  window.sb.from('schools').upsert(list).then(function(res){
-    if(!res || !res.error) return;
+  if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
+  const targets=Array.isArray(list)?list.filter(Boolean):[];
+  if(!targets.length)return Promise.resolve({skipped:true,count:0});
+  setCloudSyncStatus('syncing');
+  return window.erpSyncSafety.runUpload('schools',targets,async function(batch){
+    let res=await window.sb.from('schools').upsert(batch);
+    if(!res || !res.error)return {saved:batch.length,count:batch.length};
     const msg=String(res.error.message||'');
     const relationshipColumns=['managementStatus','memoHistory','contacts','activities','recommendationRequests','departments','mouInfo'];
     const missingRelationshipColumn=relationshipColumns.some(col=>msg.includes(col));
     if(missingRelationshipColumn){
-      const safeList=list.map(s=>{
+      const safeList=batch.map(s=>{
         const copy={...s};
         relationshipColumns.forEach(k=>delete copy[k]);
         return copy;
       });
       console.warn('Supabase schools 확장 컬럼이 없어 관계관리 확장정보를 제외하고 재저장합니다. 로컬에는 전체 정보가 보존됩니다. v10.42.0 SQL을 적용하면 클라우드에도 저장됩니다.');
-      return window.sb.from('schools').upsert(safeList).then(function(retry){
-        if(retry && retry.error) console.warn('학교마스터 Supabase 저장 실패(로컬엔 정상 저장됨):', retry.error.message);
-      });
+      res=await window.sb.from('schools').upsert(safeList);
+      if(res&&res.error)throw new Error(res.error.message||'학교마스터 Supabase 저장 실패');
+      return {saved:batch.length,count:batch.length,legacy:true};
     }
-    console.warn('학교마스터 Supabase 저장 실패(로컬엔 정상 저장됨):', msg);
-  }).catch(function(e){ console.warn('학교마스터 Supabase 저장 실패(로컬엔 정상 저장됨):', e); });
+    throw new Error(msg||'학교마스터 Supabase 저장 실패');
+  });
 }
 function supabaseDeleteSchool(id){
   if(!canUseCloud()) return;
@@ -98,21 +103,22 @@ function supabaseSchoolsSyncOnLoad(){
   loadPage(0,[]).then(function(cloudRaw){
     const cloud = cloudRaw.map(normalizeSchool);
     const local = schools;
-    const map = {};
-    local.forEach(function(s){ map[s.id] = s; });
-    cloud.forEach(function(c){
-      const l = map[c.id];
-      if(!l){ map[c.id] = c; return; }
-      const lt = l.updatedAt || l.createdAt || '';
-      const ct = c.updatedAt || c.createdAt || '';
-      map[c.id] = (ct > lt) ? c : l;
-    });
-    schools = Object.keys(map).map(function(k){ return map[k]; });
-    localStorage.setItem(SCHOOLS_KEY, JSON.stringify(schools));
+    const mergeResult=window.erpSyncSafety.mergeAndTrack('schools',local,cloud);
+    schools=mergeResult.rows.map(normalizeSchool);
+    if(!safeLocalStorageSet(SCHOOLS_KEY,JSON.stringify(schools))){schools=local;throw new Error('학교마스터 클라우드 병합 결과의 로컬 저장 실패');}
     populateSchoolDatalist(); renderSchoolManage(); renderSchools();
-    console.info('학교마스터 Supabase 페이지 조회 완료: 클라우드 '+cloud.length+'개 -> 병합 후 '+schools.length+'개');
+    setCloudSyncStatus('ok');
+    console.info('학교마스터 Supabase 안전 병합 완료: 클라우드 '+cloud.length+'개 -> 병합 후 '+schools.length+'개 · 충돌 '+mergeResult.conflicts.length+'건');
   }).catch(function(e){ console.warn('학교마스터 Supabase 페이지 조회 중 실패 — 기존 로컬 데이터 유지:', e); });
 }
+if(window.erpSyncSafety)window.erpSyncSafety.registerDataset('schools',{
+  getRows:function(){return schools;},
+  setRows:function(rows){schools=rows.map(normalizeSchool);},
+  normalize:normalizeSchool,
+  storageKey:function(){return SCHOOLS_KEY;},
+  upload:supabaseSyncSchools,
+  render:function(){populateSchoolDatalist();renderSchoolManage();renderSchools();}
+});
 function findSchoolByText(text){
   const t = String(text||'').trim().toLowerCase();
   if(!t) return null;

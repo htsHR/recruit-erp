@@ -22,10 +22,10 @@ function supabaseSyncAll(list){
   if(!targets.length) return Promise.resolve({skipped:true,count:0});
   setCloudSyncStatus('syncing');
   var CHUNK_SIZE=250;
-  return (async function(){
+  return window.erpSyncSafety.runUpload('applicants',targets,async function(batch){
     var useLegacy=applicantEmployeeIdCloudUnsupported,saved=0;
-    for(var start=0;start<targets.length;start+=CHUNK_SIZE){
-      var chunk=targets.slice(start,start+CHUNK_SIZE);
+    for(var start=0;start<batch.length;start+=CHUNK_SIZE){
+      var chunk=batch.slice(start,start+CHUNK_SIZE);
       var res=await window.sb.from('applicants').upsert(chunk.map(function(a){return applicantForCloud(a,useLegacy);}));
       if(res&&res.error&&!useLegacy&&applicantEmployeeIdColumnError(res.error)){
         applicantEmployeeIdCloudUnsupported=true;useLegacy=true;
@@ -35,9 +35,8 @@ function supabaseSyncAll(list){
       if(res&&res.error) throw new Error(res.error.message||'지원자 Supabase 저장 실패');
       saved+=chunk.length;
     }
-    setCloudSyncStatus('ok');
-    return {saved:saved,count:targets.length,legacy:useLegacy};
-  })().catch(function(e){console.warn('Supabase 저장 실패(로컬엔 정상 저장됨):',e);setCloudSyncStatus('error');return {error:e,count:targets.length};});
+    return {saved:saved,count:batch.length,legacy:useLegacy};
+  });
 }
 function supabaseDeleteOne(id){
   if(!canUseCloud()) return;
@@ -131,31 +130,27 @@ function supabaseSyncOnLoad(){
     });
   }
   loadPage(0,[]).then(function(cloudRaw){
-    setCloudSyncStatus('ok');
     var cloud = cloudRaw.map(normalize);
     var local = applicants;
-
-    // v10.8.1: 무조건 덮어쓰기(위험) -> id 기준 병합(안전)으로 변경
-    // 로컬에만 있는 지원자, 클라우드에만 있는 지원자 모두 보존.
-    // 같은 id가 양쪽에 있으면 더 최근에 수정된 쪽을 채택.
-    var map = {};
-    local.forEach(function(a){ map[a.id] = a; });
-    cloud.forEach(function(c){
-      var l = map[c.id];
-      if(!l){ map[c.id] = c; return; }
-      var lt = l.updatedAt || l.createdAt || '';
-      var ct = c.updatedAt || c.createdAt || '';
-      map[c.id] = (ct > lt) ? c : l;
-    });
-    var merged = Object.keys(map).map(function(k){ return map[k]; });
+    var mergeResult=window.erpSyncSafety.mergeAndTrack('applicants',local,cloud);
+    var merged=mergeResult.rows.map(normalize);
 
     var beforeCount = local.length;
     applicants = merged;
     if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants))){applicants=local;throw new Error('클라우드 병합 결과의 로컬 저장 실패');}
     renderAll();
+    setCloudSyncStatus('ok');
     // v10.35.1: 병합 직후 자동 재업로드(supabaseSyncAll) 제거.
     // 로드는 이제 읽기 전용 병합 + 화면 렌더만 수행하고, 클라우드에는 아무것도 쓰지 않음.
     // 신규 등록/수정/삭제/JSON 가져오기 등 사용자가 직접 저장을 실행할 때만 업로드됨(save() 등 기존 경로 그대로 유지).
-    console.info('Supabase 동기화(병합) 완료: 로컬 ' + beforeCount + '명 + 클라우드 ' + cloud.length + '명 -> 화면에 ' + merged.length + '명 표시 (클라우드에는 다시 쓰지 않음)');
+    console.info('Supabase 동기화(안전 병합) 완료: 로컬 ' + beforeCount + '명 + 클라우드 ' + cloud.length + '명 -> 화면에 ' + merged.length + '명 표시 · 충돌 '+mergeResult.conflicts.length+'건');
   }).catch(function(e){ console.warn('Supabase 연결 실패, 로컬 데이터로 계속 진행:', e); setCloudSyncStatus('error'); });
 }
+if(window.erpSyncSafety)window.erpSyncSafety.registerDataset('applicants',{
+  getRows:function(){return applicants;},
+  setRows:function(rows){applicants=rows.map(normalize);},
+  normalize:normalize,
+  storageKey:function(){return STORAGE_KEY;},
+  upload:supabaseSyncAll,
+  render:function(){renderAll();}
+});
