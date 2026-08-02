@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const root=path.resolve(__dirname,'..');
-const version='10.58.0';
+const version='10.59.0';
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const packageJson=JSON.parse(read('package.json'));
 const index=read('index.html');
@@ -22,6 +22,15 @@ localAssets.forEach(([,file,assetVersion])=>assert.equal(assetVersion,version,`$
 
 assert.ok(fs.existsSync(path.join(root,`CHANGELOG_v${version}.md`)),'현재 버전 변경 기록이 없습니다.');
 assert.match(workflow,/npm run check/);
+assert.match(workflow,/npm ci/);
+assert.match(workflow,/npm run test:ui-layout/);
+assert.match(workflow,/fonts-noto-cjk/);
+assert.match(workflow,/fc-cache -f/);
+assert.match(workflow,/fc-match "Noto Sans CJK KR"/);
+assert.match(workflow,/timeout-minutes: 10/);
+assert.match(workflow,/actions\/upload-artifact@v4/);
+assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v10\.59\.0/);
+assert.match(workflow,/if: always\(\)/);
 assert.match(workflow,/pull_request:/);
 assert.match(workflow,/branches: \[main\]/);
 assert.match(workflow,/actions\/checkout@v6/);

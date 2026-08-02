@@ -150,6 +150,7 @@ function countText(n){ return `${n}명`; }
 function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 
 function setPage(page){
+  document.body.dataset.activePage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
   const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'고급검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업/내보내기',permissions:'사용자 권한',auditHistory:'변경 이력'};
@@ -492,7 +493,8 @@ function renderTable(){
     const staleBadge = (staleDays!==null && staleDays>=3) ? `<span class="stale-badge" title="지원일 기준 ${staleDays}일째 연락 안 됨">${staleDays}일째</span>` : '';
     return `<tr class="applicant-row compact-row clickable-data-row ${applicantRowToneClass(a)}" data-applicant-id="${esc(a.id)}" tabindex="0" data-erp-handler="if(!event.target.closest('button,select,a,input,label,summary,details')) viewApplicant('${a.id}')" data-erp-key-handler="listRowKeyActivate(event,()=>viewApplicant('${a.id}'))">
       <td class="no-cell sticky-app-col sticky-app-no" data-label="번호">${pageStart+idx+1}</td>
-      <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><div class="applicant-name-line"><button class="name-button ${genderClass(a)}" data-erp-handler="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button><span class="workplace-pill ${workplaceBadgeClass(a.workplace)}">${esc(a.workplace||'미지정')}</span>${staleBadge}</div><small>${esc(typeLine)}</small></td>
+      <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><div class="applicant-name-line"><button class="name-button ${genderClass(a)}" data-erp-handler="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button>${staleBadge}</div><small>${esc(typeLine)}</small></td>
+      <td class="workplace-cell sticky-app-col sticky-app-workplace" data-label="근무지"><span class="workplace-pill ${workplaceBadgeClass(a.workplace)}">${esc(a.workplace||'미지정')}</span></td>
       <td class="status-cell sticky-app-col sticky-app-status" data-label="상태"><span class="status-select-wrap ${badgeClass(a.status)}" title="${LEGACY_STATUS_OPTIONS.includes(normalizeStatus(a.status))?'기존 상태 · 재분류 필요':'눌러서 상태 변경'}"><select class="status-inline ${badgeClass(a.status)}" aria-label="${esc(a.name||'지원자')} 상태 변경" data-erp-change-handler="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></span></td>
       <td class="apply-date-cell" data-label="지원일">${esc(a.applyDate||'-')}</td>
       <td class="schedule-cell" data-label="면접일정"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
@@ -504,7 +506,7 @@ function renderTable(){
       <td class="decision-cell" data-label="판정"><span class="decision-pill ${decisionToneClass(a)}">${esc(decision)}</span><small>${score}점</small></td>
       <td class="row-actions compact-actions applicant-actions sticky-app-actions" data-label="관리"><button class="view" data-erp-handler="event.stopPropagation();viewApplicant('${a.id}')">상세</button><button data-erp-handler="event.stopPropagation();editApplicant('${a.id}')">수정</button><button class="delete" data-erp-handler="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="12" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" data-erp-handler="resetAndRenderList()">필터 초기화</button></td></tr>`;
+  }).join(''):`<tr><td colspan="13" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" data-erp-handler="resetAndRenderList()">필터 초기화</button></td></tr>`;
   renderApplicantPagination(allRows.length);
 }
 function resetAndRenderList(){ resetListFiltersToAll(); renderTable(); }

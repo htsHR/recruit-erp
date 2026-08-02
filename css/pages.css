@@ -42,13 +42,11 @@
 
 /* v10.7.2: 업무 카드 왼쪽에 카테고리별 컬러바 - 한눈에 종류 구분 */
 .home-work-queue .queue-card{border-left-width:4px;border-left-style:solid;border-left-color:#d3d8df;}
-.home-work-queue .queue-card:nth-child(1){border-left-color:#2757d6;}
-.home-work-queue .queue-card:nth-child(2){border-left-color:#6366f1;}
-.home-work-queue .queue-card:nth-child(3){border-left-color:#a16a12;}
-.home-work-queue .queue-card:nth-child(4){border-left-color:#0f766e;}
-.home-work-queue .queue-card:nth-child(5){border-left-color:#15803d;}
-.home-work-queue .queue-card:nth-child(6){border-left-color:#7c3aed;}
-.home-work-queue .queue-card:nth-child(7){border-left-color:#b3352e;}
+.home-work-queue .queue-card[data-task-target="today"]{border-left-color:#2757d6;}
+.home-work-queue .queue-card[data-task-target="overdue"]{border-left-color:#b3352e;}
+.home-work-queue .queue-card[data-task-target="contact"]{border-left-color:#a16a12;}
+.home-work-queue .queue-card[data-task-target="decision"]{border-left-color:#0f766e;}
+.home-work-queue .queue-card[data-task-target="hire"]{border-left-color:#15803d;}
 .queue-card.queue-alert{background:#fff;border-color:#fecaca;}
 .queue-card.queue-alert strong{color:#b3352e;}
 

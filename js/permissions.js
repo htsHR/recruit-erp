@@ -1,4 +1,4 @@
-/* Recruit ERP v10.58.0 USER PERMISSIONS
+/* Recruit ERP v10.59.0 USER PERMISSIONS
  * UI guards are usability protection. Supabase RLS is the security boundary.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpPermissions=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='10.58.0';
+  const VERSION='10.59.0';
   const ROLE_LABELS={admin:'관리자',recruiter:'채용담당자',viewer:'조회 전용',local_admin:'로컬 관리자',legacy_admin:'설정 전 관리자'};
   const PERMISSIONS={
     admin:['*'],local_admin:['*'],legacy_admin:['*'],
@@ -17,6 +17,7 @@
   let state={role:'local_admin',email:'',userId:'',ready:true,source:'local',setupRequired:false,error:''};
   let users=[];
   let applying=false;
+  let resultNotice='';
 
   function roleLabel(role){return ROLE_LABELS[role]||ROLE_LABELS.viewer;}
   function permissionsFor(role){return PERMISSIONS[role]||PERMISSIONS.viewer;}
@@ -139,11 +140,12 @@
     const target=users.find(user=>String(user.user_id)===String(userId));
     if(!target)throw new Error('사용자를 찾을 수 없습니다.');
     const adminCount=users.filter(user=>user.role==='admin').length;
-    if(target.role==='admin'&&role!=='admin'&&adminCount<=1){root.alert?.('마지막 관리자 계정은 다른 권한으로 바꿀 수 없습니다.');renderPage();return false;}
+    if(target.role==='admin'&&role!=='admin'&&adminCount<=1){resultNotice='마지막 관리자 계정은 다른 권한으로 바꿀 수 없습니다.';root.alert?.(resultNotice);renderPage();return false;}
     const response=await root.sb.from('user_roles').update({role}).eq('user_id',userId).select('user_id,email,display_name,role,created_at,updated_at').single();
     if(response?.error){root.alert?.(`권한 변경 실패: ${response.error.message||response.error}`);renderPage();return false;}
     root.erpAudit?.recordEvent({entityType:'user',entityId:userId,entityLabel:root.erpAudit.maskEmail(target.email||''),action:'role_change',fields:['role'],before:{role:target.role},after:{role},reason:'관리자 권한 변경'});
     users=users.map(user=>user.user_id===userId?response.data:user);
+    resultNotice=`${target.display_name||target.email||'선택한 사용자'}의 권한을 ${roleLabel(role)}(으)로 변경했습니다.`;
     if(userId===state.userId)setState({role:response.data.role});else renderPage();
     return true;
   }
@@ -155,20 +157,22 @@
     }
     const main=root.document.querySelector('main.main');
     if(main&&!root.document.getElementById('permissions')){
-      const section=root.document.createElement('section');section.className='page permission-page';section.id='permissions';section.innerHTML='<div class="page-intro-card"><div><h3>사용자 권한 관리</h3><p>로그인 계정마다 조회·수정·삭제 범위를 나눕니다.</p></div><span id="permissionCurrentBadge"></span></div><div class="permission-page-shell" id="permissionPageBody"></div>';main.appendChild(section);
+      const section=root.document.createElement('section');section.className='page permission-page';section.id='permissions';section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>사용자 권한 관리</h3><p>로그인 계정마다 조회·수정·삭제 범위를 나눕니다.</p></div><span id="permissionCurrentBadge"></span></div><div class="permission-page-shell" id="permissionPageBody"></div>';main.appendChild(section);
     }
     const topbarRole=root.document.querySelector('#topbarUser .topbar-user-copy small');if(topbarRole)topbarRole.id='topbarUserRole';
     root.document.querySelector('[data-page="permissions"]')?.addEventListener('click',()=>{setTimeout(()=>{renderPage();if(has('user.manage')&&state.source==='cloud')loadUsers().catch(()=>{});},0);});
   }
   function matrixHtml(){
     const rows=[['목록·통계 조회',true,true,true],['지원자 등록·수정',true,true,false],['면접·일정 관리',true,true,false],['사원·학교 수정',true,false,false],['삭제·백업·복원',true,false,false],['사용자 권한 설정',true,false,false],['주민등록번호 조회',true,false,false]];
-    return `<div class="permission-matrix"><div class="head">기능</div><div class="head">관리자</div><div class="head">채용담당자</div><div class="head">조회 전용</div>${rows.map(row=>`<div>${row[0]}</div>${row.slice(1).map(ok=>`<div class="${ok?'permission-yes':'permission-no'}">${ok?'가능':'불가'}</div>`).join('')}`).join('')}</div>`;
+    return `<div class="permission-matrix" aria-label="역할별 기능 권한"><div class="permission-matrix-row permission-matrix-head"><div class="permission-feature">기능</div><div>관리자</div><div>채용담당자</div><div>조회 전용</div></div>${rows.map(row=>`<div class="permission-matrix-row"><div class="permission-feature">${row[0]}</div>${row.slice(1).map((ok,index)=>`<div class="permission-value ${ok?'permission-yes':'permission-no'}"><span class="permission-mobile-role">${['관리자','채용담당자','조회 전용'][index]}</span><strong>${ok?'가능':'불가'}</strong></div>`).join('')}</div>`).join('')}</div>`;
   }
   function renderPage(){
     const host=root.document?.getElementById('permissionPageBody');if(!host)return;
     const status=state.setupRequired?'<div class="permission-alert"><strong>Supabase 권한 SQL 적용 필요</strong><br>supabase_migration_v10.57.0_rbac_rls.sql을 SQL Editor에서 실행하기 전에는 서버 RLS가 활성화되지 않습니다.</div>':state.source==='local'?'<div class="permission-alert"><strong>로컬 관리자 모드</strong><br>이 브라우저 안의 데이터만 관리합니다. 로그인한 클라우드 계정의 RLS 권한과는 별개입니다.</div>':state.error?`<div class="permission-alert"><strong>권한 확인 알림</strong><br>${escapeHtml(state.error)}</div>`:'<div class="permission-alert is-ok"><strong>권한 보호 사용 중</strong><br>화면 제한과 Supabase RLS가 같은 역할 기준을 사용합니다.</div>';
     const rows=users.length?users.map(user=>`<tr><td>${escapeHtml(user.display_name||'-')}</td><td>${escapeHtml(user.email||'-')} ${user.user_id===state.userId?'<span class="permission-self">내 계정</span>':''}</td><td><select data-role-user="${escapeHtml(user.user_id)}"><option value="admin" ${user.role==='admin'?'selected':''}>관리자</option><option value="recruiter" ${user.role==='recruiter'?'selected':''}>채용담당자</option><option value="viewer" ${user.role==='viewer'?'selected':''}>조회 전용</option></select></td><td>${badgeHtml(user.role)}</td></tr>`).join(''):`<tr><td colspan="4">${state.source==='cloud'?'사용자 목록을 불러오는 중입니다.':'Supabase 로그인 후 사용자 목록을 확인할 수 있습니다.'}</td></tr>`;
-    host.innerHTML=`${status}<div class="permission-summary-grid"><div class="permission-summary-card"><strong>관리자</strong><p>삭제, 백업·복원, 사원·학교 수정과 사용자 권한 설정을 담당합니다.</p></div><div class="permission-summary-card"><strong>채용담당자</strong><p>지원자 등록·수정, 면접·일정 관리와 일반 내보내기를 사용할 수 있습니다.</p></div><div class="permission-summary-card"><strong>조회 전용</strong><p>목록과 통계를 볼 수 있지만 수정·삭제·복원과 민감정보 조회는 할 수 없습니다.</p></div></div>${matrixHtml()}<div class="panel"><div class="panel-head"><div><h3>로그인 사용자</h3><small>관리자는 역할을 변경할 수 있습니다.</small></div><button class="ghost" id="btnPermissionRefresh" type="button">새로고침</button></div><div class="permission-table-wrap"><table class="permission-table"><thead><tr><th>이름</th><th>이메일</th><th>권한 변경</th><th>현재 권한</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    const adminNotice='<div class="permission-admin-notice"><strong>관리자 보호</strong><span>첫 관리자를 지정한 뒤에는 마지막 관리자 계정을 다른 권한으로 바꿀 수 없습니다.</span></div>';
+    const result=resultNotice?`<div class="permission-result-notice" role="status">${escapeHtml(resultNotice)}</div>`:'';
+    host.innerHTML=`${status}${adminNotice}${result}<div class="permission-summary-grid"><div class="permission-summary-card"><strong>관리자</strong><p>삭제, 백업·복원, 사원·학교 수정과 사용자 권한 설정을 담당합니다.</p></div><div class="permission-summary-card"><strong>채용담당자</strong><p>지원자 등록·수정, 면접·일정 관리와 일반 내보내기를 사용할 수 있습니다.</p></div><div class="permission-summary-card"><strong>조회 전용</strong><p>목록과 통계를 볼 수 있지만 수정·삭제·복원과 민감정보 조회는 할 수 없습니다.</p></div></div>${matrixHtml()}<div class="panel permission-user-panel"><div class="panel-head"><div><h3>로그인 사용자</h3><small>관리자는 역할을 변경할 수 있습니다.</small></div><button class="ghost" id="btnPermissionRefresh" type="button">새로고침</button></div><div class="permission-table-wrap"><table class="permission-table"><thead><tr><th>이름</th><th>이메일</th><th>권한 변경</th><th>현재 권한</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
     host.querySelector('#btnPermissionRefresh')?.addEventListener('click',()=>loadUsers().catch(()=>{}));
     host.querySelectorAll('[data-role-user]').forEach(select=>select.addEventListener('change',()=>changeRole(select.dataset.roleUser,select.value).catch(error=>root.alert?.(error.message||error))));
   }

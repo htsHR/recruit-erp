@@ -23,29 +23,6 @@
 }
 
 
-/* 지원자 목록: 핵심 열 고정 */
-@media(min-width:761px){
-  .applicant-table th:nth-child(1),.applicant-table .sticky-app-no{width:52px!important;min-width:52px!important;max-width:52px!important;}
-  .applicant-table th:nth-child(2),.applicant-table .sticky-app-date{width:96px!important;min-width:96px!important;max-width:96px!important;}
-  .applicant-table th:nth-child(3),.applicant-table .sticky-app-status{width:106px!important;min-width:106px!important;max-width:106px!important;}
-  .applicant-table th:nth-child(4),.applicant-table .sticky-app-name{width:182px!important;min-width:182px!important;max-width:182px!important;}
-
-  .applicant-table thead th:nth-child(1),.applicant-table .sticky-app-no{position:sticky!important;left:0!important;}
-  .applicant-table thead th:nth-child(2),.applicant-table .sticky-app-date{position:sticky!important;left:52px!important;}
-  .applicant-table thead th:nth-child(3),.applicant-table .sticky-app-status{position:sticky!important;left:148px!important;}
-  .applicant-table thead th:nth-child(4),.applicant-table .sticky-app-name{position:sticky!important;left:254px!important;}
-  .applicant-table thead th:last-child,.applicant-table .sticky-app-actions{position:sticky!important;right:0!important;}
-
-  .applicant-table thead th:nth-child(-n+4),.applicant-table thead th:last-child{z-index:8!important;}
-  .applicant-table tbody .sticky-app-col,.applicant-table tbody .sticky-app-actions{z-index:4!important;background:#fff!important;}
-  .applicant-table tbody tr:nth-child(even) .sticky-app-col,
-  .applicant-table tbody tr:nth-child(even) .sticky-app-actions{background:#fbfcfe!important;}
-  .applicant-table tbody tr:hover .sticky-app-col,
-  .applicant-table tbody tr:hover .sticky-app-actions{background:#f2f7ff!important;}
-  .applicant-table .sticky-app-name{box-shadow:none!important;}
-  .applicant-table .sticky-app-actions{box-shadow:none!important;}
-}
-
 #applicants .list-summary{align-items:center!important;}
 #applicants .list-interaction-hint{
   margin-left:auto!important;
@@ -100,12 +77,6 @@
 .school-manage-table tbody tr:hover{background:#f7f8fa!important;box-shadow:none!important;}
 .school-manage-table .school-row-actions{min-width:112px;}
 
-
-@media(max-width:1700px) and (min-width:761px){
-  .applicant-table th:nth-child(6),.applicant-table td:nth-child(6),
-  .applicant-table th:nth-child(8),.applicant-table td:nth-child(8){display:none!important;}
-  .applicant-table{min-width:1110px!important;}
-}
 
 /* 모바일 카드형 목록 */
 @media(max-width:760px){

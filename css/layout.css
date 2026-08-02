@@ -288,8 +288,8 @@ table{min-width:var(--erp-table-min);}
   --erp-page-pad-x:36px;
   --erp-page-pad-y:26px;
 }
-html{background:#f5f6f8;}
-body{background:#f5f6f8;}
+html{background:#f5f6f8;overflow-x:hidden;}
+body{background:#f5f6f8;overflow-x:hidden;}
 .app-shell{
   grid-template-columns:var(--erp-sidebar-w) minmax(0,1fr);
   min-height:100vh;
