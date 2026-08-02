@@ -1,0 +1,14 @@
+{
+  "name": "recruit-erp",
+  "version": "10.54.0",
+  "private": true,
+  "description": "채용·인사 운영을 위한 정적 웹 ERP",
+  "scripts": {
+    "check": "npm run check:syntax && npm test",
+    "check:syntax": "node tests/check-syntax.js",
+    "test": "node tests/run-all.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
