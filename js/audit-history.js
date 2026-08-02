@@ -1,4 +1,4 @@
-/* Recruit ERP v10.59.0 AUDIT HISTORY
+/* Recruit ERP v10.60.0 AUDIT HISTORY
  * Audit records are append-only. Sensitive values are summarized, never copied verbatim.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpAudit=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='10.59.0';
+  const VERSION='10.60.0';
   const STORAGE_KEY='recruit_erp_audit_logs_v1';
   const MAX_LOCAL_RECORDS=2000;
   const DATASETS={

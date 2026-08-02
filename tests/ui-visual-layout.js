@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v10.59.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v10.60.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -43,6 +43,10 @@ async function submitStatusChange(page,id,status,{date='2026-08-03',memo=''}={})
   await page.locator('#btnSaveApplicantStatus').click();
   await page.locator('#applicantStatusModal.show').waitFor({state:'detached'});
 }
+async function openEncryptedRestoreFixture(page){
+  await page.evaluate(async()=>window.erpEncryptedBackupUI.inspectFile(new File([window.__fakeEncryptedBackup],'fake_v10.60.0.erpbackup',{type:'application/json'})));
+  await page.locator('#encryptedBackupPassword').fill('가상 복원 전용 긴 비밀번호 2026');await page.locator('#encryptedBackupSubmit').click();await page.locator('#bcInspection.visible').waitFor();await page.locator('#encryptedBackupDialog').waitFor({state:'hidden'});
+}
 
 (async()=>{
   await waitForServer();
@@ -59,13 +63,24 @@ async function submitStatusChange(page,id,status,{date='2026-08-03',memo=''}={})
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },fakeApplicants);
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v10.59.0');
+      assert.equal(await page.title(),'채용관리 시스템 v10.60.0');
       const queue=page.locator('#homeTodayGrid .queue-card');assert.equal(await queue.count(),5);for(let i=0;i<5;i++)assert.notEqual(await queue.nth(i).evaluate(el=>getComputedStyle(el).display),'none');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
         const layout=await page.evaluate(()=>({active:document.querySelector('.page.active')?.id,body:document.body.scrollWidth,html:document.documentElement.scrollWidth,width:innerWidth}));
         assert.equal(layout.active,screen,`${viewport.name} ${screen} 화면 전환 실패`);
         assert.ok(layout.body<=layout.width+1&&layout.html<=layout.width+1,`${viewport.name} ${screen} 본문 가로 넘침: ${layout.body}/${layout.html}/${layout.width}`);
+      }
+      if(viewport.width===390||viewport.width===1366){
+        await page.evaluate(()=>window.setPage?.('backup'));await page.waitForTimeout(80);
+        assert.ok(await page.locator('#bcEncryptedPanel').isVisible(),'암호화 백업이 기본 화면에 보여야 합니다.');
+        assert.equal(await page.locator('.legacy-backup-details').getAttribute('open'),null,'평문 JSON은 기본적으로 접혀 있어야 합니다.');
+        await page.locator('#bcEncryptedFull').focus();await page.locator('#bcEncryptedFull').click();await page.locator('#encryptedBackupDialog:not([hidden])').waitFor();
+        const modalLayout=await page.locator('.encrypted-backup-dialog').evaluate(dialog=>{const r=dialog.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,active:document.activeElement?.id};});
+        assert.ok(modalLayout.left>=0&&modalLayout.right<=modalLayout.width&&modalLayout.top>=0&&modalLayout.bottom<=modalLayout.height,`${viewport.name} 암호화 비밀번호 팝업 잘림: ${JSON.stringify(modalLayout)}`);
+        assert.equal(modalLayout.active,'encryptedBackupPassword');await page.keyboard.press('Shift+Tab');assert.ok(await page.evaluate(()=>document.querySelector('#encryptedBackupDialog').contains(document.activeElement)),'Tab 포커스가 암호화 팝업 안에 있어야 합니다.');
+        await page.screenshot({path:path.join(outputDir,`${viewport.name}-encrypted-backup-modal.png`),fullPage:false});await page.keyboard.press('Escape');await page.locator('#encryptedBackupDialog').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>document.activeElement?.id),'bcEncryptedFull','팝업을 닫으면 원래 버튼으로 포커스가 돌아가야 합니다.');
+        await page.screenshot({path:path.join(outputDir,`${viewport.name}-encrypted-backup-center.png`),fullPage:true});
       }
       const introState=await page.evaluate(()=>({
         home:getComputedStyle(document.querySelector('#home .home-dashboard-intro')).display,
@@ -143,11 +158,22 @@ async function submitStatusChange(page,id,status,{date='2026-08-03',memo=''}={})
       const state=await page.evaluate(()=>({role:window.erpPermissions.current().role,formHidden:document.querySelector('[data-page="form"]')?.classList.contains('erp-permission-hidden'),backupHidden:document.querySelector('[data-page="backup"]')?.classList.contains('erp-permission-hidden'),auditHidden:document.querySelector('[data-page="auditHistory"]')?.classList.contains('erp-permission-hidden')}));assert.equal(state.role,role);if(role==='admin')assert.ok(!state.formHidden&&!state.backupHidden&&!state.auditHidden);if(role==='recruiter')assert.ok(!state.formHidden&&state.backupHidden&&state.auditHidden);if(role==='viewer')assert.ok(state.formHidden&&state.backupHidden&&state.auditHidden);
     }
     await page.evaluate(()=>{window.erpPermissions.useLocal();document.getElementById('loginOverlay').style.display='none';});await page.locator('#btnPrivacyShield').click();assert.ok(await page.locator('#privacyShieldOverlay').isVisible());await page.locator('#btnPrivacyUnlock').click();
+    await page.evaluate(()=>{localStorage.setItem('recruit_erp_ui_operation_environment','home');window.setPage('backup');});await page.locator('#bcEncryptedFull').click();await page.locator('#encryptedBackupPassword').fill('가상 내보내기 긴 비밀번호 2026');await page.locator('#encryptedBackupConfirm').fill('가상 내보내기 긴 비밀번호 2026');const [encryptedDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#encryptedBackupSubmit').click()]);assert.match(encryptedDownload.suggestedFilename(),/\.erpbackup$/);const downloadedEnvelope=JSON.parse(fs.readFileSync(await encryptedDownload.path(),'utf8'));assert.equal(downloadedEnvelope.format,'recruit-erp-encrypted-backup');assert.ok(!JSON.stringify(downloadedEnvelope).includes('테스트지원자1'),'암호화 다운로드 파일에 가상 이름도 평문으로 노출되면 안 됩니다.');const downloadedPackage=await page.evaluate(async({envelope,password})=>window.erpEncryptedBackup.decryptEnvelope(envelope,password),{envelope:downloadedEnvelope,password:'가상 내보내기 긴 비밀번호 2026'});assert.equal(downloadedPackage.format,'recruit-erp-backup');assert.equal(downloadedPackage.schemaVersion,2);assert.equal(downloadedPackage.data.applicants.length,3);assert.ok(!await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes('가상 내보내기 긴 비밀번호 2026')),'비밀번호는 브라우저 저장소에 남으면 안 됩니다.');await page.locator('#encryptedBackupDialog').waitFor({state:'hidden'});
+    await page.evaluate(async()=>{
+      const original=applicants;applicants=[...original,{id:'44444444-4444-4444-8444-444444444444',name:'가상복원지원자',phone:'010-0000-0044',applyDate:'2026-08-02',workplace:'천안',status:'서류검토',createdAt:'2026-08-02T03:00:00.000Z',updatedAt:'2026-08-02T03:00:00.000Z'}];const pack=window.erpBackupCenter.__test.packageFor(['applicants','schools','employees','calendarEvents','hireWaitingProfiles','messageTemplates'],'가상 UI 복원 시험');applicants=original;
+      const envelope=await window.erpEncryptedBackup.encryptObject(pack,'가상 복원 전용 긴 비밀번호 2026',{iterations:100000});window.__fakeEncryptedBackup=JSON.stringify(envelope);
+      await window.erpEncryptedBackupUI.inspectFile(new File([window.__fakeEncryptedBackup],'fake_v10.60.0.erpbackup',{type:'application/json'}));
+    });
+    const restoreBaseline=await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable'));await page.locator('#encryptedBackupDialog:not([hidden])').waitFor();await page.locator('#encryptedBackupPassword').fill('틀린 가상 비밀번호 12345');await page.locator('#encryptedBackupSubmit').click();await page.locator('#encryptedBackupHelp.error').waitFor();assert.equal(await page.locator('#encryptedBackupHelp').innerText(),'비밀번호가 맞지 않거나 파일이 손상되었습니다.');assert.equal(await page.locator('#encryptedBackupPassword').inputValue(),'','실패 후 비밀번호 입력값을 지워야 합니다.');assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),restoreBaseline,'비밀번호 오류는 ERP 데이터를 바꾸면 안 됩니다.');await page.screenshot({path:path.join(outputDir,'390x844-encrypted-wrong-password.png'),fullPage:false});await page.keyboard.press('Escape');
+    await openEncryptedRestoreFixture(page);assert.ok((await page.locator('#bcInspection').innerText()).includes('ERP 전체 백업 JSON'));assert.ok((await page.locator('#bcInspection').innerText()).includes('지원자'));await page.screenshot({path:path.join(outputDir,'390x844-encrypted-restore-preview.png'),fullPage:true});await page.locator('#bcClearInspection').click();assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),restoreBaseline,'복원 미리보기 취소는 ERP 데이터를 바꾸면 안 됩니다.');
+    await openEncryptedRestoreFixture(page);await page.evaluate(()=>{window.__realEncryptedExport=window.erpEncryptedBackup.encryptObject;window.erpEncryptedBackup.encryptObject=async()=>{throw new Error('가상 안전 백업 실패');};});const safetyDialogs=[];const safetyDialogHandler=dialog=>{safetyDialogs.push(dialog.type());return dialog.accept();};page.on('dialog',safetyDialogHandler);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});page.off('dialog',safetyDialogHandler);await page.evaluate(()=>{window.erpEncryptedBackup.encryptObject=window.__realEncryptedExport;delete window.__realEncryptedExport;});assert.ok(safetyDialogs.includes('confirm')&&safetyDialogs.includes('alert'),'안전 백업 실패 시 확인과 중단 안내가 필요합니다.');assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),restoreBaseline,'안전 백업 생성 실패 시 실제 적용을 차단해야 합니다.');
+    await openEncryptedRestoreFixture(page);await page.evaluate(()=>{window.__realStorageSetItem=Storage.prototype.setItem;window.__failApplicantWrite=true;Storage.prototype.setItem=function(key,value){if(window.__failApplicantWrite&&key==='recruit_erp_applicants_stable'){window.__failApplicantWrite=false;throw new Error('가상 저장 실패');}return window.__realStorageSetItem.call(this,key,value);};});const rollbackDialogs=[];const rollbackDialogHandler=dialog=>{rollbackDialogs.push(dialog.type());return dialog.accept();};page.on('dialog',rollbackDialogHandler);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});page.off('dialog',rollbackDialogHandler);await page.evaluate(()=>{Storage.prototype.setItem=window.__realStorageSetItem;delete window.__realStorageSetItem;delete window.__failApplicantWrite;});assert.ok(rollbackDialogs.filter(type=>type==='confirm').length>=2&&rollbackDialogs.includes('alert'),'저장 실패 전 안전 백업 확인과 원상복구 안내가 필요합니다.');assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),restoreBaseline,'적용 저장 실패 시 localStorage를 원상복구해야 합니다.');assert.equal(await page.evaluate(()=>applicants.length),3,'적용 저장 실패 시 메모리 데이터도 원상복구해야 합니다.');
+    const mergeDialogHandler=dialog=>dialog.accept();page.on('dialog',mergeDialogHandler);await openEncryptedRestoreFixture(page);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>applicants.length),4,'첫 병합은 가상 지원자 1건을 추가해야 합니다.');await openEncryptedRestoreFixture(page);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});page.off('dialog',mergeDialogHandler);assert.equal(await page.evaluate(()=>applicants.length),4,'같은 암호화 파일을 다시 병합해도 중복이 늘면 안 됩니다.');
     await page.evaluate(()=>window.erpSyncSafety.openConflicts());assert.ok(await page.locator('#syncConflictModal').isVisible());assert.ok(await page.locator('#syncConflictModal .safety-intro-card').count());await page.screenshot({path:path.join(outputDir,'390x844-sync-conflict.png'),fullPage:false});await page.locator('#btnCloseSyncConflicts').click();await page.evaluate(()=>window.erpSyncSafety.openDeletes());assert.ok(await page.locator('#syncDeleteModal').isVisible());assert.ok(await page.locator('#syncDeleteModal .safety-intro-card').count());await page.locator('#btnCloseSyncDeletes').click();
     assert.ok(await page.locator('#employeeOrgImportModal .employee-org-import-notice.safety-intro-card').count(),'조직정보 Import 안전 안내가 명시적으로 표시되어야 합니다.');
     await page.evaluate(()=>window.openHireWaitingList?.('2026-08-08'));if(await page.locator('#hireWaitingModal.show').count())assert.ok(await page.locator('#hireWaitingModal .safety-intro-card').count());
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
-    console.log(`ui-visual-layout.js: 5개 화면 크기·13개 화면·3개 역할·상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
+    console.log(`ui-visual-layout.js: 6개 화면 조건(5개 뷰포트+125% 확대)·13개 화면·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
   }finally{await browser.close();server.kill();}
 })().catch(error=>{server.kill();console.error(error);process.exitCode=1;});

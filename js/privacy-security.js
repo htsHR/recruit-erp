@@ -1,4 +1,4 @@
-/* Recruit ERP v10.59.0 privacy and screen-safety controls */
+/* Recruit ERP v10.60.0 privacy and screen-safety controls */
 (function(root,factory){
   const api=factory();
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -7,7 +7,7 @@
 })(typeof window!=='undefined'?window:null,function(){
   'use strict';
 
-  const VERSION='10.59.0';
+  const VERSION='10.60.0';
   const IDLE_MS=10*60*1000;
   const EXPORT_LOG_KEY='recruit_erp_sensitive_export_log';
   const MAX_EXPORT_LOG=50;
