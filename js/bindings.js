@@ -22,6 +22,7 @@ bind('applicantForm','keydown', e=>{
 });
 bind('applicantForm','submit',e=>{
   e.preventDefault();
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
   const f=getForm();
   if(!f.name){ alert('성명을 입력해주세요.'); return; }
   const fPhone=normalizePhone(f.phone);
@@ -230,6 +231,7 @@ bind('btnCopyTemplate','click', async()=>{ try{ await navigator.clipboard.writeT
 bind('btnCsv','click', csv);
 bind('btnJson','click', jsonBackup);
 bind('jsonImport','change',e=>{
+  if(window.erpPermissions&&!window.erpPermissions.require('backup.restore')){e.target.value='';return;}
   const file=e.target.files[0];
   if(!file) return;
   const r=new FileReader();
@@ -252,6 +254,7 @@ bind('jsonImport','change',e=>{
   r.readAsText(file);
 });
 bind('jsonImportMerge','change',e=>{
+  if(window.erpPermissions&&!window.erpPermissions.require('backup.restore')){e.target.value='';return;}
   const file=e.target.files[0];
   if(!file) return;
   const r=new FileReader();
@@ -286,6 +289,7 @@ bind('jsonImportMerge','change',e=>{
   r.readAsText(file);
 });
 bind('btnClearAll','click',()=>{
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.delete'))return;
   if(!applicants.length){alert('삭제할 지원자가 없습니다.');return;}
   if(!confirm(`현재 브라우저의 지원자 ${applicants.length}명을 모두 삭제할까요?\n\n삭제 직전 자동으로 클라우드에 백업을 남겨둡니다.`)) return;
   const phrase=prompt('정말 삭제하려면 아래 문구를 그대로 입력하세요.\n\n전체삭제');

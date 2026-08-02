@@ -80,6 +80,7 @@
     a.progressHistory=snap.progressHistory;
   }
   function piApply(a, changes){
+    if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return false;
     const before=piSnapshot(a);
     Object.assign(a, changes);
     try{ if(!save())throw new Error('로컬 저장 실패'); }
@@ -94,6 +95,7 @@
     return true;
   }
   function piUndoLast(){
+    if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
     if(!piUndo) return;
     const a=applicants.find(x=>String(x.id)===String(piUndo.id));
     if(!a){ piUndo=null; piRenderUndoBanner(); return; }

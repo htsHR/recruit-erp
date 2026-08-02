@@ -71,6 +71,7 @@
 
   // ---------- 판정 적용 + 되돌리기 스냅샷 ----------
   function wbApplyDecision(a, changes){
+    if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return false;
     const before={
       status:a.status, failureReason:a.failureReason||'', decisionReason:a.decisionReason||'',
       updatedAt:a.updatedAt||'', lastChangedBy:a.lastChangedBy||'', lastChangedAt:a.lastChangedAt||'',
@@ -91,6 +92,7 @@
     return true;
   }
   function wbApplyHold(a, reason){
+    if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return false;
     // '보류'는 공식 상태값이 아니라 면접 후 판정용 finalDecision 값이라(§8) status는 바꾸지 않는다.
     // 이미 노출된 시스템 이력 훅으로 "이번 검토 넘기기" 기록만 남기고 이번 세션 큐에서만 제외한다.
     // v10.48.2.2: addHistory()가 progressHistory 외에 updatedAt/lastChangedBy/lastChangedAt도 함께

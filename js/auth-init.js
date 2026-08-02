@@ -36,10 +36,11 @@ function updateAuthNote(email){
     }
   }
 }
-function afterLoginSuccess(email){
+async function afterLoginSuccess(email,session){
   cloudAuthenticated = true;
   hideLoginOverlay();
   updateAuthNote(email);
+  if(window.erpPermissions&&typeof window.erpPermissions.load==='function')await window.erpPermissions.load(session||{user:{email}});
   updateStorageNote();
   renderSnapshotList();
   supabaseSnapshotDailyCheck();
@@ -58,7 +59,7 @@ function initAuth(){
   if(isCompanyLocalMode()){ cloudAuthenticated=false; hideLoginOverlay(); updateAuthNote(null); cloudSyncStatus='unknown'; updateStorageNote(); return; }
   window.sb.auth.getSession().then(function(res){
     var session = res && res.data ? res.data.session : null;
-    if(session && session.user){ afterLoginSuccess(session.user.email); }
+    if(session && session.user){ afterLoginSuccess(session.user.email,session); }
     else { cloudAuthenticated=false; showLoginOverlay(); updateAuthNote(null); }
   }).catch(function(){ showLoginOverlay(); });
 }
@@ -70,13 +71,14 @@ function doLogin(){
   showLoginOverlay('로그인 중...');
   window.sb.auth.signInWithPassword({email:email, password:pw}).then(function(res){
     if(res.error){ showLoginOverlay('로그인 실패: '+res.error.message); return; }
-    afterLoginSuccess(res.data.user.email);
+    afterLoginSuccess(res.data.user.email,res.data.session||res.data.user);
   }).catch(function(){ showLoginOverlay('로그인 중 오류가 발생했습니다.'); });
 }
 function doLogout(){
   if(!window.sb) return;
   window.sb.auth.signOut().then(function(){
     cloudAuthenticated=false;
+    if(window.erpPermissions)window.erpPermissions.reset();
     updateAuthNote(null);
     cloudSyncStatus='unknown';
     updateStorageNote();
@@ -86,6 +88,7 @@ function doLogout(){
 function handleOperationEnvironmentChange(mode){
   if(mode === 'company'){
     cloudAuthenticated=false;
+    if(window.erpPermissions)window.erpPermissions.useLocal();
     hideLoginOverlay();
     updateAuthNote(null);
     cloudSyncStatus='unknown';
@@ -99,7 +102,7 @@ window.erpHandleOperationEnvironmentChange = handleOperationEnvironmentChange;
 
 bind('btnOpenLogin','click', ()=>{ if(!window.sb){ alert('Supabase 설정을 찾을 수 없습니다.'); return; } showLoginOverlay(); });
 bind('btnLogin','click', doLogin);
-bind('btnLoginSkip','click', ()=>{ cloudAuthenticated=false; hideLoginOverlay(); updateAuthNote(null); cloudSyncStatus='unknown'; updateStorageNote(); });
+bind('btnLoginSkip','click', ()=>{ cloudAuthenticated=false; if(window.erpPermissions)window.erpPermissions.useLocal(); hideLoginOverlay(); updateAuthNote(null); cloudSyncStatus='unknown'; updateStorageNote(); });
 bind('btnLogout','click', doLogout);
 bind('loginPassword','keydown', e=>{ if(e.key==='Enter') doLogin(); });
 

@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.56.0**입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.57.0**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -37,6 +37,8 @@ GitHub에 변경 요청이 올라오거나 `main`에 코드가 합쳐지면 다�
 - 클라우드 삭제 대기·실패 재시도·화면 재등장 방지
 - 인라인 실행 속성 차단, JSON/ID 검사와 CSP 보안 정책
 - 외부 Supabase 라이브러리 버전·무결성 고정
+- 관리자·채용담당자·조회전용 역할표와 주요 저장 경로 권한 검사
+- 조회 전용 수정·삭제 차단과 Supabase RLS 정책 파일
 - 전체 JavaScript 문법
 - 화면·프로그램·변경 기록의 버전 일치
 - Vercel 보안 응답 설정
@@ -55,6 +57,18 @@ npm run check
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
 
+## v10.57.0 사용자 권한 설치
+
+화면 코드 배포만으로는 서버 권한이 완성되지 않습니다. Supabase 프로젝트의 SQL Editor에서
+`supabase_migration_v10.57.0_rbac_rls.sql`을 한 번 실행해야 합니다.
+
+1. SQL 실행 결과에서 가장 먼저 만든 Auth 계정이 `admin`인지 확인합니다.
+2. ERP에 관리자로 로그인합니다.
+3. `시스템 → 사용자 권한`에서 다른 계정을 `채용담당자` 또는 `조회 전용`으로 지정합니다.
+4. 조회 전용 테스트 계정으로 로그인하여 수정·삭제·복원 요청이 거부되는지 확인합니다.
+
+서버 SQL을 적용하기 전에는 ERP에 `Supabase 권한 SQL 적용 필요` 경고가 표시됩니다.
+
 ## 문제가 생겼을 때
 
 - 화면 버전이 예전이면 `Ctrl + F5`로 새로고침합니다.
@@ -67,7 +81,8 @@ npm run check
 
 - 처음 v10.53 이상을 실행하는 브라우저에는 과거 동기화 기준점이 없습니다.
 - 삭제 요청을 취소하면 서버에 남아 있던 자료가 다음 동기화에서 다시 나타날 수 있습니다.
-- 공개 Supabase 테이블에는 인증 사용자용 RLS 정책이 유지되어야 합니다.
+- Supabase 권한 SQL을 적용하지 않은 프로젝트에서는 서버 역할 분리가 작동하지 않습니다.
+- 로컬 전용 모드는 Supabase 계정 권한과 별개이며, 그 브라우저 안의 데이터만 관리합니다.
 - CSP는 인라인 JavaScript를 차단하므로 새 화면 버튼도 중앙 이벤트 방식으로 연결해야 합니다.
 
 버전별 상세 내용은 저장소의 `CHANGELOG_v*.md` 파일에서 확인할 수 있습니다.

@@ -54,6 +54,7 @@ function loadSchools(){
   }catch(e){ console.error('학교마스터 load error', e); return []; }
 }
 function saveSchools(){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.write'))return false;
   if(!safeLocalStorageSet(SCHOOLS_KEY,JSON.stringify(schools)))return false;
   supabaseSyncSchools(schools);
   populateSchoolDatalist();
@@ -62,6 +63,7 @@ function saveSchools(){
   return true;
 }
 function supabaseSyncSchools(list){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.write',{notify:false})) return Promise.resolve({skipped:true,reason:'permission',count:0});
   if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
   const targets=Array.isArray(list)?list.filter(Boolean):[];
   if(!targets.length)return Promise.resolve({skipped:true,count:0});
@@ -87,12 +89,14 @@ function supabaseSyncSchools(list){
   });
 }
 async function supabaseDeleteSchoolOperation(operation){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.delete',{notify:false}))throw new Error('학교 삭제 권한이 없습니다.');
   if(!canUseCloud())throw new Error('클라우드에 로그인되어 있지 않습니다.');
   const res=await window.sb.from('schools').delete().eq('id',operation.id);
   if(res&&res.error)throw res.error;
   return {deleted:true,id:operation.id};
 }
 function supabaseDeleteSchool(id,label,options){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.delete'))return {ok:false,reason:'permission'};
   const queued=window.erpSyncSafety.enqueueDelete('schools',{id,label:label||id,scope:'one'});
   if(queued.ok&&!options?.defer)window.erpSyncSafety.retryDeletes('schools');
   return queued;
@@ -257,6 +261,7 @@ function fillSchoolForm(s){
   setTimeout(()=>{ if($('schoolNewName')) $('schoolNewName').focus({preventScroll:true}); }, 350);
 }
 function submitSchoolForm(){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.write'))return;
   const f=getSchoolForm();
   if(!f.name){ alert('학교명을 입력해주세요.'); return; }
   const dup=schools.find(s=>s.id!==editingSchoolId && s.name.trim().toLowerCase()===f.name.toLowerCase());
@@ -270,6 +275,7 @@ function submitSchoolForm(){
   saveSchools();
 }
 function editSchoolPrompt(id){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.write'))return;
   const s=schools.find(x=>x.id===id);
   if(!s){ alert('학교 정보를 찾지 못했습니다. 화면을 새로고침한 뒤 다시 시도해주세요.'); return; }
   fillSchoolForm(s);
@@ -283,6 +289,7 @@ function editSchoolPrompt(id){
      보강하고, 없는 학교면 새로 추가. 기존 학교는 절대 지우거나 덮어쓰지 않음
    ========================================================= */
 function importSchoolsJson(list){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.write'))return;
   if(!Array.isArray(list) || !list.length){ alert('학교 목록 JSON 형식이 아니거나 비어 있습니다.'); return; }
   let added=0, enriched=0, unrecognizedType=0;
   list.forEach(raw=>{
@@ -326,6 +333,7 @@ function importSchoolsJson(list){
    - 매칭되는 학교가 없으면 건너뜀(새 학교를 함부로 만들지 않음 — 먼저 학교 가져오기로 등록 필요)
    ========================================================= */
 function importSchoolHrStats(list){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.write'))return;
   if(!Array.isArray(list) || !list.length){ alert('HR 통계 JSON 형식이 아니거나 비어 있습니다.'); return; }
   let updated=0, skipped=0;
   list.forEach(row=>{
@@ -345,6 +353,7 @@ function importSchoolHrStats(list){
   alert(`HR 통계 반영 완료: ${updated}개교 갱신, ${skipped}개교는 등록된 학교와 매칭이 안 돼 건너뜀(먼저 학교 등록 필요). 개인정보는 전혀 저장되지 않았습니다.`);
 }
 function deleteSchool(id){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.delete'))return;
   const s=schools.find(x=>x.id===id); if(!s)return;
   const appCount=schoolApplicantCount(id), empCount=schoolEmployeeCount(id);
   if(appCount||empCount){alert(`연결된 학교는 삭제할 수 없습니다.\n지원자 ${appCount}명 · 사원 ${empCount}명의 schoolId 연결을 먼저 연결 관리에서 확인해 주세요.`);return;}
@@ -442,6 +451,7 @@ function setSchoolAutoLinkSelection(mode){
   renderSchoolAutoLink();
 }
 function applySchoolAutoLink(){
+  if(window.erpPermissions&&!window.erpPermissions.require('school.write'))return;
   if(schoolAutoLinkState.busy)return;
   const selected=schoolAutoLinkState.candidates.filter(x=>schoolAutoLinkState.selected.has(x.key));
   if(!selected.length||!$('schoolAutoLinkConfirm')?.checked)return;

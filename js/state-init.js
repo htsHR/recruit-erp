@@ -6,4 +6,4 @@ applicants = load();
 calendarEvents = loadCalendarEvents();
 hireWaitingProfiles = loadHireWaitingProfiles();
 messageTemplates = typeof loadMessageTemplates==='function' ? loadMessageTemplates() : [];
-console.info('[HOME_DEV] Recruit ERP v10.56.0 loaded applicants:', applicants.length, 'hire waiting profiles:', hireWaitingProfiles.length, 'message templates:', messageTemplates.length);
+console.info('[HOME_DEV] Recruit ERP v10.57.0 loaded applicants:', applicants.length, 'hire waiting profiles:', hireWaitingProfiles.length, 'message templates:', messageTemplates.length);

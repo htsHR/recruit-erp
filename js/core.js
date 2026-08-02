@@ -187,6 +187,7 @@ function updateStorageNote(){
   if(window.erpSyncSafety&&typeof window.erpSyncSafety.decorateStatus==='function')window.erpSyncSafety.decorateStatus(el);
 }
 function save(){
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return false;
   if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants)))return false;
   if(canUseCloud())supabaseSyncAll(applicants);
   renderAll();

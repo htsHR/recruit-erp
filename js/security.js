@@ -1,8 +1,8 @@
-/* Recruit ERP v10.56.0 screen, import, and declarative event security */
+/* Recruit ERP v10.57.0 screen, import, and declarative event security */
 (function(root){
   'use strict';
 
-  const VERSION='10.56.0';
+  const VERSION='10.57.0';
   const MAX_IMPORT_BYTES=50*1024*1024;
   const MAX_IMPORT_ROWS=10000;
   const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
