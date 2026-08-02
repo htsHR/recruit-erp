@@ -34,6 +34,11 @@ function bind(id, event, handler){ const el=$(id); if(el) el.addEventListener(ev
 const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
 
 function uid(){ return globalThis.crypto?.randomUUID?.() || ('erp_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10)); }
+function auditDeletionReason(){
+  const value=prompt('삭제 사유를 입력하세요. (변경 이력에 기록됩니다.)','중복 또는 잘못 등록된 자료 정리');
+  if(value===null||!String(value).trim()){alert('삭제 사유를 입력해야 합니다.');return '';}
+  return String(value).trim();
+}
 let calendarEvents = [];
 let calendarCursor = new Date(today() + 'T00:00:00');
 calendarCursor.setDate(1);
@@ -188,7 +193,9 @@ function updateStorageNote(){
 }
 function save(){
   if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return false;
+  const auditBefore=window.erpAudit?.capture('applicant');
   if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants)))return false;
+  window.erpAudit?.commitSave('applicant',auditBefore,applicants);
   if(canUseCloud())supabaseSyncAll(applicants);
   renderAll();
   return true;

@@ -38,7 +38,13 @@ function loadCalendarEvents(){
     return Array.isArray(data)?data.map(normalizeCalendarEvent).filter(e=>e.title&&e.date):[];
   }catch(e){ console.warn('일정관리 데이터 로드 실패:', e); return []; }
 }
-function saveCalendarEvents(){ if(window.erpPermissions&&!window.erpPermissions.require('schedule.write'))return false;localStorage.setItem(CALENDAR_EVENTS_KEY, JSON.stringify(calendarEvents)); renderCalendar();return true; }
+function saveCalendarEvents(){
+  if(window.erpPermissions&&!window.erpPermissions.require('schedule.write'))return false;
+  const auditBefore=window.erpAudit?.capture('schedule');
+  if(!safeLocalStorageSet(CALENDAR_EVENTS_KEY,JSON.stringify(calendarEvents)))return false;
+  window.erpAudit?.commitSave('schedule',auditBefore,calendarEvents);
+  renderCalendar();return true;
+}
 function calendarDateKey(d){ const x=new Date(d); x.setMinutes(x.getMinutes()-x.getTimezoneOffset()); return x.toISOString().slice(0,10); }
 function calendarDateLabel(dateStr){
   const d=new Date(dateStr+'T00:00:00');

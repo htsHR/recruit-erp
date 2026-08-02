@@ -1,4 +1,4 @@
-/* Recruit ERP v10.57.0 privacy and screen-safety controls */
+/* Recruit ERP v10.58.0 privacy and screen-safety controls */
 (function(root,factory){
   const api=factory();
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -7,7 +7,7 @@
 })(typeof window!=='undefined'?window:null,function(){
   'use strict';
 
-  const VERSION='10.57.0';
+  const VERSION='10.58.0';
   const IDLE_MS=10*60*1000;
   const EXPORT_LOG_KEY='recruit_erp_sensitive_export_log';
   const MAX_EXPORT_LOG=50;
@@ -121,6 +121,7 @@
       const approved=win.confirm(`${label} 파일에는 개인정보 또는 업무 정보가 포함될 수 있습니다.\n\n공용 PC나 외부 공유 폴더가 아닌 안전한 위치에 저장하시겠습니까?`);
       if(!approved){event.preventDefault();event.stopImmediatePropagation();return;}
       recordExport(target.id,label);
+      win.erpAudit?.recordEvent({entityType:'export',entityId:target.id,entityLabel:label,action:'export',reason:'사용자 확인 후 내보내기',metadata:{exportId:target.id}});
     }
 
     createUi();

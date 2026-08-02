@@ -237,10 +237,12 @@ function duplicateApplicant(id){ if(window.erpPermissions&&!window.erpPermission
 function deleteApplicant(id){
   if(window.erpPermissions&&!window.erpPermissions.require('applicant.delete'))return;
   const applicant=applicants.find(a=>a.id===id);if(!applicant||!confirm(`"${applicant.name||'지원자'}" 지원자를 삭제할까요?`))return;
+  const auditReason=auditDeletionReason();if(!auditReason)return;
   const queued=supabaseDeleteOne(id,applicant.name||id,{defer:true});
   if(!queued.ok){alert('삭제 안전정보를 저장하지 못해 삭제를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;}
   const previous=applicants;applicants=applicants.filter(a=>a.id!==id);
-  if(!save()){applicants=previous;window.erpSyncSafety.cancelDelete(queued.key);renderAll();return;}
+  window.erpAudit?.setNextContext('applicant',{action:'delete',reason:auditReason});
+  if(!save()){applicants=previous;window.erpAudit?.clearNextContext('applicant');window.erpSyncSafety.cancelDelete(queued.key);renderAll();return;}
   window.erpSyncSafety.retryDeletes('applicants');
 }
 function detailRow(label, value, cls=''){
