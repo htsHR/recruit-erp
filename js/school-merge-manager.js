@@ -105,24 +105,27 @@ async function applySchoolMerge(){
   if(!byId('schoolMergeConfirm')?.checked){alert('통합 내용을 확인한 뒤 확인 항목을 체크해 주세요.');return;}
   const sourceLinks=countLinks(source.id);
   if(!confirm(`“${source.name}”을(를) “${target.name}”으로 통합할까요?\n\n지원자 ${sourceLinks.applicants}명 · 사원 ${sourceLinks.employees}명의 schoolId가 이동합니다.\n통합 대상 학교 레코드는 삭제되며, 기준 학교 ID는 유지됩니다.`))return;
-  schoolMergeBusy=true;const btn=byId('btnApplySchoolMerge');if(btn){btn.disabled=true;btn.textContent='통합 중...';}
+  schoolMergeBusy=true;const btn=byId('btnApplySchoolMerge');let sourceDeleteRequest=null,mergePersisted=false;if(btn){btn.disabled=true;btn.textContent='통합 중...';}
   try{
+    sourceDeleteRequest=typeof supabaseDeleteSchool==='function'?supabaseDeleteSchool(source.id,source.name,{defer:true}):null;
+    if(sourceDeleteRequest&&!sourceDeleteRequest.ok)throw new Error('통합 대상 학교의 삭제 안전정보를 저장하지 못했습니다.');
     schoolMergeSafetyBackup();
     const merged=mergedSchoolPreview(target,source);
     applicants=applicants.map(a=>String(a.schoolId||'')===String(source.id)?{...a,schoolId:target.id,school:target.name}:a);
     employees=employees.map(e=>String(e.schoolId||'')===String(source.id)?{...e,schoolId:target.id,school:target.name}:e);
     schools=schools.filter(s=>String(s.id)!==String(source.id)).map(s=>String(s.id)===String(target.id)?normalizeSchool(merged):s);
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(applicants));
-    localStorage.setItem(EMPLOYEES_KEY,JSON.stringify(employees));
-    localStorage.setItem(SCHOOLS_KEY,JSON.stringify(schools));
+    if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants)))throw new Error('지원자 연결 결과 저장 실패');
+    if(!safeLocalStorageSet(EMPLOYEES_KEY,JSON.stringify(employees)))throw new Error('사원 연결 결과 저장 실패');
+    if(!safeLocalStorageSet(SCHOOLS_KEY,JSON.stringify(schools)))throw new Error('학교 통합 결과 저장 실패');
+    mergePersisted=true;
     if(typeof supabaseSyncAll==='function')supabaseSyncAll(applicants);
     if(typeof supabaseSyncEmployees==='function')supabaseSyncEmployees(employees);
     if(typeof supabaseSyncSchools==='function')supabaseSyncSchools(schools);
-    if(typeof supabaseDeleteSchool==='function')supabaseDeleteSchool(source.id);
+    if(sourceDeleteRequest?.ok)window.erpSyncSafety.retryDeletes('schools');
     populateSchoolDatalist();renderSchoolManage();renderSchools();renderTable();renderEmployees();
     closeSchoolMergeManager();
     if(typeof uxToast==='function')uxToast(`${source.name}을(를) ${target.name}으로 통합했습니다.`);else alert('학교 통합이 완료되었습니다.');
-  }catch(e){console.error('학교 통합 실패',e);alert(`학교 통합 중 오류가 발생했습니다.\n${e.message||e}`);}finally{schoolMergeBusy=false;if(btn){btn.textContent='안전백업 후 통합';}}
+  }catch(e){if(sourceDeleteRequest?.ok&&!mergePersisted)window.erpSyncSafety.cancelDelete(sourceDeleteRequest.key);console.error('학교 통합 실패',e);alert(`학교 통합 중 오류가 발생했습니다.\n${e.message||e}`);}finally{schoolMergeBusy=false;if(btn){btn.textContent='안전백업 후 통합';}}
 }
 function openSchoolMergeManager(targetId='',sourceId=''){
   const modal=byId('schoolMergeModal');if(!modal)return;
