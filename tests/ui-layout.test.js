@@ -40,6 +40,12 @@ assert.match(permissions,/permission-matrix-row/);assert.match(permissions,/마�
 assert.match(audit,/auditTypeFilter/);assert.match(audit,/auditActionFilter/);assert.match(audit,/AUDIT_PAGE_SIZE=20/);assert.match(audit,/audit-detail/);
 assert.match(layout,/html\{background:#f5f6f8;overflow-x:hidden;\}/);assert.match(layout,/body\{background:#f5f6f8;overflow-x:hidden;\}/);
 assert.match(calm,/focus-visible/);assert.match(calm,/min-height:44px/);
+assert.match(applicants,/document\.body\.dataset\.activePage=page/);
+assert.match(uiLayout,/body\[data-active-page="form"\] \.topbar/);
+const visualTest=read('tests/ui-visual-layout.js');
+assert.match(visualTest,/formWorkflowBanner/);assert.match(visualTest,/formActions\.overlaps,false/);
+assert.match(visualTest,/390x844-status-modal\.png'\),fullPage:false/);
+assert.match(visualTest,/390x844-sync-conflict\.png'\),fullPage:false/);
 
 const emptyTopbarButtons=[...index.matchAll(/<button[^>]*class="[^"]*topbar-icon-btn[^"]*"[^>]*>[\s\S]*?<\/button>/g)];
 assert.equal(emptyTopbarButtons.length,0,'기능 없는 상단 아이콘 버튼이 남아 있습니다.');

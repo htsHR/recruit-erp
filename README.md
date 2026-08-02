@@ -58,7 +58,7 @@ npm run test:ui-layout
 
 ### GitHub CI 테스트
 
-Pull Request와 `main` 변경에서는 GitHub Actions가 `npm ci` → `npm run check` → `npm run test:ui-layout` 순서로 실행합니다. UI 검사 실패도 병합 검사 실패로 처리하며, 성공·실패 여부와 관계없이 화면검사 스크린샷을 `ui-layout-screenshots-<실행 시도 번호>` artifact로 14일간 보관합니다.
+Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하고 Noto CJK 한글 글꼴 캐시를 준비한 뒤 `npm run check` → `npm run test:ui-layout` 순서로 실행합니다. UI 검사 실패도 병합 검사 실패로 처리하며, 성공·실패 여부와 관계없이 한글이 표시된 화면검사 스크린샷을 `ui-layout-screenshots-<실행 시도 번호>` artifact로 14일간 보관합니다.
 
 ## 안전한 업데이트 순서
 

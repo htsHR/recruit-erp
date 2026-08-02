@@ -24,6 +24,9 @@ assert.ok(fs.existsSync(path.join(root,`CHANGELOG_v${version}.md`)),'현재 버�
 assert.match(workflow,/npm run check/);
 assert.match(workflow,/npm ci/);
 assert.match(workflow,/npm run test:ui-layout/);
+assert.match(workflow,/fonts-noto-cjk/);
+assert.match(workflow,/fc-cache -f/);
+assert.match(workflow,/fc-match "Noto Sans CJK KR"/);
 assert.match(workflow,/timeout-minutes: 10/);
 assert.match(workflow,/actions\/upload-artifact@v4/);
 assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v10\.59\.0/);

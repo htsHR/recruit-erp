@@ -542,4 +542,24 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
   #applicants .table-wrap{overflow:visible!important;border:0!important;background:transparent!important;}
   #form .resume-section-card .section-title,#form .resume-section-card .compact-title{align-items:flex-start!important;flex-direction:column!important;gap:3px!important;padding:12px 14px!important;}
   #form .identity-grid,#form .resume-info-grid,#form .compact-process-grid{grid-template-columns:1fr!important;}
+  body[data-active-page="form"] .topbar{
+    height:auto!important;
+    min-height:116px!important;
+    padding:10px!important;
+    align-content:start!important;
+    align-items:center!important;
+    flex-wrap:wrap!important;
+    gap:8px!important;
+  }
+  body[data-active-page="form"] .topbar-left{min-height:44px!important;flex:1 1 100%!important;}
+  body[data-active-page="form"] .topbar-actions-shell{display:block!important;width:100%!important;}
+  body[data-active-page="form"] .topbar-utils{display:none!important;}
+  body[data-active-page="form"] .form-top-actions{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,.7fr)!important;
+    gap:6px!important;
+    width:100%!important;
+    flex-wrap:nowrap!important;
+  }
+  body[data-active-page="form"] .form-top-actions button{width:100%!important;min-width:0!important;padding:0 6px!important;white-space:nowrap!important;}
 }
