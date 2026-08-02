@@ -24,6 +24,10 @@ assert.ok(fs.existsSync(path.join(root,`CHANGELOG_v${version}.md`)),'현재 버�
 assert.match(workflow,/npm run check/);
 assert.match(workflow,/pull_request:/);
 assert.match(workflow,/branches: \[main\]/);
+assert.match(workflow,/actions\/checkout@v6/);
+assert.match(workflow,/actions\/setup-node@v6/);
+assert.match(workflow,/node-version: 24/);
+assert.match(workflow,/package-manager-cache: false/);
 
 const headers=Object.fromEntries(vercel.headers[0].headers.map(item=>[item.key,item.value]));
 assert.equal(headers['X-Content-Type-Options'],'nosniff');
