@@ -147,7 +147,7 @@
     renderSummary(rows);renderYearBars(rows);renderWorkplaceBars(rows);renderMajorBars(rows);renderTable(rows);
   }
   function reset(){state.year='all';state.type='all';state.workplace='all';state.search='';state.sort='score';['schoolAnalyticsType','schoolAnalyticsWorkplace','schoolAnalyticsSort'].forEach(id=>{const x=el(id);if(x)x.value=id==='schoolAnalyticsSort'?'score':'all'});if(el('schoolAnalyticsSearch'))el('schoolAnalyticsSearch').value='';render();}
-  function csvCell(v){const s=String(v??'');return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;}
+  function csvCell(v){return window.erpSafety.csvCell(v,false);}
   function exportCsv(){
     const head=['순위','학교명','지역','구분','지원자','면접자','입사자','재직자','퇴직자','입사전환율','평균근속개월','최근1년입사','핵심학교참고점수','판정'];
     const lines=[head,...state.rows.map(r=>[r.rank,r.school.name,r.school.region,typeof normalizeSchoolType==='function'?normalizeSchoolType(r.school.type):r.school.type,r.applicantCount,r.interviewCount,r.hireCount,r.activeCount,r.retiredCount,r.conversion,r.avgTenure??'',r.recentHires,r.score,r.grade])].map(row=>row.map(csvCell).join(','));

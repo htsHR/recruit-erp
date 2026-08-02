@@ -78,10 +78,11 @@ function employeeCloudRow(employee,legacy=false){
   return fields.reduce((row,key)=>{row[key]=normalized[key]??'';return row;},{});
 }
 function saveEmployees(syncList){
-  localStorage.setItem(EMPLOYEES_KEY,JSON.stringify(employees));
+  if(!safeLocalStorageSet(EMPLOYEES_KEY,JSON.stringify(employees)))return false;
   supabaseSyncEmployees(Array.isArray(syncList)?syncList:employees);
   renderEmployees();
   renderSchools();
+  return true;
 }
 function supabaseSyncEmployees(list){
   if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
@@ -122,7 +123,7 @@ function supabaseEmployeesSyncOnLoad(){
     });
   }
   loadPage(0,[]).then(function(cloudRaw){
-    const cloud=cloudRaw.map(normalizeEmployee),map={};
+    const local=employees,cloud=cloudRaw.map(normalizeEmployee),map={};
     employees.forEach(e=>{map[e.id]=e;});
     cloud.forEach(c=>{
       const l=map[c.id];
@@ -131,7 +132,7 @@ function supabaseEmployeesSyncOnLoad(){
       map[c.id]=(ct>lt)?c:l;
     });
     employees=Object.keys(map).map(k=>normalizeEmployee(map[k]));
-    localStorage.setItem(EMPLOYEES_KEY,JSON.stringify(employees));
+    if(!safeLocalStorageSet(EMPLOYEES_KEY,JSON.stringify(employees))){employees=local;throw new Error('사원명부 클라우드 병합 결과의 로컬 저장 실패');}
     renderEmployees();
     console.info('직원명부 Supabase 페이지 조회 완료: 클라우드 '+cloud.length+'명 -> 병합 후 '+employees.length+'명');
   }).catch(function(e){console.warn('직원명부 페이지 조회 중 실패 — 기존 로컬 데이터 유지:',e);});
@@ -241,15 +242,16 @@ function validateEmployeeForm(f){
 function submitEmployeeForm(){
   const f=getEmployeeForm();
   if(!validateEmployeeForm(f)) return;
+  const employeesBeforeSave=employees.slice();
   const now=new Date().toISOString();
   if(editingEmployeeId){
     employees=employees.map(e=>e.id===editingEmployeeId?normalizeEmployee({...e,...f,id:editingEmployeeId,updatedAt:now}):e);
   }else{
     employees.unshift(normalizeEmployee({...f,id:uid(),createdAt:now,updatedAt:now}));
   }
+  if(!saveEmployees()){employees=employeesBeforeSave;return;}
   resetEmployeeForm();
   const detail=$('employeeEntryDetails');if(detail)detail.open=false;
-  saveEmployees();
 }
 function editEmployeePrompt(id){
   const e=employees.find(x=>x.id===id);if(!e)return;
@@ -506,7 +508,7 @@ function formatEmployeeDateTime(value){
 function csvEmployees(){
   const headers=['사번','성명','성별','재직상태','팀','그룹','제품','파트','직급','직책','입사일','퇴사일','휴직일','복직일','승격일','입사경위','채용채널','최종학력','출신학교','전공','상벌건수','비고','최근수정일'];
   const lines=[headers,...employees.map(e=>[e.empNo,e.name,e.gender,e.status,e.team||e.department,e.groupName,e.product,e.part,e.rank,e.position||e.role,e.hireDate,e.leaveDate,e.leaveStartDate,e.returnDate,e.promotionDate,e.recruitType,e.recruitChannel,e.education,e.school,e.major,e.disciplineCount,e.notes,e.updatedAt])]
-    .map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
+    .map(row=>row.map(v=>window.erpSafety.csvCell(v,true)).join(','));
   download(`사원명부_${today()}.csv`,'\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');
 }
 function employeeDeptAggregates(){
@@ -589,17 +591,64 @@ function renderEmployees(){
     </tr>`;
   }).join('');
 }
-function importEmployeesJson(list){
-  if(!Array.isArray(list)||!list.length){alert('직원명부 JSON 형식이 아니거나 비어 있습니다.');return;}
-  const byEmpNo={};employees.forEach(e=>{if(e.empNo)byEmpNo[e.empNo]=e;});
-  let added=0,updated=0,skipped=0;
-  list.forEach(raw=>{
-    const incoming=normalizeEmployee(raw);if(!incoming.name){skipped++;return;}
-    const existing=incoming.empNo?byEmpNo[incoming.empNo]:null;
-    if(existing){employees=employees.map(e=>e.id===existing.id?normalizeEmployee({...e,...incoming,id:existing.id,updatedAt:new Date().toISOString()}):e);updated++;}
-    else{const created=normalizeEmployee({...incoming,id:uid(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()});employees.push(created);if(created.empNo)byEmpNo[created.empNo]=created;added++;}
+const EMPLOYEE_JSON_IMPORT_FIELDS={
+  empNo:['empNo'],name:['name'],gender:['gender'],team:['team','department'],groupName:['groupName','group'],
+  product:['product'],part:['part'],rank:['rank'],position:['position','role'],promotionDate:['promotionDate'],
+  recruitType:['recruitType'],recruitChannel:['recruitChannel'],education:['education'],major:['major'],
+  leaveStartDate:['leaveStartDate'],returnDate:['returnDate'],applicantId:['applicantId'],school:['school'],
+  schoolId:['schoolId'],hireDate:['hireDate'],leaveDate:['leaveDate'],status:['status'],
+  disciplineCount:['disciplineCount'],notes:['notes']
+};
+const EMPLOYEE_JSON_FIELD_LABELS={empNo:'사번',name:'성명',gender:'성별',team:'팀',groupName:'그룹',product:'제품',part:'파트',rank:'직급',position:'직책',promotionDate:'승격일',recruitType:'입사경위',recruitChannel:'채용채널',education:'최종학력',major:'전공',leaveStartDate:'휴직일',returnDate:'복직일',applicantId:'지원자 연결',school:'출신학교',schoolId:'학교 연결',hireDate:'입사일',leaveDate:'퇴사일',status:'재직상태',disciplineCount:'상벌건수',notes:'비고'};
+function employeeJsonImportPatch(raw){
+  const meaningful=window.erpSafety.sparseMerge({},raw,{exclude:['id','createdAt','updatedAt']});
+  const normalized=normalizeEmployee(meaningful),patch={};
+  Object.entries(EMPLOYEE_JSON_IMPORT_FIELDS).forEach(([field,sources])=>{
+    if(sources.some(key=>Object.prototype.hasOwnProperty.call(raw,key)&&window.erpSafety.hasImportValue(raw[key])))patch[field]=normalized[field];
   });
-  saveEmployees();alert(`직원명부 가져오기 완료: 신규 ${added}명, 갱신 ${updated}명, 건너뜀 ${skipped}명.`);
+  if(Object.prototype.hasOwnProperty.call(patch,'team'))patch.department=patch.team;
+  if(Object.prototype.hasOwnProperty.call(patch,'position'))patch.role=patch.position;
+  return patch;
+}
+function employeeJsonImportPlan(list){
+  const now=new Date().toISOString(),next=employees.slice(),byEmpNo=new Map();
+  next.forEach(e=>{if(e.empNo)byEmpNo.set(e.empNo,e);});
+  const summary={next,added:0,updated:0,unchanged:0,skipped:0,changes:[]};
+  list.forEach((raw,index)=>{
+    if(!raw||typeof raw!=='object'||Array.isArray(raw)){summary.skipped++;return;}
+    const patch=employeeJsonImportPatch(raw),empNo=String(patch.empNo||'').trim();
+    const existing=empNo?byEmpNo.get(empNo):null;
+    if(existing){
+      const changes=Object.keys(EMPLOYEE_JSON_IMPORT_FIELDS).filter(field=>Object.prototype.hasOwnProperty.call(patch,field)&&String(existing[field]??'')!==String(patch[field]??''));
+      if(!changes.length){summary.unchanged++;return;}
+      const updated=normalizeEmployee({...existing,...patch,id:existing.id,createdAt:existing.createdAt,updatedAt:now});
+      const at=next.findIndex(e=>e.id===existing.id);next[at]=updated;byEmpNo.set(empNo,updated);summary.updated++;
+      changes.forEach(field=>summary.changes.push({name:existing.name||empNo,field,from:existing[field]??'',to:updated[field]??''}));
+      return;
+    }
+    if(!window.erpSafety.hasImportValue(raw.name)){summary.skipped++;return;}
+    const created=normalizeEmployee({...patch,id:uid(),createdAt:now,updatedAt:now});
+    next.push(created);if(created.empNo)byEmpNo.set(created.empNo,created);summary.added++;
+    summary.changes.push({name:created.name,field:'__new__',from:'',to:created.empNo||'사번 없음'});
+  });
+  return summary;
+}
+function employeeJsonImportPreview(plan){
+  const details=plan.changes.slice(0,18).map(change=>change.field==='__new__'
+    ?`+ 신규: ${change.name} (${change.to})`
+    :`• ${change.name} · ${EMPLOYEE_JSON_FIELD_LABELS[change.field]||change.field}: ${String(change.from||'(없음)')} → ${String(change.to||'(없음)')}`);
+  if(plan.changes.length>details.length)details.push(`… 외 ${plan.changes.length-details.length}개 변경`);
+  return [`사원 JSON 변경 미리보기`,`신규 ${plan.added}명 · 갱신 ${plan.updated}명 · 변경 없음 ${plan.unchanged}명 · 건너뜀 ${plan.skipped}명`,``,`빈 문자열, null, undefined, 공백값은 기존 값을 지우지 않습니다.`,details.length?'\n'+details.join('\n'):'\n실제로 바뀌는 내용이 없습니다.',``,`이 내용을 반영할까요?`].join('\n');
+}
+function importEmployeesJson(list){
+  if(!Array.isArray(list)||!list.length){alert('직원명부 JSON 형식이 아니거나 비어 있습니다.');return false;}
+  const plan=employeeJsonImportPlan(list);
+  if(!plan.added&&!plan.updated){alert(employeeJsonImportPreview(plan));return false;}
+  if(!confirm(employeeJsonImportPreview(plan)))return false;
+  const before=employees;employees=plan.next;
+  if(!saveEmployees()){employees=before;return false;}
+  alert(`직원명부 가져오기 완료: 신규 ${plan.added}명, 갱신 ${plan.updated}명, 변경 없음 ${plan.unchanged}명, 건너뜀 ${plan.skipped}명.`);
+  return true;
 }
 function calcAge(v){
   const n=String(v||'').replace(/\D/g,'');if(!n)return'';

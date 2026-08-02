@@ -103,6 +103,13 @@ function readArrayFromStorageKey(key){
     return [];
   }catch{ return []; }
 }
+function safeLocalStorageSet(key,value,options){
+  if(window.erpSafety&&typeof window.erpSafety.safeLocalStorageSet==='function'){
+    return window.erpSafety.safeLocalStorageSet(key,value,options);
+  }
+  try{localStorage.setItem(key,value);return true;}
+  catch(error){console.error('브라우저 저장 실패:',key,error);if(!options||options.notify!==false)alert('데이터를 저장하지 못했습니다. 입력한 내용은 화면에 남아 있습니다.');return false;}
+}
 function load(){
   try{
     let data = readArrayFromStorageKey(STORAGE_KEY);
@@ -111,7 +118,7 @@ function load(){
         const legacy = readArrayFromStorageKey(key);
         if(Array.isArray(legacy) && legacy.some(looksLikeApplicantRow)){
           data = legacy;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data.map(normalize)));
+          safeLocalStorageSet(STORAGE_KEY, JSON.stringify(data.map(normalize)), {notify:false});
           break;
         }
       }
@@ -127,7 +134,7 @@ function load(){
       if(candidates.length){
         candidates.sort((a,b)=>b.length-a.length);
         data = candidates[0];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.map(normalize)));
+        safeLocalStorageSet(STORAGE_KEY, JSON.stringify(data.map(normalize)), {notify:false});
       }
     }
     return Array.isArray(data) ? data.map(normalize) : [];
@@ -136,24 +143,52 @@ function load(){
     return [];
   }
 }
-let cloudSyncStatus = 'unknown'; // 'ok' | 'error' | 'unknown'
+let cloudSyncStatus = 'unknown'; // 'syncing' | 'ok' | 'error' | 'unknown'
 let cloudAuthenticated = false;
 const OPERATION_ENV_STORAGE_KEY = 'recruit_erp_ui_operation_environment';
+const CLOUD_LAST_SUCCESS_KEY = 'recruit_erp_cloud_last_success_at';
 function isCompanyLocalMode(){ return localStorage.getItem(OPERATION_ENV_STORAGE_KEY) === 'company'; }
 function canUseCloud(){ return !!window.sb && !isCompanyLocalMode() && cloudAuthenticated; }
-function setCloudSyncStatus(status){ cloudSyncStatus = status; updateStorageNote(); }
+function cloudLastSuccessAt(){ return localStorage.getItem(CLOUD_LAST_SUCCESS_KEY)||''; }
+function cloudLastSuccessLabel(){
+  const value=cloudLastSuccessAt();if(!value)return '아직 성공 기록 없음';
+  const date=new Date(value);return Number.isNaN(date.getTime())?'기록 확인 불가':date.toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function setCloudSyncStatus(status){
+  cloudSyncStatus=status;
+  if(status==='ok')safeLocalStorageSet(CLOUD_LAST_SUCCESS_KEY,new Date().toISOString(),{notify:false});
+  updateStorageNote();
+}
 function updateStorageNote(){
   var el = $('storageNote');
   if(!el) return;
-  if(!window.sb){
-    el.innerHTML = '<strong>서버 저장 없음</strong><span>지원자 데이터는 현재 브라우저에만 저장됩니다.</span>';
+  el.setAttribute('aria-live','polite');
+  el.className='security-note';
+  const last='<small>마지막 성공: '+esc(cloudLastSuccessLabel())+'</small>';
+  if(isCompanyLocalMode()){
+    el.className='security-note sync-local-note';
+    el.innerHTML='<strong>회사 로컬 모드</strong><span>이 브라우저에만 저장하며 클라우드로 보내지 않습니다.</span>';
+  } else if(!window.sb){
+    el.className='security-note sync-local-note';
+    el.innerHTML='<strong>로컬 전용</strong><span>클라우드 설정이 없어 이 브라우저에만 저장합니다.</span>';
+  } else if(!cloudAuthenticated){
+    el.className='security-note sync-logged-out-note';
+    el.innerHTML='<strong>클라우드 로그아웃</strong><span>로컬 저장만 사용 중입니다. 로그인하면 동기화를 다시 시작합니다.</span>'+last;
   } else if(cloudSyncStatus === 'error'){
     el.className = 'security-note sync-warn-note';
-    el.innerHTML = '<strong>⚠ 클라우드 동기화 실패</strong><span>브라우저에는 정상 저장됐지만 클라우드 반영에 실패했어요. 인터넷 연결을 확인해주세요.</span>';
+    el.innerHTML = '<strong>⚠ 클라우드 동기화 실패</strong><span>로컬 저장은 완료됐지만 클라우드 반영에 실패했습니다. 인터넷 연결을 확인해주세요.</span>'+last;
+  } else if(cloudSyncStatus === 'ok'){
+    el.className='security-note sync-ok-note';
+    el.innerHTML='<strong>클라우드 동기화 정상</strong><span>로컬과 클라우드 저장이 정상 작동합니다.</span>'+last;
   } else {
-    el.className = 'security-note';
-    el.innerHTML = '<strong>클라우드 동기화 중</strong><span>브라우저 + Supabase 클라우드에 동시 저장됩니다.</span>';
+    el.className='security-note sync-progress-note';
+    el.innerHTML='<strong>클라우드 동기화 중</strong><span>클라우드 상태를 확인하고 있습니다.</span>'+last;
   }
 }
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants)); if(canUseCloud()) supabaseSyncAll(applicants); renderAll(); }
+function save(){
+  if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants)))return false;
+  if(canUseCloud())supabaseSyncAll(applicants);
+  renderAll();
+  return true;
+}
 

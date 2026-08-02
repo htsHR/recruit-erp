@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='10.50.0';
+const UX_VERSION='10.51.0';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -113,8 +113,9 @@ function uxUpdateApplicantStatus(id,status){
   const a=applicants.find(x=>x.id===id); if(!a) return;
   const next=normalizeStatus(status);
   const patch=uxPromptStatusData(a,next); if(!patch){ renderAll(); return; }
+  const previous=applicants;
   applicants=applicants.map(x=>x.id===id?normalize({...x,...patch}):x);
-  save();
+  if(!save()){applicants=previous;return;}
   uxToast(`${a.name||'지원자'} 상태를 ${next}(으)로 변경했습니다.`);
   if(detailCurrentId===id && uxEl('detailModal')?.classList.contains('show')) viewApplicant(id);
 }
@@ -427,7 +428,7 @@ function uxGetOperationEnvironment(){
 }
 function uxSetOperationEnvironment(mode){
   const next=mode==='company'?'company':'home';
-  localStorage.setItem(OPERATION_ENV_KEY,next);
+  if(!safeLocalStorageSet(OPERATION_ENV_KEY,next))return;
   updateStorageNote();
   if(typeof window.erpHandleOperationEnvironmentChange==='function') window.erpHandleOperationEnvironmentChange(next);
   uxToast(next==='company'?'회사 운영 모드로 전환했습니다. Supabase 연결을 중단했습니다.':'집 개발 모드로 전환했습니다. 로그인 후에만 Supabase를 사용합니다.');
@@ -437,21 +438,23 @@ updateStorageNote=function(){
   const mode=uxGetOperationEnvironment();
   const isCompany=mode==='company';
   document.documentElement.dataset.operationEnvironment=mode;
-  const cloudReady=!isCompany&&typeof canUseCloud==='function'&&canUseCloud();
+  const hasCloud=!!window.sb;
+  const authenticated=!isCompany&&hasCloud&&typeof cloudAuthenticated!=='undefined'&&cloudAuthenticated;
   const cloudFailed=!isCompany&&typeof cloudSyncStatus!=='undefined'&&cloudSyncStatus==='error';
-  const modeTitle=isCompany?'회사 · LOCAL MASTER':cloudFailed?'집 · 로컬 저장 유지':cloudReady?'집 · CLOUD SYNC':'집 · 로컬 저장';
-  const modeDescription=isCompany
-    ?'현재 브라우저 데이터가 업무 기준입니다. 퇴근 전 전체 JSON 백업을 확인하세요.'
-    :cloudFailed
-      ?'브라우저 저장은 완료됐지만 클라우드 반영에 실패했습니다. 백업센터에서 상태를 확인하세요.'
-      :cloudReady
-        ?'브라우저 저장 후 Supabase에도 동기화할 수 있는 상태입니다.'
-        :'회사 JSON을 검사·복원한 뒤 작업하고, 로그인 전에는 브라우저에만 저장합니다.';
-  el.className=`security-note operation-mode-note ${mode}${cloudFailed?' sync-warn-note':''}`;
+  const cloudOk=authenticated&&typeof cloudSyncStatus!=='undefined'&&cloudSyncStatus==='ok';
+  const cloudSyncing=authenticated&&!cloudOk&&!cloudFailed;
+  const loggedOut=!isCompany&&hasCloud&&!authenticated;
+  const modeTitle=isCompany?'회사 로컬 모드':cloudFailed?'클라우드 동기화 실패':cloudOk?'클라우드 동기화 정상':cloudSyncing?'클라우드 동기화 중':loggedOut?'클라우드 로그아웃':'로컬 전용';
+  const modeDescription=isCompany?'이 브라우저에만 저장하며 클라우드로 보내지 않습니다.':cloudFailed?'로컬 저장은 완료됐지만 클라우드 반영에 실패했습니다.':cloudOk?'로컬과 클라우드 저장이 정상 작동합니다.':cloudSyncing?'클라우드 상태를 확인하고 있습니다.':loggedOut?'로컬 저장만 사용 중입니다. 로그인하면 동기화를 다시 시작합니다.':'클라우드 설정이 없어 이 브라우저에만 저장합니다.';
+  const lastLabel=typeof cloudLastSuccessLabel==='function'?cloudLastSuccessLabel():'아직 성공 기록 없음';
+  const statusClass=cloudFailed?'sync-warn-note':cloudOk?'sync-ok-note':cloudSyncing?'sync-progress-note':loggedOut?'sync-logged-out-note':'sync-local-note';
+  el.className=`security-note operation-mode-note ${mode} ${statusClass}`;
+  el.setAttribute('aria-live','polite');
   el.innerHTML=`
     <div class="operation-mode-copy">
       <strong>${modeTitle}</strong>
       <span>${modeDescription}</span>
+      ${!isCompany&&hasCloud?`<small>마지막 성공: ${lastLabel}</small>`:''}
     </div>
     <div class="operation-mode-switch" role="group" aria-label="운영 환경 선택">
       <button type="button" data-operation-mode="company" class="${isCompany?'active':''}" aria-pressed="${isCompany}">회사</button>
@@ -460,11 +463,11 @@ updateStorageNote=function(){
   el.querySelectorAll('[data-operation-mode]').forEach(btn=>btn.addEventListener('click',()=>uxSetOperationEnvironment(btn.dataset.operationMode)));
   const badge=document.querySelector('.local-mode-badge');
   if(badge){
-    badge.textContent=isCompany?'회사 · LOCAL MASTER':cloudFailed?'집 · CLOUD ERROR':cloudReady?'집 · CLOUD SYNC':'집 · LOCAL';
+    badge.textContent=isCompany?'회사 · LOCAL':cloudFailed?'CLOUD ERROR':cloudOk?'CLOUD OK':cloudSyncing?'CLOUD SYNCING':loggedOut?'CLOUD LOGOUT':'LOCAL';
     badge.title=modeDescription;
     badge.classList.toggle('company',isCompany);
     badge.classList.toggle('home',!isCompany);
-    badge.classList.toggle('cloud-ready',cloudReady);
+    badge.classList.toggle('cloud-ready',cloudOk);
     badge.classList.toggle('cloud-error',cloudFailed);
   }
 };

@@ -78,7 +78,7 @@
     };
     Object.assign(a, changes);
     try{
-      save(); // applicant-progress-history.js가 감싼 save(): status/failureReason 변경을 자동으로 progressHistory에 기록
+      if(!save())throw new Error('로컬 저장 실패'); // applicant-progress-history.js가 감싼 save(): status/failureReason 변경을 자동으로 progressHistory에 기록
     }catch(err){
       // v10.48.2 §11: 저장 실패 시 변경분을 롤백하고, 다음 지원자로 넘어가지 않는다.
       Object.assign(a, before);
@@ -103,7 +103,7 @@
       window.applicantProgressHistoryAddSystem(a.id,'memo','서류검토 · 이번 검토 넘기기', reason||'사유 미입력', {});
     }
     try{
-      save();
+      if(!save())throw new Error('로컬 저장 실패');
     }catch(err){
       a.progressHistory=before.progressHistory;
       a.updatedAt=before.updatedAt; a.lastChangedBy=before.lastChangedBy; a.lastChangedAt=before.lastChangedAt;
