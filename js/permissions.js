@@ -157,7 +157,7 @@
     }
     const main=root.document.querySelector('main.main');
     if(main&&!root.document.getElementById('permissions')){
-      const section=root.document.createElement('section');section.className='page permission-page';section.id='permissions';section.innerHTML='<div class="page-intro-card"><div><h3>사용자 권한 관리</h3><p>로그인 계정마다 조회·수정·삭제 범위를 나눕니다.</p></div><span id="permissionCurrentBadge"></span></div><div class="permission-page-shell" id="permissionPageBody"></div>';main.appendChild(section);
+      const section=root.document.createElement('section');section.className='page permission-page';section.id='permissions';section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>사용자 권한 관리</h3><p>로그인 계정마다 조회·수정·삭제 범위를 나눕니다.</p></div><span id="permissionCurrentBadge"></span></div><div class="permission-page-shell" id="permissionPageBody"></div>';main.appendChild(section);
     }
     const topbarRole=root.document.querySelector('#topbarUser .topbar-user-copy small');if(topbarRole)topbarRole.id='topbarUserRole';
     root.document.querySelector('[data-page="permissions"]')?.addEventListener('click',()=>{setTimeout(()=>{renderPage();if(has('user.manage')&&state.source==='cloud')loadUsers().catch(()=>{});},0);});

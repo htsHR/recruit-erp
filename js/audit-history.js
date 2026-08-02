@@ -144,7 +144,7 @@
     const main=root.document.querySelector('main.main');
     if(main&&!root.document.getElementById('auditHistory')){
       const section=root.document.createElement('section');section.className='page audit-page';section.id='auditHistory';
-      section.innerHTML='<div class="page-intro-card"><div><h3>변경 이력</h3><p>누가 언제 무엇을 바꿨는지 확인합니다. 민감한 값은 기록하지 않습니다.</p></div><button class="ghost" id="btnAuditRefresh" type="button">새로고침</button></div><div id="auditPageBody" class="audit-page-shell"></div>';
+      section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>변경 이력</h3><p>누가 언제 무엇을 바꿨는지 확인합니다. 민감한 값은 기록하지 않습니다.</p></div><button class="ghost" id="btnAuditRefresh" type="button">새로고침</button></div><div id="auditPageBody" class="audit-page-shell"></div>';
       main.appendChild(section);section.querySelector('#btnAuditRefresh')?.addEventListener('click',()=>loadCloud().catch(error=>root.alert?.('변경 이력을 불러오지 못했습니다: '+(error.message||error))));
     }
   }

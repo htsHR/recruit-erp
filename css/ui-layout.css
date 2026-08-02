@@ -252,7 +252,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* ---------- Content hierarchy ---------- */
 .main>.page{padding:26px 0 48px!important;}
 .page-intro-card{
-  display:flex!important;
+  display:flex;
   align-items:center!important;
   justify-content:space-between!important;
   gap:18px!important;
@@ -263,6 +263,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   background:var(--calm-surface)!important;
   box-shadow:none!important;
 }
+.page-intro-card.safety-intro-card{display:flex!important;}
+#home .home-dashboard-intro,#stats .stats-intro{display:none!important;}
 .page-intro-card h3{margin:0!important;color:var(--calm-ink)!important;font-size:17px!important;font-weight:600!important;letter-spacing:-.02em!important;}
 .page-intro-card p{margin:5px 0 0!important;color:var(--calm-ink-2)!important;font-size:12px!important;font-weight:400!important;line-height:1.45!important;}
 .page-intro-badge{
@@ -500,6 +502,7 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
   .dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
   .home-work-queue{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
   .dashboard-panels{grid-template-columns:1fr!important;}
+  #form .identity-grid,#form .resume-info-grid,#form .compact-process-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
 }
 @media(max-width:1020px){
   .app-shell,body.sidebar-collapsed .app-shell{grid-template-columns:minmax(0,1fr)!important;}
@@ -538,4 +541,5 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
   #applicants .chip{flex:0 0 auto!important;}
   #applicants .table-wrap{overflow:visible!important;border:0!important;background:transparent!important;}
   #form .resume-section-card .section-title,#form .resume-section-card .compact-title{align-items:flex-start!important;flex-direction:column!important;gap:3px!important;padding:12px 14px!important;}
+  #form .identity-grid,#form .resume-info-grid,#form .compact-process-grid{grid-template-columns:1fr!important;}
 }

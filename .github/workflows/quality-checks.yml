@@ -15,9 +15,9 @@ concurrency:
 
 jobs:
   quality:
-    name: 저장·보안·동기화 회귀 검사
+    name: 저장·보안·동기화·UI 회귀 검사
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: 코드 받기
         uses: actions/checkout@v6
@@ -26,5 +26,19 @@ jobs:
         with:
           node-version: 24
           package-manager-cache: false
+      - name: 고정된 의존성 설치
+        run: npm ci
       - name: 전체 자동 검사
         run: npm run check
+      - name: Playwright UI 화면 검사
+        run: npm run test:ui-layout
+        env:
+          UI_SCREENSHOT_DIR: artifacts/ui-v10.59.0
+      - name: UI 검사 스크린샷 보관
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-layout-screenshots-${{ github.run_attempt }}
+          path: artifacts/ui-v10.59.0
+          if-no-files-found: warn
+          retention-days: 14

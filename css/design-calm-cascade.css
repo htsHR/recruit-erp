@@ -148,8 +148,8 @@ button:hover,.stat:hover,.queue-card:hover,.today-tile:hover,tbody tr:hover,.for
 .form-hero-tags span{background:var(--calm-surface-soft,#fafbfc)!important;border:1px solid var(--calm-line)!important;color:var(--calm-ink-2)!important;backdrop-filter:none!important;font-weight:500!important;}
 .form-hero-actions .hero-reset{background:#fff!important;border:1px solid var(--calm-line-strong)!important;color:var(--calm-ink)!important;}
 
-/* ---------- B1. 안전·업무 설명은 공통 인트로 카드가 소유 ---------- */
-.page-intro-card{display:flex!important;}
+/* ---------- B1. 안전·위험 작업 설명은 명시적인 공통 인트로 카드가 소유 ---------- */
+.page-intro-card.safety-intro-card{display:flex!important;}
 .page-intro-badge{display:inline-flex!important;}
 .section-heading p,.applicant-list-header-copy p,.applicant-filter-group-head small{display:none!important;}
 .section-heading{margin:18px 0 10px!important;}

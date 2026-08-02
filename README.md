@@ -42,12 +42,23 @@ GitHub에 변경 요청이 올라오거나 `main`에 코드가 합쳐지면 다�
 - 전체 JavaScript 문법
 - 화면·프로그램·변경 기록의 버전 일치
 - Vercel 보안 응답 설정
+- Playwright 기반 5개 화면 크기·주요 화면·3개 역할 UI 회귀 검사
 
-개발 컴퓨터에서 같은 검사를 실행하려면 Node.js 20 이상에서 아래 명령을 사용합니다.
+### 로컬 테스트
+
+개발 컴퓨터에서는 Node.js 20 이상과 Chrome 또는 Edge를 준비한 뒤 아래 명령을 실행합니다.
 
 ```text
+npm ci
 npm run check
+npm run test:ui-layout
 ```
+
+로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v10.59.0`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
+
+### GitHub CI 테스트
+
+Pull Request와 `main` 변경에서는 GitHub Actions가 `npm ci` → `npm run check` → `npm run test:ui-layout` 순서로 실행합니다. UI 검사 실패도 병합 검사 실패로 처리하며, 성공·실패 여부와 관계없이 화면검사 스크린샷을 `ui-layout-screenshots-<실행 시도 번호>` artifact로 14일간 보관합니다.
 
 ## 안전한 업데이트 순서
 
@@ -65,6 +76,8 @@ npm run check
 - 지원자 등록 진행도를 업무 필수값 기준 3단계 상태로 표시합니다.
 - 지원자 상태 변경의 브라우저 입력창을 키보드 접근이 가능한 ERP 팝업으로 교체했습니다.
 - 위험 작업 화면의 기존 설명을 공통 안내 카드로 다시 표시했습니다.
+- 상태 변경 팝업의 새 메모는 기존 메모를 지우지 않고 날짜·변경 상태와 함께 뒤에 추가합니다.
+- 필수값이 없는 이력서 단계는 `선택 입력`으로 표시하고 필수 완료율에서 제외합니다.
 
 자세한 변경 내역은 `CHANGELOG_v10.59.0.md`, CSS 관리 기준은 `docs/UI_STYLE_OWNERSHIP_v10.59.0.md`를 확인하세요.
 

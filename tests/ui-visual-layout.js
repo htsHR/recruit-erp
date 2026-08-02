@@ -18,7 +18,7 @@ const executablePath=executableCandidates.find(file=>fs.existsSync(file));
 if(!executablePath)throw new Error('자동 UI 검사에 사용할 Chrome/Chromium을 찾지 못했습니다.');
 
 const fakeApplicants=[
-  {id:'11111111-1111-4111-8111-111111111111',name:'테스트지원자1',phone:'010-0000-0001',applyDate:'2026-08-01',workplace:'천안',status:'서류검토',education:'대졸',school:'테스트대학교',createdAt:'2026-08-01T01:00:00.000Z',updatedAt:'2026-08-01T01:00:00.000Z'},
+  {id:'11111111-1111-4111-8111-111111111111',name:'테스트지원자1',phone:'010-0000-0001',applyDate:'2026-08-01',workplace:'천안',status:'서류검토',education:'대졸',school:'테스트대학교',memo:'기존 메모',createdAt:'2026-08-01T01:00:00.000Z',updatedAt:'2026-08-01T01:00:00.000Z'},
   {id:'22222222-2222-4222-8222-222222222222',name:'테스트지원자2',phone:'010-0000-0002',applyDate:'2026-08-02',workplace:'평택',status:'면접예정',interviewDate:'2026-08-02',interviewTime:'10:00',createdAt:'2026-08-02T01:00:00.000Z',updatedAt:'2026-08-02T01:00:00.000Z'},
   {id:'33333333-3333-4333-8333-333333333333',name:'테스트지원자3',phone:'010-0000-0003',applyDate:'2026-08-01',workplace:'천안',status:'입사예정',hireDate:'2026-08-08',dormUse:'출퇴근',createdAt:'2026-08-01T02:00:00.000Z',updatedAt:'2026-08-01T02:00:00.000Z'}
 ];
@@ -32,6 +32,17 @@ const viewports=[
 const screens=['home','applicants','form','today','calendar','stats','schools','employees','backup','dataHealth','duplicates','permissions','auditHistory'];
 const server=spawn(process.execPath,[path.join(__dirname,'serve-static.js')],{cwd:root,env:{...process.env,ERP_TEST_PORT:String(port)},stdio:['ignore','pipe','pipe']});
 const waitForServer=()=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('로컬 UI 서버 시작 시간 초과')),5000);server.stdout.on('data',data=>{if(String(data).includes(baseUrl)){clearTimeout(timer);resolve();}});server.once('exit',code=>{clearTimeout(timer);reject(new Error(`로컬 UI 서버 종료: ${code}`));});});
+async function submitStatusChange(page,id,status,{date='2026-08-03',memo=''}={}){
+  await page.evaluate(()=>window.setPage?.('applicants'));
+  const select=page.locator(`#applicantTbody tr[data-applicant-id="${id}"] .status-inline`);
+  await select.selectOption({label:status});
+  await page.locator('#applicantStatusModal.show').waitFor();
+  if(['면접예정','다음면접'].includes(status))await page.locator('#statusInterviewDate').fill(date);
+  if(status==='입사예정')await page.locator('#statusHireDate').fill(date);
+  if(memo)await page.locator('#statusMemo').fill(memo);
+  await page.locator('#btnSaveApplicantStatus').click();
+  await page.locator('#applicantStatusModal.show').waitFor({state:'detached'});
+}
 
 (async()=>{
   await waitForServer();
@@ -56,6 +67,14 @@ const waitForServer=()=>new Promise((resolve,reject)=>{const timer=setTimeout(()
         assert.equal(layout.active,screen,`${viewport.name} ${screen} 화면 전환 실패`);
         assert.ok(layout.body<=layout.width+1&&layout.html<=layout.width+1,`${viewport.name} ${screen} 본문 가로 넘침: ${layout.body}/${layout.html}/${layout.width}`);
       }
+      const introState=await page.evaluate(()=>({
+        home:getComputedStyle(document.querySelector('#home .home-dashboard-intro')).display,
+        stats:getComputedStyle(document.querySelector('#stats .stats-intro')).display,
+        required:['#dataHealth .health-hero','#duplicates .duplicate-hero','#backup .backup-center-hero','#permissions .page-intro-card','#auditHistory .page-intro-card'].map(selector=>({selector,safety:document.querySelector(selector)?.classList.contains('safety-intro-card'),display:getComputedStyle(document.querySelector(selector)).display}))
+      }));
+      assert.equal(introState.home,'none','홈은 중복 인트로 카드를 숨겨 세로 공간을 줄여야 합니다.');
+      assert.equal(introState.stats,'none','통계는 중복 인트로 카드를 숨겨 세로 공간을 줄여야 합니다.');
+      assert.ok(introState.required.every(item=>item.safety&&item.display!=='none'),`안전 화면 안내 카드 누락: ${JSON.stringify(introState.required)}`);
       await page.evaluate(()=>window.setPage?.('applicants'));await page.waitForTimeout(30);
       if(viewport.width>760){
         const columns=await page.locator('#applicants .no-head,#applicants .name-head,#applicants .workplace-head,#applicants .status-head').evaluateAll(elements=>elements.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,position:getComputedStyle(el).position}}));
@@ -67,24 +86,64 @@ const waitForServer=()=>new Promise((resolve,reject)=>{const timer=setTimeout(()
       if(viewport.width===390){
         await page.evaluate(()=>window.setPage?.('home'));await page.locator('#sidebarToggle').click();assert.ok(await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')));await page.locator('[data-page="today"]').click();assert.ok(!await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')),'모바일 메뉴가 화면 이동 뒤 닫혀야 합니다.');
         await page.evaluate(()=>window.setPage?.('permissions'));const permissionWidth=await page.locator('#permissions').evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth,widest:[...el.querySelectorAll('*')].map(node=>({name:node.className||node.tagName,scroll:node.scrollWidth,client:node.clientWidth})).sort((a,b)=>b.scroll-a.scroll).slice(0,4)}));assert.ok(permissionWidth.scroll<=permissionWidth.client+1,`390 권한 화면 넘침: ${JSON.stringify(permissionWidth)}`);
+        await page.evaluate(()=>window.setPage?.('form'));await page.waitForTimeout(50);
+        assert.equal(await page.locator('[data-form-step="2"] [data-form-step-status]').innerText(),'선택 입력');
+        const formActions=await page.locator('.form-top-actions').evaluate(el=>({submitVisible:getComputedStyle(document.querySelector('#submitBtn')).display!=='none',buttons:[...el.querySelectorAll('button')].filter(button=>getComputedStyle(button).display!=='none').map(button=>{const rect=button.getBoundingClientRect();return {id:button.id,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};}),width:innerWidth,height:innerHeight}));
+        assert.ok(formActions.submitVisible&&formActions.buttons.length>0,'390 지원자 등록 저장 버튼이 보여야 합니다.');
+        assert.ok(formActions.buttons.every(button=>button.left>=-1&&button.right<=formActions.width+1&&button.top>=-1&&button.bottom<=formActions.height+1),`390 지원자 등록 상단 버튼 잘림: ${JSON.stringify(formActions)}`);
+        await page.screenshot({path:path.join(outputDir,'390x844-form.png'),fullPage:true});
       }
       await page.evaluate(()=>window.setPage?.('home'));await queue.first().focus();await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'today');await page.evaluate(()=>window.setPage?.('home'));await queue.nth(4).focus();await page.keyboard.press('Space');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'today');
       if(viewport.width===390||viewport.width===1366)await page.screenshot({path:path.join(outputDir,`${viewport.name}-home.png`),fullPage:true});
       await context.close();
     }
 
+    const zoomContext=await browser.newContext({viewport:{width:1093,height:614},deviceScaleFactor:1.25}),zoomPage=await zoomContext.newPage();
+    zoomPage.on('pageerror',error=>consoleErrors.push(`1366x768-zoom125: ${error.message}`));
+    zoomPage.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`1366x768-zoom125: ${message.text()}`);});
+    await zoomPage.addInitScript(applicants=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(applicants));localStorage.setItem('recruit_erp_ui_operation_environment','company');},fakeApplicants);
+    await zoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await zoomPage.waitForTimeout(700);
+    for(const screen of ['home','applicants','form']){
+      await zoomPage.evaluate(id=>window.setPage?.(id),screen);await zoomPage.waitForTimeout(50);
+      const layout=await zoomPage.evaluate(()=>({screen:document.querySelector('.page.active')?.id,width:innerWidth,body:document.body.scrollWidth,html:document.documentElement.scrollWidth}));
+      assert.equal(layout.width,1093,'1366×768의 125% 확대는 약 1093px 유효 폭으로 검사합니다.');
+      assert.ok(layout.body<=layout.width+1&&layout.html<=layout.width+1,`1366×768 125% ${screen} 본문 가로 넘침: ${JSON.stringify(layout)}`);
+    }
+    const zoomFormBounds=await zoomPage.locator('#form').evaluate(form=>({width:innerWidth,labels:[...form.querySelectorAll('.resume-input-grid>label')].map(label=>{const rect=label.getBoundingClientRect();return {text:label.innerText.slice(0,18),left:rect.left,right:rect.right};}),controls:[...form.querySelectorAll('.resume-input-grid input,.resume-input-grid select,.resume-input-grid textarea')].map(control=>{const rect=control.getBoundingClientRect();return {id:control.id,left:rect.left,right:rect.right};}),buttons:[...document.querySelectorAll('.form-top-actions button')].filter(button=>getComputedStyle(button).display!=='none').map(button=>{const rect=button.getBoundingClientRect();return {id:button.id,left:rect.left,right:rect.right};})}));
+    assert.ok(zoomFormBounds.labels.every(label=>label.left>=-1&&label.right<=zoomFormBounds.width+1),`1366×768 125% 등록 입력칸 잘림: ${JSON.stringify(zoomFormBounds)}`);
+    assert.ok(zoomFormBounds.controls.every(control=>control.left>=-1&&control.right<=zoomFormBounds.width+1),`1366×768 125% 등록 컨트롤 잘림: ${JSON.stringify(zoomFormBounds)}`);
+    assert.ok(zoomFormBounds.buttons.every(button=>button.left>=-1&&button.right<=zoomFormBounds.width+1),`1366×768 125% 상단 버튼 잘림: ${JSON.stringify(zoomFormBounds)}`);
+    await zoomPage.screenshot({path:path.join(outputDir,'1366x768-zoom125-form.png'),fullPage:true});
+    await zoomContext.close();
+
     const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
     await page.addInitScript(applicants=>localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(applicants)),fakeApplicants);await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(700);
-    await page.evaluate(()=>window.setPage?.('applicants'));const statusTarget=page.locator('#applicantTbody .status-inline').first(),statusTargetId=await statusTarget.evaluate(el=>el.closest('tr').dataset.applicantId),before=await page.evaluate(id=>applicants.find(item=>item.id===id).status,statusTargetId);await statusTarget.selectOption({label:'면접예정'});await page.locator('#applicantStatusModal.show').waitFor();assert.ok(await page.evaluate(()=>document.querySelector('#applicantStatusModal').contains(document.activeElement)));await page.keyboard.press('Tab');assert.ok(await page.evaluate(()=>document.querySelector('#applicantStatusModal').contains(document.activeElement)));await page.screenshot({path:path.join(outputDir,'390x844-status-modal.png'),fullPage:true});await page.keyboard.press('Escape');assert.equal(await page.evaluate(id=>applicants.find(item=>item.id===id).status,statusTargetId),before,'상태 팝업 취소는 자료를 바꾸면 안 됩니다.');
-    await statusTarget.selectOption({label:'면접예정'});await page.locator('#statusInterviewDate').fill('2026-08-03');await page.locator('#statusInterviewDate').press('Enter');await page.locator('#applicantStatusModal.show').waitFor({state:'detached'});await page.waitForFunction(id=>applicants.find(item=>item.id===id).status==='면접예정',statusTargetId);assert.equal(await page.evaluate(id=>applicants.find(item=>item.id===id).status,statusTargetId),'면접예정');
+    await page.evaluate(()=>window.setPage?.('form'));
+    assert.equal(await page.locator('[data-form-step="2"] [data-form-step-status]').innerText(),'선택 입력');
+    assert.equal(await page.locator('#formProgressText').innerText(),'필수 0/1 단계 완료');
+    await page.locator('#name').fill('가상지원자');await page.locator('#phone').fill('010-0000-0099');await page.locator('#applyDate').fill('2026-08-02');await page.locator('#workplace').selectOption('천안');
+    assert.equal(await page.locator('#formProgressText').innerText(),'필수 1/1 단계 완료');assert.equal(await page.locator('#formProgressBar').getAttribute('style'),'width: 100%;');
+    await page.locator('#status').selectOption('면접예정');assert.equal(await page.locator('[data-form-step="3"] [data-form-step-status]').innerText(),'확인 필요');assert.equal(await page.locator('#formProgressText').innerText(),'필수 1/2 단계 완료');
+    await page.locator('#interviewDate').fill('2026-08-03');assert.equal(await page.locator('#formProgressText').innerText(),'필수 2/2 단계 완료');await page.evaluate(()=>window.resetForm?.());
+
+    const existingId='11111111-1111-4111-8111-111111111111',emptyMemoId='22222222-2222-4222-8222-222222222222',newMemoId='33333333-3333-4333-8333-333333333333';
+    await page.evaluate(()=>window.setPage?.('applicants'));const statusTarget=page.locator(`#applicantTbody tr[data-applicant-id="${existingId}"] .status-inline`),before=await page.evaluate(id=>applicants.find(item=>item.id===id).status,existingId);await statusTarget.selectOption({label:'면접예정'});await page.locator('#applicantStatusModal.show').waitFor();assert.ok(await page.evaluate(()=>document.querySelector('#applicantStatusModal').contains(document.activeElement)));assert.ok((await page.locator('#applicantStatusModal').innerText()).includes('메모 추가'));await page.keyboard.press('Tab');assert.ok(await page.evaluate(()=>document.querySelector('#applicantStatusModal').contains(document.activeElement)));await page.screenshot({path:path.join(outputDir,'390x844-status-modal.png'),fullPage:true});await page.keyboard.press('Escape');assert.equal(await page.evaluate(id=>applicants.find(item=>item.id===id).status,existingId),before,'상태 팝업 취소는 자료를 바꾸면 안 됩니다.');
+    const memoCases=await page.evaluate(()=>({existingNoNew:window.erpAppendStatusMemo('기존 메모','','면접예정','2026-08-02'),emptyNoNew:window.erpAppendStatusMemo('','','면접예정','2026-08-02'),existingNew:window.erpAppendStatusMemo('기존 메모','추가 메모','면접예정','2026-08-02'),emptyNew:window.erpAppendStatusMemo('','추가 메모','면접예정','2026-08-02')}));
+    assert.deepEqual(memoCases,{existingNoNew:'기존 메모',emptyNoNew:'',existingNew:'기존 메모\n\n[2026-08-02 · 상태 변경: 면접예정]\n추가 메모',emptyNew:'[2026-08-02 · 상태 변경: 면접예정]\n추가 메모'});
+    await submitStatusChange(page,existingId,'면접예정');assert.equal(await page.evaluate(id=>applicants.find(item=>item.id===id).memo,existingId),'기존 메모','기존 메모 + 새 메모 없음은 그대로 유지되어야 합니다.');
+    await submitStatusChange(page,existingId,'다음면접',{memo:'추가 메모'});const appendedMemo=await page.evaluate(id=>applicants.find(item=>item.id===id).memo,existingId);assert.ok(appendedMemo.startsWith('기존 메모\n\n[')&&appendedMemo.includes('상태 변경: 다음면접')&&appendedMemo.endsWith('\n추가 메모'),'기존 메모 뒤에 날짜·변경 상태·새 메모가 추가되어야 합니다.');
+    await submitStatusChange(page,emptyMemoId,'다음면접');assert.equal(await page.evaluate(id=>applicants.find(item=>item.id===id).memo||'',emptyMemoId),'','기존 메모 없음 + 새 메모 없음은 빈 상태를 유지해야 합니다.');
+    await submitStatusChange(page,newMemoId,'면접예정',{memo:'첫 추가 메모'});const firstMemo=await page.evaluate(id=>applicants.find(item=>item.id===id).memo,newMemoId);assert.ok(firstMemo.startsWith('[')&&firstMemo.includes('상태 변경: 면접예정')&&firstMemo.endsWith('\n첫 추가 메모'),'기존 메모가 없으면 새 이력 메모만 추가되어야 합니다.');
+    const rollbackBefore=await page.evaluate(id=>{const a=applicants.find(item=>item.id===id);return {status:a.status,memo:a.memo};},existingId);await page.evaluate(()=>{window.__uiOriginalSave=window.save;window.save=()=>false;});await submitStatusChange(page,existingId,'입사예정',{memo:'저장되면 안 되는 메모'});await page.evaluate(()=>{window.save=window.__uiOriginalSave;delete window.__uiOriginalSave;});const rollbackAfter=await page.evaluate(id=>{const a=applicants.find(item=>item.id===id);return {status:a.status,memo:a.memo};},existingId);assert.deepEqual(rollbackAfter,rollbackBefore,'저장 실패 시 상태와 메모가 모두 원상복구되어야 합니다.');
     await page.evaluate(()=>{window.erpAudit.recordEvent({entityType:'applicant',entityId:'fake',entityLabel:'테*',action:'update',fields:['phone','memo'],before:{phone:'010-9999-9999',memo:'비밀메모'},after:{phone:'010-8888-8888',memo:'변경메모'},reason:'연락처 010-7777-7777 test@example.com'});window.setPage('auditHistory');window.erpAudit.renderPage();});assert.ok(!(await page.locator('#auditHistory').innerText()).includes('010-7777-7777'));assert.ok(!(await page.locator('#auditHistory').innerText()).includes('test@example.com'));
     for(const role of ['admin','recruiter','viewer']){
       await page.evaluate(async role=>{window.sb={from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:{user_id:'fake-user',email:'fake@example.com',display_name:'가상 사용자',role}})})};await window.erpPermissions.load({user:{id:'fake-user',email:'fake@example.com'}});},role);
       const state=await page.evaluate(()=>({role:window.erpPermissions.current().role,formHidden:document.querySelector('[data-page="form"]')?.classList.contains('erp-permission-hidden'),backupHidden:document.querySelector('[data-page="backup"]')?.classList.contains('erp-permission-hidden'),auditHidden:document.querySelector('[data-page="auditHistory"]')?.classList.contains('erp-permission-hidden')}));assert.equal(state.role,role);if(role==='admin')assert.ok(!state.formHidden&&!state.backupHidden&&!state.auditHidden);if(role==='recruiter')assert.ok(!state.formHidden&&state.backupHidden&&state.auditHidden);if(role==='viewer')assert.ok(state.formHidden&&state.backupHidden&&state.auditHidden);
     }
     await page.evaluate(()=>{window.erpPermissions.useLocal();document.getElementById('loginOverlay').style.display='none';});await page.locator('#btnPrivacyShield').click();assert.ok(await page.locator('#privacyShieldOverlay').isVisible());await page.locator('#btnPrivacyUnlock').click();
-    await page.evaluate(()=>window.erpSyncSafety.openConflicts());assert.ok(await page.locator('#syncConflictModal').isVisible());await page.screenshot({path:path.join(outputDir,'390x844-sync-conflict.png'),fullPage:true});await page.locator('#btnCloseSyncConflicts').click();await page.evaluate(()=>window.erpSyncSafety.openDeletes());assert.ok(await page.locator('#syncDeleteModal').isVisible());await page.locator('#btnCloseSyncDeletes').click();
-    await page.evaluate(()=>window.openHireWaitingList?.('2026-08-08'));if(await page.locator('#hireWaitingModal.show').count())assert.ok(await page.locator('#hireWaitingModal .page-intro-card').count());
+    await page.evaluate(()=>window.erpSyncSafety.openConflicts());assert.ok(await page.locator('#syncConflictModal').isVisible());assert.ok(await page.locator('#syncConflictModal .safety-intro-card').count());await page.screenshot({path:path.join(outputDir,'390x844-sync-conflict.png'),fullPage:true});await page.locator('#btnCloseSyncConflicts').click();await page.evaluate(()=>window.erpSyncSafety.openDeletes());assert.ok(await page.locator('#syncDeleteModal').isVisible());assert.ok(await page.locator('#syncDeleteModal .safety-intro-card').count());await page.locator('#btnCloseSyncDeletes').click();
+    assert.ok(await page.locator('#employeeOrgImportModal .employee-org-import-notice.safety-intro-card').count(),'조직정보 Import 안전 안내가 명시적으로 표시되어야 합니다.');
+    await page.evaluate(()=>window.openHireWaitingList?.('2026-08-08'));if(await page.locator('#hireWaitingModal.show').count())assert.ok(await page.locator('#hireWaitingModal .safety-intro-card').count());
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
     console.log(`ui-visual-layout.js: 5개 화면 크기·13개 화면·3개 역할·상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);

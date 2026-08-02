@@ -80,37 +80,46 @@ function uxUpdateFormProgress(){
   const terminal=['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절','연락거절','연락 거절'].includes(status);
   const definitions=[
     {step:'1',started:['name','phone','applyDate','workplace'],required:['name','phone','applyDate','workplace']},
-    {step:'2',started:['education','school','major','certs','languageEtc','career'],required:[]},
+    {step:'2',started:['education','school','major','certs','languageEtc','career'],required:[],optional:true},
     {step:'3',started:['dormUse','interviewDate','interviewTime','hireDate','consult','memo'],required:[
       ...(['면접예정','다음면접'].includes(status)?['interviewDate']:[]),
       ...(status==='입사예정'?['hireDate']:[])
     ],forceStarted:status!=='서류검토'||terminal}
   ];
-  let complete=0;
+  let requiredComplete=0;
+  const requiredTotal=definitions.filter(def=>def.required.length>0).length;
   definitions.forEach(def=>{
     const sec=document.querySelector(`[data-form-step="${def.step}"]`);if(!sec)return;
     const started=!!def.forceStarted||def.started.some(id=>uxFieldValue(id));
     const missing=def.required.filter(id=>!uxFieldValue(id));
-    let state='not-started',label='미작성';
+    let state='not-started',label=def.optional?'선택 입력':'미작성';
     if(started&&missing.length){state='needs-review';label='확인 필요';}
-    else if(started){state='complete';label='완료';complete+=1;}
+    else if(started){state='complete';label='완료';}
+    if(def.required.length>0&&!missing.length)requiredComplete+=1;
     sec.classList.remove('step-complete','step-needs-review','step-not-started');
     sec.classList.add(`step-${state}`);
     let badge=sec.querySelector('[data-form-step-status]');
     if(!badge){badge=document.createElement('span');badge.dataset.formStepStatus='';badge.className='form-step-status';sec.querySelector('.section-title')?.appendChild(badge);}
     if(badge){badge.className=`form-step-status is-${state}`;badge.textContent=label;badge.title=missing.length?`필수 확인: ${missing.join(', ')}`:'';}
   });
-  const pct=Math.round(complete/definitions.length*100);
-  if(uxEl('formProgressText')) uxEl('formProgressText').textContent=`${complete}/3 단계 완료`;
+  const pct=requiredTotal?Math.round(requiredComplete/requiredTotal*100):100;
+  if(uxEl('formProgressText')) uxEl('formProgressText').textContent=`필수 ${requiredComplete}/${requiredTotal} 단계 완료`;
   if(uxEl('formProgressBar')) uxEl('formProgressBar').style.width=`${pct}%`;
 }
 
 /* ---------- Status workflow ---------- */
 let uxStatusModalState=null;
+function uxAppendStatusMemo(currentMemo,newMemo,next,date=today()){
+  const existing=String(currentMemo||'').trim(),addition=String(newMemo||'').trim();
+  if(!addition)return existing;
+  const entry=`[${date} · 상태 변경: ${next}]\n${addition}`;
+  return existing?`${existing}\n\n${entry}`:entry;
+}
+window.erpAppendStatusMemo=uxAppendStatusMemo;
 function uxEnsureStatusModal(){
   let modal=uxEl('applicantStatusModal');if(modal)return modal;
   modal=document.createElement('div');modal.id='applicantStatusModal';modal.className='modal applicant-status-modal';modal.setAttribute('aria-hidden','true');
-  modal.innerHTML=`<div class="modal-backdrop" data-status-cancel></div><section class="modal-card applicant-status-card" role="dialog" aria-modal="true" aria-labelledby="applicantStatusTitle"><div class="modal-head"><div><p class="eyebrow">STATUS WORKFLOW</p><h3 id="applicantStatusTitle">지원자 상태 변경</h3><p id="applicantStatusDescription" class="status-modal-description"></p></div><button class="ghost" type="button" data-status-cancel>닫기</button></div><form id="applicantStatusForm"><div class="status-modal-summary"><span>변경할 상태</span><strong id="applicantStatusNext"></strong></div><div class="status-modal-fields"><label data-status-field="interviewDate">면접 날짜 <em class="req">*</em><input id="statusInterviewDate" type="date"></label><label data-status-field="interviewTime">면접 시간<select id="statusInterviewTime"><option value="">시간 미정</option>${Array.from({length:25},(_,i)=>{const mins=8*60+i*30;const h=String(Math.floor(mins/60)).padStart(2,'0'),m=String(mins%60).padStart(2,'0');return `<option>${h}:${m}</option>`;}).join('')}</select></label><label data-status-field="workplace">근무지 확인<select id="statusWorkplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label><label data-status-field="hireDate">입사 날짜 <em class="req">*</em><input id="statusHireDate" type="date"></label><label data-status-field="commute">출근 방법<select id="statusCommute"><option value="">확인 필요</option><option>기숙사</option><option>출퇴근</option><option>확인필요</option></select></label><label data-status-field="reason" class="wide">사유<input id="statusReason" maxlength="200" placeholder="상태 변경 사유"></label><label data-status-field="memo" class="wide">메모<textarea id="statusMemo" rows="3" maxlength="500" placeholder="담당자 참고사항 (선택)"></textarea></label></div><div class="status-modal-error" id="applicantStatusError" role="alert"></div><div class="form-actions status-modal-actions"><button class="ghost" type="button" data-status-cancel>취소</button><button class="primary" id="btnSaveApplicantStatus" type="submit">상태 변경 저장</button></div></form></section>`;
+  modal.innerHTML=`<div class="modal-backdrop" data-status-cancel></div><section class="modal-card applicant-status-card" role="dialog" aria-modal="true" aria-labelledby="applicantStatusTitle"><div class="modal-head"><div><p class="eyebrow">STATUS WORKFLOW</p><h3 id="applicantStatusTitle">지원자 상태 변경</h3><p id="applicantStatusDescription" class="status-modal-description"></p></div><button class="ghost" type="button" data-status-cancel>닫기</button></div><form id="applicantStatusForm"><div class="status-modal-summary"><span>변경할 상태</span><strong id="applicantStatusNext"></strong></div><div class="status-modal-fields"><label data-status-field="interviewDate">면접 날짜 <em class="req">*</em><input id="statusInterviewDate" type="date"></label><label data-status-field="interviewTime">면접 시간<select id="statusInterviewTime"><option value="">시간 미정</option>${Array.from({length:25},(_,i)=>{const mins=8*60+i*30;const h=String(Math.floor(mins/60)).padStart(2,'0'),m=String(mins%60).padStart(2,'0');return `<option>${h}:${m}</option>`;}).join('')}</select></label><label data-status-field="workplace">근무지 확인<select id="statusWorkplace"><option value="">선택</option><option>천안</option><option>평택</option><option>기타</option></select></label><label data-status-field="hireDate">입사 날짜 <em class="req">*</em><input id="statusHireDate" type="date"></label><label data-status-field="commute">출근 방법<select id="statusCommute"><option value="">확인 필요</option><option>기숙사</option><option>출퇴근</option><option>확인필요</option></select></label><label data-status-field="reason" class="wide">사유<input id="statusReason" maxlength="200" placeholder="상태 변경 사유"></label><label data-status-field="memo" class="wide">메모 추가<textarea id="statusMemo" rows="3" maxlength="500" placeholder="기존 메모는 유지되며 새 내용만 뒤에 추가됩니다 (선택)"></textarea><small id="applicantStatusMemoHint" class="status-memo-hint"></small></label></div><div class="status-modal-error" id="applicantStatusError" role="alert"></div><div class="form-actions status-modal-actions"><button class="ghost" type="button" data-status-cancel>취소</button><button class="primary" id="btnSaveApplicantStatus" type="submit">상태 변경 저장</button></div></form></section>`;
   document.body.appendChild(modal);
   modal.querySelectorAll('[data-status-cancel]').forEach(el=>el.addEventListener('click',()=>uxCloseStatusModal(null)));
   modal.querySelector('form').addEventListener('submit',event=>{event.preventDefault();uxSubmitStatusModal();});
@@ -132,23 +141,26 @@ function uxCloseStatusModal(value){
   state.resolve(value);state.trigger?.focus?.();
 }
 function uxSubmitStatusModal(){
-  const state=uxStatusModalState;if(!state)return;const {modal,next}=state;
+  const state=uxStatusModalState;if(!state)return;const {modal,next,applicant}=state;
   const interview=['면접예정','다음면접'].includes(next),hire=next==='입사예정';
   const interviewDate=modal.querySelector('#statusInterviewDate').value,hireDate=modal.querySelector('#statusHireDate').value;
   const error=modal.querySelector('#applicantStatusError');
   if(interview&&!interviewDate){error.textContent='면접 날짜를 입력해 주세요.';modal.querySelector('#statusInterviewDate').focus();return;}
   if(hire&&!hireDate){error.textContent='입사 날짜를 입력해 주세요.';modal.querySelector('#statusHireDate').focus();return;}
   const patch={status:next,updatedAt:new Date().toISOString()};
-  const values={interviewDate,interviewTime:modal.querySelector('#statusInterviewTime').value,workplace:modal.querySelector('#statusWorkplace').value,hireDate,dormUse:modal.querySelector('#statusCommute').value,decisionReason:modal.querySelector('#statusReason').value.trim(),memo:modal.querySelector('#statusMemo').value.trim()};
-  Object.entries(values).forEach(([key,value])=>{if(value)patch[key]=value;});uxCloseStatusModal(patch);
+  const values={interviewDate,interviewTime:modal.querySelector('#statusInterviewTime').value,workplace:modal.querySelector('#statusWorkplace').value,hireDate,dormUse:modal.querySelector('#statusCommute').value,decisionReason:modal.querySelector('#statusReason').value.trim()};
+  Object.entries(values).forEach(([key,value])=>{if(value)patch[key]=value;});
+  const newMemo=modal.querySelector('#statusMemo').value.trim();
+  if(newMemo)patch.memo=uxAppendStatusMemo(applicant?.memo,newMemo,next);
+  uxCloseStatusModal(patch);
 }
 function uxRequestStatusData(a,next){
   const modal=uxEnsureStatusModal(),interview=['면접예정','다음면접'].includes(next),hire=next==='입사예정',terminal=['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절','연락거절','연락 거절'].includes(next);
   modal.querySelectorAll('[data-status-field]').forEach(el=>{const key=el.dataset.statusField;el.hidden=!((interview&&['interviewDate','interviewTime','workplace','memo'].includes(key))||(hire&&['hireDate','commute','memo'].includes(key))||(terminal&&['reason','memo'].includes(key))||(!interview&&!hire&&!terminal&&key==='memo'));});
   modal.querySelector('#applicantStatusNext').textContent=next;modal.querySelector('#applicantStatusDescription').textContent=`${a.name||'지원자'}님의 상태를 변경합니다. 저장 전 필요한 정보를 확인하세요.`;
-  modal.querySelector('#statusInterviewDate').value=a.interviewDate||today();modal.querySelector('#statusInterviewTime').value=a.interviewTime||'';modal.querySelector('#statusWorkplace').value=['천안','평택','기타'].includes(a.workplace)?a.workplace:'';modal.querySelector('#statusHireDate').value=a.hireDate||today();modal.querySelector('#statusCommute').value=a.dormUse||'';modal.querySelector('#statusReason').value=a.decisionReason||'';modal.querySelector('#statusMemo').value='';modal.querySelector('#applicantStatusError').textContent='';
+  modal.querySelector('#statusInterviewDate').value=a.interviewDate||today();modal.querySelector('#statusInterviewTime').value=a.interviewTime||'';modal.querySelector('#statusWorkplace').value=['천안','평택','기타'].includes(a.workplace)?a.workplace:'';modal.querySelector('#statusHireDate').value=a.hireDate||today();modal.querySelector('#statusCommute').value=a.dormUse||'';modal.querySelector('#statusReason').value=a.decisionReason||'';modal.querySelector('#statusMemo').value='';modal.querySelector('#applicantStatusMemoHint').textContent=a.memo?'기존 메모는 그대로 보존되고 새 내용만 날짜·변경 상태와 함께 추가됩니다.':'입력한 내용은 날짜·변경 상태와 함께 새 메모로 추가됩니다.';modal.querySelector('#applicantStatusError').textContent='';
   modal.classList.add('show');modal.setAttribute('aria-hidden','false');document.body.classList.add('status-modal-open');
-  return new Promise(resolve=>{uxStatusModalState={modal,next,resolve,trigger:document.activeElement};requestAnimationFrame(()=>modal.querySelector('[data-status-field]:not([hidden]) input, [data-status-field]:not([hidden]) select, [data-status-field]:not([hidden]) textarea')?.focus());});
+  return new Promise(resolve=>{uxStatusModalState={modal,next,applicant:a,resolve,trigger:document.activeElement};requestAnimationFrame(()=>modal.querySelector('[data-status-field]:not([hidden]) input, [data-status-field]:not([hidden]) select, [data-status-field]:not([hidden]) textarea')?.focus());});
 }
 async function uxUpdateApplicantStatus(id,status){
   const a=applicants.find(x=>x.id===id); if(!a) return;
@@ -156,7 +168,7 @@ async function uxUpdateApplicantStatus(id,status){
   const patch=await uxRequestStatusData(a,next); if(!patch){ renderAll(); return; }
   const previous=applicants;
   applicants=applicants.map(x=>x.id===id?normalize({...x,...patch}):x);
-  if(!save()){applicants=previous;return;}
+  if(!save()){applicants=previous;renderAll();return;}
   uxToast(`${a.name||'지원자'} 상태를 ${next}(으)로 변경했습니다.`);
   if(detailCurrentId===id && uxEl('detailModal')?.classList.contains('show')) viewApplicant(id);
 }
@@ -523,8 +535,8 @@ function uxReplaceButton(id,handler){
 function uxInit(){
   document.documentElement.dataset.erpVersion=UX_VERSION;
   updateStorageNote();
-  // 기존 안내 문구를 안전 화면의 공통 인트로 카드로 사용합니다. 문구나 데이터는 복제하지 않습니다.
-  ['#dataHealth .health-hero','#duplicates .duplicate-hero','#backup .backup-center-hero','#employees .employee-workspace-header','#employeeOrgImportModal .employee-org-import-notice','#hireWaitingModal .hire-waiting-guide'].forEach(selector=>document.querySelector(selector)?.classList.add('page-intro-card'));
+  // 안전·위험 작업 화면만 명시적으로 공통 인트로 카드로 표시합니다.
+  ['#dataHealth .health-hero','#duplicates .duplicate-hero','#backup .backup-center-hero','#employeeOrgImportModal .employee-org-import-notice','#hireWaitingModal .hire-waiting-guide'].forEach(selector=>document.querySelector(selector)?.classList.add('page-intro-card','safety-intro-card'));
   // Dashboard interactions
   document.addEventListener('click',e=>{
     const q=e.target.closest('[data-task-target]'); if(q) uxFocusTaskPanel(q.dataset.taskTarget);

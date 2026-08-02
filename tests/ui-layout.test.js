@@ -32,7 +32,9 @@ assert.match(clearview,/\.workplace-head[\s\S]*\.workplace-cell/);assert.match(c
 
 const statusWorkflow=enhancements.match(/\/\* ---------- Status workflow ---------- \*\/[\s\S]*?\/\* ---------- Shared task cards ---------- \*\//)?.[0]||'';
 assert.match(statusWorkflow,/applicantStatusModal/);assert.match(statusWorkflow,/aria-modal/);assert.match(statusWorkflow,/event\.key==='Escape'/);assert.match(statusWorkflow,/event\.key==='Tab'/);assert.doesNotMatch(statusWorkflow,/\bprompt\s*\(/);
-assert.match(enhancements,/required:\['name','phone','applyDate','workplace'\]/);assert.match(enhancements,/step-needs-review/);
+assert.match(statusWorkflow,/uxAppendStatusMemo/);assert.match(statusWorkflow,/메모 추가/);assert.match(statusWorkflow,/if\(newMemo\)patch\.memo/);assert.match(statusWorkflow,/applicants=previous;renderAll\(\)/);
+assert.match(enhancements,/required:\['name','phone','applyDate','workplace'\]/);assert.match(enhancements,/step-needs-review/);assert.match(enhancements,/optional:true/);assert.match(enhancements,/선택 입력/);assert.match(enhancements,/필수 \$\{requiredComplete\}\/\$\{requiredTotal\} 단계 완료/);
+assert.doesNotMatch(calm,/^\.page-intro-card\{display:flex!important;\}/m);assert.match(calm,/\.page-intro-card\.safety-intro-card\{display:flex!important;\}/);assert.match(uiLayout,/#home \.home-dashboard-intro,#stats \.stats-intro\{display:none!important;\}/);
 
 assert.match(permissions,/permission-matrix-row/);assert.match(permissions,/마지막 관리자 계정/);assert.match(permissions,/permission-result-notice/);
 assert.match(audit,/auditTypeFilter/);assert.match(audit,/auditActionFilter/);assert.match(audit,/AUDIT_PAGE_SIZE=20/);assert.match(audit,/audit-detail/);
