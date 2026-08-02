@@ -1,0 +1,18 @@
+.sync-safety-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px solid rgba(255,255,255,.16)}
+.sync-safety-actions span{flex:1 1 100%;margin:0!important;color:#fde68a!important;font-size:11px!important;font-weight:700}
+.sync-safety-actions button{border:1px solid rgba(255,255,255,.24);border-radius:8px;background:rgba(255,255,255,.1);color:#fff;padding:5px 7px;font-size:10px;font-weight:700;cursor:pointer}
+.sync-conflict-modal{position:fixed;inset:0;z-index:9500;display:grid;place-items:center;padding:20px}
+.sync-conflict-modal[hidden]{display:none}
+.sync-conflict-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.66);backdrop-filter:blur(4px)}
+.sync-conflict-card{position:relative;width:min(820px,96vw);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;border-radius:26px;background:#fff;box-shadow:0 28px 90px rgba(15,23,42,.32)}
+.sync-conflict-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:22px 24px;border-bottom:1px solid #e3e6eb}
+.sync-conflict-head p{margin:0;color:#2757d6;font-size:11px;font-weight:800;letter-spacing:.08em}
+.sync-conflict-head h2{margin:5px 0 6px;color:#1c2330;font-size:25px}
+.sync-conflict-head span{color:#5c6673;font-size:13px}
+.sync-conflict-list{min-height:180px;overflow:auto;padding:16px 20px;background:#f7f9fc}
+.sync-conflict-row{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:18px;align-items:center;margin-bottom:10px;padding:15px;border:1px solid #dbe4f0;border-radius:16px;background:#fff}
+.sync-conflict-row strong,.sync-conflict-row span{display:block}.sync-conflict-row strong{color:#1c2330;margin-bottom:6px}.sync-conflict-row span{color:#66758a;font-size:12px;line-height:1.5}
+.sync-conflict-row label{font-size:12px}.sync-conflict-row select{margin-top:5px}
+.sync-conflict-footer{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:16px 22px;border-top:1px solid #e3e6eb;background:#fff}
+.sync-conflict-footer span{margin-right:auto;color:#5c6673;font-size:13px;font-weight:700}
+@media(max-width:680px){.sync-conflict-row{grid-template-columns:1fr}.sync-conflict-head{padding:18px}.sync-conflict-list{padding:12px}.sync-conflict-footer{align-items:stretch;flex-direction:column}.sync-conflict-footer span{margin-right:0}.sync-conflict-footer button{width:100%}}

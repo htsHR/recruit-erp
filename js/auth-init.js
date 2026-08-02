@@ -46,6 +46,7 @@ function afterLoginSuccess(email){
   supabaseEmployeesSyncOnLoad();
   renderSnapshotList();
   supabaseSnapshotDailyCheck();
+  if(window.erpSyncSafety&&typeof window.erpSyncSafety.retryAll==='function')window.erpSyncSafety.retryAll();
 }
 function initAuth(){
   if(!window.sb) return;
