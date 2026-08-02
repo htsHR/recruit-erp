@@ -20,6 +20,7 @@ function supabaseSyncAll(list){
   if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
   var targets=Array.isArray(list)?list.filter(Boolean):[];
   if(!targets.length) return Promise.resolve({skipped:true,count:0});
+  setCloudSyncStatus('syncing');
   var CHUNK_SIZE=250;
   return (async function(){
     var useLegacy=applicantEmployeeIdCloudUnsupported,saved=0;
@@ -108,14 +109,16 @@ function restoreSnapshot(id){
     return window.sb.from('applicant_snapshots').select('data,count,created_at').eq('id', id).single();
   }).then(function(res){
     if(!res || res.error || !res.data){ alert('복원 실패: 스냅샷을 찾을 수 없습니다.'); return; }
+    var previous=applicants;
     applicants = (res.data.data || []).map(normalize);
-    save();
+    if(!save()){applicants=previous;return;}
     renderSnapshotList();
     alert('복원 완료: '+applicants.length+'명 ('+new Date(res.data.created_at).toLocaleString('ko-KR')+' 시점)');
   }).catch(function(e){ alert('복원 중 오류가 발생했습니다: '+e); });
 }
 function supabaseSyncOnLoad(){
   if(!canUseCloud()) return;
+  setCloudSyncStatus('syncing');
   // v10.48.0: 1,000행 이상일 때 Supabase 기본 제한에 걸려 일부 지원자가 누락되는 것을 막기 위해
   // employees.js와 동일한 500건 페이지 재귀 조회로 변경. 조회만 하며 클라우드에 다시 쓰지 않음.
   var PAGE_SIZE=500;
@@ -148,7 +151,7 @@ function supabaseSyncOnLoad(){
 
     var beforeCount = local.length;
     applicants = merged;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants));
+    if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants))){applicants=local;throw new Error('클라우드 병합 결과의 로컬 저장 실패');}
     renderAll();
     // v10.35.1: 병합 직후 자동 재업로드(supabaseSyncAll) 제거.
     // 로드는 이제 읽기 전용 병합 + 화면 렌더만 수행하고, 클라우드에는 아무것도 쓰지 않음.

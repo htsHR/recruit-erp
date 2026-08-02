@@ -304,7 +304,7 @@ function csv(){
     dormLabel(a),a.education,a.school,a.major,a.languageEtc,a.careerType,displayCategory(a),displayCheckNeeds(a.checkNeeds),
     a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.consult,[a.memo,
     a.decisionReason].filter(Boolean).join(' / '),sc.major,sc.career,sc.cert,sc.field,sc.total,
-    grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(','));
+    grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>window.erpSafety.csvCell(v,true)).join(','));
   download(`지원자명단_${today()}.csv`,'\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');
 }
 function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resume_management_backup_${today()}.json`,JSON.stringify(applicants,null,2),'application/json'); renderAll(); }

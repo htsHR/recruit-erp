@@ -1068,10 +1068,11 @@ function excelPasteBatchSafetyBackup(){
   return null;
 }
 function excelPasteBatchPersistWithoutHistory(){
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(applicants));
+  if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants)))return false;
   try{if(typeof canUseCloud==='function'&&canUseCloud()&&typeof supabaseSyncAll==='function')supabaseSyncAll(applicants);}catch(err){console.warn('엑셀 일괄작업 실행 취소 클라우드 동기화 실패',err);}
   if(typeof renderAll==='function')renderAll();
   if(typeof window.applicantProgressHistoryRefreshSnapshots==='function')window.applicantProgressHistoryRefreshSnapshots();
+  return true;
 }
 function registerExcelPasteBatch(){
   excelPasteBatchRecalculate();
@@ -1097,7 +1098,7 @@ function registerExcelPasteBatch(){
   excelPasteBatchRegisteredIds=created.map(x=>x.id);
   applicants=[...created,...updatedApplicants];
   if(typeof window.erpMarkExcelApplicants==='function'&&excelPasteBatchRegisteredIds.length)window.erpMarkExcelApplicants(excelPasteBatchRegisteredIds);
-  save();
+  if(!save()){applicants=excelPasteBatchUndoSnapshot;excelPasteBatchRegisteredIds=[];if(typeof window.applicantProgressHistoryRefreshSnapshots==='function')window.applicantProgressHistoryRefreshSnapshots();return;}
   excelPasteBatchRows.forEach(item=>{if(item.selected)item.applied=true;item.selected=false;});
   const result=$('excelBatchResult');
   if(result){result.hidden=false;result.innerHTML=`<strong>신규 ${created.length}명 등록 · 기존 ${updatedById.size}명 변경 완료</strong><span>지원자 목록과 면접·입사 일정에 반영했습니다. 잘못 적용했다면 아래 실행 취소를 누르세요.</span>`;}
@@ -1112,9 +1113,10 @@ function undoExcelPasteBatch(){
   const summary=excelPasteBatchUndoSummary||{newCount:excelPasteBatchRegisteredIds.length,updateCount:0};
   if(!confirm(`방금 적용한 작업을 모두 취소할까요?\n\n신규 ${summary.newCount}명 등록과 기존 ${summary.updateCount}명 변경을 적용 전 상태로 되돌립니다.`))return;
   const createdIds=[...excelPasteBatchRegisteredIds];
+  const beforeUndo=applicants;
   applicants=JSON.parse(JSON.stringify(excelPasteBatchUndoSnapshot));
   if(typeof window.erpUnmarkExcelApplicants==='function'&&createdIds.length)window.erpUnmarkExcelApplicants(createdIds);
-  excelPasteBatchPersistWithoutHistory();
+  if(!excelPasteBatchPersistWithoutHistory()){applicants=beforeUndo;return;}
   excelPasteBatchUndoSnapshot=null;excelPasteBatchUndoSummary=null;excelPasteBatchRegisteredIds=[];
   excelPasteBatchRows.forEach(item=>{item.applied=false;item.selected=['new','update'].includes(item.state);});
   if($('btnUndoExcelBatch'))$('btnUndoExcelBatch').hidden=true;

@@ -82,7 +82,7 @@
   function piApply(a, changes){
     const before=piSnapshot(a);
     Object.assign(a, changes);
-    try{ save(); }
+    try{ if(!save())throw new Error('로컬 저장 실패'); }
     catch(err){
       piRestore(a, before);
       console.error('전화 인터뷰 저장 실패:', err);

@@ -92,7 +92,7 @@
     render(); if(typeof uxToast==='function')uxToast('잘못된 학교 참조를 해제했습니다.');
   }
   function exportCsv(){
-    const rows=filtered();const headers=['심각도','점검 유형','대상','문제 내용','연결 현황','권장 조치'];const csv=[headers,...rows.map(i=>[severityLabels[i.severity],categoryLabels[i.category],i.target,i.detail,i.links||'',i.recommend||''])].map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\r\n');
+    const rows=filtered();const headers=['심각도','점검 유형','대상','문제 내용','연결 현황','권장 조치'];const csv=[headers,...rows.map(i=>[severityLabels[i.severity],categoryLabels[i.category],i.target,i.detail,i.links||'',i.recommend||''])].map(r=>r.map(v=>window.erpSafety.csvCell(v,true)).join(',')).join('\r\n');
     if(typeof download==='function')download(`학교_데이터점검_${new Date().toISOString().slice(0,10)}.csv`, '\ufeff'+csv,'text/csv;charset=utf-8');
   }
   function onClick(e){

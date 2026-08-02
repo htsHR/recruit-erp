@@ -28,12 +28,14 @@ bind('applicantForm','submit',e=>{
   const dup=applicants.find(a=>a.id!==f.editId&&((fPhone&&fPhone.length>=8&&normalizePhone(a.phone)===fPhone)||(f.email&&a.email===f.email)));
   if(dup&&!confirm(`중복 가능성이 있습니다: ${dup.name}\n그래도 저장할까요?`)) return;
   const excelPending=String(window.__erpExcelPastePendingApplicant||'');
+  const applicantsBeforeSave=applicants.slice();
   let savedId=f.editId||'';
   if(f.editId){ applicants=applicants.map(a=>a.id===f.editId?normalize({...a,...f,id:f.editId,updatedAt:new Date().toISOString()}):a); }
   else { savedId=uid(); applicants.unshift(normalize({...f,id:savedId,createdAt:new Date().toISOString()})); }
   if(typeof window.erpMarkExcelApplicants==='function'&&((f.editId&&excelPending===String(f.editId))||(!f.editId&&excelPending==='__new__')))window.erpMarkExcelApplicants(savedId);
   window.__erpExcelPastePendingApplicant='';
-  resetForm(); save(); setPage('applicants');
+  if(!save()){applicants=applicantsBeforeSave;if(typeof window.applicantProgressHistoryRefreshSnapshots==='function')window.applicantProgressHistoryRefreshSnapshots();return;}
+  resetForm();setPage('applicants');
   if(typeof window.erpRestoreApplicantListAfterSave==='function') window.erpRestoreApplicantListAfterSave(savedId);
 });
 bind('btnResetForm','click', resetForm);
@@ -184,7 +186,6 @@ bind('employeeJsonImport','change',e=>{
       }
       const data=Array.isArray(parsed) ? parsed : (parsed && Array.isArray(parsed.employees) ? parsed.employees : []);
       if(!data.length){alert('사원명부 JSON 형식이 아니거나 사원 데이터가 없습니다.');return;}
-      if(!confirm(`직원 ${data.length}명을 가져올까요? 사번이 같으면 정보가 갱신되고, 새 사번이면 추가됩니다.`)) return;
       importEmployeesJson(data);
     }catch{ alert('직원명부 JSON 파일을 확인해주세요.'); }
     finally{ e.target.value=''; }
@@ -240,8 +241,9 @@ bind('jsonImport','change',e=>{
       const ok=confirm(`JSON 가져오기 전 확인\n\n현재 저장된 지원자: ${applicants.length}명\n가져올 지원자: ${data.length}명\n\n가져오면 현재 브라우저의 지원자 목록이 가져온 파일 기준으로 교체됩니다. 진행할까요?`);
       if(!ok) return;
       supabaseSnapshotSave('가져오기 직전 자동 백업').then(()=>{
+        const previous=applicants;
         applicants=data.map(normalize);
-        save();
+        if(!save()){applicants=previous;return;}
         renderSnapshotList();
         alert(`가져오기 완료: ${applicants.length}명`);
       });
@@ -274,8 +276,9 @@ bind('jsonImportMerge','change',e=>{
       const ok=confirm(`JSON 병합 가져오기 전 확인\n\n현재 저장된 지원자: ${beforeCount}명\n가져올 파일 지원자: ${incoming.length}명\n\n기존 지원자는 지워지지 않습니다. id가 같으면 더 최근에 수정된 쪽을 채택하고, 새 id는 그대로 추가됩니다. 진행할까요?`);
       if(!ok) return;
       supabaseSnapshotSave('병합 가져오기 직전 자동 백업').then(()=>{
+        const previous=applicants;
         applicants=Object.keys(map).map(k=>map[k]);
-        save();
+        if(!save()){applicants=previous;return;}
         renderSnapshotList();
         alert(`병합 완료: 기존 ${beforeCount}명 + 가져온 파일 ${incoming.length}명 -> 최종 ${applicants.length}명 (신규 ${addedCount}명, 갱신 ${updatedCount}명, 데이터 손실 없음)`);
       });
@@ -289,9 +292,10 @@ bind('btnClearAll','click',()=>{
   const phrase=prompt('정말 삭제하려면 아래 문구를 그대로 입력하세요.\n\n전체삭제');
   if(phrase !== '전체삭제'){ alert('삭제가 취소되었습니다.'); return; }
   supabaseSnapshotSave('전체삭제 직전 자동 백업').then(()=>{
+    const previous=applicants;
     applicants=[];
+    if(!save()){applicants=previous;return;}
     supabaseDeleteAll();
-    save();
     renderSnapshotList();
     alert('전체 삭제 완료 (삭제 전 상태는 백업/내보내기 화면에서 복원 가능합니다)');
   });

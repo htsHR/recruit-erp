@@ -57,9 +57,10 @@ function submitQuick(e){
     dormUse:el('quickDormUse')?.value||'',
     memo:el('quickMemo')?.value||''
   });
+  const before=applicants.slice();
   applicants.unshift(record);
   writeDefaults();
-  save();
+  if(!save()){applicants=before;if(typeof window.applicantProgressHistoryRefreshSnapshots==='function')window.applicantProgressHistoryRefreshSnapshots();return;}
   const result=el('quickEntryResult');
   if(result){result.textContent=`${record.name} 등록 완료 · 반복값을 유지했습니다.`;result.classList.add('show');setTimeout(()=>result.classList.remove('show'),2500);}
   resetPersonFields();
