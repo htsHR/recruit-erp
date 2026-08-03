@@ -13,7 +13,7 @@ const hireWaiting=fs.readFileSync(path.join(root,'js','hire-waiting-list.js'),'u
 const auth=fs.readFileSync(path.join(root,'js','auth-init.js'),'utf8');
 const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 
-assert.strictEqual(permissions.VERSION,'10.62.0');
+assert.strictEqual(permissions.VERSION,'10.63.0');
 assert(permissions.has('applicant.write','admin'));
 assert(permissions.has('applicant.delete','admin'));
 assert(permissions.has('applicant.write','recruiter'));
@@ -52,10 +52,10 @@ assert.match(schools,/erpPermissions\.require\('school\.delete'/);
 assert.match(hireWaiting,/placeholder="관리자만 조회"/);
 assert.match(hireWaiting,/erpPermissions\.require\('sensitive\.read'/);
 assert.match(auth,/await window\.erpPermissions\.load/);
-assert.match(index,/js\/permissions\.js\?v=10\.62\.0/);
-assert.match(index,/js\/audit-history\.js\?v=10\.62\.0/);
-assert.match(index,/css\/permissions\.css\?v=10\.62\.0/);
-assert.match(index,/css\/audit-history\.css\?v=10\.62\.0/);
+assert.match(index,/js\/permissions\.js\?v=10\.63\.0/);
+assert.match(index,/js\/audit-history\.js\?v=10\.63\.0/);
+assert.match(index,/css\/permissions\.css\?v=10\.63\.0/);
+assert.match(index,/css\/audit-history\.css\?v=10\.63\.0/);
 assert(permissions.has('storage.manage','admin'));
 assert(!permissions.has('storage.manage','recruiter'));
 assert(!permissions.has('storage.manage','viewer'));

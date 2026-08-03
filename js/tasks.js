@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v10.62.0 TODAY WORK OPERATIONS
+   Recruit ERP v10.63.0 TODAY WORK OPERATIONS
    - 오늘 할 일을 서류검토 → 전화 → 재연락 → 면접 → 결과 → 입사 순으로 분리
    - 각 지원자 행에서 기존 워크벤치/전화 인터뷰/일정/수정 화면으로 바로 이동
    - 새 데이터 필드·새 저장 구조 없이 기존 applicants 상태/일정/이력만 사용
@@ -9,32 +9,21 @@ let dailyWorkflowFilter = 'all';
 let dailyWorkflowSearch = '';
 
 function applicantsPendingEmployeeLink(){
-  return applicants.filter(a=>a.status==='출근' && !a.employeeId);
+  return applicants.filter(a=>a.status==='출근' && !(window.erpOnboarding?.linkedEmployee(a,employees)||a.employeeId));
 }
 function linkApplicantToEmployee(applicantId){
   const a=applicants.find(x=>x.id===applicantId);
   if(!a) return;
-  const newEmployee=normalizeEmployee({
-    name:a.name, school:a.school, schoolId:a.schoolId,
-    department:a.workplace||'', hireDate:a.hireDate||a.applyDate||'',
-    status:'재직중', notes:'Recruit ERP 지원자 연결(자동)'
-  });
-  employees.unshift(newEmployee);
-  applicants = applicants.map(x=>x.id===applicantId ? {...x, employeeId:newEmployee.id, updatedAt:new Date().toISOString()} : x);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants));
-  supabaseSyncAll(applicants);
-  saveEmployees();
-  renderToday();
-  renderHomeLists();
-  alert(`"${a.name}"님을 직원명부에 등록했어요. 부서/직무/사번은 필요하면 사원명부에서 마저 채워주세요.`);
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
+  window.setPage?.('onboarding');
+  window.erpOnboarding?.openModal(applicantId);
 }
 function dismissApplicantEmployeeLink(applicantId){
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
   if(!confirm('이 지원자는 직원명부 자동 등록 대상에서 제외할까요?')) return;
-  applicants = applicants.map(x=>x.id===applicantId ? {...x, employeeId:'수동처리', updatedAt:new Date().toISOString()} : x);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants));
-  supabaseSyncAll(applicants);
-  renderToday();
-  renderEmployeeLinkTask();
+  const previous=applicants;
+  applicants = applicants.map(x=>x.id===applicantId ? normalize({...x, employeeId:'수동처리', updatedAt:new Date().toISOString()}) : x);
+  if(!save()){applicants=previous;renderAll();}
 }
 function renderEmployeeLinkTask(){
   const el=$('employeeLinkList');
@@ -45,8 +34,8 @@ function renderEmployeeLinkTask(){
     <div><strong>${esc(a.name||'이름없음')}</strong>
     <small>${esc(a.school||'출신학교 미입력')} · 입사일 ${esc(a.hireDate||a.applyDate||'미입력')} · ${esc(a.workplace||'근무지 미입력')}</small></div>
     <div class="row-actions">
-      <button class="mini" data-erp-handler="linkApplicantToEmployee('${a.id}')">사원명부 등록</button>
-      <button class="mini" data-erp-handler="dismissApplicantEmployeeLink('${a.id}')">제외</button>
+      <button class="mini" data-required-permission="applicant.write" data-erp-handler="linkApplicantToEmployee('${a.id}')">온보딩 관리</button>
+      <button class="mini" data-required-permission="applicant.write" data-erp-handler="dismissApplicantEmployeeLink('${a.id}')">제외</button>
     </div>
   </div>`).join('') : '<div class="empty">출근 후 사원명부 등록이 필요한 지원자가 없습니다.</div>';
 }

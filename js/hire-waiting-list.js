@@ -48,6 +48,13 @@ function normalizeHireWaitingProfile(raw){
     residentNumber:hireWaitingFormatResidentNumber(p.residentNumber||''),
     commuteMethod:hireWaitingNormalizeCommute(p.commuteMethod||''),
     remarks:String(p.remarks||'').trim(),
+    documentsRequestedAt:String(p.documentsRequestedAt||'').trim(),
+    submittedDocuments:Array.isArray(p.submittedDocuments)?[...new Set(p.submittedDocuments.map(v=>String(v||'').trim()).filter(Boolean))]:[],
+    trainingDate:String(p.trainingDate||'').trim(),
+    attendanceConfirmedAt:String(p.attendanceConfirmedAt||'').trim(),
+    cancelledAt:String(p.cancelledAt||'').trim(),
+    cancellationReason:String(p.cancellationReason||'').trim(),
+    onboardingUpdatedAt:String(p.onboardingUpdatedAt||'').trim(),
     createdAt:p.createdAt||new Date().toISOString(),
     updatedAt:p.updatedAt||''
   };
@@ -242,7 +249,7 @@ function saveHireWaitingGrid(showMessage=true){
   checked.rows.forEach(row=>{
     const old=currentById.get(String(row.applicantId));
     const next=normalizeHireWaitingProfile({
-      applicantId:row.applicantId,employeeNo:row.employeeNo,pmtc:row.pmtc,groupName:row.groupName,product:row.product,part:row.part,rank:row.rank,
+      ...old,applicantId:row.applicantId,employeeNo:row.employeeNo,pmtc:row.pmtc,groupName:row.groupName,product:row.product,part:row.part,rank:row.rank,
       residentNumber:row.residentNumber,commuteMethod:row.commuteMethod,remarks:row.remarks,createdAt:old?.createdAt||stamp,updatedAt:stamp
     });
     currentById.set(String(row.applicantId),next);
