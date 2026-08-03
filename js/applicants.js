@@ -144,7 +144,7 @@ function isHireSoon(a){
   // 실제 입사 대기 상태인 '입사예정'만 집계한다.
   if(normalizeStatus(a?.status)!=='입사예정') return false;
   const d = daysUntil(a.hireDate);
-  return d !== null && d >= 0 && d <= 7;
+  return d !== null && d >= 0 && d <= 3;
 }
 function countText(n){ return `${n}명`; }
 function setText(id, value){ const el=$(id); if(el) el.textContent=value; }

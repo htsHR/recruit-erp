@@ -1,4 +1,4 @@
-/* Recruit ERP v10.61.0 storage capacity and IndexedDB safety mirror. */
+/* Recruit ERP v10.62.0 storage capacity and IndexedDB safety mirror. */
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -6,7 +6,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
 
-  const VERSION='10.61.0';
+  const VERSION='10.62.0';
   const DB_NAME='recruit-erp-storage-v10-61';
   const DB_VERSION=1;
   const DATASET_STORE='datasets';
@@ -200,7 +200,7 @@
     }
     const main=root.document.querySelector('main.main');
     if(main&&!root.document.getElementById('storagePerformance')){
-      const section=root.document.createElement('section');section.className='page storage-performance-page';section.id='storagePerformance';section.dataset.requiredPermission='storage.manage';section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>저장소·속도 관리</h3><p>대용량 데이터의 안전 복사 상태와 브라우저 저장공간을 개인정보 노출 없이 확인합니다.</p></div><span class="page-intro-badge">v10.61.0 STORAGE</span></div><div id="storagePerformanceBody"></div>';main.appendChild(section);
+      const section=root.document.createElement('section');section.className='page storage-performance-page';section.id='storagePerformance';section.dataset.requiredPermission='storage.manage';section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>저장소·속도 관리</h3><p>대용량 데이터의 안전 복사 상태와 브라우저 저장공간을 개인정보 노출 없이 확인합니다.</p></div><span class="page-intro-badge">v10.62.0 STORAGE</span></div><div id="storagePerformanceBody"></div>';main.appendChild(section);
     }
   }
   function scheduleMirror(event){

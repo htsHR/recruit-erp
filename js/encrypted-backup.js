@@ -1,4 +1,4 @@
-/* Recruit ERP v10.61.0 encrypted backup primitives.
+/* Recruit ERP v10.62.0 encrypted backup primitives.
  * The encrypted envelope contains no business data outside the AES-GCM payload.
  */
 (function(root,factory){
@@ -8,7 +8,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
 
-  const VERSION='10.61.0';
+  const VERSION='10.62.0';
   const FORMAT='recruit-erp-encrypted-backup';
   const CRYPTO_SCHEMA_VERSION=1;
   const DEFAULT_ITERATIONS=310000;

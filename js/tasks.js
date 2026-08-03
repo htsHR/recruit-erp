@@ -1,10 +1,10 @@
 /* =========================================================
-   Recruit ERP v10.61.0 TODAY WORK OPERATIONS
+   Recruit ERP v10.62.0 TODAY WORK OPERATIONS
    - 오늘 할 일을 서류검토 → 전화 → 재연락 → 면접 → 결과 → 입사 순으로 분리
    - 각 지원자 행에서 기존 워크벤치/전화 인터뷰/일정/수정 화면으로 바로 이동
    - 새 데이터 필드·새 저장 구조 없이 기존 applicants 상태/일정/이력만 사용
    ========================================================= */
-const DAILY_WORKFLOW_STALE_DAYS = 14;
+const DAILY_WORKFLOW_STALE_DAYS = window.erpTodayAutomation?.STALE_DAYS||14;
 let dailyWorkflowFilter = 'all';
 let dailyWorkflowSearch = '';
 
@@ -52,6 +52,7 @@ function renderEmployeeLinkTask(){
 }
 
 function dailyDateOnly(value){
+  if(window.erpTodayAutomation)return window.erpTodayAutomation.dateOnly(value);
   if(!value) return '';
   const raw=String(value);
   const m=raw.match(/^\d{4}-\d{2}-\d{2}/);
@@ -68,11 +69,13 @@ function dailyDaysSince(value){
   return diff===null?null:-diff;
 }
 function dailyLatestActivity(a){
+  if(window.erpTodayAutomation)return window.erpTodayAutomation.latestActivity(a);
   const history=Array.isArray(a.progressHistory)?a.progressHistory:[];
   const historyDate=history.map(h=>h&&h.createdAt).filter(Boolean).sort().pop()||'';
   return historyDate||a.lastChangedAt||a.updatedAt||a.createdAt||a.lastContactDate||a.applyDate||'';
 }
 function dailyUnique(rows){
+  if(window.erpTodayAutomation)return window.erpTodayAutomation.unique(rows);
   const seen=new Set();
   return rows.filter(a=>{
     const id=String(a.id||'');
@@ -81,6 +84,11 @@ function dailyUnique(rows){
   });
 }
 function dailyWorkflowGroups(){
+  if(window.erpTodayAutomation){
+    return window.erpTodayAutomation.buildGroups(applicants,{
+      today:today(),isActive,normalizeStatus,isInterviewScheduleActive,hasFinalDecision
+    });
+  }
   const t=today();
   const active=applicants.filter(isActive);
   const screening=active.filter(a=>normalizeStatus(a.status)==='서류검토');
@@ -103,7 +111,7 @@ function dailyWorkflowGroups(){
   });
   const hireUpcoming=active.filter(a=>{
     const d=daysUntil(a.hireDate);
-    return d!==null && d>=0 && d<=7 && normalizeStatus(a.status)==='입사예정';
+    return d!==null && d>=0 && d<=3 && normalizeStatus(a.status)==='입사예정';
   });
   const attendancePending=active.filter(a=>a.hireDate && a.hireDate<t && normalizeStatus(a.status)==='입사예정');
   const stagnant=active.filter(a=>{
@@ -132,7 +140,7 @@ const DAILY_REASON_META={
   recall:{label:'재연락 필요',tone:'danger',priority:1},
   interviewToday:{label:'오늘 면접',tone:'primary',priority:1},
   resultPending:{label:'면접 결과 미입력',tone:'danger',priority:1},
-  hireUpcoming:{label:'입사 예정',tone:'good',priority:3},
+  hireUpcoming:{label:'3일 내 입사',tone:'good',priority:3},
   attendancePending:{label:'출근 확인 지연',tone:'danger',priority:1},
   stagnant:{label:`${DAILY_WORKFLOW_STALE_DAYS}일 이상 미처리`,tone:'muted',priority:4}
 };
@@ -205,6 +213,8 @@ function dailyActionDescriptor(row){
 function dailyRunApplicantAction(kind,applicantId){
   const a=applicants.find(x=>String(x.id)===String(applicantId));
   if(!a) return;
+  const needsWrite=['screening','phone','recall','decision','attendance'].includes(kind);
+  if(needsWrite&&window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
   if(kind==='screening' && typeof window.openScreeningWorkbenchForApplicant==='function'){
     window.openScreeningWorkbenchForApplicant(a.id); return;
   }
@@ -216,8 +226,19 @@ function dailyRunApplicantAction(kind,applicantId){
     if(a.interviewDate && typeof selectCalendarDate==='function') selectCalendarDate(a.interviewDate);
     return;
   }
-  if(['decision','hire','attendance'].includes(kind)){
-    editApplicant(a.id); return;
+  if(kind==='attendance'&&typeof window.updateApplicantStatus==='function'){
+    window.updateApplicantStatus(a.id,'출근');return;
+  }
+  if(kind==='decision'){
+    viewApplicant(a.id);
+    setTimeout(()=>{
+      const select=$('detailQuickStatus');
+      if(select){select.focus();if(typeof uxToast==='function')uxToast('상태에서 입사예정·불합격·다음면접을 선택해 결과를 기록하세요.');}
+    },0);
+    return;
+  }
+  if(kind==='hire'){
+    viewApplicant(a.id);return;
   }
   viewApplicant(a.id);
 }
@@ -249,7 +270,7 @@ function dailyWorkflowCard(row){
     </div>
     <div class="daily-work-actions">
       <button class="mini" type="button" data-erp-handler="viewApplicant('${a.id}')">상세</button>
-      <button class="primary mini" type="button" data-erp-handler="dailyRunApplicantAction('${action.kind}','${a.id}')">${esc(action.label)}</button>
+      <button class="primary mini" type="button" ${['screening','phone','recall','decision','attendance'].includes(action.kind)?'data-required-permission="applicant.write" ':''}data-erp-handler="dailyRunApplicantAction('${action.kind}','${a.id}')">${esc(action.label)}</button>
     </div>
   </article>`;
 }
@@ -267,6 +288,7 @@ function renderToday(){
   const groups=dailyWorkflowGroups();
   const allRows=dailyWorkflowRows(groups);
   const visible=dailyFilterRows(allRows,groups);
+  const summary=window.erpTodayAutomation?.summary(groups)||{dueToday:0,overdue:groups.overdue.length,changedToday:0,urgent:groups.overdue.length+groups.interviewToday.length};
   const metricMap={
     dailyScreeningCount:groups.screening.length,
     dailyPhoneCount:groups.phone.length,
@@ -278,6 +300,10 @@ function renderToday(){
     dailyStagnantCount:groups.stagnant.length
   };
   Object.entries(metricMap).forEach(([id,value])=>setText(id,value));
+  setText('dailySummaryUrgent',summary.urgent);
+  setText('dailySummaryDueToday',summary.dueToday);
+  setText('dailySummaryOverdue',summary.overdue);
+  setText('dailySummaryChangedToday',summary.changedToday);
   setText('dailyWorkflowVisibleCount',`${visible.length}명`);
   setText('dailyWorkflowTotalCount',`전체 ${allRows.length}명`);
   const list=$('dailyWorkflowList');
