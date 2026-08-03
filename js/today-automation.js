@@ -1,4 +1,4 @@
-/* Recruit ERP v10.62.0 TODAY AUTOMATION CLASSIFIER
+/* Recruit ERP v10.63.0 TODAY AUTOMATION CLASSIFIER
  * Pure task classification: no storage writes, no personal-data logging.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpTodayAutomation=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const VERSION='10.62.0';
+  const VERSION='10.63.0';
   const STALE_DAYS=14;
   const HIRE_SOON_DAYS=3;
   const FINISHED_STATUSES=new Set(['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절']);

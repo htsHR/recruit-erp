@@ -1,4 +1,4 @@
-/* Recruit ERP v10.62.0 USER PERMISSIONS
+/* Recruit ERP v10.63.0 USER PERMISSIONS
  * UI guards are usability protection. Supabase RLS is the security boundary.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpPermissions=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='10.62.0';
+  const VERSION='10.63.0';
   const ROLE_LABELS={admin:'관리자',recruiter:'채용담당자',viewer:'조회 전용',local_admin:'로컬 관리자',legacy_admin:'설정 전 관리자'};
   const PERMISSIONS={
     admin:['*'],local_admin:['*'],legacy_admin:['*'],

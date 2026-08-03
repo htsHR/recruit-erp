@@ -14,9 +14,9 @@ assert.match(security,/function validateBackupPayload/);assert.match(security,/a
 assert.match(ui,/erpPermissions\.require\('backup\.manage'\)/);assert.match(ui,/clearSensitive/);assert.match(ui,/endSession/);assert.match(ui,/비밀번호가 맞지 않거나 파일이 손상되었습니다/);assert.doesNotMatch(ui,/localStorage\.setItem|sessionStorage\.setItem|indexedDB/i);
 assert.match(audit,/<option value="export">백업·내보내기<\/option>/);
 assert.ok(!/recruiter:\[[^\]]*backup\./.test(permissions),'채용담당자에게 백업 권한을 추가하면 안 됩니다.');assert.ok(!/viewer:\[[^\]]*backup\./.test(permissions),'조회 전용에게 백업 권한을 추가하면 안 됩니다.');
-assert.ok(index.indexOf('js/encrypted-backup.js')<index.indexOf('js/backup-center.js'));assert.ok(index.indexOf('js/backup-center.js')<index.indexOf('js/encrypted-backup-ui.js'));assert.match(index,/accept="\.erpbackup,\.json,application\/json"/);assert.match(index,/css\/encrypted-backup\.css\?v=10\.62\.0/);
-assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v10\.62\.0/);assert.match(workflow,/path: artifacts\/ui-v10\.62\.0/);
-const supabaseFiles=fs.readdirSync(path.join(root,'supabase'),{recursive:true}).map(String);assert.ok(!supabaseFiles.some(file=>file.includes('10.62')||file.includes('v10_61')),'v10.62.0은 Supabase migration을 추가하지 않습니다.');
-assert.ok(fs.existsSync(path.join(root,'docs','ENCRYPTED_BACKUP_v10.60.0.md')));assert.ok(fs.existsSync(path.join(root,'CHANGELOG_v10.62.0.md')));
+assert.ok(index.indexOf('js/encrypted-backup.js')<index.indexOf('js/backup-center.js'));assert.ok(index.indexOf('js/backup-center.js')<index.indexOf('js/encrypted-backup-ui.js'));assert.match(index,/accept="\.erpbackup,\.json,application\/json"/);assert.match(index,/css\/encrypted-backup\.css\?v=10\.63\.0/);
+assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v10\.63\.0/);assert.match(workflow,/path: artifacts\/ui-v10\.63\.0/);
+const supabaseFiles=fs.readdirSync(path.join(root,'supabase'),{recursive:true}).map(String);assert.ok(!supabaseFiles.some(file=>file.includes('10.62')||file.includes('v10_61')),'v10.63.0은 Supabase migration을 추가하지 않습니다.');
+assert.ok(fs.existsSync(path.join(root,'docs','ENCRYPTED_BACKUP_v10.60.0.md')));assert.ok(fs.existsSync(path.join(root,'CHANGELOG_v10.63.0.md')));
 
 console.log('encrypted-backup-integration.test.js: 스키마·저장키·권한·복원 안전·CI 연결 확인 완료');
