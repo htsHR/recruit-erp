@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.62.0**입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.63.0**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -71,7 +71,7 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
 
-## v10.63.0 입사·온보딩 관리 — 릴리스 후보
+## v10.63.0 입사·온보딩 관리
 
 - 최종합격 → 입사서류 요청 → 서류 제출 완료 → 사번 발급 → 부서 배치 → 기숙사 확인 → 교육 일정 → 출근 확인 → 사원명부 전환의 9단계를 표시합니다.
 - 필수 서류의 제출 여부와 미제출 목록을 확인하고, 사번·부서·출근방법·교육 일정을 한 화면에서 관리합니다.
@@ -81,7 +81,7 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 - 온보딩 화면에는 입사대기자의 주민등록번호를 표시하지 않습니다.
 - 새 저장 키·Supabase 테이블·RLS 변경 없이 기존 입사대기 프로필을 확장해 사용합니다.
 
-자세한 변경 내역은 `CHANGELOG_v10.63.0.md`를 확인하세요. 사용자 승인 전까지 `main`에는 병합하지 않습니다.
+자세한 변경 내역은 `CHANGELOG_v10.63.0.md`를 확인하세요.
 
 ## v10.62.0 오늘 할 일 자동화
 
