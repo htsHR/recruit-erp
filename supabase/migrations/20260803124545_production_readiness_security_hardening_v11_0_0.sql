@@ -91,23 +91,3 @@ create index if not exists app_settings_updated_by_idx
 on public.app_settings(updated_by);
 
 commit;
-
--- Read-only verification queries for the SQL Editor result pane.
-select t.tablename,t.rowsecurity,count(p.policyname)::integer as policy_count
-from pg_tables t
-left join pg_policies p
-  on p.schemaname=t.schemaname and p.tablename=t.tablename
-where t.schemaname='public'
-  and t.tablename in ('allowed_users','app_settings')
-group by t.tablename,t.rowsecurity
-order by t.tablename;
-
-select n.nspname as schema_name,p.proname,p.prosecdef,
-       has_function_privilege('anon',p.oid,'EXECUTE') as anon_execute,
-       has_function_privilege('authenticated',p.oid,'EXECUTE') as authenticated_execute
-from pg_proc p
-join pg_namespace n on n.oid=p.pronamespace
-where (n.nspname='public' and p.proname in (
-  'can_write_operational_data','is_admin_user','is_allowed_user','set_app_settings_updated_at'
-)) or (n.nspname='private' and p.proname like 'erp_legacy_%')
-order by n.nspname,p.proname;

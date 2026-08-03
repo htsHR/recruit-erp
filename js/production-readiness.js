@@ -10,10 +10,14 @@
 
   const VERSION='11.0.0';
   const STATE_KEY='recruit_erp_production_readiness_v1100';
-  const STATE_SCHEMA_VERSION=1;
+  const STATE_SCHEMA_VERSION=2;
   const MAX_CHECK_AGE_MS=30*24*60*60*1000;
+  const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
+  const CLOUD_ADMIN_MESSAGE='Supabase 관리자 계정으로 로그인한 상태에서만 확인할 수 있습니다.';
+  const CLOUD_ADMIN_CHECKS=new Set(['roles_rls','leaked_credential_protection']);
   const MANUAL_CHECKS=[
-    {id:'roles_rls',label:'권한·RLS 실제 계정 점검',description:'v11 보안 migration을 적용한 뒤 관리자·채용담당자·조회전용 계정으로 허용·차단 동작과 Supabase Security Advisor를 확인합니다.'},
+    {id:'roles_rls',label:'권한·RLS 실제 계정 점검',description:'v11 보안 migration 적용, 관리자·채용담당자·조회전용 역할표, Supabase Security Advisor 결과를 모두 확인합니다.',requiresCloudAdmin:true},
+    {id:'leaked_credential_protection',label:'유출 비밀번호 보호 활성화',description:'Supabase Dashboard의 Auth 비밀번호 보안 설정에서 유출 비밀번호 보호가 켜져 있는지 확인합니다.',requiresCloudAdmin:true},
     {id:'encrypted_restore',label:'암호화 백업·복원 훈련',description:'실제 운영 자료가 아닌 가상 자료로 .erpbackup 생성, 다른 빈 브라우저 복원, 비밀번호 분리 보관까지 확인합니다.'},
     {id:'delete_recovery',label:'삭제 재생성 방지 훈련',description:'PC A 오프라인 삭제 후 연결 복구와 PC B 동기화에서 삭제한 지원자가 다시 나타나지 않는지 확인합니다.'},
     {id:'export_audit',label:'개인정보 내보내기·변경 이력 점검',description:'일반·민감 내보내기 권한, CSV 방어, 내보내기 감사기록과 민감정보 마스킹을 확인합니다.'},
@@ -21,6 +25,7 @@
     {id:'incident_drill',label:'장애 복구 모의훈련',description:'저장 실패·동기화 충돌·브라우저 손실·배포 장애별 중단 기준과 복구 순서를 담당자와 함께 연습합니다.'}
   ];
   let renderSequence=0;
+  let encryptionProbe={checkedAt:0,result:false,promise:null};
 
   function emptyState(){
     return {schemaVersion:STATE_SCHEMA_VERSION,version:VERSION,updatedAt:'',manual:{},capacity:null};
@@ -37,7 +42,7 @@
     for(const check of MANUAL_CHECKS){
       const row=input.manual?.[check.id];
       if(row&&typeof row==='object'&&typeof row.completedAt==='string'){
-        state.manual[check.id]={completedAt:row.completedAt,role:['admin','local_admin','legacy_admin'].includes(row.role)?row.role:'admin'};
+        state.manual[check.id]={completedAt:row.completedAt,role:['admin','local_admin','legacy_admin'].includes(row.role)?row.role:'admin',source:row.source==='cloud'?'cloud':'local'};
       }
     }
     const capacity=input.capacity;
@@ -68,20 +73,51 @@
     if(!saved)root.alert?.('운영 준비 확인 내용을 저장하지 못했습니다. 체크 상태는 바뀌지 않았습니다.');
     return saved?state:null;
   }
-  function setManual(id,completed,role=root.erpPermissions?.current?.().role||'admin'){
+  function operationEnvironment(){
+    const displayed=root.document?.documentElement?.dataset?.operationEnvironment;
+    if(displayed==='company'||displayed==='home')return displayed;
+    try{return root.localStorage?.getItem(OPERATION_ENV_KEY)==='company'?'company':'home';}catch{return 'home';}
+  }
+  function runtimeContext(overrides={}){
+    const permission=overrides.permission||root.erpPermissions?.current?.()||{};
+    const environment=overrides.operationEnvironment||operationEnvironment();
+    const permissionsModuleReady=typeof root.erpPermissions?.current==='function'&&typeof root.erpPermissions?.has==='function'&&typeof root.erpPermissions?.require==='function';
+    const supabaseClientReady=!!root.sb?.auth&&typeof root.sb.auth.getSession==='function';
+    let cloudUsable=false;
+    try{cloudUsable=environment==='home'&&supabaseClientReady&&typeof root.canUseCloud==='function'&&root.canUseCloud()===true;}catch{}
+    const source=permission.source==='cloud'&&cloudUsable&&!!permission.userId?'cloud':'local';
+    const cloudAdminEligible=permissionsModuleReady&&source==='cloud'&&permission.role==='admin'&&!!permission.userId;
+    return {
+      role:permission.role||'viewer',permissionSource:permission.source||'local',userIdPresent:!!permission.userId,
+      verificationSource:source,operationEnvironment:environment,permissionsModuleReady,supabaseClientReady,
+      supabaseLoggedIn:cloudUsable,cloudUsable,cloudAdminEligible
+    };
+  }
+  function requireReadinessPermission(notify=true){
+    if(typeof root.erpPermissions?.require==='function')return root.erpPermissions.require('readiness.manage',{notify});
+    if(notify)root.alert?.('운영 준비 점검 권한을 확인할 수 없습니다.');
+    return false;
+  }
+  function setManual(id,completed){
     if(!MANUAL_CHECKS.some(check=>check.id===id))return null;
+    if(!requireReadinessPermission())return null;
+    const context=runtimeContext();
+    if(CLOUD_ADMIN_CHECKS.has(id)&&!context.cloudAdminEligible){root.alert?.(CLOUD_ADMIN_MESSAGE);return null;}
     const before=readState(),manual={...before.manual};
-    if(completed)manual[id]={completedAt:new Date().toISOString(),role};else delete manual[id];
+    if(completed)manual[id]={completedAt:new Date().toISOString(),role:context.role,source:context.verificationSource};else delete manual[id];
     return writeState({...before,manual});
   }
   function clearState(){
+    if(!requireReadinessPermission())return false;
     try{root.localStorage?.removeItem(STATE_KEY);return true;}catch{return false;}
   }
-  function manualStatus(state=readState(),now=Date.now()){
+  function manualStatus(state=readState(),now=Date.now(),context=runtimeContext()){
     const rows=MANUAL_CHECKS.map(check=>{
       const record=state.manual?.[check.id];
-      const complete=!!record&&isFresh(record.completedAt,now);
-      return {...check,complete,completedAt:complete?record.completedAt:'',role:complete?record.role:''};
+      const locked=!!check.requiresCloudAdmin&&!context.cloudAdminEligible;
+      const validCloudRecord=!check.requiresCloudAdmin||(record?.role==='admin'&&record?.source==='cloud'&&context.cloudAdminEligible);
+      const complete=!!record&&isFresh(record.completedAt,now)&&validCloudRecord;
+      return {...check,locked,lockMessage:locked?CLOUD_ADMIN_MESSAGE:'',complete,completedAt:complete?record.completedAt:'',role:complete?record.role:''};
     });
     return {rows,completed:rows.filter(row=>row.complete).length,total:rows.length,ready:rows.every(row=>row.complete)};
   }
@@ -116,6 +152,7 @@
     };
   }
   function saveCapacityResult(result){
+    if(!requireReadinessPermission())return null;
     const before=readState();
     return writeState({...before,capacity:result});
   }
@@ -123,57 +160,94 @@
   function buildAutomaticChecks(evidence={}){
     const queues=Number(evidence.savePending||0)+Number(evidence.deletePending||0)+Number(evidence.conflicts||0);
     return [
-      {id:'version',label:'화면·파일 버전',status:evidence.versionReady?'pass':'fail',detail:evidence.versionReady?'v11.0.0 파일과 화면 표기가 일치합니다.':'화면 또는 파일 버전이 v11.0.0과 다릅니다.'},
-      {id:'security',label:'입력·화면 보안',status:evidence.securityReady?'pass':'fail',detail:evidence.securityReady?'안전 트리·ID·화면 잠금 모듈을 확인했습니다.':'필수 보안 모듈을 확인하지 못했습니다.'},
-      {id:'encrypted_backup',label:'암호화 백업',status:evidence.encryptedBackupReady?'pass':'fail',detail:evidence.encryptedBackupReady?'AES-GCM 암호화 기능을 사용할 수 있습니다.':'이 브라우저에서 암호화 백업을 사용할 수 없습니다.'},
-      {id:'permissions',label:'화면 권한 엔진',status:evidence.permissionsReady?'pass':'fail',detail:evidence.permissionsReady?'현재 계정의 역할과 화면 보호가 준비됐습니다.':'권한 설정이 없거나 확인에 실패했습니다.'},
-      {id:'audit',label:'변경 이력 보호',status:evidence.auditReady?'pass':'fail',detail:evidence.auditReady?'민감정보 마스킹 감사기록 모듈을 확인했습니다.':'변경 이력 모듈을 확인하지 못했습니다.'},
-      {id:'sync_queue',label:'저장·삭제·충돌 대기',status:queues===0?'pass':'fail',detail:queues===0?'미처리 동기화 작업이 없습니다.':`확인할 동기화 작업 ${queues}건이 남아 있습니다.`},
-      {id:'storage',label:'브라우저 저장공간',status:evidence.storageWarning?'fail':'pass',detail:evidence.storageWarning?'저장공간 경고가 있습니다. 암호화 백업 후 정리하세요.':'현재 확인된 저장공간 위험이 없습니다.'},
-      {id:'capacity',label:'가상 6,500건 성능',status:evidence.capacityPassed&&evidence.capacityFresh?'pass':'warn',detail:evidence.capacityPassed&&evidence.capacityFresh?`최근 검사 ${Number(evidence.capacityDurationMs||0).toLocaleString('ko-KR')}ms`:'30일 안에 가상 6,500건 검사를 실행하세요.'}
+      {id:'version',testType:'기능 시험',label:'화면·파일 버전',status:evidence.versionReady?'pass':'fail',detail:evidence.versionReady?'v11.0.0 파일과 화면 표기가 일치합니다.':'화면 또는 파일 버전이 v11.0.0과 다릅니다.'},
+      {id:'security',testType:'모듈 확인',label:'입력·화면 보안',status:evidence.securityModuleReady&&evidence.privacyModuleReady?'pass':'fail',detail:evidence.securityModuleReady&&evidence.privacyModuleReady?'안전 트리·ID·화면 잠금 모듈이 모두 있습니다.':'erpPrivacySecurity 또는 필수 입력 보안 모듈이 없습니다.'},
+      {id:'encrypted_backup',testType:'기능 시험',label:'암호화 백업',status:evidence.encryptedBackupModuleReady&&evidence.encryptionRoundTripReady?'pass':'fail',detail:evidence.encryptedBackupModuleReady&&evidence.encryptionRoundTripReady?'가상 문자열 AES-GCM 암호화·복호화 round-trip을 통과했습니다.':evidence.encryptedBackupModuleReady?'AES-GCM 실제 기능 시험에 실패했습니다.':'erpEncryptedBackup 모듈이 없습니다.'},
+      {id:'permissions',testType:'기능 시험',label:'화면 권한 엔진',status:evidence.permissionsModuleReady&&evidence.permissionsReady?'pass':'fail',detail:evidence.permissionsModuleReady&&evidence.permissionsReady?'Supabase cloud admin 계정과 화면 보호를 확인했습니다.':evidence.permissionsModuleReady?'현재 계정은 cloud admin 운영 조건을 충족하지 않습니다.':'erpPermissions 모듈이 없습니다.'},
+      {id:'audit',testType:'모듈 확인',label:'변경 이력 보호',status:evidence.auditModuleReady?'pass':'fail',detail:evidence.auditModuleReady?'민감정보 마스킹 감사기록 모듈이 있습니다.':'erpAudit 모듈이 없습니다.'},
+      {id:'sync_queue',testType:'기능 시험',label:'저장·삭제·충돌 대기',status:!evidence.syncModuleReady||!evidence.syncProbeReady?'fail':queues===0?'pass':'fail',detail:!evidence.syncModuleReady?'erpSyncSafety 모듈이 없어 대기 건수를 확인할 수 없습니다.':!evidence.syncProbeReady?'동기화 대기 건수 기능 시험에 실패했습니다.':queues===0?'미처리 동기화 작업이 없습니다.':`확인할 동기화 작업 ${queues}건이 남아 있습니다.`},
+      {id:'storage',testType:'기능 시험',label:'브라우저 저장공간',status:!evidence.storageModuleReady||!evidence.storageProbeReady||evidence.storageWarning?'fail':'pass',detail:!evidence.storageModuleReady?'erpStoragePerformance 모듈이 없어 저장공간을 확인할 수 없습니다.':!evidence.storageProbeReady?'저장공간 실제 기능 시험에 실패했습니다.':evidence.storageWarning?'저장공간 경고가 있습니다. 암호화 백업 후 정리하세요.':'저장공간 실제 기능 시험에서 확인된 위험이 없습니다.'},
+      {id:'capacity',testType:'기능 시험',label:'가상 6,500건 성능',status:evidence.capacityPassed&&evidence.capacityFresh?'pass':'warn',detail:evidence.capacityPassed&&evidence.capacityFresh?`최근 검사 ${Number(evidence.capacityDurationMs||0).toLocaleString('ko-KR')}ms`:'30일 안에 가상 6,500건 검사를 실행하세요.'}
     ];
   }
-  function summarize(automatic,manual){
+  function summarize(automatic,manual,context={}){
     const failed=automatic.filter(check=>check.status==='fail').length;
     const warnings=automatic.filter(check=>check.status==='warn').length;
     const automaticPassed=automatic.filter(check=>check.status==='pass').length;
-    return {ready:failed===0&&warnings===0&&manual.ready,failed,warnings,automaticPassed,automaticTotal:automatic.length,manualCompleted:manual.completed,manualTotal:manual.total};
+    const cloudVerified=context.verificationSource==='cloud'&&context.cloudAdminEligible===true;
+    return {ready:failed===0&&warnings===0&&manual.ready&&cloudVerified,cloudVerified,failed,warnings,automaticPassed,automaticTotal:automatic.length,manualCompleted:manual.completed,manualTotal:manual.total};
+  }
+  async function runEncryptionRoundTrip(force=false){
+    const now=Date.now();
+    if(!force&&encryptionProbe.promise)return encryptionProbe.promise;
+    if(!force&&now-encryptionProbe.checkedAt<5*60*1000)return encryptionProbe.result;
+    const task=(async()=>{
+      const api=root.erpEncryptedBackup;
+      if(!api||typeof api.isSupported!=='function'||typeof api.encryptObject!=='function'||typeof api.decryptEnvelope!=='function'||!api.isSupported())return false;
+      try{
+        const sample={type:'production-readiness-probe',appVersion:VERSION,value:'가상 운영 준비 암호화 확인'};
+        const password='가상 운영 준비 기능 시험 전용 비밀번호 2026';
+        const envelope=await api.encryptObject(sample,password,{iterations:Number(api.MIN_ITERATIONS)||100000,appVersion:VERSION});
+        const restored=await api.decryptEnvelope(envelope,password);
+        return restored?.type===sample.type&&restored?.appVersion===VERSION&&restored?.value===sample.value;
+      }catch{return false;}
+    })();
+    encryptionProbe.promise=task;
+    try{encryptionProbe.result=await task;encryptionProbe.checkedAt=Date.now();return encryptionProbe.result;}
+    finally{encryptionProbe.promise=null;}
   }
   async function collectRuntimeEvidence(state=readState()){
-    let storageWarning=false;
-    try{storageWarning=!!(await root.erpStoragePerformance?.estimateStorage?.())?.warning;}catch{storageWarning=true;}
-    const permission=root.erpPermissions?.current?.()||{};
-    let savePending=0,deletePending=0,conflicts=0;
-    try{savePending=Number(root.erpSyncSafety?.pendingCount?.()||0);}catch{}
-    try{deletePending=Number(root.erpSyncSafety?.pendingDeleteCount?.()||0);}catch{}
-    try{conflicts=Number(root.erpSyncSafety?.readConflicts?.().length||0);}catch{}
+    const context=runtimeContext();
+    const storageModuleReady=typeof root.erpStoragePerformance?.estimateStorage==='function';
+    let storageWarning=true,storageProbeReady=false;
+    if(storageModuleReady)try{const result=await root.erpStoragePerformance.estimateStorage();storageProbeReady=!!result&&typeof result.warning==='boolean';storageWarning=storageProbeReady?result.warning:true;}catch{}
+    const syncModuleReady=typeof root.erpSyncSafety?.pendingCount==='function'&&typeof root.erpSyncSafety?.pendingDeleteCount==='function'&&typeof root.erpSyncSafety?.readConflicts==='function';
+    let savePending=0,deletePending=0,conflicts=0,syncProbeReady=false;
+    if(syncModuleReady)try{
+      savePending=Number(root.erpSyncSafety.pendingCount());deletePending=Number(root.erpSyncSafety.pendingDeleteCount());
+      const conflictRows=root.erpSyncSafety.readConflicts();conflicts=Array.isArray(conflictRows)?conflictRows.length:NaN;
+      syncProbeReady=[savePending,deletePending,conflicts].every(value=>Number.isFinite(value)&&value>=0);
+    }catch{}
+    const encryptedBackupModuleReady=typeof root.erpEncryptedBackup?.isSupported==='function'&&typeof root.erpEncryptedBackup?.encryptObject==='function'&&typeof root.erpEncryptedBackup?.decryptEnvelope==='function';
+    const encryptionRoundTripReady=encryptedBackupModuleReady?await runEncryptionRoundTrip():false;
+    const privacyModuleReady=typeof root.erpPrivacySecurity?.lock==='function';
+    const auditModuleReady=typeof root.erpAudit?.recordEvent==='function'&&typeof root.erpAudit?.scrubText==='function';
+    const securityModuleReady=typeof root.erpSecurity?.assertSafeTree==='function'&&typeof root.erpSecurity?.validateRowIds==='function';
     const capacity=state.capacity;
     const title=root.document?.title||'';
     const brand=root.document?.querySelector('.brand-copy p')?.textContent||'';
     return {
+      ...context,
       versionReady:title.includes(`v${VERSION}`)&&brand.includes(`v${VERSION}`),
-      securityReady:!!root.erpSecurity?.assertSafeTree&&!!root.erpSecurity?.validateRowIds&&!!root.erpPrivacySecurity?.lock,
-      encryptedBackupReady:!!root.erpEncryptedBackup?.isSupported?.(),
-      permissionsReady:!!root.erpPermissions&&!permission.setupRequired&&['admin','local_admin','legacy_admin'].includes(permission.role),
-      auditReady:!!root.erpAudit?.recordEvent&&!!root.erpAudit?.scrubText,
-      savePending,deletePending,conflicts,storageWarning,
+      securityModuleReady,privacyModuleReady,encryptedBackupModuleReady,encryptionRoundTripReady,
+      permissionsReady:context.cloudAdminEligible,auditModuleReady,syncModuleReady,syncProbeReady,
+      storageModuleReady,storageProbeReady,savePending,deletePending,conflicts,storageWarning,
       capacityPassed:capacity?.passed===true,
       capacityFresh:isFresh(capacity?.completedAt),
       capacityDurationMs:capacity?.durationMs||0
     };
   }
-  function buildPrivacySafeReport({state=readState(),automatic=[],manual=manualStatus(state),summary=summarize(automatic,manual)}={}){
+  function buildPrivacySafeReport({state=readState(),automatic=[],context=runtimeContext(),manual=manualStatus(state,Date.now(),context),summary=summarize(automatic,manual,context)}={}){
     const safeState=sanitizeState(state);
+    const source=context.verificationSource==='cloud'?'cloud':'local';
+    const rolesRow=manual.rows.find(row=>row.id==='roles_rls');
+    const rolesVerified=source==='cloud'&&context.cloudAdminEligible===true&&rolesRow?.complete===true;
     return {
       format:'recruit-erp-production-readiness',
       schemaVersion:STATE_SCHEMA_VERSION,
       appVersion:VERSION,
       createdAt:new Date().toISOString(),
-      overall:summary.ready?'ready':'not-ready',
-      automatic:automatic.map(check=>({id:check.id,status:check.status,detail:check.detail})),
+      verificationSource:source,
+      operationEnvironment:context.operationEnvironment==='company'?'company':'home',
+      migrationVerified:rolesVerified,
+      securityAdvisorVerified:rolesVerified,
+      roleMatrixVerified:rolesVerified,
+      overall:summary.ready&&source==='cloud'&&context.cloudAdminEligible===true?'ready':'not-ready',
+      automatic:automatic.map(check=>({id:check.id,testType:check.testType,status:check.status,detail:check.detail})),
       manual:manual.rows.map(row=>({id:row.id,complete:row.complete,completedAt:row.completedAt||'',role:row.role||''})),
       capacity:safeState.capacity?{completedAt:safeState.capacity.completedAt,durationMs:safeState.capacity.durationMs,passed:safeState.capacity.passed,counts:{...safeState.capacity.counts}}:null,
-      privacy:'이 보고서는 이름·연락처·주소·주민등록번호·메모·원본 업무 데이터를 포함하지 않습니다.'
+      privacy:'이 보고서는 이름·연락처·주소·주민등록번호·메모·원본 업무 데이터를 포함하지 않습니다.',
+      limitation:'이 JSON은 사용자가 수정할 수 있는 참고용 점검 결과이며 전자서명된 증명서가 아닙니다.'
     };
   }
   function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
@@ -191,18 +265,19 @@
   function statusLabel(status){return status==='pass'?'통과':status==='fail'?'조치 필요':'확인 필요';}
   async function render(){
     const host=root.document?.getElementById('productionReadinessBody');if(!host)return;
-    const sequence=++renderSequence,state=readState(),manual=manualStatus(state),evidence=await collectRuntimeEvidence(state);
+    const sequence=++renderSequence,state=readState(),evidence=await collectRuntimeEvidence(state);
     if(sequence!==renderSequence)return;
-    const automatic=buildAutomaticChecks(evidence),summary=summarize(automatic,manual);
+    const manual=manualStatus(state,Date.now(),evidence),automatic=buildAutomaticChecks(evidence),summary=summarize(automatic,manual,evidence);
     const overallClass=summary.ready?'is-ready':'is-not-ready';
     const overallTitle=summary.ready?'운영 준비 완료':'아직 운영 확인이 필요합니다';
-    host.innerHTML=`<section class="readiness-overall ${overallClass}"><div><p class="eyebrow">PRODUCTION GATE</p><h3>${overallTitle}</h3><p>자동 통과 ${summary.automaticPassed}/${summary.automaticTotal} · 운영 확인 ${summary.manualCompleted}/${summary.manualTotal}</p></div><span>${summary.ready?'READY':'CHECK'}</span></section><div class="readiness-actions"><button class="ghost" id="btnReadinessRefresh" type="button">다시 확인</button><button class="ghost" id="btnReadinessCapacity" type="button">가상 6,500건 검사</button><button class="primary" id="btnReadinessExport" type="button">점검 결과 저장</button></div><section class="panel readiness-section"><div class="panel-head"><div><h3>자동 안전 점검</h3><small>현재 브라우저 상태와 보호 모듈만 확인하며 개인정보 원문은 읽거나 표시하지 않습니다.</small></div></div><div class="readiness-check-grid">${automatic.map(check=>`<article class="readiness-check is-${check.status}"><span>${statusLabel(check.status)}</span><strong>${escapeHtml(check.label)}</strong><p>${escapeHtml(check.detail)}</p></article>`).join('')}</div></section><section class="panel readiness-section"><div class="panel-head"><div><h3>운영자 확인</h3><small>확인은 30일 동안 유효합니다. 실제 개인정보 대신 가상 자료로 훈련하세요.</small></div></div><div class="readiness-manual-list">${manual.rows.map(row=>`<label class="readiness-manual ${row.complete?'is-complete':''}"><input type="checkbox" data-readiness-manual="${row.id}" ${row.complete?'checked':''}><span><strong>${escapeHtml(row.label)}</strong><small>${escapeHtml(row.description)}</small>${row.complete?`<em>${escapeHtml(formatTime(row.completedAt))} · ${escapeHtml(row.role)}</em>`:''}</span></label>`).join('')}</div></section><section class="panel readiness-docs"><div><h3>운영 문서</h3><p>업무 시작·종료부터 장애 복구와 릴리스 판정까지 순서대로 확인할 수 있습니다.</p></div><div><a class="ghost button-link" href="docs/OPERATOR_GUIDE_v11.0.0.md" target="_blank" rel="noopener">운영자 설명서</a><a class="ghost button-link" href="docs/INCIDENT_RECOVERY_v11.0.0.md" target="_blank" rel="noopener">장애 복구 절차</a><a class="ghost button-link" href="docs/RELEASE_READINESS_v11.0.0.md" target="_blank" rel="noopener">릴리스 점검표</a></div></section><p class="readiness-limit">브라우저 자동 점검은 실제 Supabase 계정별 RLS, 외부 백업 보관, 다른 PC의 삭제 동기화를 대신하지 않습니다. 해당 항목은 운영자 확인과 모의훈련이 필요합니다.</p>`;
+    const sourceLabel=evidence.verificationSource==='cloud'?'클라우드 검증':'로컬 참고용';
+    host.innerHTML=`<section class="readiness-overall ${overallClass}"><div><p class="eyebrow">PRODUCTION GATE · ${sourceLabel}</p><h3>${overallTitle}</h3><p>자동 통과 ${summary.automaticPassed}/${summary.automaticTotal} · 운영 확인 ${summary.manualCompleted}/${summary.manualTotal} · 환경 ${escapeHtml(evidence.operationEnvironment)}</p></div><span>${summary.ready?'READY':'CHECK'}</span></section><div class="readiness-actions"><button class="ghost" id="btnReadinessRefresh" type="button">다시 확인</button><button class="ghost" id="btnReadinessCapacity" type="button">가상 6,500건 검사</button><button class="primary" id="btnReadinessExport" type="button">점검 결과 저장</button></div><section class="panel readiness-section"><div class="panel-head"><div><h3>자동 안전 점검</h3><small>모듈 존재 확인과 가상 자료를 사용한 실제 기능 시험을 구분합니다. 개인정보 원문은 읽거나 표시하지 않습니다.</small></div></div><div class="readiness-check-grid">${automatic.map(check=>`<article class="readiness-check is-${check.status}"><div class="readiness-check-badges"><span>${statusLabel(check.status)}</span><em>${escapeHtml(check.testType)}</em></div><strong>${escapeHtml(check.label)}</strong><p>${escapeHtml(check.detail)}</p></article>`).join('')}</div></section><section class="panel readiness-section"><div class="panel-head"><div><h3>운영자 확인</h3><small>확인은 30일 동안 유효합니다. 실제 개인정보 대신 가상 자료로 훈련하세요.</small></div></div><div class="readiness-manual-list">${manual.rows.map(row=>`<label class="readiness-manual ${row.complete?'is-complete':''} ${row.locked?'is-locked':''}"><input type="checkbox" data-readiness-manual="${row.id}" ${row.complete?'checked':''} ${row.locked?'disabled':''}><span><strong>${escapeHtml(row.label)}</strong><small>${escapeHtml(row.description)}</small>${row.locked?`<em class="readiness-lock-message">${escapeHtml(row.lockMessage)}</em>`:row.complete?`<em>${escapeHtml(formatTime(row.completedAt))} · ${escapeHtml(row.role)}</em>`:''}</span></label>`).join('')}</div></section><section class="panel readiness-docs"><div><h3>운영 문서</h3><p>업무 시작·종료부터 장애 복구와 릴리스 판정까지 순서대로 확인할 수 있습니다.</p></div><div><a class="ghost button-link" href="docs/OPERATOR_GUIDE_v11.0.0.md" target="_blank" rel="noopener">운영자 설명서</a><a class="ghost button-link" href="docs/INCIDENT_RECOVERY_v11.0.0.md" target="_blank" rel="noopener">장애 복구 절차</a><a class="ghost button-link" href="docs/RELEASE_READINESS_v11.0.0.md" target="_blank" rel="noopener">릴리스 점검표</a></div></section><p class="readiness-limit">브라우저 자동 점검은 실제 Supabase 계정별 RLS, 외부 백업 보관, 다른 PC의 삭제 동기화를 대신하지 않습니다. 점검 JSON은 사용자가 수정 가능한 참고 자료이며 전자서명된 증명서가 아닙니다.</p>`;
     host.querySelector('#btnReadinessRefresh')?.addEventListener('click',()=>render());
     host.querySelector('#btnReadinessCapacity')?.addEventListener('click',event=>{
       const button=event.currentTarget;button.disabled=true;button.textContent='가상 자료 검사 중…';
       root.setTimeout?.(()=>{const result=runSyntheticCapacityCheck();saveCapacityResult(result);render();},20);
     });
-    host.querySelector('#btnReadinessExport')?.addEventListener('click',()=>downloadReport(buildPrivacySafeReport({state,automatic,manual,summary})));
+    host.querySelector('#btnReadinessExport')?.addEventListener('click',()=>downloadReport(buildPrivacySafeReport({state,automatic,context:evidence,manual,summary})));
     host.querySelectorAll('[data-readiness-manual]').forEach(input=>input.addEventListener('change',()=>{
       const saved=setManual(input.dataset.readinessManual,input.checked);
       if(!saved)input.checked=!input.checked;
@@ -235,11 +310,13 @@
       }
     };
     root.document.addEventListener('erp:permission-change',()=>render());
+    root.document.addEventListener('erp:operation-environment-change',()=>render());
+    root.document.addEventListener('erp:auth-logout',()=>render());
     root.document.addEventListener('erp:storage-write',event=>{if(event.detail?.key!==STATE_KEY&&root.document.body.dataset.activePage==='productionReadiness')render();});
     root.setTimeout?.(()=>render(),0);
   }
 
-  const api={VERSION,STATE_KEY,STATE_SCHEMA_VERSION,MAX_CHECK_AGE_MS,MANUAL_CHECKS,emptyState,isFresh,sanitizeState,readState,writeState,setManual,clearState,manualStatus,runSyntheticCapacityCheck,saveCapacityResult,buildAutomaticChecks,summarize,collectRuntimeEvidence,buildPrivacySafeReport,downloadReport,render,ensureUi,init};
+  const api={VERSION,STATE_KEY,STATE_SCHEMA_VERSION,MAX_CHECK_AGE_MS,OPERATION_ENV_KEY,CLOUD_ADMIN_MESSAGE,CLOUD_ADMIN_CHECKS,MANUAL_CHECKS,emptyState,isFresh,sanitizeState,readState,operationEnvironment,runtimeContext,requireReadinessPermission,setManual,clearState,manualStatus,runSyntheticCapacityCheck,saveCapacityResult,buildAutomaticChecks,summarize,runEncryptionRoundTrip,collectRuntimeEvidence,buildPrivacySafeReport,downloadReport,render,ensureUi,init};
   if(root.document)init();
   return api;
 });
