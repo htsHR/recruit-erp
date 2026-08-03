@@ -2,9 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.61.0**입니다.
-
-개발 중인 릴리스 후보는 **v10.62.0 오늘 할 일 자동화**이며, Draft PR 검증이 끝나기 전에는 운영 버전으로 표시하지 않습니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.62.0**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -72,7 +70,7 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
 
-## v10.62.0 오늘 할 일 자동화 (릴리스 후보)
+## v10.62.0 오늘 할 일 자동화
 
 - 오늘 연락, 기한 경과, 오늘 면접, 결과 미입력, 3일 내 입사, 출근 확인과 14일 이상 정체 대상을 자동으로 묶습니다.
 - 한 사람이 여러 조건에 해당해도 한 줄로 합치고 더 급한 업무를 먼저 표시합니다.
