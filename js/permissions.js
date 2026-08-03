@@ -1,4 +1,4 @@
-/* Recruit ERP v10.61.0 USER PERMISSIONS
+/* Recruit ERP v10.62.0 USER PERMISSIONS
  * UI guards are usability protection. Supabase RLS is the security boundary.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpPermissions=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='10.61.0';
+  const VERSION='10.62.0';
   const ROLE_LABELS={admin:'관리자',recruiter:'채용담당자',viewer:'조회 전용',local_admin:'로컬 관리자',legacy_admin:'설정 전 관리자'};
   const PERMISSIONS={
     admin:['*'],local_admin:['*'],legacy_admin:['*'],
@@ -106,7 +106,7 @@
   function applyUi(){
     if(!root.document||applying)return;applying=true;
     try{
-      mark('[data-page="form"],[data-go="form"],#btnDetailEdit,#btnDetailEditTop,#btnHomeStartScreening,#btnHomeStartPhoneInterview,#btnStartScreeningWorkbench,#btnStartPhoneInterview','applicant.write');
+      mark('[data-page="form"],[data-go="form"],#btnDetailEdit,#btnDetailEditTop,#btnHomeStartScreening,#btnHomeStartPhoneInterview,#btnStartScreeningWorkbench,#btnStartPhoneInterview,#btnDailyStartFirst,[data-required-permission="applicant.write"]','applicant.write');
       mark('[data-page="backup"],[data-go="backup"]','backup.manage');
       mark('[data-page="permissions"],[data-go="permissions"]','user.manage');
       mark('[data-page="auditHistory"],[data-go="auditHistory"]','audit.read');
