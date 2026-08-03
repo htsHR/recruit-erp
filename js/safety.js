@@ -10,6 +10,10 @@
     var opts=options||{};
     try{
       root.localStorage.setItem(key,value);
+      if(root.document&&typeof root.CustomEvent==='function'){
+        var storedLength=String(value??'').length;
+        root.document.dispatchEvent(new root.CustomEvent('erp:storage-write',{detail:{key:String(key),bytes:storedLength}}));
+      }
       return true;
     }catch(error){
       console.error('브라우저 저장 실패:',key,error);

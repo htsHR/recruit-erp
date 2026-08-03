@@ -39,12 +39,12 @@ jobs:
       - name: Playwright UI 화면 검사
         run: npm run test:ui-layout
         env:
-          UI_SCREENSHOT_DIR: artifacts/ui-v10.60.0
+          UI_SCREENSHOT_DIR: artifacts/ui-v10.61.0
       - name: UI 검사 스크린샷 보관
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ui-layout-screenshots-${{ github.run_attempt }}
-          path: artifacts/ui-v10.60.0
+          path: artifacts/ui-v10.61.0
           if-no-files-found: warn
           retention-days: 14

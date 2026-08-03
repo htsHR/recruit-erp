@@ -1,4 +1,4 @@
-/* Recruit ERP v10.60.0 USER PERMISSIONS
+/* Recruit ERP v10.61.0 USER PERMISSIONS
  * UI guards are usability protection. Supabase RLS is the security boundary.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpPermissions=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='10.60.0';
+  const VERSION='10.61.0';
   const ROLE_LABELS={admin:'관리자',recruiter:'채용담당자',viewer:'조회 전용',local_admin:'로컬 관리자',legacy_admin:'설정 전 관리자'};
   const PERMISSIONS={
     admin:['*'],local_admin:['*'],legacy_admin:['*'],
@@ -73,6 +73,7 @@
     if(page==='permissions')return 'user.manage';
     if(page==='auditHistory')return 'audit.read';
     if(page==='backup')return 'backup.manage';
+    if(page==='storagePerformance')return 'storage.manage';
     if(page==='form')return 'applicant.write';
     if(/deleteApplicant|btnDeleteAll|btnClearAll/i.test(handler+' '+id))return 'applicant.delete';
     if(/deleteEmployee|DeleteEditingEmployee/i.test(handler+' '+id))return 'employee.delete';
@@ -109,6 +110,7 @@
       mark('[data-page="backup"],[data-go="backup"]','backup.manage');
       mark('[data-page="permissions"],[data-go="permissions"]','user.manage');
       mark('[data-page="auditHistory"],[data-go="auditHistory"]','audit.read');
+      mark('[data-page="storagePerformance"],[data-go="storagePerformance"],#storagePerformance','storage.manage');
       mark('#btnDeleteAll,#btnClearAll,[data-erp-handler*="deleteApplicant"]','applicant.delete');
       mark('[data-erp-handler*="deleteEmployee"],#btnDeleteEditingEmployee','employee.delete');
       mark('[data-erp-handler*="deleteSchool"],#btnApplySchoolMerge','school.delete');
@@ -123,7 +125,7 @@
       const note=root.document.getElementById('permissionCurrentBadge'),badge=badgeHtml();if(note&&note.innerHTML!==badge)note.innerHTML=badge;
       root.document.documentElement.dataset.erpRole=state.role;
       if(!has('sensitive.read'))root.document.body?.classList.add('erp-sensitive-masked');else root.document.body?.classList.remove('erp-sensitive-masked');
-      const active=root.document.querySelector('.page.active');if(active&&((active.id==='form'&&!has('applicant.write'))||(active.id==='backup'&&!has('backup.manage'))||(active.id==='permissions'&&!has('user.manage'))||(active.id==='auditHistory'&&!has('audit.read'))))root.setPage?.('home');
+      const active=root.document.querySelector('.page.active');if(active&&((active.id==='form'&&!has('applicant.write'))||(active.id==='backup'&&!has('backup.manage'))||(active.id==='permissions'&&!has('user.manage'))||(active.id==='auditHistory'&&!has('audit.read'))||(active.id==='storagePerformance'&&!has('storage.manage'))))root.setPage?.('home');
     }finally{applying=false;}
   }
 

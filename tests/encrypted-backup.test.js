@@ -6,7 +6,7 @@ const encrypted=require('../js/encrypted-backup.js');
 
 const password='가상 백업 전용 긴 비밀번호 2026';
 const fakePackage={
-  format:'recruit-erp-backup',schemaVersion:2,appVersion:'10.60.0',statusSchemaVersion:2,backupType:'full',createdAt:'2026-08-02T00:00:00.000Z',
+  format:'recruit-erp-backup',schemaVersion:2,appVersion:'10.61.0',statusSchemaVersion:2,backupType:'full',createdAt:'2026-08-02T00:00:00.000Z',
   counts:{applicants:1,schools:1,employees:1,calendarEvents:1,hireWaitingProfiles:1,messageTemplates:1},
   metadata:{excelApplicantIds:[]},integrity:{algorithm:'fnv1a32-stable-json',datasets:{applicants:'11111111',schools:'22222222',employees:'33333333',calendarEvents:'44444444',hireWaitingProfiles:'55555555',messageTemplates:'66666666'},packageDigest:'77777777'},
   data:{
@@ -20,7 +20,7 @@ const mutateBase64=value=>{const first=value[0]==='A'?'B':'A';return first+value
 async function rejectsCode(fn,code){await assert.rejects(fn,error=>error?.code===code,`예상 오류 코드: ${code}`);}
 
 (async()=>{
-  assert.equal(encrypted.VERSION,'10.60.0');assert.equal(encrypted.FORMAT,'recruit-erp-encrypted-backup');assert.equal(encrypted.CRYPTO_SCHEMA_VERSION,1);assert.equal(encrypted.DEFAULT_ITERATIONS,310000);
+  assert.equal(encrypted.VERSION,'10.61.0');assert.equal(encrypted.FORMAT,'recruit-erp-encrypted-backup');assert.equal(encrypted.CRYPTO_SCHEMA_VERSION,1);assert.equal(encrypted.DEFAULT_ITERATIONS,310000);
   assert.equal(encrypted.passwordAssessment('짧은값').valid,false);assert.equal(encrypted.passwordAssessment('가상 백업 전용 긴 비밀번호','다른 확인값').valid,false);assert.equal(encrypted.passwordAssessment(password,password).valid,true);
 
   const envelope=await encrypted.encryptObject(fakePackage,password,options);
