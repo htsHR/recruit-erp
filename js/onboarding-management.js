@@ -1,4 +1,4 @@
-/* Recruit ERP v10.63.0 ONBOARDING MANAGEMENT
+/* Recruit ERP v11.0.0 ONBOARDING MANAGEMENT
  * 기존 입사대기 프로필을 재사용하며 주민등록번호는 이 화면에 표시하지 않는다.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpOnboarding=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='10.63.0';
+  const VERSION='11.0.0';
   const REQUIRED_DOCUMENTS=['신분증 사본','통장 사본','졸업증명서'];
   const STAGES=[
     {key:'final_pass',label:'최종합격'},
@@ -149,7 +149,7 @@
     const main=root.document.querySelector('main.main');
     if(main&&!root.document.getElementById('onboarding')){
       const section=root.document.createElement('section');section.className='page onboarding-page';section.id='onboarding';
-      section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>입사·온보딩 관리</h3><p>최종합격부터 서류·사번·부서·교육·출근과 사원명부 전환까지 한 번씩 확인합니다.</p></div><span class="page-intro-badge">v10.63.0 ONBOARDING</span></div><div id="onboardingBody"></div>';
+      section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>입사·온보딩 관리</h3><p>최종합격부터 서류·사번·부서·교육·출근과 사원명부 전환까지 한 번씩 확인합니다.</p></div><span class="page-intro-badge">v11.0.0 ONBOARDING</span></div><div id="onboardingBody"></div>';
       main.appendChild(section);
     }
     if(!root.document.getElementById('onboardingModal')){

@@ -16,6 +16,7 @@ const uiLayout=read('css/ui-layout.css');
 const listLayout=read('css/list-layout.css');
 const clearview=read('css/applicant-clearview.css');
 const calm=read('css/design-calm-cascade.css');
+const readiness=read('css/production-readiness.css');
 
 const queue=index.match(/<div class="home-work-queue"[^>]*>([\s\S]*?)<\/div>/)?.[1]||'';
 const queueTargets=[...queue.matchAll(/class="queue-card[^\"]*" data-task-target="([^"]+)"/g)].map(match=>match[1]);
@@ -50,5 +51,7 @@ assert.match(visualTest,/390x844-sync-conflict\.png'\),fullPage:false/);
 const emptyTopbarButtons=[...index.matchAll(/<button[^>]*class="[^"]*topbar-icon-btn[^"]*"[^>]*>[\s\S]*?<\/button>/g)];
 assert.equal(emptyTopbarButtons.length,0,'기능 없는 상단 아이콘 버튼이 남아 있습니다.');
 assert.match(read('css/privacy-security.css'),/\.privacy-shield-button\{display:inline-grid!important/);
+assert.match(readiness,/readiness-check-grid/);assert.match(readiness,/@media\(max-width:600px\)/);
+assert.match(visualTest,/\$\{viewport\.name\}-production-readiness\.png/);assert.match(visualTest,/1366x768-zoom125-production-readiness\.png/);
 
 console.log('ui-layout.test.js: 5개 업무 카드·의미 기반 고정 열·모바일 권한/감사·상태 팝업 확인 완료');

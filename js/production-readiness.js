@@ -1,0 +1,245 @@
+/* Recruit ERP v11.0.0 production readiness center.
+ * Stores only checklist identifiers, timestamps, roles, and synthetic test totals.
+ */
+(function(root,factory){
+  const api=factory(root);
+  if(typeof module==='object'&&module.exports)module.exports=api;
+  root.erpProductionReadiness=api;
+})(typeof window!=='undefined'?window:globalThis,function(root){
+  'use strict';
+
+  const VERSION='11.0.0';
+  const STATE_KEY='recruit_erp_production_readiness_v1100';
+  const STATE_SCHEMA_VERSION=1;
+  const MAX_CHECK_AGE_MS=30*24*60*60*1000;
+  const MANUAL_CHECKS=[
+    {id:'roles_rls',label:'권한·RLS 실제 계정 점검',description:'v11 보안 migration을 적용한 뒤 관리자·채용담당자·조회전용 계정으로 허용·차단 동작과 Supabase Security Advisor를 확인합니다.'},
+    {id:'encrypted_restore',label:'암호화 백업·복원 훈련',description:'실제 운영 자료가 아닌 가상 자료로 .erpbackup 생성, 다른 빈 브라우저 복원, 비밀번호 분리 보관까지 확인합니다.'},
+    {id:'delete_recovery',label:'삭제 재생성 방지 훈련',description:'PC A 오프라인 삭제 후 연결 복구와 PC B 동기화에서 삭제한 지원자가 다시 나타나지 않는지 확인합니다.'},
+    {id:'export_audit',label:'개인정보 내보내기·변경 이력 점검',description:'일반·민감 내보내기 권한, CSV 방어, 내보내기 감사기록과 민감정보 마스킹을 확인합니다.'},
+    {id:'operator_guide',label:'운영자 설명서 확인',description:'일일 시작·종료, 계정, 백업, 동기화, 온보딩 절차를 실제 담당자가 따라 해봅니다.'},
+    {id:'incident_drill',label:'장애 복구 모의훈련',description:'저장 실패·동기화 충돌·브라우저 손실·배포 장애별 중단 기준과 복구 순서를 담당자와 함께 연습합니다.'}
+  ];
+  let renderSequence=0;
+
+  function emptyState(){
+    return {schemaVersion:STATE_SCHEMA_VERSION,version:VERSION,updatedAt:'',manual:{},capacity:null};
+  }
+  function isFresh(value,now=Date.now()){
+    const time=new Date(value||'').getTime();
+    return Number.isFinite(time)&&time<=now&&now-time<=MAX_CHECK_AGE_MS;
+  }
+  function sanitizeState(value){
+    const input=value&&typeof value==='object'?value:{};
+    const state=emptyState();
+    if(input.schemaVersion!==STATE_SCHEMA_VERSION||input.version!==VERSION)return state;
+    state.updatedAt=typeof input.updatedAt==='string'?input.updatedAt:'';
+    for(const check of MANUAL_CHECKS){
+      const row=input.manual?.[check.id];
+      if(row&&typeof row==='object'&&typeof row.completedAt==='string'){
+        state.manual[check.id]={completedAt:row.completedAt,role:['admin','local_admin','legacy_admin'].includes(row.role)?row.role:'admin'};
+      }
+    }
+    const capacity=input.capacity;
+    if(capacity&&typeof capacity==='object'){
+      state.capacity={
+        completedAt:typeof capacity.completedAt==='string'?capacity.completedAt:'',
+        durationMs:Math.max(0,Math.round(Number(capacity.durationMs)||0)),
+        passed:capacity.passed===true,
+        counts:{
+          applicants:Math.max(0,Math.round(Number(capacity.counts?.applicants)||0)),
+          employees:Math.max(0,Math.round(Number(capacity.counts?.employees)||0)),
+          schools:Math.max(0,Math.round(Number(capacity.counts?.schools)||0))
+        }
+      };
+    }
+    return state;
+  }
+  function readState(){
+    try{return sanitizeState(JSON.parse(root.localStorage?.getItem(STATE_KEY)||'{}'));}
+    catch{return emptyState();}
+  }
+  function writeState(next){
+    const state=sanitizeState({...next,schemaVersion:STATE_SCHEMA_VERSION,version:VERSION,updatedAt:new Date().toISOString()});
+    const serialized=JSON.stringify(state);
+    const saved=root.erpSafety?.safeLocalStorageSet
+      ?root.erpSafety.safeLocalStorageSet(STATE_KEY,serialized,{notify:false})
+      :(()=>{try{root.localStorage?.setItem(STATE_KEY,serialized);return true;}catch{return false;}})();
+    if(!saved)root.alert?.('운영 준비 확인 내용을 저장하지 못했습니다. 체크 상태는 바뀌지 않았습니다.');
+    return saved?state:null;
+  }
+  function setManual(id,completed,role=root.erpPermissions?.current?.().role||'admin'){
+    if(!MANUAL_CHECKS.some(check=>check.id===id))return null;
+    const before=readState(),manual={...before.manual};
+    if(completed)manual[id]={completedAt:new Date().toISOString(),role};else delete manual[id];
+    return writeState({...before,manual});
+  }
+  function clearState(){
+    try{root.localStorage?.removeItem(STATE_KEY);return true;}catch{return false;}
+  }
+  function manualStatus(state=readState(),now=Date.now()){
+    const rows=MANUAL_CHECKS.map(check=>{
+      const record=state.manual?.[check.id];
+      const complete=!!record&&isFresh(record.completedAt,now);
+      return {...check,complete,completedAt:complete?record.completedAt:'',role:complete?record.role:''};
+    });
+    return {rows,completed:rows.filter(row=>row.complete).length,total:rows.length,ready:rows.every(row=>row.complete)};
+  }
+
+  function syntheticRows(prefix,count,extra){
+    return Array.from({length:count},(_,index)=>({
+      id:`${prefix}-${String(index+1).padStart(6,'0')}`,
+      name:`가상성능자료-${index+1}`,
+      status:index%5===0?'입사예정':'서류검토',
+      workplace:index%2?'천안':'평택',
+      ...extra(index)
+    }));
+  }
+  function runSyntheticCapacityCheck(options={}){
+    const applicantCount=Number(options.applicants)||5000;
+    const employeeCount=Number(options.employees)||1000;
+    const schoolCount=Number(options.schools)||500;
+    const started=Date.now();
+    const applicants=syntheticRows('virtual-applicant',applicantCount,index=>({phone:`010-0000-${String(index%10000).padStart(4,'0')}`,hireDate:'2026-08-10'}));
+    const employees=syntheticRows('virtual-employee',employeeCount,index=>({empNo:`V-${String(index+1).padStart(6,'0')}`}));
+    const schools=syntheticRows('virtual-school',schoolCount,index=>({region:index%3?'충남':'경기'}));
+    const employeeNumbers=new Set(employees.map(row=>row.empNo));
+    const activeApplicants=applicants.filter(row=>row.status!=='종료').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+    const regionalSchools=schools.filter(row=>row.region==='충남').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+    const durationMs=Date.now()-started;
+    const valid=activeApplicants.length===applicantCount&&employeeNumbers.size===employeeCount&&regionalSchools.length>0;
+    return {
+      completedAt:new Date().toISOString(),
+      durationMs,
+      passed:valid&&durationMs<3000,
+      counts:{applicants:applicantCount,employees:employeeCount,schools:schoolCount}
+    };
+  }
+  function saveCapacityResult(result){
+    const before=readState();
+    return writeState({...before,capacity:result});
+  }
+
+  function buildAutomaticChecks(evidence={}){
+    const queues=Number(evidence.savePending||0)+Number(evidence.deletePending||0)+Number(evidence.conflicts||0);
+    return [
+      {id:'version',label:'화면·파일 버전',status:evidence.versionReady?'pass':'fail',detail:evidence.versionReady?'v11.0.0 파일과 화면 표기가 일치합니다.':'화면 또는 파일 버전이 v11.0.0과 다릅니다.'},
+      {id:'security',label:'입력·화면 보안',status:evidence.securityReady?'pass':'fail',detail:evidence.securityReady?'안전 트리·ID·화면 잠금 모듈을 확인했습니다.':'필수 보안 모듈을 확인하지 못했습니다.'},
+      {id:'encrypted_backup',label:'암호화 백업',status:evidence.encryptedBackupReady?'pass':'fail',detail:evidence.encryptedBackupReady?'AES-GCM 암호화 기능을 사용할 수 있습니다.':'이 브라우저에서 암호화 백업을 사용할 수 없습니다.'},
+      {id:'permissions',label:'화면 권한 엔진',status:evidence.permissionsReady?'pass':'fail',detail:evidence.permissionsReady?'현재 계정의 역할과 화면 보호가 준비됐습니다.':'권한 설정이 없거나 확인에 실패했습니다.'},
+      {id:'audit',label:'변경 이력 보호',status:evidence.auditReady?'pass':'fail',detail:evidence.auditReady?'민감정보 마스킹 감사기록 모듈을 확인했습니다.':'변경 이력 모듈을 확인하지 못했습니다.'},
+      {id:'sync_queue',label:'저장·삭제·충돌 대기',status:queues===0?'pass':'fail',detail:queues===0?'미처리 동기화 작업이 없습니다.':`확인할 동기화 작업 ${queues}건이 남아 있습니다.`},
+      {id:'storage',label:'브라우저 저장공간',status:evidence.storageWarning?'fail':'pass',detail:evidence.storageWarning?'저장공간 경고가 있습니다. 암호화 백업 후 정리하세요.':'현재 확인된 저장공간 위험이 없습니다.'},
+      {id:'capacity',label:'가상 6,500건 성능',status:evidence.capacityPassed&&evidence.capacityFresh?'pass':'warn',detail:evidence.capacityPassed&&evidence.capacityFresh?`최근 검사 ${Number(evidence.capacityDurationMs||0).toLocaleString('ko-KR')}ms`:'30일 안에 가상 6,500건 검사를 실행하세요.'}
+    ];
+  }
+  function summarize(automatic,manual){
+    const failed=automatic.filter(check=>check.status==='fail').length;
+    const warnings=automatic.filter(check=>check.status==='warn').length;
+    const automaticPassed=automatic.filter(check=>check.status==='pass').length;
+    return {ready:failed===0&&warnings===0&&manual.ready,failed,warnings,automaticPassed,automaticTotal:automatic.length,manualCompleted:manual.completed,manualTotal:manual.total};
+  }
+  async function collectRuntimeEvidence(state=readState()){
+    let storageWarning=false;
+    try{storageWarning=!!(await root.erpStoragePerformance?.estimateStorage?.())?.warning;}catch{storageWarning=true;}
+    const permission=root.erpPermissions?.current?.()||{};
+    let savePending=0,deletePending=0,conflicts=0;
+    try{savePending=Number(root.erpSyncSafety?.pendingCount?.()||0);}catch{}
+    try{deletePending=Number(root.erpSyncSafety?.pendingDeleteCount?.()||0);}catch{}
+    try{conflicts=Number(root.erpSyncSafety?.readConflicts?.().length||0);}catch{}
+    const capacity=state.capacity;
+    const title=root.document?.title||'';
+    const brand=root.document?.querySelector('.brand-copy p')?.textContent||'';
+    return {
+      versionReady:title.includes(`v${VERSION}`)&&brand.includes(`v${VERSION}`),
+      securityReady:!!root.erpSecurity?.assertSafeTree&&!!root.erpSecurity?.validateRowIds&&!!root.erpPrivacySecurity?.lock,
+      encryptedBackupReady:!!root.erpEncryptedBackup?.isSupported?.(),
+      permissionsReady:!!root.erpPermissions&&!permission.setupRequired&&['admin','local_admin','legacy_admin'].includes(permission.role),
+      auditReady:!!root.erpAudit?.recordEvent&&!!root.erpAudit?.scrubText,
+      savePending,deletePending,conflicts,storageWarning,
+      capacityPassed:capacity?.passed===true,
+      capacityFresh:isFresh(capacity?.completedAt),
+      capacityDurationMs:capacity?.durationMs||0
+    };
+  }
+  function buildPrivacySafeReport({state=readState(),automatic=[],manual=manualStatus(state),summary=summarize(automatic,manual)}={}){
+    const safeState=sanitizeState(state);
+    return {
+      format:'recruit-erp-production-readiness',
+      schemaVersion:STATE_SCHEMA_VERSION,
+      appVersion:VERSION,
+      createdAt:new Date().toISOString(),
+      overall:summary.ready?'ready':'not-ready',
+      automatic:automatic.map(check=>({id:check.id,status:check.status,detail:check.detail})),
+      manual:manual.rows.map(row=>({id:row.id,complete:row.complete,completedAt:row.completedAt||'',role:row.role||''})),
+      capacity:safeState.capacity?{completedAt:safeState.capacity.completedAt,durationMs:safeState.capacity.durationMs,passed:safeState.capacity.passed,counts:{...safeState.capacity.counts}}:null,
+      privacy:'이 보고서는 이름·연락처·주소·주민등록번호·메모·원본 업무 데이터를 포함하지 않습니다.'
+    };
+  }
+  function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
+  function formatTime(value){
+    if(!value)return '미확인';
+    const date=new Date(value);return Number.isNaN(date.getTime())?'확인 불가':date.toLocaleString('ko-KR');
+  }
+  function downloadReport(report){
+    if(!root.document||!root.URL||!root.Blob)return false;
+    const blob=new root.Blob([JSON.stringify(report,null,2)],{type:'application/json;charset=utf-8'});
+    const url=root.URL.createObjectURL(blob),link=root.document.createElement('a');
+    link.href=url;link.download=`recruit-erp-readiness-v${VERSION}-${new Date().toISOString().slice(0,10)}.json`;
+    root.document.body.appendChild(link);link.click();link.remove();root.URL.revokeObjectURL(url);return true;
+  }
+  function statusLabel(status){return status==='pass'?'통과':status==='fail'?'조치 필요':'확인 필요';}
+  async function render(){
+    const host=root.document?.getElementById('productionReadinessBody');if(!host)return;
+    const sequence=++renderSequence,state=readState(),manual=manualStatus(state),evidence=await collectRuntimeEvidence(state);
+    if(sequence!==renderSequence)return;
+    const automatic=buildAutomaticChecks(evidence),summary=summarize(automatic,manual);
+    const overallClass=summary.ready?'is-ready':'is-not-ready';
+    const overallTitle=summary.ready?'운영 준비 완료':'아직 운영 확인이 필요합니다';
+    host.innerHTML=`<section class="readiness-overall ${overallClass}"><div><p class="eyebrow">PRODUCTION GATE</p><h3>${overallTitle}</h3><p>자동 통과 ${summary.automaticPassed}/${summary.automaticTotal} · 운영 확인 ${summary.manualCompleted}/${summary.manualTotal}</p></div><span>${summary.ready?'READY':'CHECK'}</span></section><div class="readiness-actions"><button class="ghost" id="btnReadinessRefresh" type="button">다시 확인</button><button class="ghost" id="btnReadinessCapacity" type="button">가상 6,500건 검사</button><button class="primary" id="btnReadinessExport" type="button">점검 결과 저장</button></div><section class="panel readiness-section"><div class="panel-head"><div><h3>자동 안전 점검</h3><small>현재 브라우저 상태와 보호 모듈만 확인하며 개인정보 원문은 읽거나 표시하지 않습니다.</small></div></div><div class="readiness-check-grid">${automatic.map(check=>`<article class="readiness-check is-${check.status}"><span>${statusLabel(check.status)}</span><strong>${escapeHtml(check.label)}</strong><p>${escapeHtml(check.detail)}</p></article>`).join('')}</div></section><section class="panel readiness-section"><div class="panel-head"><div><h3>운영자 확인</h3><small>확인은 30일 동안 유효합니다. 실제 개인정보 대신 가상 자료로 훈련하세요.</small></div></div><div class="readiness-manual-list">${manual.rows.map(row=>`<label class="readiness-manual ${row.complete?'is-complete':''}"><input type="checkbox" data-readiness-manual="${row.id}" ${row.complete?'checked':''}><span><strong>${escapeHtml(row.label)}</strong><small>${escapeHtml(row.description)}</small>${row.complete?`<em>${escapeHtml(formatTime(row.completedAt))} · ${escapeHtml(row.role)}</em>`:''}</span></label>`).join('')}</div></section><section class="panel readiness-docs"><div><h3>운영 문서</h3><p>업무 시작·종료부터 장애 복구와 릴리스 판정까지 순서대로 확인할 수 있습니다.</p></div><div><a class="ghost button-link" href="docs/OPERATOR_GUIDE_v11.0.0.md" target="_blank" rel="noopener">운영자 설명서</a><a class="ghost button-link" href="docs/INCIDENT_RECOVERY_v11.0.0.md" target="_blank" rel="noopener">장애 복구 절차</a><a class="ghost button-link" href="docs/RELEASE_READINESS_v11.0.0.md" target="_blank" rel="noopener">릴리스 점검표</a></div></section><p class="readiness-limit">브라우저 자동 점검은 실제 Supabase 계정별 RLS, 외부 백업 보관, 다른 PC의 삭제 동기화를 대신하지 않습니다. 해당 항목은 운영자 확인과 모의훈련이 필요합니다.</p>`;
+    host.querySelector('#btnReadinessRefresh')?.addEventListener('click',()=>render());
+    host.querySelector('#btnReadinessCapacity')?.addEventListener('click',event=>{
+      const button=event.currentTarget;button.disabled=true;button.textContent='가상 자료 검사 중…';
+      root.setTimeout?.(()=>{const result=runSyntheticCapacityCheck();saveCapacityResult(result);render();},20);
+    });
+    host.querySelector('#btnReadinessExport')?.addEventListener('click',()=>downloadReport(buildPrivacySafeReport({state,automatic,manual,summary})));
+    host.querySelectorAll('[data-readiness-manual]').forEach(input=>input.addEventListener('change',()=>{
+      const saved=setManual(input.dataset.readinessManual,input.checked);
+      if(!saved)input.checked=!input.checked;
+      render();
+    }));
+  }
+  function ensureUi(){
+    if(!root.document)return;
+    const systemItems=root.document.querySelector('[data-navgroup="system"] .nav-group-items');
+    if(systemItems&&!root.document.querySelector('[data-page="productionReadiness"]')){
+      const button=root.document.createElement('button');button.className='nav-btn nav-sub';button.type='button';button.dataset.page='productionReadiness';button.dataset.requiredPermission='readiness.manage';button.innerHTML='<span class="nav-ico" aria-hidden="true">✓</span><span>운영 준비 점검</span>';systemItems.appendChild(button);
+      button.addEventListener('click',()=>{if(root.erpPermissions?.require?.('readiness.manage')){root.setPage?.('productionReadiness');render();}});
+    }
+    const main=root.document.querySelector('main.main');
+    if(main&&!root.document.getElementById('productionReadiness')){
+      const section=root.document.createElement('section');section.className='page production-readiness-page';section.id='productionReadiness';section.dataset.requiredPermission='readiness.manage';section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>실제 운영 준비 점검</h3><p>자동 안전장치와 사람이 직접 확인해야 하는 운영 훈련을 한 화면에서 구분합니다.</p></div><span class="page-intro-badge">v11.0.0 PRODUCTION</span></div><div id="productionReadinessBody"></div>';main.appendChild(section);
+    }
+  }
+  function init(){
+    if(!root.document)return;
+    ensureUi();
+    const baseSetPage=root.setPage;
+    if(typeof baseSetPage==='function')root.setPage=function(page){
+      if(page==='productionReadiness'&&!root.erpPermissions?.has?.('readiness.manage')){root.erpPermissions?.require?.('readiness.manage');return;}
+      baseSetPage(page);
+      if(page==='productionReadiness'){
+        const title=root.document.getElementById('page-title');if(title)title.textContent='운영 준비 점검';
+        const breadcrumb=root.document.querySelector('.topbar-breadcrumb');if(breadcrumb)breadcrumb.textContent='자동검사와 운영 모의훈련을 모두 통과해야 READY가 됩니다.';
+        render();
+      }
+    };
+    root.document.addEventListener('erp:permission-change',()=>render());
+    root.document.addEventListener('erp:storage-write',event=>{if(event.detail?.key!==STATE_KEY&&root.document.body.dataset.activePage==='productionReadiness')render();});
+    root.setTimeout?.(()=>render(),0);
+  }
+
+  const api={VERSION,STATE_KEY,STATE_SCHEMA_VERSION,MAX_CHECK_AGE_MS,MANUAL_CHECKS,emptyState,isFresh,sanitizeState,readState,writeState,setManual,clearState,manualStatus,runSyntheticCapacityCheck,saveCapacityResult,buildAutomaticChecks,summarize,collectRuntimeEvidence,buildPrivacySafeReport,downloadReport,render,ensureUi,init};
+  if(root.document)init();
+  return api;
+});
