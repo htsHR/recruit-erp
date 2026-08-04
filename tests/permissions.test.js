@@ -13,7 +13,7 @@ const hireWaiting=fs.readFileSync(path.join(root,'js','hire-waiting-list.js'),'u
 const auth=fs.readFileSync(path.join(root,'js','auth-init.js'),'utf8');
 const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 
-assert.strictEqual(permissions.VERSION,'10.63.0');
+assert.strictEqual(permissions.VERSION,'11.0.0');
 assert(permissions.has('applicant.write','admin'));
 assert(permissions.has('applicant.delete','admin'));
 assert(permissions.has('applicant.write','recruiter'));
@@ -28,6 +28,9 @@ assert(!permissions.has('applicant.write','viewer'));
 assert(!permissions.has('backup.restore','viewer'));
 assert(!permissions.has('sensitive.read','viewer'));
 assert(!permissions.has('audit.read','viewer'));
+assert(permissions.has('readiness.manage','admin'));
+assert(!permissions.has('readiness.manage','recruiter'));
+assert(!permissions.has('readiness.manage','viewer'));
 
 assert.match(sql,/create table if not exists public\.user_roles/i);
 assert.match(sql,/alter table public\.user_roles enable row level security/i);
@@ -52,13 +55,14 @@ assert.match(schools,/erpPermissions\.require\('school\.delete'/);
 assert.match(hireWaiting,/placeholder="관리자만 조회"/);
 assert.match(hireWaiting,/erpPermissions\.require\('sensitive\.read'/);
 assert.match(auth,/await window\.erpPermissions\.load/);
-assert.match(index,/js\/permissions\.js\?v=10\.63\.0/);
-assert.match(index,/js\/audit-history\.js\?v=10\.63\.0/);
-assert.match(index,/css\/permissions\.css\?v=10\.63\.0/);
-assert.match(index,/css\/audit-history\.css\?v=10\.63\.0/);
+assert.match(index,/js\/permissions\.js\?v=11\.0\.0/);
+assert.match(index,/js\/audit-history\.js\?v=11\.0\.0/);
+assert.match(index,/css\/permissions\.css\?v=11\.0\.0/);
+assert.match(index,/css\/audit-history\.css\?v=11\.0\.0/);
 assert(permissions.has('storage.manage','admin'));
 assert(!permissions.has('storage.manage','recruiter'));
 assert(!permissions.has('storage.manage','viewer'));
 assert.equal(permissions.requiredPermission({dataset:{page:'storagePerformance'}}),'storage.manage');
+assert.equal(permissions.requiredPermission({dataset:{page:'productionReadiness'}}),'readiness.manage');
 
 console.log('permissions.test.js: 역할표·화면 보호·민감정보 마스킹·Supabase RLS 확인 완료');

@@ -1,6 +1,6 @@
 {
   "name": "recruit-erp",
-  "version": "10.63.0",
+  "version": "11.0.0",
   "private": true,
   "description": "채용·인사 운영을 위한 정적 웹 ERP",
   "scripts": {
