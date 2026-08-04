@@ -28,7 +28,8 @@ join pg_namespace n on n.oid=p.pronamespace
 where (n.nspname='public' and p.proname in (
   'can_write_operational_data','is_admin_user','is_allowed_user','set_app_settings_updated_at'
 )) or (n.nspname='private' and p.proname in (
-  'erp_legacy_is_allowed_user','erp_legacy_is_admin','erp_set_app_settings_updated_at'
+  'erp_legacy_is_allowed_user','erp_legacy_is_admin','erp_set_app_settings_updated_at',
+  'erp_prepare_audit_log'
 ))
 order by n.nspname,p.proname;
 
@@ -36,7 +37,15 @@ select tg.tgname,pg_get_triggerdef(tg.oid,true) as definition
 from pg_trigger tg
 join pg_class c on c.oid=tg.tgrelid
 join pg_namespace n on n.oid=c.relnamespace
-where n.nspname='public' and c.relname='app_settings' and not tg.tgisinternal;
+where n.nspname='public'
+  and c.relname in ('app_settings','audit_logs')
+  and not tg.tgisinternal
+order by c.relname,tg.tgname;
+
+select pg_get_functiondef(p.oid) as audit_trigger_function
+from pg_proc p
+join pg_namespace n on n.oid=p.pronamespace
+where n.nspname='private' and p.proname='erp_prepare_audit_log';
 
 select indexname,indexdef
 from pg_indexes

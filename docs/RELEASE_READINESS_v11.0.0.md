@@ -24,11 +24,15 @@ v11은 자동검사 통과만으로 운영 준비 완료가 되지 않습니다.
 6. Supabase Auth의 [유출 비밀번호 보호](https://supabase.com/docs/guides/auth/password-security)를 켭니다. 이 설정은 저장소 코드나 SQL migration으로 대신하지 않으며, 활성화 확인 전에는 READY로 판정하지 않습니다.
 7. 관리자·채용담당자·조회전용 실제 테스트 계정으로 허용·차단 작업을 확인합니다. 현재 운영 프로젝트는 admin 1명뿐이므로 recruiter·viewer 계정은 사용자 승인 후에만 만듭니다.
 
+운영 사전검증에서 기존 `private.erp_prepare_audit_log()`의 `current_role` 변수명이 PostgreSQL `CURRENT_ROLE` 특수 식별자와 충돌해 admin·recruiter 감사로그 삽입을 거부하는 문제가 확인됐습니다. v11 migration은 같은 private 함수를 `resolved_app_role` 변수로 안전하게 교체합니다. 적용 후 admin·recruiter 본인 작업 기록 허용, viewer 기록 차단, 감사로그 원문 개인정보 미저장을 다시 확인해야 합니다.
+
 새 테이블이나 개인정보 행을 검사 목적으로 만들지 않습니다. SQL 결과에는 표·정책·함수 이름과 건수만 사용합니다.
 
 ## Rollback 제한
 
 `supabase/rollback/rollback_production_readiness_v11_0_0.sql`은 migration의 자동 후속 작업이 아닙니다. 장애가 확인되고 관리자 승인이 있을 때만 이전 레거시 정책·트리거·공개 함수 실행 권한을 복원하는 비상 절차로 사용합니다. 실행 전 현재 DB 백업과 영향 범위를 확인하고, 실행 후에는 검증 SQL과 역할별 회귀검사를 다시 수행합니다.
+
+확인된 감사로그 역할 변수 수정은 rollback 후에도 의도적으로 유지합니다. 이 수정까지 되돌리면 admin·recruiter 감사로그가 다시 차단되므로, 레거시 정책·공개 RPC 복원 범위에 포함하지 않습니다.
 
 ## 운영자 모의훈련
 

@@ -129,11 +129,15 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   const releaseDocument=read('docs/RELEASE_READINESS_v11.0.0.md');assert.match(releaseDocument,/유출 비밀번호 보호/);assert.match(releaseDocument,/전자서명된 증명서/);assert.match(releaseDocument,/Rollback 제한[\s\S]*관리자 승인/);
 
   assert.match(migration,/create or replace function private\.erp_legacy_is_allowed_user/);assert.match(migration,/function private\.erp_set_app_settings_updated_at[\s\S]*security invoker/i);
+  assert.match(migration,/function private\.erp_prepare_audit_log\(\)[\s\S]*resolved_app_role text[\s\S]*if resolved_app_role not in \('admin','recruiter'\)/i);
+  assert.doesNotMatch(migration,/declare\s+current_role text/i,'v10.58 audit trigger의 PostgreSQL CURRENT_ROLE 충돌을 다시 만들면 안 됩니다.');
+  assert.match(migration,/new\.actor_role := resolved_app_role/);assert.match(migration,/revoke all on function private\.erp_prepare_audit_log\(\)/i);
   assert.match(migration,/revoke all on function public\.can_write_operational_data\(uuid\) from public, anon, authenticated/i);assert.match(migration,/create index if not exists app_settings_updated_by_idx/);
   assert.doesNotMatch(migration,/read-only verification|select\s+t\.tablename|has_function_privilege/i,'실제 migration에는 검증 SELECT가 없어야 합니다.');
-  assert.match(verification,/select[\s\S]*pg_policies[\s\S]*has_function_privilege/i);assert.doesNotMatch(verification,/\b(create|alter|drop|grant|revoke|insert|update|delete)\b/i,'검증 SQL은 읽기 전용이어야 합니다.');
+  assert.match(verification,/select[\s\S]*pg_policies[\s\S]*has_function_privilege/i);assert.match(verification,/erp_prepare_audit_log/);assert.match(verification,/audit_logs/);assert.doesNotMatch(verification,/\b(create|alter|drop|grant|revoke|insert|update|delete)\b/i,'검증 SQL은 읽기 전용이어야 합니다.');
   assert.match(rollback,/create policy allowed_users_select[\s\S]*is_admin_user\(auth\.uid\(\)\)/i);assert.match(rollback,/execute function public\.set_app_settings_updated_at\(\)/i);
   assert.match(rollback,/grant execute on function public\.can_write_operational_data\(uuid\) to authenticated/i);assert.match(rollback,/grant execute on function public\.set_app_settings_updated_at\(\) to public/i);
+  assert.match(rollback,/audit trigger role-variable correction is intentionally retained/i);
   assert.doesNotMatch(migration,/auth\.role\(\)|user_metadata/i);
 
   console.log('production-readiness.test.js: cloud admin 보호·local READY 차단·fail-closed·AES-GCM 기능 시험·보고서·SQL 분리 확인 완료');

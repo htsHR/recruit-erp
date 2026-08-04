@@ -11,6 +11,61 @@ create schema if not exists private;
 revoke all on schema private from public, anon;
 grant usage on schema private to authenticated;
 
+-- The v10.58 audit trigger used `current_role` as a PL/pgSQL variable name.
+-- PostgreSQL also treats CURRENT_ROLE as a special identifier, so authenticated
+-- admin/recruiter inserts could be rejected as if they had no audit permission.
+-- Replace the function in place; the existing private trigger remains attached.
+create or replace function private.erp_prepare_audit_log()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  resolved_app_role text;
+  resolved_email text;
+begin
+  if auth.uid() is null then raise exception 'authentication required'; end if;
+  select ur.role, ur.email
+    into resolved_app_role, resolved_email
+    from public.user_roles ur
+   where ur.user_id = auth.uid();
+  if resolved_app_role not in ('admin','recruiter') then
+    raise exception 'audit write permission denied';
+  end if;
+  new.actor_user_id := auth.uid();
+  new.actor_role := resolved_app_role;
+  new.actor_label := case
+    when position('@' in coalesce(resolved_email,'')) > 1
+      then left(resolved_email,1) || '***@' || split_part(resolved_email,'@',2)
+    else '로그인 사용자'
+  end;
+  new.before_values := private.erp_audit_scrub_json(new.before_values);
+  new.after_values := private.erp_audit_scrub_json(new.after_values);
+  new.metadata := private.erp_audit_scrub_json(new.metadata);
+  new.entity_label := case
+    when new.entity_type in ('applicant','employee','schedule','user')
+      then left(coalesce(new.entity_label,'기록'),1) || '***'
+    else left(coalesce(new.entity_label,'기록'),80)
+  end;
+  new.reason := left(
+    regexp_replace(
+      regexp_replace(
+        regexp_replace(coalesce(new.reason,''),'[0-9]{6}[ -]?[1-4][0-9]{6}','[주민등록번호 숨김]','g'),
+        '01[016789][ .-]?[0-9]{3,4}[ .-]?[0-9]{4}','[전화번호 숨김]','g'
+      ),
+      '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}','[이메일 숨김]','g'
+    ),
+    300
+  );
+  new.source := 'cloud';
+  new.created_at := now();
+  return new;
+end
+$$;
+
+revoke all on function private.erp_prepare_audit_log() from public, anon, authenticated;
+
 create or replace function private.erp_legacy_is_allowed_user(uid uuid)
 returns boolean
 language sql

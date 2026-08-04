@@ -4,6 +4,10 @@
 
 begin;
 
+-- The audit trigger role-variable correction is intentionally retained.
+-- Reverting it would restore the confirmed admin/recruiter audit-write denial
+-- and is not required to restore the pre-v11 legacy policies or public RPCs.
+
 drop policy if exists allowed_users_select on public.allowed_users;
 create policy allowed_users_select
 on public.allowed_users for select to authenticated
