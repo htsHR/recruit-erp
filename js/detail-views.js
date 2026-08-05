@@ -115,6 +115,7 @@ function renderSchoolDetail(){
   $('schoolDetailBody').innerHTML=`
     <section class="school-detail-hero">
       <div><p class="eyebrow">SCHOOL OVERVIEW</p><h2>${esc(s.name)}</h2><p>${esc(identitySub)}</p></div>
+      <button class="primary school-workforce-detail-button" type="button" data-school-workforce-open="${esc(s.id)}">인력분석</button>
       <div class="school-detail-hero-kpis">
         ${schoolKpiItem('총 지원자', rec.total+'명', `closeSchoolDetail(true);viewSchoolApplicants('${s.id}')`)}
         ${schoolKpiItem('현재 재직', activeCount+'명', `closeSchoolDetail(true);viewSchoolEmployees('${s.id}','${escJs(s.name)}')`)}
@@ -215,7 +216,8 @@ function renderEmployeeDetail(){
     detailRow('제품',employeeDetailValue(e.product)),
     detailRow('파트',employeeDetailValue(e.part)),
     detailRow('직급',employeeDetailValue(e.rank)),
-    detailRow('직책',employeeDetailValue(e.position||e.role)),
+    detailRow('직책',employeeDetailValue(e.position)),
+    detailRow('직책/직무',employeeDetailValue(e.role)),
     detailRow('승격일',employeeDetailValue(e.promotionDate)),
   ].join('');
   const recruitRows=[

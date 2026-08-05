@@ -5,11 +5,12 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {spawn}=require('node:child_process');
 const {chromium}=require('playwright-core');
+const employeeXlsx=require('../js/employee-master-xlsx-import.js');
 
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.0.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.1.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -25,6 +26,15 @@ const fakeApplicants=[
 const fakeHireWaitingProfiles=[
   {applicantId:'33333333-3333-4333-8333-333333333333',employeeNo:'V-1003',groupName:'가상부서',product:'가상제품',part:'가상파트',rank:'사원',commuteMethod:'출퇴근',documentsRequestedAt:'2026-08-02T00:00:00.000Z',submittedDocuments:['신분증 사본','통장 사본','졸업증명서'],trainingDate:'2026-08-05',residentNumber:'000000-0000000'}
 ];
+const fakeWorkforce={
+  schools:[{id:'school-ui-1',name:'가상인력대학교',aliases:['가상인력대']}],
+  employees:[
+    {id:'employee-ui-1',empNo:'UI-1001',name:'가상재직자',status:'재직중',hireDate:'2023-01-10',schoolId:'school-ui-1',school:'가상인력대학교',rank:'E1-2',position:'파트장',role:'설비기술',team:'가상기술팀',groupName:'가상1그룹',recruitType:'공채',recruitChannel:'학교추천',education:'대졸',major:'기계공학',gender:'여자'},
+    {id:'employee-ui-2',empNo:'UI-1002',name:'가상휴직자',status:'휴직',hireDate:'2024-02-20',leaveStartDate:'2026-07-01',schoolId:'school-ui-1',school:'가상인력대학교',rank:'SE1-2',position:'',role:'품질검사',team:'가상품질팀',groupName:'가상2그룹',recruitType:'경력',recruitChannel:'사람인',education:'전문대',major:'전기공학',gender:'남자'},
+    {id:'employee-ui-3',empNo:'UI-1003',name:'가상퇴직자',status:'퇴사',hireDate:'2022-03-15',leaveDate:'2026-05-01',schoolId:'school-ui-1',school:'가상인력대학교',rank:'PE2-5',position:'그룹장',role:'공정기술',team:'가상공정팀',groupName:'가상3그룹',recruitType:'공채',recruitChannel:'학교추천',education:'대졸',major:'화학공학',gender:'여자'}
+  ],
+  upcoming:{id:'applicant-ui-upcoming',name:'가상입사예정자',status:'입사예정',hireDate:'2099-08-06',schoolId:'school-ui-1',school:'가상인력대학교',source:'학교추천',education:'대졸',major:'산업공학',gender:'남자'}
+};
 const viewports=[
   {name:'1920x1080',width:1920,height:1080},
   {name:'1366x768',width:1366,height:768},
@@ -50,6 +60,17 @@ async function openEncryptedRestoreFixture(page){
   await page.evaluate(async()=>window.erpEncryptedBackupUI.inspectFile(new File([window.__fakeEncryptedBackup],'fake_v11.0.0.erpbackup',{type:'application/json'})));
   await page.locator('#encryptedBackupPassword').fill('가상 복원 전용 긴 비밀번호 2026');await page.locator('#encryptedBackupSubmit').click();await page.locator('#bcInspection.visible').waitFor();await page.locator('#encryptedBackupDialog').waitFor({state:'hidden'});
 }
+async function openSchoolWorkforceFixture(page){
+  await page.evaluate(fixture=>{
+    if(!window.__schoolWorkforceFixtureOriginal)window.__schoolWorkforceFixtureOriginal={employees,schools,applicants};
+    employees=fixture.employees.map(row=>({...row}));schools=fixture.schools.map(row=>({...row}));applicants=[...applicants.filter(row=>row.id!==fixture.upcoming.id),{...fixture.upcoming}];
+    window.openSchoolWorkforceAnalytics('school-ui-1');
+  },fakeWorkforce);
+  await page.locator('#schoolWorkforceModal.show').waitFor();await page.waitForTimeout(80);
+}
+async function restoreSchoolWorkforceFixture(page){
+  await page.evaluate(()=>{const original=window.__schoolWorkforceFixtureOriginal;if(original){employees=original.employees;schools=original.schools;applicants=original.applicants;delete window.__schoolWorkforceFixtureOriginal;}window.openSchoolWorkforceAnalytics&&document.querySelector('#btnCloseSchoolWorkforce')?.click();});
+}
 
 (async()=>{
   await waitForServer();
@@ -67,7 +88,7 @@ async function openEncryptedRestoreFixture(page){
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v11.0.0');
+      assert.equal(await page.title(),'채용관리 시스템 v11.1.0');
       const queue=page.locator('#homeTodayGrid .queue-card');assert.equal(await queue.count(),5);for(let i=0;i<5;i++)assert.notEqual(await queue.nth(i).evaluate(el=>getComputedStyle(el).display),'none');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
@@ -132,7 +153,19 @@ async function openEncryptedRestoreFixture(page){
         await page.screenshot({path:path.join(outputDir,'390x844-form.png'),fullPage:true});
       }
       await page.evaluate(()=>window.setPage?.('home'));await queue.first().focus();await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'today');await page.evaluate(()=>window.setPage?.('home'));await queue.nth(4).focus();await page.keyboard.press('Space');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'today');
-      if(viewport.width===390||viewport.width===1366)await page.screenshot({path:path.join(outputDir,`${viewport.name}-home.png`),fullPage:true});
+      if(viewport.width===390||viewport.width===1366){
+        await page.screenshot({path:path.join(outputDir,`${viewport.name}-home.png`),fullPage:true});
+        await openSchoolWorkforceFixture(page);
+        const workforce=await page.evaluate(()=>{const card=document.querySelector('.school-workforce-card').getBoundingClientRect(),body=document.querySelector('.school-workforce-body'),text=document.querySelector('#schoolWorkforceModal').innerText,topElement=document.elementFromPoint(card.right-24,card.top+24);return{card:{left:card.left,right:card.right,top:card.top,bottom:card.bottom},width:innerWidth,height:innerHeight,bodyOverflow:body.scrollWidth-body.clientWidth,kpis:document.querySelectorAll('#schoolWorkforceKpis>div').length,rosterRows:document.querySelectorAll('#schoolWorkforceRoster tbody tr').length,modalOnTop:!!topElement?.closest('#schoolWorkforceModal'),text};});
+        assert.ok(workforce.card.left>=-1&&workforce.card.right<=workforce.width+1&&workforce.card.top>=-1&&workforce.card.bottom<=workforce.height+1,`${viewport.name} 학교 인력분석 팝업 잘림: ${JSON.stringify(workforce)}`);
+        assert.equal(workforce.modalOnTop,true,`${viewport.name} 학교 인력분석 팝업이 상단바 아래에 가려지면 안 됩니다.`);assert.equal(workforce.kpis,6);assert.equal(workforce.rosterRows,4);assert.ok(workforce.text.includes('파트장')&&workforce.text.includes('설비기술')&&workforce.text.includes('입사예정'));assert.ok(!workforce.text.includes('전 PM'));assert.equal(await page.locator('#schoolWorkforceLeaveFrom,#schoolWorkforceLeaveTo,#schoolWorkforceLeaveYearFrom,#schoolWorkforceLeaveYearTo,#schoolWorkforcePromotionFrom,#schoolWorkforcePromotionTo,#schoolWorkforcePromotionYearFrom,#schoolWorkforcePromotionYearTo').count(),8,'퇴사·승격 날짜와 연도 필터가 모두 있어야 합니다.');
+        if(viewport.width===1366){
+          await page.locator('#schoolWorkforceSearch').fill('가상재직자');page.once('dialog',dialog=>dialog.accept('가상 저장조건'));await page.locator('#btnSaveSchoolWorkforceView').click();let saved=JSON.parse(await page.evaluate(()=>localStorage.getItem('recruit_erp_school_workforce_saved_views_v1')));assert.equal(saved.length,1);assert.equal(saved[0].filters.search,'','저장 분석조건에는 사번·성명 검색 원문을 남기면 안 됩니다.');assert.ok(!JSON.stringify(saved).includes('가상재직자'));
+          page.once('dialog',dialog=>dialog.accept('가상 변경조건'));await page.locator('#btnRenameSchoolWorkforceView').click();saved=JSON.parse(await page.evaluate(()=>localStorage.getItem('recruit_erp_school_workforce_saved_views_v1')));assert.equal(saved[0].name,'가상 변경조건');
+          await page.locator('#schoolWorkforceSearch').fill('');await page.locator('#btnApplySchoolWorkforceFilters').click();const [workforceDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#btnSchoolWorkforceExport').click()]);const workforceBuffer=fs.readFileSync(await workforceDownload.path()),workforceWorkbook=await employeeXlsx.readWorkbookArrayBuffer(workforceBuffer.buffer.slice(workforceBuffer.byteOffset,workforceBuffer.byteOffset+workforceBuffer.byteLength));assert.deepEqual(workforceWorkbook.availableSheets,['조회결과','집계요약','적용조건','데이터확인필요']);await page.evaluate(()=>localStorage.removeItem('recruit_erp_school_workforce_saved_views_v1'));
+        }
+        await page.screenshot({path:path.join(outputDir,`${viewport.name}-school-workforce.png`),fullPage:false});await restoreSchoolWorkforceFixture(page);
+      }
       await context.close();
     }
 
@@ -157,6 +190,7 @@ async function openEncryptedRestoreFixture(page){
     assert.ok(zoomFormBounds.controls.every(control=>control.left>=-1&&control.right<=zoomFormBounds.width+1),`1366×768 125% 등록 컨트롤 잘림: ${JSON.stringify(zoomFormBounds)}`);
     assert.ok(zoomFormBounds.buttons.every(button=>button.left>=-1&&button.right<=zoomFormBounds.width+1),`1366×768 125% 상단 버튼 잘림: ${JSON.stringify(zoomFormBounds)}`);
     await zoomPage.screenshot({path:path.join(outputDir,'1366x768-zoom125-form.png'),fullPage:true});
+    await openSchoolWorkforceFixture(zoomPage);const zoomWorkforce=await zoomPage.evaluate(()=>{const card=document.querySelector('.school-workforce-card').getBoundingClientRect(),topElement=document.elementFromPoint(card.right-24,card.top+24);return{left:card.left,right:card.right,top:card.top,bottom:card.bottom,width:innerWidth,height:innerHeight,modalOnTop:!!topElement?.closest('#schoolWorkforceModal')};});assert.ok(zoomWorkforce.left>=-1&&zoomWorkforce.right<=zoomWorkforce.width+1&&zoomWorkforce.top>=-1&&zoomWorkforce.bottom<=zoomWorkforce.height+1,`1366×768 125% 학교 인력분석 팝업 잘림: ${JSON.stringify(zoomWorkforce)}`);assert.equal(zoomWorkforce.modalOnTop,true,'1366×768 125% 학교 인력분석 팝업은 상단바보다 위에 보여야 합니다.');await zoomPage.screenshot({path:path.join(outputDir,'1366x768-zoom125-school-workforce.png'),fullPage:false});await restoreSchoolWorkforceFixture(zoomPage);
     await zoomContext.close();
 
     const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
@@ -180,6 +214,16 @@ async function openEncryptedRestoreFixture(page){
     await page.evaluate(()=>window.erpOnboarding.openModal('33333333-3333-4333-8333-333333333333'));assert.equal(await page.locator('#btnOnboardingConvert').isVisible(),false,'이미 전환된 지원자에게 전환 버튼을 다시 보여주면 안 됩니다.');await page.keyboard.press('Escape');
     await page.evaluate(snapshot=>{localStorage.setItem('recruit_erp_applicants_stable',snapshot.applicants);localStorage.setItem('recruit_erp_employees',snapshot.employees);localStorage.setItem('recruit_erp_hire_waiting_profiles',snapshot.profiles);applicants=load();employees=loadEmployees();hireWaitingProfiles=loadHireWaitingProfiles();renderAll();},onboardingBaseline);
 
+    const employeeImportRollbackDialogs=[],employeeImportRollbackHandler=dialog=>{employeeImportRollbackDialogs.push(dialog.type());return dialog.accept();};page.on('dialog',employeeImportRollbackHandler);const employeeImportRollback=await page.evaluate(async()=>{
+      const employeeStorageBefore=localStorage.getItem('recruit_erp_employees')||'[]',operationModeBefore=localStorage.getItem('recruit_erp_ui_operation_environment'),undoBefore=JSON.stringify({at:'2026-08-01T00:00:00.000Z',before:[],newIds:['previous-fake-id']});localStorage.setItem('recruit_erp_employee_excel_compare_undo_v1',undoBefore);localStorage.setItem('recruit_erp_ui_operation_environment','home');
+      const originalBackup=window.employeeExcelSafetyBackup,originalSetItem=Storage.prototype.setItem,token='excel-rollback:__create__';window.employeeExcelSafetyBackup=()=>({});employeeExcelCompareState={fileName:'가상명단.xlsx',meta:{sourceType:'xlsx',sourceIssues:[],issues:[]},rows:[{key:'excel-rollback',record:{empNo:'V-ROLLBACK',name:'가상복구사원',hireDate:'2026-01-01',status:'재직중'},plannedEmployee:{empNo:'V-ROLLBACK',name:'가상복구사원',hireDate:'2026-01-01',status:'재직중'},employee:null,status:'new',errors:[],changes:[]}],filter:'actionable',page:1,pageSize:35,selected:new Set([token]),lastResult:null};document.getElementById('employeeExcelConfirm').checked=true;
+      Storage.prototype.setItem=function(key,value){if(key==='recruit_erp_employees')throw new Error('가상 사원 저장 실패');return originalSetItem.call(this,key,value);};
+      try{await window.applyEmployeeExcelCompare();}finally{Storage.prototype.setItem=originalSetItem;window.employeeExcelSafetyBackup=originalBackup;if(operationModeBefore===null)localStorage.removeItem('recruit_erp_ui_operation_environment');else localStorage.setItem('recruit_erp_ui_operation_environment',operationModeBefore);}
+      return{employeeCount:employees.length,employeeStorageSame:localStorage.getItem('recruit_erp_employees')===employeeStorageBefore,undoSame:localStorage.getItem('recruit_erp_employee_excel_compare_undo_v1')===undoBefore,selectionPreserved:employeeExcelCompareState.selected.has(token)};
+    });page.off('dialog',employeeImportRollbackHandler);
+    assert.deepEqual(employeeImportRollback,{employeeCount:0,employeeStorageSame:true,undoSame:true,selectionPreserved:true},'사원 XLSX 로컬 저장 실패는 사원·실행취소·미리보기 선택 상태를 원상복구해야 합니다.');
+    assert.ok(employeeImportRollbackDialogs.includes('confirm')&&employeeImportRollbackDialogs.includes('alert'));
+
     const existingId='11111111-1111-4111-8111-111111111111',emptyMemoId='22222222-2222-4222-8222-222222222222',newMemoId='33333333-3333-4333-8333-333333333333';
     await page.evaluate(()=>window.setPage?.('applicants'));const statusTarget=page.locator(`#applicantTbody tr[data-applicant-id="${existingId}"] .status-inline`),before=await page.evaluate(id=>applicants.find(item=>item.id===id).status,existingId);await statusTarget.selectOption({label:'면접예정'});await page.locator('#applicantStatusModal.show').waitFor();assert.ok(await page.evaluate(()=>document.querySelector('#applicantStatusModal').contains(document.activeElement)));assert.ok((await page.locator('#applicantStatusModal').innerText()).includes('메모 추가'));await page.keyboard.press('Tab');assert.ok(await page.evaluate(()=>document.querySelector('#applicantStatusModal').contains(document.activeElement)));await page.screenshot({path:path.join(outputDir,'390x844-status-modal.png'),fullPage:false});await page.keyboard.press('Escape');assert.equal(await page.evaluate(id=>applicants.find(item=>item.id===id).status,existingId),before,'상태 팝업 취소는 자료를 바꾸면 안 됩니다.');
     const memoCases=await page.evaluate(()=>({existingNoNew:window.erpAppendStatusMemo('기존 메모','','면접예정','2026-08-02'),emptyNoNew:window.erpAppendStatusMemo('','','면접예정','2026-08-02'),existingNew:window.erpAppendStatusMemo('기존 메모','추가 메모','면접예정','2026-08-02'),emptyNew:window.erpAppendStatusMemo('','추가 메모','면접예정','2026-08-02')}));
@@ -193,6 +237,7 @@ async function openEncryptedRestoreFixture(page){
     for(const role of ['admin','recruiter','viewer']){
       await page.evaluate(async role=>{window.sb={from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:{user_id:'fake-user',email:'fake@example.com',display_name:'가상 사용자',role}})})};await window.erpPermissions.load({user:{id:'fake-user',email:'fake@example.com'}});},role);
       const state=await page.evaluate(()=>{window.setPage('onboarding');window.erpOnboarding.openModal('33333333-3333-4333-8333-333333333333');const value={role:window.erpPermissions.current().role,formHidden:document.querySelector('[data-page="form"]')?.classList.contains('erp-permission-hidden'),backupHidden:document.querySelector('[data-page="backup"]')?.classList.contains('erp-permission-hidden'),auditHidden:document.querySelector('[data-page="auditHistory"]')?.classList.contains('erp-permission-hidden'),readinessHidden:document.querySelector('[data-page="productionReadiness"]')?.classList.contains('erp-permission-hidden'),dailyStartHidden:document.querySelector('#btnDailyStartFirst')?.classList.contains('erp-permission-hidden'),onboardingVisible:document.querySelector('[data-page="onboarding"]')&&!document.querySelector('[data-page="onboarding"]').classList.contains('erp-permission-hidden'),saveVisible:!document.querySelector('#btnOnboardingSave').hidden,convertVisible:!document.querySelector('#btnOnboardingConvert').hidden};window.erpOnboarding.closeModal();return value;});assert.equal(state.role,role);assert.ok(state.onboardingVisible);if(role==='admin')assert.ok(!state.formHidden&&!state.backupHidden&&!state.auditHidden&&!state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&state.convertVisible);if(role==='recruiter')assert.ok(!state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&!state.convertVisible);if(role==='viewer')assert.ok(state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&state.dailyStartHidden&&!state.saveVisible&&!state.convertVisible);
+      await openSchoolWorkforceFixture(page);const workforcePermission=await page.evaluate(()=>({privacy:!!document.querySelector('#schoolWorkforceRoster .school-workforce-privacy'),rows:document.querySelectorAll('#schoolWorkforceRoster tbody tr').length,exportDisabled:document.querySelector('#btnSchoolWorkforceExport').disabled,text:document.querySelector('#schoolWorkforceRoster').innerText}));if(role==='viewer'){assert.equal(workforcePermission.privacy,true);assert.equal(workforcePermission.rows,0);assert.equal(workforcePermission.exportDisabled,true);assert.ok(!workforcePermission.text.includes('가상재직자'));}else{assert.equal(workforcePermission.privacy,false);assert.ok(workforcePermission.rows>=3);assert.equal(workforcePermission.exportDisabled,false);}await restoreSchoolWorkforceFixture(page);
     }
     await page.evaluate(()=>{window.erpPermissions.useLocal();document.getElementById('loginOverlay').style.display='none';localStorage.setItem('recruit_erp_ui_operation_environment','company');document.documentElement.dataset.operationEnvironment='company';window.setPage('productionReadiness');});await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('로컬 참고용'));const localRoles=page.locator('[data-readiness-manual="roles_rls"]');assert.equal(await localRoles.isDisabled(),true,'local_admin은 roles_rls를 체크할 수 없어야 합니다.');assert.ok((await page.locator('#productionReadiness').innerText()).includes('Supabase 관리자 계정으로 로그인한 상태에서만 확인할 수 있습니다.'));await page.locator('#btnReadinessCapacity').click();await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('최근 검사'));const readinessCapacity=await page.evaluate(()=>JSON.parse(localStorage.getItem('recruit_erp_production_readiness_v1100'))?.capacity);assert.deepEqual(readinessCapacity.counts,{applicants:5000,employees:1000,schools:500});assert.equal(readinessCapacity.passed,true);const readinessStored=await page.evaluate(()=>localStorage.getItem('recruit_erp_production_readiness_v1100'));assert.ok(!JSON.parse(readinessStored).manual.roles_rls,'로컬 상태에서 roles_rls 기록을 만들면 안 됩니다.');for(const secret of ['테스트지원자1','010-0000-0001','000000-0000000'])assert.ok(!readinessStored.includes(secret),`운영 준비 상태에 개인정보가 남으면 안 됩니다: ${secret}`);const [readinessDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#btnReadinessExport').click()]);const readinessReport=JSON.parse(fs.readFileSync(await readinessDownload.path(),'utf8'));assert.equal(readinessReport.format,'recruit-erp-production-readiness');assert.equal(readinessReport.overall,'not-ready');assert.equal(readinessReport.verificationSource,'local');assert.equal(readinessReport.migrationVerified,false);assert.match(readinessReport.limitation,/전자서명된 증명서가 아닙니다/);assert.ok(!JSON.stringify(readinessReport).includes('테스트지원자1'));
     await page.evaluate(async()=>{window.__readinessOriginalSb=window.sb;window.__readinessOriginalCanUseCloud=window.canUseCloud;window.sb={auth:{getSession:async()=>({data:{session:{user:{id:'fake-cloud-admin'}}}})},from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:{user_id:'fake-cloud-admin',email:'admin@example.com',display_name:'가상 관리자',role:'admin'}})})};window.canUseCloud=()=>true;localStorage.setItem('recruit_erp_ui_operation_environment','home');document.documentElement.dataset.operationEnvironment='home';await window.erpPermissions.load({user:{id:'fake-cloud-admin',email:'admin@example.com'}});document.dispatchEvent(new CustomEvent('erp:operation-environment-change',{detail:{mode:'home'}}));window.setPage('productionReadiness');});await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('클라우드 검증'));assert.equal(await page.locator('[data-readiness-manual="roles_rls"]').isDisabled(),false,'cloud admin은 roles_rls를 체크할 수 있어야 합니다.');await page.locator('[data-readiness-manual="roles_rls"]').check();await page.locator('[data-readiness-manual="leaked_credential_protection"]').check();const cloudReadinessStored=JSON.parse(await page.evaluate(()=>localStorage.getItem('recruit_erp_production_readiness_v1100')));assert.equal(cloudReadinessStored.manual.roles_rls.role,'admin');assert.equal(cloudReadinessStored.manual.roles_rls.source,'cloud');assert.equal(cloudReadinessStored.manual.leaked_credential_protection.source,'cloud');await page.evaluate(()=>{window.erpPermissions.useLocal();window.sb=window.__readinessOriginalSb;window.canUseCloud=window.__readinessOriginalCanUseCloud;delete window.__readinessOriginalSb;delete window.__readinessOriginalCanUseCloud;});
@@ -219,6 +264,6 @@ async function openEncryptedRestoreFixture(page){
     await page.evaluate(()=>window.openHireWaitingList?.('2026-08-08'));if(await page.locator('#hireWaitingModal.show').count())assert.ok(await page.locator('#hireWaitingModal .safety-intro-card').count());
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
-    console.log(`ui-visual-layout.js: 7개 화면 조건(5개 뷰포트+125% 확대)·16개 화면·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
+    console.log(`ui-visual-layout.js: 7개 화면 조건(5개 뷰포트+125% 확대)·17개 화면·학교 인력분석·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
   }finally{await browser.close();server.kill();}
 })().catch(error=>{server.kill();console.error(error);process.exitCode=1;});
