@@ -78,6 +78,82 @@ assert.equal(xlsx.buildImportPlan({records:[missingNo],employees:[],schools,asOf
 const future={...parsedActive.records[0],empNo:'V-FUTURE',hireDate:'2026-12-01'};
 assert.equal(xlsx.buildImportPlan({records:[future],employees:[],schools,asOf:'2026-08-05'}).summary.blocked,1);
 
+const selfClosing=xlsx.parseWorksheetXml(`
+  <worksheet><sheetData>
+    <row r="2"><c r="H2" s="1"/><c r="I2" t="s"><v>0</v></c><c r="J2"/><c r="K2"/><c r="L2"><v>46239</v></c></row>
+    <row r="4"><c r="A4"/><c r="C4" t="inlineStr"><is><t>가상값</t></is></c><c r="E4" t="b"><v>1</v></c></row>
+  </sheetData></worksheet>`,['가상성명']);
+assert.equal(selfClosing.rows[1][7],'');
+assert.equal(selfClosing.rows[1][8],'가상성명');
+assert.equal(selfClosing.rows[1][9],'');
+assert.equal(selfClosing.rows[1][10],'');
+assert.equal(selfClosing.rows[1][11],46239);
+assert.equal(selfClosing.rows[3][0],'');
+assert.equal(selfClosing.rows[3][2],'가상값');
+assert.equal(selfClosing.rows[3][4],true);
+assert.equal(selfClosing.cellStates[1][7].kind,'empty');
+
+const typedCells=xlsx.parseWorksheetXml(`
+  <worksheet><sheetData><row r="1">
+    <c r="A1" t="s"><v>0</v></c>
+    <c r="B1" t="inlineStr"><is><t>인라인</t></is></c>
+    <c r="C1"><v>42</v></c>
+    <c r="D1" t="b"><v>0</v></c>
+    <c r="E1" t="str"><v>캐시문자열</v></c>
+    <c r="F1"><f>1+1</f><v>2</v></c>
+    <c r="G1"><f t="shared" si="0"/></c>
+    <c r="H1" t="e"><f>VLOOKUP()</f><v>#N/A</v></c>
+    <c r="I1"/>
+  </row></sheetData></worksheet>`,['공유문자열']);
+assert.deepEqual(typedCells.rows[0].slice(0,9),['공유문자열','인라인',42,false,'캐시문자열',2,'','', '']);
+assert.equal(typedCells.cellStates[0][5].kind,'formula-cached');
+assert.equal(typedCells.cellStates[0][6].kind,'formula-missing-cache');
+assert.equal(typedCells.cellStates[0][7].kind,'error');
+assert.equal(typedCells.cellStates[0][8].kind,'empty');
+
+const structureShared=['직급','직책','성명','입사일','직책/직무','사원번호','E1-2','가상정상성명','검사직무','V-PARSER'];
+const structureParsed=xlsx.parseWorksheetXml(`
+  <worksheet><sheetData>
+    <row r="1"><c r="A1" t="s"><v>5</v></c><c r="B1" t="s"><v>2</v></c><c r="C1" t="s"><v>0</v></c><c r="D1" t="s"><v>1</v></c><c r="E1" t="s"><v>3</v></c><c r="F1" t="s"><v>4</v></c></row>
+    <row r="2"><c r="A2" t="s"><v>9</v></c><c r="B2" t="s"><v>7</v></c><c r="C2" t="s"><v>6</v></c><c r="D2"/><c r="E2"><v>46239</v></c><c r="F2" t="s"><v>8</v></c></row>
+  </sheetData></worksheet>`,structureShared);
+const structureRecord=xlsx.recordsFromSheet({name:'(주)에이치티솔루션 사원명부',...structureParsed}).records[0];
+assert.equal(structureRecord.empNo,'V-PARSER');
+assert.equal(structureRecord.rank,'E1-2');
+assert.equal(structureRecord.position,'');
+assert.equal(structureRecord.name,'가상정상성명');
+assert.equal(structureRecord.hireDate,'2026-08-05');
+assert.equal(structureRecord.role,'검사직무');
+
+const errorParsed=xlsx.parseWorksheetXml(`<worksheet><sheetData>
+  <row r="1"><c r="A1" t="inlineStr"><is><t>사원번호</t></is></c><c r="B1" t="inlineStr"><is><t>성명</t></is></c><c r="C1" t="inlineStr"><is><t>입사일</t></is></c><c r="D1" t="inlineStr"><is><t>퇴사일</t></is></c></row>
+  <row r="2"><c r="A2" t="e"><f>VLOOKUP()</f><v>#N/A</v></c><c r="B2" t="e"><f>VLOOKUP()</f><v>#N/A</v></c><c r="C2"><f>VLOOKUP()</f></c><c r="D2"/></row>
+</sheetData></worksheet>`,[]);
+const errorRecord=xlsx.recordsFromSheet({name:'퇴직자 현황',...errorParsed}).records[0];
+const errorPlan=xlsx.buildImportPlan({records:[errorRecord],employees:[],schools:[],asOf:'2026-08-05'});
+assert.equal(errorPlan.summary.blocked,1);
+assert.ok(errorPlan.rows[0].errors.some(value=>value.includes('성명 셀')));
+assert.ok(errorPlan.rows[0].errors.some(value=>value.includes('캐시값')));
+assert.ok(errorPlan.issues.every(issue=>!Object.prototype.hasOwnProperty.call(issue,'name')&&!Object.prototype.hasOwnProperty.call(issue,'empNo')));
+
+function referenceSheet(name,label,dateCell){const parsed=xlsx.parseWorksheetXml(`<worksheet><sheetData><row r="1"><c r="A1" t="inlineStr"><is><t>${label}</t></is></c>${dateCell}</row></sheetData></worksheet>`,[]);return{name,...parsed};}
+const referenceWorkbook={sheets:[
+  referenceSheet('(주)에이치티솔루션 사원명부','오늘날짜:', '<c r="B1"><v>46239</v></c>'),
+  referenceSheet('퇴직자 현황',' 오늘\n날짜 ： ', '<c r="B1" t="str"><v>2026-08-05</v></c>'),
+  referenceSheet('특수직','오늘날짜', '<c r="B1"><f>TODAY()</f><v>46239</v></c>')
+]};
+const reference=xlsx.detectWorkbookReferenceDate(referenceWorkbook,{fallbackDate:'2026-08-06'});
+assert.equal(reference.date,'2026-08-05');
+assert.equal(reference.source,'workbook');
+assert.equal(reference.conflict,false);
+assert.deepEqual(reference.foundSheets,['(주)에이치티솔루션 사원명부','퇴직자 현황','특수직']);
+const conflict=xlsx.detectWorkbookReferenceDate({sheets:[referenceWorkbook.sheets[0],referenceSheet('퇴직자 현황','오늘날짜:', '<c r="B1" t="str"><v>2026-08-04</v></c>')]},{fallbackDate:'2026-08-06'});
+assert.equal(conflict.conflict,true);
+assert.equal(conflict.date,'');
+const missingReference=xlsx.detectWorkbookReferenceDate({sheets:[{name:'(주)에이치티솔루션 사원명부',rows:[['파일명 260728']],cellStates:[[]]}]},{fallbackDate:'2026-08-06'});
+assert.equal(missingReference.date,'2026-08-06');
+assert.equal(missingReference.missing,true);
+
 async function roundTrip(){
   const bytes=xlsx.createXlsxBytes([
     {name:'(주)에이치티솔루션 사원명부',headers:['사원번호','성명','입사일','최종학교'],rows:[['V-XLSX','가상XLSX',46023,'가상대학교']]},
@@ -88,6 +164,7 @@ async function roundTrip(){
   assert.deepEqual(workbook.readSheets,['(주)에이치티솔루션 사원명부','특수직']);
   assert.ok(workbook.availableSheets.includes('연고채용인원'));
   assert.equal(workbook.sheets.some(sheet=>sheet.name==='연고채용인원'),false);
+  assert.equal(workbook.referenceDate.missing,true);
 
   const exportBytes=xlsx.createXlsxBytes([{name:'조회결과',headers:['사번','성명','직책','직무'],rows:[['V-001','=가상수식','팀장','검사']]}]);
   const raw=Buffer.from(exportBytes).toString('utf8');

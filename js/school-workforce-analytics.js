@@ -84,31 +84,40 @@
     if(['입사예정','입사예정자'].includes(raw))return STATUS.upcoming;
     return meaningful(leaveDate)?STATUS.retired:raw;
   }
-  function normalizeSchoolName(value){return text(value).toLocaleLowerCase('ko-KR').replace(/[\s\u00a0]+/g,'');}
+  function normalizeSchoolName(value){return text(value).toLocaleLowerCase('ko-KR').replace(/[\s\u00a0()（）\[\]{}]+/g,'');}
+  function schoolVariantKey(value){
+    const key=normalizeSchoolName(value);if(!key||/(?:고등학교|고교|마이스터고|특성화고|공업고|상업고|일반고)$/.test(key))return'';
+    const suffix=['전문대학교','전문대학','대학교','전문대','대학','대'].find(item=>key.endsWith(item));if(!suffix)return'';
+    const base=key.slice(0,-suffix.length);return base.length>=2?base:'';
+  }
   function schoolIndexes(schools=[]){
-    const byId=new Map(),byName=new Map(),byAlias=new Map();
+    const byId=new Map(),byName=new Map(),byAlias=new Map(),byVariant=new Map();
+    function add(map,key,school){if(!key)return;if(!map.has(key))map.set(key,[]);map.get(key).push(school);}
     for(const school of schools){
       const id=text(school?.id);if(!id)continue;byId.set(id,school);
-      const name=normalizeSchoolName(school.name);if(name){if(!byName.has(name))byName.set(name,[]);byName.get(name).push(school);}
-      for(const alias of Array.isArray(school.aliases)?school.aliases:[]){const key=normalizeSchoolName(alias);if(!key)continue;if(!byAlias.has(key))byAlias.set(key,[]);byAlias.get(key).push(school);}
+      const name=normalizeSchoolName(school.name);add(byName,name,school);add(byVariant,schoolVariantKey(school.name),school);
+      for(const alias of Array.isArray(school.aliases)?school.aliases:[]){add(byAlias,normalizeSchoolName(alias),school);add(byVariant,schoolVariantKey(alias),school);}
     }
-    return{byId,byName,byAlias};
+    return{byId,byName,byAlias,byVariant};
   }
   function uniqueSchools(list=[]){const map=new Map();for(const school of list)if(school?.id)map.set(String(school.id),school);return[...map.values()];}
   function resolveSchoolMatch({currentSchoolId='',incomingSchool='',schools=[]}={}){
     const indexes=schoolIndexes(schools),current=indexes.byId.get(text(currentSchoolId))||null,key=normalizeSchoolName(incomingSchool);
-    const candidates=uniqueSchools([...(indexes.byName.get(key)||[]),...(indexes.byAlias.get(key)||[])]);
+    let candidates=uniqueSchools(indexes.byName.get(key)||[]),matchType='name';
+    if(!candidates.length){candidates=uniqueSchools(indexes.byAlias.get(key)||[]);matchType='alias';}
+    if(!candidates.length){const variant=schoolVariantKey(incomingSchool);candidates=uniqueSchools(indexes.byVariant.get(variant)||[]);matchType=variant?'variant':'';}
     if(current){
       if(!key)return{status:'preserved',schoolId:text(current.id),school:current};
-      const currentNames=[current.name,...(Array.isArray(current.aliases)?current.aliases:[])].map(normalizeSchoolName);
-      if(currentNames.includes(key))return{status:'preserved',schoolId:text(current.id),school:current};
-      return{status:'conflict',schoolId:text(current.id),school:current,candidates};
+      if(candidates.length===1&&text(candidates[0].id)===text(current.id))return{status:'preserved',schoolId:text(current.id),school:current,candidates,matchType};
+      if(candidates.length>1)return{status:'ambiguous',schoolId:text(current.id),school:current,candidates,matchType};
+      return{status:'conflict',schoolId:text(current.id),school:current,candidates,matchType};
     }
     if(!key)return{status:'missing',schoolId:'',school:null,candidates:[]};
-    if(candidates.length===1)return{status:'matched',schoolId:text(candidates[0].id),school:candidates[0],candidates};
-    if(candidates.length>1)return{status:'ambiguous',schoolId:'',school:null,candidates};
+    if(candidates.length===1)return{status:'matched',schoolId:text(candidates[0].id),school:candidates[0],candidates,matchType};
+    if(candidates.length>1)return{status:'ambiguous',schoolId:'',school:null,candidates,matchType};
     return{status:'unresolved',schoolId:'',school:null,candidates:[]};
   }
+  function schoolSearchTerms(school){const names=[school?.name,...(Array.isArray(school?.aliases)?school.aliases:[])].filter(Boolean);return[...new Set(names.flatMap(name=>[text(name),normalizeSchoolName(name),schoolVariantKey(name)]).filter(Boolean))];}
 
   function isActualEmployee(employee,asOf){
     const status=normalizeEmployeeStatus(employee?.status,employee?.leaveDate),date=parseWorkbookDate(employee?.hireDate),ref=referenceIso(asOf);
@@ -132,7 +141,7 @@
       rank:rank.raw,rankFamily:rank.family,rankStep:rank.step,rankParsed:rank.parsed,
       position:text(employee?.position),role:text(employee?.role),team:text(employee?.team||employee?.department),groupName:text(employee?.groupName),product:text(employee?.product),part:text(employee?.part),
       recruitType:text(employee?.recruitType),recruitChannel:text(employee?.recruitChannel),education:text(employee?.education),major:text(employee?.major),gender:text(employee?.gender),
-      schoolId:text(employee?.schoolId),school:text(school?.name||employee?.school),actualHire:isActualEmployee(employee,asOf),upcoming:false,source:employee
+      schoolId:text(employee?.schoolId),school:text(school?.name||employee?.school),schoolSearchTerms:schoolSearchTerms(school||{name:employee?.school}),actualHire:isActualEmployee(employee,asOf),upcoming:false,source:employee
     };
   }
   function applicantRow(applicant,profile,schoolMap){
@@ -142,7 +151,7 @@
       empNo:text(profile?.employeeNo),name:text(applicant?.name),status:STATUS.upcoming,hireDate:parseWorkbookDate(applicant?.hireDate).value,leaveDate:'',promotionDate:'',
       rank:rank.raw,rankFamily:rank.family,rankStep:rank.step,rankParsed:rank.parsed,position:'',role:'',team:text(profile?.groupName||applicant?.workplace),groupName:text(profile?.groupName),product:text(profile?.product),part:text(profile?.part),
       recruitType:text(applicant?.source),recruitChannel:text(applicant?.source),education:text(applicant?.education||applicant?.finalEducation),major:text(applicant?.major),gender:text(applicant?.gender),
-      schoolId:text(applicant?.schoolId),school:text(school?.name||applicant?.school),actualHire:false,upcoming:true,source:applicant
+      schoolId:text(applicant?.schoolId),school:text(school?.name||applicant?.school),schoolSearchTerms:schoolSearchTerms(school||{name:applicant?.school}),actualHire:false,upcoming:true,source:applicant
     };
   }
   function buildSchoolWorkforce({employees=[],applicants=[],profiles=[],schools=[],asOf}={}){
@@ -168,7 +177,7 @@
       if(!inYearRange(row.promotionDate,filters.promotionYearFrom,filters.promotionYearTo))return false;
       const fieldFilters={rankFamily:'rankFamilies',rank:'ranks',rankStep:'rankSteps',position:'positions',role:'roles',team:'teams',groupName:'groups',product:'products',part:'parts',recruitType:'recruitTypes',recruitChannel:'recruitChannels',education:'educations',major:'majors',gender:'genders'};
       for(const [field,key] of Object.entries(fieldFilters))if(!setFilter(row[field]??'',filters[key]))return false;
-      if(query&&![row.empNo,row.name,row.school,row.rank,row.position,row.role,row.team,row.groupName,row.product,row.part,row.major].some(value=>text(value).toLocaleLowerCase('ko-KR').includes(query)))return false;
+      if(query){const regular=[row.empNo,row.name,row.school,row.rank,row.position,row.role,row.team,row.groupName,row.product,row.part,row.major].some(value=>text(value).toLocaleLowerCase('ko-KR').includes(query)),queryKey=normalizeSchoolName(query),queryVariant=schoolVariantKey(query),schoolMatch=(row.schoolSearchTerms||[]).some(term=>normalizeSchoolName(term).includes(queryKey)||(queryVariant&&schoolVariantKey(term)===queryVariant));if(!regular&&!schoolMatch)return false;}
       return true;
     });
   }
@@ -197,5 +206,5 @@
   function dynamicFilterValues(rows=[],field){return[...new Set(rows.map(row=>row[field]).filter(value=>value!==''&&value!==null&&value!==undefined).map(String))].sort(collator.compare);}
   function safeSpreadsheetText(value){const raw=String(value??'');return /^[=+\-@]/.test(raw)?`'${raw}`:raw;}
 
-  return{STATUS,DIMENSIONS,text,meaningful,parseWorkbookDate,validIsoDate,yearOf,parseRank,normalizeEmployeeStatus,normalizeSchoolName,resolveSchoolMatch,isActualEmployee,isActiveEmployee,isLeaveEmployee,isRetiredEmployee,isUpcomingApplicant,buildSchoolWorkforce,filterSchoolWorkforce,uniqueRows,groupWorkforceRows,buildCrossTab,buildSchoolSummary,buildYearlyHireSummary,dynamicFilterValues,safeSpreadsheetText};
+  return{STATUS,DIMENSIONS,text,meaningful,parseWorkbookDate,validIsoDate,yearOf,parseRank,normalizeEmployeeStatus,normalizeSchoolName,schoolVariantKey,schoolSearchTerms,resolveSchoolMatch,isActualEmployee,isActiveEmployee,isLeaveEmployee,isRetiredEmployee,isUpcomingApplicant,buildSchoolWorkforce,filterSchoolWorkforce,uniqueRows,groupWorkforceRows,buildCrossTab,buildSchoolSummary,buildYearlyHireSummary,dynamicFilterValues,safeSpreadsheetText};
 });

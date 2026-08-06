@@ -68,23 +68,65 @@
     const values=[];for(const match of String(xml||'').matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/gi)){const textParts=[...match[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map(item=>xmlDecode(item[1]));values.push(textParts.join(''));if(values.length>500000)throw new Error('XLSX 공유문자열 수가 안전 한도를 초과했습니다.');}return values;
   }
   function cellValue(cellTag,body,shared){
-    const type=attribute(cellTag,'t');
-    if(type==='inlineStr')return[...String(body).matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map(item=>xmlDecode(item[1])).join('');
-    const valueMatch=String(body).match(/<v\b[^>]*>([\s\S]*?)<\/v>/i),raw=valueMatch?xmlDecode(valueMatch[1]):'';
-    if(type==='s')return shared[Number(raw)]??'';if(type==='b')return raw==='1';if(type==='str')return raw;
-    const number=Number(raw);return raw!==''&&Number.isFinite(number)?number:raw;
+    const type=attribute(cellTag,'t'),content=String(body||''),formula=/<f\b/i.test(content),valueMatch=content.match(/<v\b[^>]*>([\s\S]*?)<\/v>/i),hasCachedValue=!!valueMatch;
+    if(type==='e')return{value:'',kind:'error',formula,hasCachedValue};
+    if(formula&&!hasCachedValue)return{value:'',kind:'formula-missing-cache',formula:true,hasCachedValue:false};
+    let value='';
+    if(type==='inlineStr')value=[...content.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/gi)].map(item=>xmlDecode(item[1])).join('');
+    else{
+      const raw=valueMatch?xmlDecode(valueMatch[1]):'';
+      if(type==='s')value=shared[Number(raw)]??'';
+      else if(type==='b')value=raw==='1';
+      else if(type==='str')value=raw;
+      else{const number=Number(raw);value=raw!==''&&Number.isFinite(number)?number:raw;}
+    }
+    return{value,kind:formula?'formula-cached':(value===''?'empty':'value'),formula,hasCachedValue};
   }
   function worksheetRows(xml,shared,{maxRows=20000,maxColumns=80}={}){
-    const output=[];let seen=0;
+    const output=[],cellStates=[];let seen=0;
     for(const match of String(xml).matchAll(/<row\b([^>]*)>([\s\S]*?)<\/row>/gi)){
       if(++seen>maxRows)throw new Error('허용 시트의 실제 데이터 행 수가 안전 한도를 초과했습니다.');
-      const rowTag=`<row ${match[1]}>`,rowIndex=Math.max(0,(Number(attribute(rowTag,'r'))||output.length+1)-1),values=[];
-      for(const cell of match[2].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/gi)){const tag=`<c ${cell[1]}>`,index=columnIndex(attribute(tag,'r'));if(index>=maxColumns)continue;values[index]=cellValue(tag,cell[2],shared);}
-      output[rowIndex]=values;
+      const rowTag=`<row ${match[1]}>`,rowIndex=Math.max(0,(Number(attribute(rowTag,'r'))||output.length+1)-1),values=[],states=[];
+      for(const cell of match[2].matchAll(/<c\b([^>]*?)(?:\/\s*>|>([\s\S]*?)<\/c\s*>)/gi)){
+        const tag=`<c ${cell[1]}>`,index=columnIndex(attribute(tag,'r'));if(index>=maxColumns)continue;
+        const parsed=cellValue(tag,cell[2]||'',shared);values[index]=parsed.value;states[index]={kind:parsed.kind,formula:parsed.formula,hasCachedValue:parsed.hasCachedValue};
+      }
+      output[rowIndex]=values;cellStates[rowIndex]=states;
     }
-    return output;
+    return{rows:output,cellStates};
   }
-  async function readWorkbookArrayBuffer(arrayBuffer){
+  function referenceLabel(value){return safeText(value).replace(/[\s:\uFF1A]+/g,'').toLocaleLowerCase('ko-KR');}
+  function referenceFallback(options={}){
+    const direct=analytics.parseWorkbookDate(options.fallbackDate);if(direct.valid&&!direct.blank)return{date:direct.value,source:'provided-fallback'};
+    if(Number(options.lastModified)>0){const modified=new Date(Number(options.lastModified));if(!Number.isNaN(modified.getTime()))return{date:modified.toISOString().slice(0,10),source:'file-last-modified'};}
+    return{date:new Date().toISOString().slice(0,10),source:'browser-today'};
+  }
+  function detectWorkbookReferenceDate(workbook,options={}){
+    const found=[],issues=[];
+    for(const sheet of workbook?.sheets||[]){
+      if(!READABLE_SHEETS.has(sheet.name))continue;
+      const rows=sheet.rows||[],states=sheet.cellStates||[];
+      for(let rowIndex=0;rowIndex<Math.min(12,rows.length);rowIndex++){
+        const row=rows[rowIndex]||[];
+        for(let column=0;column<row.length;column++){
+          if(referenceLabel(row[column])!=='오늘날짜')continue;
+          const state=states[rowIndex]?.[column+1],parsed=analytics.parseWorkbookDate(row[column+1]);
+          if(state?.kind==='error'){issues.push({type:'reference-date',sourceSheet:sheet.name,sourceRow:rowIndex+1,reason:'명단 기준일 셀이 오류 상태입니다.'});continue;}
+          if(state?.kind==='formula-missing-cache'){issues.push({type:'reference-date',sourceSheet:sheet.name,sourceRow:rowIndex+1,reason:'명단 기준일 수식에 캐시값이 없습니다.'});continue;}
+          if(!parsed.valid||parsed.blank){issues.push({type:'reference-date',sourceSheet:sheet.name,sourceRow:rowIndex+1,reason:'명단 기준일을 날짜로 확인할 수 없습니다.'});continue;}
+          found.push({sheet:sheet.name,date:parsed.value});
+        }
+      }
+    }
+    const dates=[...new Set(found.map(item=>item.date))],fallback=referenceFallback(options);
+    if(dates.length>1)return{date:'',suggestedDate:fallback.date,source:'workbook',foundSheets:[...new Set(found.map(item=>item.sheet))],conflict:true,missing:false,issues:[...issues,{type:'reference-date',sourceSheet:'',sourceRow:0,reason:'시트 사이의 명단 기준일이 서로 달라 적용할 수 없습니다.'}]};
+    if(dates.length===1)return{date:dates[0],suggestedDate:dates[0],source:'workbook',foundSheets:[...new Set(found.map(item=>item.sheet))],conflict:false,missing:false,issues};
+    return{date:fallback.date,suggestedDate:fallback.date,source:fallback.source,foundSheets:[],conflict:false,missing:true,issues:[...issues,{type:'reference-date',sourceSheet:'',sourceRow:0,reason:'워크북에서 명단 기준일을 찾지 못해 확인이 필요합니다.'}]};
+  }
+  async function sha256Hex(arrayBuffer){
+    if(!root.crypto?.subtle)return'';const digest=await root.crypto.subtle.digest('SHA-256',arrayBuffer);return[...new Uint8Array(digest)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
+  }
+  async function readWorkbookArrayBuffer(arrayBuffer,options={}){
     if(!(arrayBuffer instanceof ArrayBuffer))throw new Error('XLSX 파일 데이터가 필요합니다.');
     const zip=await zipEntries(arrayBuffer),workbookBytes=await zip.read('xl/workbook.xml'),relsBytes=await zip.read('xl/_rels/workbook.xml.rels');
     if(!workbookBytes||!relsBytes)throw new Error('XLSX 통합문서 정보를 찾지 못했습니다.');
@@ -94,32 +136,37 @@
     for(const sheet of sheetRefs){
       if(!READABLE_SHEETS.has(sheet.name))continue;
       const path=rels.get(sheet.relId),bytes=path?await zip.read(path):null;if(!bytes)continue;
-      sheets.push({name:sheet.name,rows:worksheetRows(decodeBytes(bytes),shared)});
+      const parsed=worksheetRows(decodeBytes(bytes),shared);sheets.push({name:sheet.name,rows:parsed.rows,cellStates:parsed.cellStates});
     }
-    return{format:'xlsx',version:FORMAT_VERSION,sheets,availableSheets:sheetRefs.map(sheet=>sheet.name),readSheets:sheets.map(sheet=>sheet.name)};
+    const result={format:'xlsx',version:FORMAT_VERSION,sheets,availableSheets:sheetRefs.map(sheet=>sheet.name),readSheets:sheets.map(sheet=>sheet.name)};
+    result.referenceDate=detectWorkbookReferenceDate(result,options);return result;
   }
   async function readWorkbookFile(file){
     if(!file||typeof file.arrayBuffer!=='function')throw new Error('읽을 XLSX 파일이 없습니다.');
     if(!String(file.name||'').toLowerCase().endsWith('.xlsx'))throw new Error('.xlsx 파일만 사용할 수 있습니다.');
     if(Number(file.size)>20*1024*1024)throw new Error('20MB 이하의 XLSX 파일만 사용할 수 있습니다.');
-    return readWorkbookArrayBuffer(await file.arrayBuffer());
+    const arrayBuffer=await file.arrayBuffer(),workbook=await readWorkbookArrayBuffer(arrayBuffer,{lastModified:file.lastModified});
+    workbook.fileBaseName=safeText(file.name);workbook.workbookHash=await sha256Hex(arrayBuffer);return workbook;
   }
 
   function findHeaderRow(rows){for(let index=0;index<Math.min(12,rows.length);index++){const keys=(rows[index]||[]).map(headerKey);if(keys.includes('사원번호')&&keys.includes('성명'))return index;}return-1;}
   function headerMap(row){const map=new Map();(row||[]).forEach((value,index)=>{const key=headerKey(value);if(key&&!map.has(key))map.set(key,index);});return map;}
-  function rowValue(row,map,aliases){for(const alias of aliases){const index=map.get(headerKey(alias));if(index!==undefined)return row[index];}return'';}
-  function nonEmptyRow(row){return(Array.isArray(row)?row:[]).some(meaningful);}
+  function rowCell(row,states,map,aliases){for(const alias of aliases){const index=map.get(headerKey(alias));if(index!==undefined)return{value:row[index],state:states?.[index]||null};}return{value:'',state:null};}
+  function rowValue(row,map,aliases){return rowCell(row,null,map,aliases).value;}
+  function nonEmptyRow(row,states=[]){return(Array.isArray(row)?row:[]).some(meaningful)||(Array.isArray(states)?states:[]).some(state=>state&&['error','formula-missing-cache','formula-cached'].includes(state.kind));}
   function dateField(value,label,options){const parsed=analytics.parseWorkbookDate(value,options);return{value:parsed.value,issue:parsed.valid?null:`${label}: ${parsed.reason||'날짜 형식 오류'}`,blank:parsed.blank};}
-  function mappedRecord(row,map,source,sourceRow){
-    const hire=dateField(rowValue(row,map,['입사일']),'입사일'),leave=dateField(rowValue(row,map,['퇴사일']),'퇴사일'),promotion=dateField(rowValue(row,map,['승격일']),'승격일'),leaveStart=source.type==='leave'?dateField(rowValue(row,map,['휴직기간','휴직일']),'휴직기간',{periodStart:true}):{value:'',issue:null,blank:true};
-    const position=safeText(rowValue(row,map,['직책'])),role=safeText(rowValue(row,map,['직책/직무','직책직무']));
+  function mappedRecord(row,map,source,sourceRow,states=[]){
+    const validationIssues=[];
+    function read(aliases,label){const cell=rowCell(row,states,map,aliases);if(cell.state?.kind==='error')validationIssues.push(`${label} 셀에 수식 또는 값 오류가 있습니다.`);else if(cell.state?.kind==='formula-missing-cache')validationIssues.push(`${label} 수식에 캐시값이 없습니다.`);return cell.value;}
+    const hire=dateField(read(['입사일'],'입사일'),'입사일'),leave=dateField(read(['퇴사일'],'퇴사일'),'퇴사일'),promotion=dateField(read(['승격일'],'승격일'),'승격일'),leaveStart=source.type==='leave'?dateField(read(['휴직기간','휴직일'],'휴직기간'),'휴직기간',{periodStart:true}):{value:'',issue:null,blank:true};
+    const position=safeText(read(['직책'],'직책')),role=safeText(read(['직책/직무','직책직무'],'직책/직무'));
     return{
       sourceSheet:source.name,sourceRow,sourceType:source.type,special:source.special,
-      empNo:employeeNo(rowValue(row,map,['사원번호','사번'])),name:safeText(rowValue(row,map,['성명','이름'])),
-      gender:safeText(rowValue(row,map,['성별'])),team:safeText(rowValue(row,map,source.type==='retired'?['소속','팀']:['팀','소속'])),groupName:safeText(rowValue(row,map,['그룹'])),product:safeText(rowValue(row,map,['제품','근무/제품','근무제품'])),part:safeText(rowValue(row,map,['파트'])),rank:safeText(rowValue(row,map,['직급'])),position,role,
+      empNo:employeeNo(read(['사원번호','사번'],'사번')),name:safeText(read(['성명','이름'],'성명')),
+      gender:safeText(read(['성별'],'성별')),team:safeText(read(source.type==='retired'?['소속','팀']:['팀','소속'],'팀')),groupName:safeText(read(['그룹'],'그룹')),product:safeText(read(['제품','근무/제품','근무제품'],'제품')),part:safeText(read(['파트'],'파트')),rank:safeText(read(['직급'],'직급')),position,role,
       hireDate:hire.value,leaveDate:leave.value,leaveStartDate:leaveStart.value,promotionDate:promotion.value,status:source.status,
-      recruitType:safeText(rowValue(row,map,['입사경위'])),recruitChannel:safeText(rowValue(row,map,['채용채널','입사루트'])),education:safeText(rowValue(row,map,['최종학력'])),school:safeText(rowValue(row,map,['최종학교','출신학교','학교'])),major:safeText(rowValue(row,map,['전공'])),
-      validationIssues:[hire.issue,leave.issue,promotion.issue,leaveStart.issue].filter(Boolean)
+      recruitType:safeText(read(['입사경위'],'입사경위')),recruitChannel:safeText(read(['채용채널','입사루트'],'채용채널')),education:safeText(read(['최종학력'],'최종학력')),school:safeText(read(['최종학교','출신학교','학교'],'최종학교')),major:safeText(read(['전공'],'전공')),
+      validationIssues:[...validationIssues,hire.issue,leave.issue,promotion.issue,leaveStart.issue].filter(Boolean)
     };
   }
   function recordsFromSheet(sheet){
@@ -127,8 +174,8 @@
     const headerIndex=findHeaderRow(sheet.rows||[]);if(headerIndex<0)return{records:[],issues:[{type:'sheet',sourceSheet:sheet.name,sourceRow:0,reason:'사원번호·성명 머리글을 찾지 못했습니다.'}],summary:{name:sheet.name,rows:0,status:'error'}};
     const map=headerMap(sheet.rows[headerIndex]),records=[],issues=[];
     for(let index=headerIndex+1;index<(sheet.rows||[]).length;index++){
-      const row=sheet.rows[index]||[];if(!nonEmptyRow(row))continue;
-      const record=mappedRecord(row,map,{...config,name:sheet.name,special:false},index+1);records.push(record);
+      const row=sheet.rows[index]||[],states=sheet.cellStates?.[index]||[];if(!nonEmptyRow(row,states))continue;
+      const record=mappedRecord(row,map,{...config,name:sheet.name,special:false},index+1,states);records.push(record);
     }
     return{records,issues,summary:{name:sheet.name,rows:records.length,status:'ready'}};
   }
@@ -138,9 +185,9 @@
     if(headerIndex<0)return{present:true,dataRows:0,linkableRows:0,excludedRows:0,records:[],issues:[{type:'special',sourceSheet:SPECIAL_SHEET,sourceRow:0,reason:'특수직 머리글을 찾지 못했습니다.'}]};
     const map=headerMap(sheet.rows[headerIndex]),hasEmpNo=map.has('사원번호')||map.has('사번'),hasSchool=['최종학교','출신학교','학교'].some(key=>map.has(headerKey(key))),records=[],issues=[];let dataRows=0,excludedRows=0;
     for(let index=headerIndex+1;index<(sheet.rows||[]).length;index++){
-      const row=sheet.rows[index]||[];if(!nonEmptyRow(row))continue;dataRows++;
+      const row=sheet.rows[index]||[],states=sheet.cellStates?.[index]||[];if(!nonEmptyRow(row,states))continue;dataRows++;
       if(!hasEmpNo||!hasSchool){excludedRows++;continue;}
-      const record=mappedRecord(row,map,{type:'special',status:'',name:SPECIAL_SHEET,special:true},index+1);
+      const record=mappedRecord(row,map,{type:'special',status:'',name:SPECIAL_SHEET,special:true},index+1,states);
       if(!record.empNo||!record.school){excludedRows++;issues.push({type:'special',sourceSheet:SPECIAL_SHEET,sourceRow:index+1,reason:'특수직 행에 사번 또는 학교가 없어 자동 연결할 수 없습니다.'});continue;}
       records.push(record);
     }
@@ -152,10 +199,11 @@
     const byName=new Map((workbook?.sheets||[]).map(sheet=>[sheet.name,sheet])),records=[],issues=[],sourceSummary=[];
     for(const name of Object.keys(ALLOWED_SHEETS)){const result=recordsFromSheet(byName.get(name)||{name,rows:[]});records.push(...result.records);issues.push(...result.issues);sourceSummary.push(result.summary);}
     const special=inspectSpecialSheet(byName.get(SPECIAL_SHEET));records.push(...special.records);issues.push(...special.issues);
-    return{records,issues,sourceSummary,special,availableSheets:workbook?.availableSheets||[]};
+    const referenceDate=workbook?.referenceDate||detectWorkbookReferenceDate(workbook);issues.push(...(referenceDate.issues||[]));
+    return{records,issues,sourceSummary,special,availableSheets:workbook?.availableSheets||[],referenceDate,workbookHash:workbook?.workbookHash||'',fileBaseName:workbook?.fileBaseName||''};
   }
 
-  function rowIssue(record,reason,type='error'){return{type,sourceSheet:record?.sourceSheet||'',sourceRow:record?.sourceRow||0,empNo:record?.empNo||'',name:record?.name||'',reason};}
+  function rowIssue(record,reason,type='error'){return{type,sourceSheet:record?.sourceSheet||'',sourceRow:record?.sourceRow||0,reason};}
   function currentEmployeeMap(employees=[]){const map=new Map();for(const employee of employees){const key=employeeNo(employee?.empNo);if(!key)continue;if(!map.has(key))map.set(key,[]);map.get(key).push(employee);}return map;}
   function meaningfulPatch(record){const patch={};for(const field of UPDATE_FIELDS)if(meaningful(record[field]))patch[field]=record[field];if(Object.prototype.hasOwnProperty.call(patch,'team'))patch.department=patch.team;return patch;}
   function changedFields(existing,patch){return Object.keys(patch).filter(field=>String(existing?.[field]??'')!==String(patch[field]??''));}
@@ -235,5 +283,5 @@
   function createXlsxBlob(sheets){return new Blob([createXlsxBytes(sheets)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});}
   function downloadXlsx(filename,sheets){const blob=createXlsxBlob(sheets),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename.endsWith('.xlsx')?filename:`${filename}.xlsx`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);return{filename:link.download,size:blob.size};}
 
-  return{FORMAT_VERSION,ALLOWED_SHEETS,SPECIAL_SHEET,READABLE_SHEETS,UPDATE_FIELDS,FIELD_LABELS,headerKey,employeeNo,personName,readWorkbookArrayBuffer,readWorkbookFile,findHeaderRow,headerMap,recordsFromSheet,inspectSpecialSheet,extractWorkbookRecords,buildImportPlan,createXlsxBytes,createXlsxBlob,downloadXlsx};
+  return{FORMAT_VERSION,ALLOWED_SHEETS,SPECIAL_SHEET,READABLE_SHEETS,UPDATE_FIELDS,FIELD_LABELS,headerKey,employeeNo,personName,cellValue,parseWorksheetXml:worksheetRows,detectWorkbookReferenceDate,readWorkbookArrayBuffer,readWorkbookFile,findHeaderRow,headerMap,recordsFromSheet,inspectSpecialSheet,extractWorkbookRecords,buildImportPlan,createXlsxBytes,createXlsxBlob,downloadXlsx};
 });

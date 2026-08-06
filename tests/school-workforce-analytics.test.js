@@ -23,6 +23,17 @@ const schools=[
 assert.equal(analytics.resolveSchoolMatch({incomingSchool:'가상대',schools}).schoolId,'school-1');
 assert.equal(analytics.resolveSchoolMatch({currentSchoolId:'school-1',incomingSchool:'샘플전문대',schools}).status,'conflict');
 
+const yeungnamSchools=[{id:'school-yeungnam',name:'영남이공대학교',aliases:[]}];
+assert.equal(analytics.resolveSchoolMatch({incomingSchool:'영남이공대',schools:yeungnamSchools}).schoolId,'school-yeungnam');
+assert.equal(analytics.resolveSchoolMatch({incomingSchool:'영남이공대학',schools:yeungnamSchools}).schoolId,'school-yeungnam');
+assert.equal(analytics.resolveSchoolMatch({incomingSchool:'영남이공대학교',schools:[{id:'school-yeungnam-short',name:'영남이공대',aliases:[]}]}).schoolId,'school-yeungnam-short');
+assert.equal(analytics.resolveSchoolMatch({incomingSchool:'영남이공대학교',schools:[{id:'school-alias',name:'다른정식명',aliases:['영남이공대학']}]}).schoolId,'school-alias');
+assert.equal(analytics.resolveSchoolMatch({incomingSchool:'영남이공대',schools:[...yeungnamSchools,{id:'school-duplicate',name:'영남이공대학',aliases:[]}]}).status,'ambiguous');
+assert.equal(analytics.resolveSchoolMatch({currentSchoolId:'school-2',incomingSchool:'영남이공대',schools:[...schools,...yeungnamSchools]}).status,'conflict');
+assert.equal(analytics.resolveSchoolMatch({incomingSchool:'영남이공',schools:yeungnamSchools}).status,'unresolved');
+assert.equal(analytics.schoolVariantKey('가상고등학교'),'');
+assert.equal(analytics.resolveSchoolMatch({incomingSchool:'가상고',schools:[{id:'high-school',name:'가상고등학교',aliases:[]}]}).status,'unresolved');
+
 const employees=[
   {id:'employee-1',empNo:'V-001',name:'가상사원1',school:'가상대학교',schoolId:'school-1',hireDate:'2024-01-10',status:'재직중',rank:'E1-1',position:'리더',role:'검사',team:'가상팀',groupName:'가상그룹',product:'가상제품',part:'A',recruitType:'공채',recruitChannel:'학교',education:'대학교',major:'가상학과',gender:'여자',applicantId:'applicant-converted'},
   {id:'employee-2',empNo:'V-002',name:'가상사원2',school:'가상대학교',schoolId:'school-1',hireDate:'2025-02-01',promotionDate:'2026-04-01',status:'휴직',leaveStartDate:'2026-02-01',rank:'SE1-2',position:'담당',role:'설비',team:'가상팀',groupName:'가상그룹',product:'가상제품',part:'B',recruitType:'추천',recruitChannel:'온라인',education:'전문대',major:'샘플학과',gender:'남자'},
@@ -38,6 +49,8 @@ const built=analytics.buildSchoolWorkforce({employees,applicants,profiles,school
 assert.equal(built.employeeRows.filter(row=>row.actualHire).length,3);
 assert.equal(built.upcomingRows.length,1);
 assert.equal(built.upcomingRows[0].id,'applicant-upcoming');
+assert.equal(analytics.filterSchoolWorkforce(built.rows,{search:'가상대'}).length,3);
+assert.equal(analytics.filterSchoolWorkforce(built.rows,{search:'가상대학교'}).length,3);
 
 const schoolOne=analytics.filterSchoolWorkforce(built.rows,{schoolId:'school-1'});
 assert.equal(schoolOne.length,3);
