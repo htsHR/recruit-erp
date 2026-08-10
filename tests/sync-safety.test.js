@@ -34,4 +34,9 @@ pending=sync.mergePendingIds(pending,'applicants',[{id:'test-2'},{id:'test-3'}])
 assert.deepEqual(pending.applicants,['test-1','test-2','test-3']);
 
 assert.equal(sync.VERSION,'11.0.0');
-console.log('sync-safety tests: passed');
+const originalWarn=console.warn,warnings=[];console.warn=(...args)=>warnings.push(args.map(value=>String(value?.message||value)).join(' '));
+sync.runUpload('employees',[{id:'employee-1'},{id:'employee-2'},{id:'employee-3'}],async()=>{const error=new Error('가상 부분 실패');error.partialSaved=1;throw error;}).then(partial=>{
+  assert.equal(partial.pending,true);assert.equal(partial.saved,1);assert.equal(partial.failed,2);assert.equal(partial.count,3);
+  assert.equal(warnings.length,1);console.warn=originalWarn;
+  console.log('sync-safety tests: passed');
+}).catch(error=>{console.warn=originalWarn;console.error(error);process.exitCode=1;});

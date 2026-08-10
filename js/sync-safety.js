@@ -213,7 +213,8 @@
       queuePending(dataset,targets);
       if(typeof root?.setCloudSyncStatus==='function')root.setCloudSyncStatus('error');
       console.warn(`${DATASET_LABELS[dataset]||dataset} 클라우드 저장 실패 — 자동 재시도 대기열에 보관:`,error);
-      return {error,count:targets.length,pending:true};
+      const saved=Math.max(0,Number(error?.partialSaved)||0);
+      return {error,count:targets.length,saved,failed:Math.max(0,targets.length-saved),pending:true};
     }finally{
       activeUploads[dataset]=false;notifyState();
       if(succeeded){const pending=readPending()[dataset];if(Array.isArray(pending)&&pending.length)root.setTimeout(()=>retryDataset(dataset),0);}
