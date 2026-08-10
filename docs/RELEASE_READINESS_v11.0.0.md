@@ -21,8 +21,15 @@ v11은 자동검사 통과만으로 운영 준비 완료가 되지 않습니다.
 3. `applicants`, `employees`, `schools`, `applicant_snapshots`, `user_roles`, `audit_logs`에 RLS가 켜져 있는지 확인합니다.
 4. 공개 `SECURITY DEFINER` 함수의 `anon`·`authenticated` 직접 실행 경고가 사라졌는지 [Security Advisor](https://supabase.com/docs/guides/database/database-linter)에서 확인합니다.
 5. `app_settings`와 `allowed_users`의 RLS 성능 경고가 사라졌는지 확인합니다.
-6. Supabase Auth의 [유출 비밀번호 보호](https://supabase.com/docs/guides/auth/password-security)를 켭니다. 이 설정은 저장소 코드나 SQL migration으로 대신하지 않으며, 활성화 확인 전에는 READY로 판정하지 않습니다.
+6. Supabase Auth의 [Leaked Password Protection](https://supabase.com/docs/guides/auth/password-security)은 Free 요금제의 알려진 제한으로 분리합니다. 이 항목은 READY 차단 조건에 포함하지 않습니다.
 7. 관리자·채용담당자·조회전용 실제 테스트 계정으로 허용·차단 작업을 확인합니다. 현재 운영 프로젝트는 admin 1명뿐이므로 recruiter·viewer 계정은 사용자 승인 후에만 만듭니다.
+
+### 알려진 요금제 제한
+
+> Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용.
+> 해당 제한을 인지한 상태로 운영한다.
+
+이 제한을 보완한다는 이유로 별도 READY 상태, MFA 강제 로직 또는 추가 migration을 만들지 않습니다. RLS, 감사로그, 권한 상승 차단과 공개 `SECURITY DEFINER` RPC 실행 차단 검증은 기존 필수 게이트로 유지합니다.
 
 운영 사전검증에서 기존 `private.erp_prepare_audit_log()`의 `current_role` 변수명이 PostgreSQL `CURRENT_ROLE` 특수 식별자와 충돌해 admin·recruiter 감사로그 삽입을 거부하는 문제가 확인됐습니다. v11 migration은 같은 private 함수를 `resolved_app_role` 변수로 안전하게 교체합니다. 적용 후 admin·recruiter 본인 작업 기록 허용, viewer 기록 차단, 감사로그 원문 개인정보 미저장을 다시 확인해야 합니다.
 

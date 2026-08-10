@@ -14,10 +14,12 @@
   const MAX_CHECK_AGE_MS=30*24*60*60*1000;
   const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
   const CLOUD_ADMIN_MESSAGE='Supabase 관리자 계정으로 로그인한 상태에서만 확인할 수 있습니다.';
-  const CLOUD_ADMIN_CHECKS=new Set(['roles_rls','leaked_credential_protection']);
+  const FREE_PLAN_LIMITATION_TEXT='Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용. 해당 제한을 인지한 상태로 운영한다.';
+  const KNOWN_LIMITATIONS=[{id:'leaked_credential_protection',category:'supabase-plan',description:FREE_PLAN_LIMITATION_TEXT}];
+  const CLOUD_ADMIN_CHECKS=new Set(['roles_rls']);
   const MANUAL_CHECKS=[
     {id:'roles_rls',label:'권한·RLS 실제 계정 점검',description:'v11 보안 migration 적용, 관리자·채용담당자·조회전용 역할표, Supabase Security Advisor 결과를 모두 확인합니다.',requiresCloudAdmin:true},
-    {id:'leaked_credential_protection',label:'유출 비밀번호 보호 활성화',description:'Supabase Dashboard의 Auth 비밀번호 보안 설정에서 유출 비밀번호 보호가 켜져 있는지 확인합니다.',requiresCloudAdmin:true},
+    {id:'leaked_credential_protection',label:'유출 비밀번호 보호 · 알려진 요금제 제한',description:FREE_PLAN_LIMITATION_TEXT,knownLimitation:true},
     {id:'encrypted_restore',label:'암호화 백업·복원 훈련',description:'실제 운영 자료가 아닌 가상 자료로 .erpbackup 생성, 다른 빈 브라우저 복원, 비밀번호 분리 보관까지 확인합니다.'},
     {id:'delete_recovery',label:'삭제 재생성 방지 훈련',description:'PC A 오프라인 삭제 후 연결 복구와 PC B 동기화에서 삭제한 지원자가 다시 나타나지 않는지 확인합니다.'},
     {id:'export_audit',label:'개인정보 내보내기·변경 이력 점검',description:'일반·민감 내보내기 권한, CSV 방어, 내보내기 감사기록과 민감정보 마스킹을 확인합니다.'},
@@ -99,7 +101,8 @@
     return false;
   }
   function setManual(id,completed){
-    if(!MANUAL_CHECKS.some(check=>check.id===id))return null;
+    const check=MANUAL_CHECKS.find(item=>item.id===id);
+    if(!check||check.knownLimitation)return null;
     if(!requireReadinessPermission())return null;
     const context=runtimeContext();
     if(CLOUD_ADMIN_CHECKS.has(id)&&!context.cloudAdminEligible){root.alert?.(CLOUD_ADMIN_MESSAGE);return null;}
@@ -114,12 +117,15 @@
   function manualStatus(state=readState(),now=Date.now(),context=runtimeContext()){
     const rows=MANUAL_CHECKS.map(check=>{
       const record=state.manual?.[check.id];
-      const locked=!!check.requiresCloudAdmin&&!context.cloudAdminEligible;
+      const knownLimitation=check.knownLimitation===true;
+      const locked=knownLimitation||(!!check.requiresCloudAdmin&&!context.cloudAdminEligible);
       const validCloudRecord=!check.requiresCloudAdmin||(record?.role==='admin'&&record?.source==='cloud'&&context.cloudAdminEligible);
-      const complete=!!record&&isFresh(record.completedAt,now)&&validCloudRecord;
-      return {...check,locked,lockMessage:locked?CLOUD_ADMIN_MESSAGE:'',complete,completedAt:complete?record.completedAt:'',role:complete?record.role:''};
+      const complete=!knownLimitation&&!!record&&isFresh(record.completedAt,now)&&validCloudRecord;
+      const lockMessage=knownLimitation?FREE_PLAN_LIMITATION_TEXT:locked?CLOUD_ADMIN_MESSAGE:'';
+      return {...check,knownLimitation,locked,lockMessage,complete,completedAt:complete?record.completedAt:'',role:complete?record.role:''};
     });
-    return {rows,completed:rows.filter(row=>row.complete).length,total:rows.length,ready:rows.every(row=>row.complete)};
+    const requiredRows=rows.filter(row=>!row.knownLimitation);
+    return {rows,completed:requiredRows.filter(row=>row.complete).length,total:requiredRows.length,ready:requiredRows.every(row=>row.complete),knownLimitations:rows.filter(row=>row.knownLimitation).length};
   }
 
   function syntheticRows(prefix,count,extra){
@@ -244,7 +250,8 @@
       roleMatrixVerified:rolesVerified,
       overall:summary.ready&&source==='cloud'&&context.cloudAdminEligible===true?'ready':'not-ready',
       automatic:automatic.map(check=>({id:check.id,testType:check.testType,status:check.status,detail:check.detail})),
-      manual:manual.rows.map(row=>({id:row.id,complete:row.complete,completedAt:row.completedAt||'',role:row.role||''})),
+      manual:manual.rows.map(row=>({id:row.id,complete:row.complete,knownLimitation:row.knownLimitation===true,completedAt:row.completedAt||'',role:row.role||''})),
+      knownLimitations:KNOWN_LIMITATIONS.map(item=>({...item})),
       capacity:safeState.capacity?{completedAt:safeState.capacity.completedAt,durationMs:safeState.capacity.durationMs,passed:safeState.capacity.passed,counts:{...safeState.capacity.counts}}:null,
       privacy:'이 보고서는 이름·연락처·주소·주민등록번호·메모·원본 업무 데이터를 포함하지 않습니다.',
       limitation:'이 JSON은 사용자가 수정할 수 있는 참고용 점검 결과이며 전자서명된 증명서가 아닙니다.'
@@ -271,7 +278,7 @@
     const overallClass=summary.ready?'is-ready':'is-not-ready';
     const overallTitle=summary.ready?'운영 준비 완료':'아직 운영 확인이 필요합니다';
     const sourceLabel=evidence.verificationSource==='cloud'?'클라우드 검증':'로컬 참고용';
-    host.innerHTML=`<section class="readiness-overall ${overallClass}"><div><p class="eyebrow">PRODUCTION GATE · ${sourceLabel}</p><h3>${overallTitle}</h3><p>자동 통과 ${summary.automaticPassed}/${summary.automaticTotal} · 운영 확인 ${summary.manualCompleted}/${summary.manualTotal} · 환경 ${escapeHtml(evidence.operationEnvironment)}</p></div><span>${summary.ready?'READY':'CHECK'}</span></section><div class="readiness-actions"><button class="ghost" id="btnReadinessRefresh" type="button">다시 확인</button><button class="ghost" id="btnReadinessCapacity" type="button">가상 6,500건 검사</button><button class="primary" id="btnReadinessExport" type="button">점검 결과 저장</button></div><section class="panel readiness-section"><div class="panel-head"><div><h3>자동 안전 점검</h3><small>모듈 존재 확인과 가상 자료를 사용한 실제 기능 시험을 구분합니다. 개인정보 원문은 읽거나 표시하지 않습니다.</small></div></div><div class="readiness-check-grid">${automatic.map(check=>`<article class="readiness-check is-${check.status}"><div class="readiness-check-badges"><span>${statusLabel(check.status)}</span><em>${escapeHtml(check.testType)}</em></div><strong>${escapeHtml(check.label)}</strong><p>${escapeHtml(check.detail)}</p></article>`).join('')}</div></section><section class="panel readiness-section"><div class="panel-head"><div><h3>운영자 확인</h3><small>확인은 30일 동안 유효합니다. 실제 개인정보 대신 가상 자료로 훈련하세요.</small></div></div><div class="readiness-manual-list">${manual.rows.map(row=>`<label class="readiness-manual ${row.complete?'is-complete':''} ${row.locked?'is-locked':''}"><input type="checkbox" data-readiness-manual="${row.id}" ${row.complete?'checked':''} ${row.locked?'disabled':''}><span><strong>${escapeHtml(row.label)}</strong><small>${escapeHtml(row.description)}</small>${row.locked?`<em class="readiness-lock-message">${escapeHtml(row.lockMessage)}</em>`:row.complete?`<em>${escapeHtml(formatTime(row.completedAt))} · ${escapeHtml(row.role)}</em>`:''}</span></label>`).join('')}</div></section><section class="panel readiness-docs"><div><h3>운영 문서</h3><p>업무 시작·종료부터 장애 복구와 릴리스 판정까지 순서대로 확인할 수 있습니다.</p></div><div><a class="ghost button-link" href="docs/OPERATOR_GUIDE_v11.0.0.md" target="_blank" rel="noopener">운영자 설명서</a><a class="ghost button-link" href="docs/INCIDENT_RECOVERY_v11.0.0.md" target="_blank" rel="noopener">장애 복구 절차</a><a class="ghost button-link" href="docs/RELEASE_READINESS_v11.0.0.md" target="_blank" rel="noopener">릴리스 점검표</a></div></section><p class="readiness-limit">브라우저 자동 점검은 실제 Supabase 계정별 RLS, 외부 백업 보관, 다른 PC의 삭제 동기화를 대신하지 않습니다. 점검 JSON은 사용자가 수정 가능한 참고 자료이며 전자서명된 증명서가 아닙니다.</p>`;
+    host.innerHTML=`<section class="readiness-overall ${overallClass}"><div><p class="eyebrow">PRODUCTION GATE · ${sourceLabel}</p><h3>${overallTitle}</h3><p>자동 통과 ${summary.automaticPassed}/${summary.automaticTotal} · 운영 확인 ${summary.manualCompleted}/${summary.manualTotal} · 환경 ${escapeHtml(evidence.operationEnvironment)}</p></div><span>${summary.ready?'READY':'CHECK'}</span></section><div class="readiness-actions"><button class="ghost" id="btnReadinessRefresh" type="button">다시 확인</button><button class="ghost" id="btnReadinessCapacity" type="button">가상 6,500건 검사</button><button class="primary" id="btnReadinessExport" type="button">점검 결과 저장</button></div><section class="panel readiness-section"><div class="panel-head"><div><h3>자동 안전 점검</h3><small>모듈 존재 확인과 가상 자료를 사용한 실제 기능 시험을 구분합니다. 개인정보 원문은 읽거나 표시하지 않습니다.</small></div></div><div class="readiness-check-grid">${automatic.map(check=>`<article class="readiness-check is-${check.status}"><div class="readiness-check-badges"><span>${statusLabel(check.status)}</span><em>${escapeHtml(check.testType)}</em></div><strong>${escapeHtml(check.label)}</strong><p>${escapeHtml(check.detail)}</p></article>`).join('')}</div></section><section class="panel readiness-section"><div class="panel-head"><div><h3>운영자 확인</h3><small>필수 확인은 30일 동안 유효합니다. 알려진 요금제 제한은 READY 차단 항목에서 제외합니다.</small></div></div><div class="readiness-manual-list">${manual.rows.map(row=>`<label class="readiness-manual ${row.complete?'is-complete':''} ${row.locked?'is-locked':''} ${row.knownLimitation?'is-known-limitation':''}"><input type="checkbox" data-readiness-manual="${row.id}" ${row.complete?'checked':''} ${row.locked?'disabled':''}><span><strong>${escapeHtml(row.label)}</strong><small>${escapeHtml(row.description)}</small>${row.locked?`<em class="readiness-lock-message">${escapeHtml(row.lockMessage)}</em>`:row.complete?`<em>${escapeHtml(formatTime(row.completedAt))} · ${escapeHtml(row.role)}</em>`:''}</span></label>`).join('')}</div></section><section class="panel readiness-docs"><div><h3>운영 문서</h3><p>업무 시작·종료부터 장애 복구와 릴리스 판정까지 순서대로 확인할 수 있습니다.</p></div><div><a class="ghost button-link" href="docs/OPERATOR_GUIDE_v11.0.0.md" target="_blank" rel="noopener">운영자 설명서</a><a class="ghost button-link" href="docs/INCIDENT_RECOVERY_v11.0.0.md" target="_blank" rel="noopener">장애 복구 절차</a><a class="ghost button-link" href="docs/RELEASE_READINESS_v11.0.0.md" target="_blank" rel="noopener">릴리스 점검표</a></div></section><p class="readiness-limit">브라우저 자동 점검은 실제 Supabase 계정별 RLS, 외부 백업 보관, 다른 PC의 삭제 동기화를 대신하지 않습니다. 점검 JSON은 사용자가 수정 가능한 참고 자료이며 전자서명된 증명서가 아닙니다.</p>`;
     host.querySelector('#btnReadinessRefresh')?.addEventListener('click',()=>render());
     host.querySelector('#btnReadinessCapacity')?.addEventListener('click',event=>{
       const button=event.currentTarget;button.disabled=true;button.textContent='가상 자료 검사 중…';
@@ -316,7 +323,7 @@
     root.setTimeout?.(()=>render(),0);
   }
 
-  const api={VERSION,STATE_KEY,STATE_SCHEMA_VERSION,MAX_CHECK_AGE_MS,OPERATION_ENV_KEY,CLOUD_ADMIN_MESSAGE,CLOUD_ADMIN_CHECKS,MANUAL_CHECKS,emptyState,isFresh,sanitizeState,readState,operationEnvironment,runtimeContext,requireReadinessPermission,setManual,clearState,manualStatus,runSyntheticCapacityCheck,saveCapacityResult,buildAutomaticChecks,summarize,runEncryptionRoundTrip,collectRuntimeEvidence,buildPrivacySafeReport,downloadReport,render,ensureUi,init};
+  const api={VERSION,STATE_KEY,STATE_SCHEMA_VERSION,MAX_CHECK_AGE_MS,OPERATION_ENV_KEY,CLOUD_ADMIN_MESSAGE,FREE_PLAN_LIMITATION_TEXT,KNOWN_LIMITATIONS,CLOUD_ADMIN_CHECKS,MANUAL_CHECKS,emptyState,isFresh,sanitizeState,readState,operationEnvironment,runtimeContext,requireReadinessPermission,setManual,clearState,manualStatus,runSyntheticCapacityCheck,saveCapacityResult,buildAutomaticChecks,summarize,runEncryptionRoundTrip,collectRuntimeEvidence,buildPrivacySafeReport,downloadReport,render,ensureUi,init};
   if(root.document)init();
   return api;
 });
