@@ -1,4 +1,4 @@
-/* Recruit ERP v10.63.0 USER PERMISSIONS
+/* Recruit ERP v11.0.0 USER PERMISSIONS
  * UI guards are usability protection. Supabase RLS is the security boundary.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpPermissions=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='10.63.0';
+  const VERSION='11.0.0';
   const ROLE_LABELS={admin:'관리자',recruiter:'채용담당자',viewer:'조회 전용',local_admin:'로컬 관리자',legacy_admin:'설정 전 관리자'};
   const PERMISSIONS={
     admin:['*'],local_admin:['*'],legacy_admin:['*'],
@@ -27,7 +27,7 @@
       'applicant.write':'지원자 등록·수정','applicant.delete':'지원자 삭제','schedule.write':'면접·일정 변경',
       'employee.write':'사원명부 수정','employee.delete':'사원 삭제','school.write':'협력학교 수정','school.delete':'협력학교 삭제',
       'backup.manage':'백업·복원','backup.restore':'백업 복원','export.standard':'일반 내보내기','sensitive.read':'주민등록번호 조회',
-      'user.manage':'사용자 권한 설정','message.write':'안내문 저장'
+      'user.manage':'사용자 권한 설정','readiness.manage':'운영 준비 점검','message.write':'안내문 저장'
     };
     return `${labels[permission]||'이 기능'} 권한이 없습니다. 현재 권한: ${roleLabel(state.role)}`;
   }
@@ -74,6 +74,7 @@
     if(page==='auditHistory')return 'audit.read';
     if(page==='backup')return 'backup.manage';
     if(page==='storagePerformance')return 'storage.manage';
+    if(page==='productionReadiness')return 'readiness.manage';
     if(page==='form')return 'applicant.write';
     if(/deleteApplicant|btnDeleteAll|btnClearAll/i.test(handler+' '+id))return 'applicant.delete';
     if(/deleteEmployee|DeleteEditingEmployee/i.test(handler+' '+id))return 'employee.delete';
@@ -111,6 +112,7 @@
       mark('[data-page="permissions"],[data-go="permissions"]','user.manage');
       mark('[data-page="auditHistory"],[data-go="auditHistory"]','audit.read');
       mark('[data-page="storagePerformance"],[data-go="storagePerformance"],#storagePerformance','storage.manage');
+      mark('[data-page="productionReadiness"],[data-go="productionReadiness"],#productionReadiness','readiness.manage');
       mark('#btnDeleteAll,#btnClearAll,[data-erp-handler*="deleteApplicant"]','applicant.delete');
       mark('[data-erp-handler*="deleteEmployee"],#btnDeleteEditingEmployee','employee.delete');
       mark('[data-erp-handler*="deleteSchool"],#btnApplySchoolMerge','school.delete');
@@ -125,7 +127,7 @@
       const note=root.document.getElementById('permissionCurrentBadge'),badge=badgeHtml();if(note&&note.innerHTML!==badge)note.innerHTML=badge;
       root.document.documentElement.dataset.erpRole=state.role;
       if(!has('sensitive.read'))root.document.body?.classList.add('erp-sensitive-masked');else root.document.body?.classList.remove('erp-sensitive-masked');
-      const active=root.document.querySelector('.page.active');if(active&&((active.id==='form'&&!has('applicant.write'))||(active.id==='backup'&&!has('backup.manage'))||(active.id==='permissions'&&!has('user.manage'))||(active.id==='auditHistory'&&!has('audit.read'))||(active.id==='storagePerformance'&&!has('storage.manage'))))root.setPage?.('home');
+      const active=root.document.querySelector('.page.active');if(active&&((active.id==='form'&&!has('applicant.write'))||(active.id==='backup'&&!has('backup.manage'))||(active.id==='permissions'&&!has('user.manage'))||(active.id==='auditHistory'&&!has('audit.read'))||(active.id==='storagePerformance'&&!has('storage.manage'))||(active.id==='productionReadiness'&&!has('readiness.manage'))))root.setPage?.('home');
     }finally{applying=false;}
   }
 
