@@ -17,6 +17,7 @@ const rollbackName='supabase/rollback/rollback_production_readiness_v11_0_0.sql'
 const migration=read(migrationName);
 const verification=read(verificationName);
 const rollback=read(rollbackName);
+const changelog=read('CHANGELOG_v11.0.0.md');
 
 const memory=new Map();
 const alerts=[];
@@ -44,6 +45,9 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   assert.equal(readiness.STATE_SCHEMA_VERSION,2);
   assert.equal(readiness.MANUAL_CHECKS.length,7);
   assert.deepEqual(readiness.MANUAL_CHECKS.map(item=>item.id),['roles_rls','leaked_credential_protection','encrypted_restore','delete_recovery','export_audit','operator_guide','incident_drill']);
+  assert.deepEqual([...readiness.CLOUD_ADMIN_CHECKS],['roles_rls']);
+  assert.equal(readiness.KNOWN_LIMITATIONS.length,1);
+  assert.equal(readiness.KNOWN_LIMITATIONS[0].description,readiness.FREE_PLAN_LIMITATION_TEXT);
 
   const now=Date.parse('2026-08-04T12:00:00.000Z');
   assert.equal(readiness.isFresh('2026-08-04T11:00:00.000Z',now),true);
@@ -60,9 +64,10 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   const cloudContext=installRuntime({role:'admin',source:'cloud',userId:'00000000-0000-4000-8000-000000000001'},{cloudUsable:true});
   assert.equal(cloudContext.cloudAdminEligible,true);
   assert.ok(readiness.setManual('roles_rls',true),'cloud admin은 roles_rls를 체크할 수 있어야 합니다.');
-  assert.ok(readiness.setManual('leaked_credential_protection',true),'cloud admin은 유출 비밀번호 보호 확인을 체크할 수 있어야 합니다.');
+  assert.equal(readiness.setManual('leaked_credential_protection',true),null,'알려진 요금제 제한은 수동 완료 상태로 저장하지 않습니다.');
   const stored=readiness.readState();
   assert.equal(stored.manual.roles_rls.role,'admin');assert.equal(stored.manual.roles_rls.source,'cloud');
+  assert.equal(stored.manual.leaked_credential_protection,undefined);
 
   installRuntime({role:'recruiter',source:'cloud',userId:'00000000-0000-4000-8000-000000000002'},{cloudUsable:true});
   assert.equal(readiness.requireReadinessPermission(false),false);assert.equal(readiness.saveCapacityResult({passed:true}),null);assert.equal(readiness.clearState(),false);
@@ -103,6 +108,8 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   const completeState={schemaVersion:2,version:'11.0.0',updatedAt:completedAt,manual:Object.fromEntries(readiness.MANUAL_CHECKS.map(item=>[item.id,{completedAt,role:'admin',source:'cloud'}])),capacity:{...synthetic,phone:'010-1234-5678',memo:'보고서에 들어가면 안 되는 값'}};
   const cloudManual=readiness.manualStatus(completeState,now,cloudContext);
   assert.equal(cloudManual.ready,true);
+  assert.equal(cloudManual.completed,6);assert.equal(cloudManual.total,6);assert.equal(cloudManual.knownLimitations,1);
+  const leakedLimit=cloudManual.rows.find(item=>item.id==='leaked_credential_protection');assert.equal(leakedLimit.knownLimitation,true);assert.equal(leakedLimit.complete,false);assert.equal(leakedLimit.locked,true);
   const cloudSummary=readiness.summarize(automatic,cloudManual,cloudContext);
   assert.equal(cloudSummary.ready,true);assert.equal(cloudSummary.cloudVerified,true);
 
@@ -116,6 +123,8 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   const cloudReport=readiness.buildPrivacySafeReport({state:completeState,automatic,context:cloudContext,manual:cloudManual,summary:cloudSummary});
   assert.equal(cloudReport.overall,'ready');assert.equal(cloudReport.verificationSource,'cloud');assert.equal(cloudReport.operationEnvironment,'home');
   assert.equal(cloudReport.migrationVerified,true);assert.equal(cloudReport.securityAdvisorVerified,true);assert.equal(cloudReport.roleMatrixVerified,true);assert.equal(cloudReport.appVersion,'11.0.0');
+  assert.equal(cloudReport.knownLimitations.length,1);assert.equal(cloudReport.knownLimitations[0].description,readiness.FREE_PLAN_LIMITATION_TEXT);
+  assert.equal(cloudReport.manual.find(item=>item.id==='leaked_credential_protection').knownLimitation,true);
   const localReport=readiness.buildPrivacySafeReport({state:completeState,automatic,context:localContext,manual:localManual,summary:localSummary});
   assert.equal(localReport.overall,'not-ready');assert.equal(localReport.verificationSource,'local');
   assert.equal(localReport.migrationVerified,false);assert.match(localReport.limitation,/전자서명된 증명서가 아닙니다/);
@@ -126,7 +135,8 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   assert.match(source,/CLOUD_ADMIN_MESSAGE/);assert.match(source,/runEncryptionRoundTrip/);assert.match(source,/verificationSource/);assert.doesNotMatch(source,/localStorage[^\n]*(?:name|phone|residentNumber|address|memo)/i);
 
   for(const documentPath of ['docs/OPERATOR_GUIDE_v11.0.0.md','docs/INCIDENT_RECOVERY_v11.0.0.md','docs/RELEASE_READINESS_v11.0.0.md'])assert.ok(fs.existsSync(path.join(root,documentPath)),`${documentPath} 누락`);
-  const releaseDocument=read('docs/RELEASE_READINESS_v11.0.0.md');assert.match(releaseDocument,/유출 비밀번호 보호/);assert.match(releaseDocument,/전자서명된 증명서/);assert.match(releaseDocument,/Rollback 제한[\s\S]*관리자 승인/);
+  const releaseDocument=read('docs/RELEASE_READINESS_v11.0.0.md');assert.match(releaseDocument,/알려진 요금제 제한/);assert.match(releaseDocument,/Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용\.[\s\S]*해당 제한을 인지한 상태로 운영한다\./);assert.match(releaseDocument,/전자서명된 증명서/);assert.match(releaseDocument,/Rollback 제한[\s\S]*관리자 승인/);
+  assert.match(changelog,/Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용\.[\s\S]*해당 제한을 인지한 상태로 운영한다\./);
 
   assert.match(migration,/create or replace function private\.erp_legacy_is_allowed_user/);assert.match(migration,/function private\.erp_set_app_settings_updated_at[\s\S]*security invoker/i);
   assert.match(migration,/function private\.erp_prepare_audit_log\(\)[\s\S]*resolved_app_role text[\s\S]*if resolved_app_role not in \('admin','recruiter'\)/i);
