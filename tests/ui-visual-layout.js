@@ -6,10 +6,12 @@ const path=require('node:path');
 const {spawn}=require('node:child_process');
 const {chromium}=require('playwright-core');
 const employeeXlsx=require('../js/employee-master-xlsx-import.js');
+const {createBridgeServer,HOST:bridgeHost,PORT:bridgePort}=require('../bridge/erp-bridge.js');
 
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
+const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,port:bridgePort});
 const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.1.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
@@ -73,6 +75,7 @@ async function restoreSchoolWorkforceFixture(page){
 }
 
 (async()=>{
+  await new Promise((resolve,reject)=>{bridgeServer.once('error',reject);bridgeServer.listen(bridgePort,bridgeHost,resolve);});
   await waitForServer();
   const browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox']});
   const consoleErrors=[];
@@ -109,16 +112,17 @@ async function restoreSchoolWorkforceFixture(page){
         await page.locator('#storagePerformanceBody .storage-metric-grid').waitFor();
         const storageState=await page.evaluate(()=>({active:document.querySelector('.page.active')?.id,count:document.querySelectorAll('#storagePerformanceBody .storage-metric-grid article').length,overflow:document.querySelector('#storagePerformance').scrollWidth-document.querySelector('#storagePerformance').clientWidth,mirror:document.querySelector('#storagePerformanceBody')?.innerText||''}));
         assert.equal(storageState.active,'storagePerformance');assert.equal(storageState.count,4);assert.ok(storageState.overflow<=1,`${viewport.name} 저장소 화면 가로 넘침: ${JSON.stringify(storageState)}`);assert.ok(storageState.mirror.includes('지원자')&&storageState.mirror.includes('3건'));
-        assert.ok(storageState.mirror.includes('공용폴더 저장 테스트'),'공용폴더 저장 진단 버튼이 보여야 합니다.');
+        assert.ok(storageState.mirror.includes('로컬 Bridge 연결 테스트'),'로컬 Bridge 연결 진단 버튼이 보여야 합니다.');
         if(viewport.width===390){
-          const sharedFolderBefore=await page.evaluate(()=>{
-            window.__sharedFolderFiles=new Map([['existing-company-file.txt','keep']]);window.__sharedFolderCalls=[];
-            window.showDirectoryPicker=async options=>{window.__sharedFolderCalls.push({type:'picker',options});return {name:'RecruitERP_TEST',getFileHandle:async(fileName,fileOptions={})=>{window.__sharedFolderCalls.push({type:'get',fileName,create:fileOptions.create===true});if(!window.__sharedFolderFiles.has(fileName)&&!fileOptions.create)throw new DOMException('not found','NotFoundError');if(!window.__sharedFolderFiles.has(fileName))window.__sharedFolderFiles.set(fileName,'');return {createWritable:async()=>{let pending='';return {write:async value=>{pending=String(value);window.__sharedFolderCalls.push({type:'write',fileName,value:pending});},close:async()=>{window.__sharedFolderFiles.set(fileName,pending);window.__sharedFolderCalls.push({type:'close',fileName});},abort:async()=>{window.__sharedFolderCalls.push({type:'abort',fileName});}};},getFile:async()=>({text:async()=>window.__sharedFolderFiles.get(fileName)})};},removeEntry:async fileName=>{window.__sharedFolderCalls.push({type:'remove',fileName});window.__sharedFolderFiles.delete(fileName);}};};
-            return JSON.stringify({...localStorage});
-          });
-          await page.locator('#btnSharedFolderTest').click();await page.locator('#sharedFolderTestResult.is-success').waitFor();
-          const sharedFolderState=await page.evaluate(()=>({after:JSON.stringify({...localStorage}),existing:window.__sharedFolderFiles.get('existing-company-file.txt'),testFile:window.__sharedFolderFiles.has('recruit_erp_test.txt'),calls:window.__sharedFolderCalls,result:document.querySelector('#sharedFolderTestResult')?.innerText||''}));
-          assert.equal(sharedFolderState.after,sharedFolderBefore,'공용폴더 테스트는 localStorage를 변경하면 안 됩니다.');assert.equal(sharedFolderState.existing,'keep','기존 공용폴더 파일은 변경하면 안 됩니다.');assert.equal(sharedFolderState.testFile,false,'공용폴더 테스트 파일은 즉시 삭제해야 합니다.');assert.ok(sharedFolderState.result.includes('공용폴더 읽기/쓰기 사용 가능')&&sharedFolderState.result.includes('ERP_DATA 저장소로 사용할 수 있습니다.'));assert.deepEqual(sharedFolderState.calls.filter(call=>call.type==='write').map(call=>call.value),['Recruit ERP shared folder test']);assert.deepEqual(sharedFolderState.calls.filter(call=>call.type==='remove').map(call=>call.fileName),['recruit_erp_test.txt']);
+          const bridgeBefore=await page.evaluate(()=>JSON.stringify({...localStorage}));
+          await page.locator('#btnLocalBridgeTest').click();
+          try{await page.locator('#bridgeTestResult.is-success').waitFor({timeout:7000});}
+          catch(error){
+            const diagnostic=await page.evaluate(async()=>{try{const response=await fetch('http://127.0.0.1:17840/health',{headers:{Accept:'application/json'}});return {status:response.status,text:await response.text(),result:document.querySelector('#bridgeTestResult')?.innerText||''};}catch(fetchError){return {error:String(fetchError),result:document.querySelector('#bridgeTestResult')?.innerText||''};}});
+            throw new Error(`Bridge 브라우저 연결 실패: ${JSON.stringify(diagnostic)} / ${error.message}`);
+          }
+          const bridgeState=await page.evaluate(()=>({after:JSON.stringify({...localStorage}),result:document.querySelector('#bridgeTestResult')?.innerText||''}));
+          assert.equal(bridgeState.after,bridgeBefore,'Bridge 연결 테스트는 localStorage를 변경하면 안 됩니다.');assert.ok(bridgeState.result.includes('ERP Bridge 연결 성공')&&bridgeState.result.includes('로컬 저장 프로그램과 ERP 통신이 가능합니다.'));
         }
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-storage-performance.png`),fullPage:true});
         await page.evaluate(()=>window.setPage?.('backup'));await page.waitForTimeout(80);
@@ -277,5 +281,5 @@ async function restoreSchoolWorkforceFixture(page){
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
     console.log(`ui-visual-layout.js: 7개 화면 조건(5개 뷰포트+125% 확대)·17개 화면·학교 인력분석·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
-  }finally{await browser.close();server.kill();}
-})().catch(error=>{server.kill();console.error(error);process.exitCode=1;});
+  }finally{await browser.close();server.kill();await new Promise(resolve=>bridgeServer.close(resolve));}
+})().catch(error=>{server.kill();if(bridgeServer.listening)bridgeServer.close();console.error(error);process.exitCode=1;});
