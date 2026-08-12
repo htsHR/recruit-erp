@@ -2,6 +2,7 @@
 
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
+const os=require('node:os');
 const path=require('node:path');
 const {spawn}=require('node:child_process');
 const {chromium}=require('playwright-core');
@@ -11,7 +12,13 @@ const {createBridgeServer,HOST:bridgeHost,PORT:bridgePort}=require('../bridge/er
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,port:bridgePort});
+const bridgeTempRoot=fs.realpathSync(os.tmpdir());
+const bridgeTempParent=fs.mkdtempSync(path.join(bridgeTempRoot,'erp-bridge-ui-'));
+const bridgeSharedFolder=path.join(bridgeTempParent,'RecruitERP_TEST');
+const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt');
+fs.mkdirSync(bridgeSharedFolder);
+fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
+const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,sharedFolderPath:bridgeSharedFolder,port:bridgePort});
 const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.1.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
@@ -113,6 +120,7 @@ async function restoreSchoolWorkforceFixture(page){
         const storageState=await page.evaluate(()=>({active:document.querySelector('.page.active')?.id,count:document.querySelectorAll('#storagePerformanceBody .storage-metric-grid article').length,overflow:document.querySelector('#storagePerformance').scrollWidth-document.querySelector('#storagePerformance').clientWidth,mirror:document.querySelector('#storagePerformanceBody')?.innerText||''}));
         assert.equal(storageState.active,'storagePerformance');assert.equal(storageState.count,4);assert.ok(storageState.overflow<=1,`${viewport.name} 저장소 화면 가로 넘침: ${JSON.stringify(storageState)}`);assert.ok(storageState.mirror.includes('지원자')&&storageState.mirror.includes('3건'));
         assert.ok(storageState.mirror.includes('로컬 Bridge 연결 테스트'),'로컬 Bridge 연결 진단 버튼이 보여야 합니다.');
+        assert.ok(storageState.mirror.includes('공용폴더 읽기/쓰기 테스트'),'공용폴더 읽기/쓰기 진단 버튼이 보여야 합니다.');
         if(viewport.width===390){
           const bridgeBefore=await page.evaluate(()=>JSON.stringify({...localStorage}));
           await page.locator('#btnLocalBridgeTest').click();
@@ -123,6 +131,13 @@ async function restoreSchoolWorkforceFixture(page){
           }
           const bridgeState=await page.evaluate(()=>({after:JSON.stringify({...localStorage}),result:document.querySelector('#bridgeTestResult')?.innerText||''}));
           assert.equal(bridgeState.after,bridgeBefore,'Bridge 연결 테스트는 localStorage를 변경하면 안 됩니다.');assert.ok(bridgeState.result.includes('ERP Bridge 연결 성공')&&bridgeState.result.includes('로컬 저장 프로그램과 ERP 통신이 가능합니다.'));
+          await page.locator('#btnSharedFolderTest').click();
+          await page.locator('#sharedFolderTestResult.is-success').waitFor({timeout:15000});
+          const sharedState=await page.evaluate(()=>({after:JSON.stringify({...localStorage}),result:document.querySelector('#sharedFolderTestResult')?.innerText||''}));
+          assert.equal(sharedState.after,bridgeBefore,'공용폴더 테스트는 localStorage를 변경하면 안 됩니다.');
+          assert.ok(sharedState.result.includes('공용폴더 읽기/쓰기 성공')&&sharedState.result.includes('테스트 크기')&&sharedState.result.includes('100KB')&&sharedState.result.includes('삭제')&&sharedState.result.includes('성공'));
+          assert.equal(fs.readFileSync(bridgeExistingFile,'utf8'),'existing file must not change','공용폴더 기존 파일을 바꾸면 안 됩니다.');
+          assert.deepEqual(fs.readdirSync(bridgeSharedFolder),['existing-company-file.txt'],'공용폴더 UI 테스트 파일은 즉시 삭제되어야 합니다.');
         }
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-storage-performance.png`),fullPage:true});
         await page.evaluate(()=>window.setPage?.('backup'));await page.waitForTimeout(80);
@@ -281,5 +296,10 @@ async function restoreSchoolWorkforceFixture(page){
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
     console.log(`ui-visual-layout.js: 7개 화면 조건(5개 뷰포트+125% 확대)·17개 화면·학교 인력분석·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
-  }finally{await browser.close();server.kill();await new Promise(resolve=>bridgeServer.close(resolve));}
+  }finally{
+    await browser.close();server.kill();await new Promise(resolve=>bridgeServer.close(resolve));
+    const resolved=fs.realpathSync(bridgeTempParent);
+    if(path.dirname(resolved)!==bridgeTempRoot)throw new Error('Bridge UI 임시 폴더 범위가 올바르지 않습니다.');
+    fs.rmSync(resolved,{recursive:true,force:true});
+  }
 })().catch(error=>{server.kill();if(bridgeServer.listening)bridgeServer.close();console.error(error);process.exitCode=1;});

@@ -16,9 +16,10 @@
   const LOCAL_WARNING_BYTES=4*1024*1024;
   const LOW_REMAINING_BYTES=5*1024*1024;
   const BRIDGE_HEALTH_URL='http://127.0.0.1:17840/health';
+  const BRIDGE_SHARED_FOLDER_TEST_URL='http://127.0.0.1:17840/shared-folder-test';
   const BRIDGE_SERVICE='Recruit ERP Bridge';
-  const BRIDGE_VERSION='0.1-test';
-  const BRIDGE_TIMEOUT_MS=5000;
+  const BRIDGE_VERSION='0.2-test';
+  const BRIDGE_TIMEOUT_MS=15000;
   const DATASETS=[
     {key:'recruit_erp_applicants_stable',label:'지원자'},
     {key:'recruit_erp_employees',label:'사원'},
@@ -32,6 +33,8 @@
   let lastStatus={supported:false,lastMirroredAt:'',error:''};
   let lastBridgeResult=null;
   let bridgeTestBusy=false;
+  let lastSharedFolderResult=null;
+  let sharedFolderTestBusy=false;
 
   async function probeLocalBridge(fetchImpl=root.fetch){
     if(typeof fetchImpl!=='function')return {ok:false,code:'unsupported'};
@@ -56,6 +59,34 @@
       if(timer!==undefined)root.clearTimeout?.(timer);
     }
   }
+  async function probeSharedFolderBridge(fetchImpl=root.fetch){
+    if(typeof fetchImpl!=='function')return {ok:false,code:'unsupported',steps:{}};
+    const controller=typeof AbortController==='function'?new AbortController():null;
+    const timer=root.setTimeout?.(()=>controller?.abort(),BRIDGE_TIMEOUT_MS);
+    try{
+      const response=await fetchImpl(BRIDGE_SHARED_FOLDER_TEST_URL,{
+        method:'POST',
+        mode:'cors',
+        cache:'no-store',
+        credentials:'omit',
+        headers:{Accept:'application/json'},
+        signal:controller?.signal
+      });
+      if(!response?.ok)return {ok:false,code:response?.status===409?'test-in-progress':'http-error',steps:{}};
+      const body=await response.json();
+      if(body?.service!==BRIDGE_SERVICE||body?.version!==BRIDGE_VERSION)return {ok:false,code:'invalid-response',steps:{}};
+      const steps=['access','create','write','read','verify','delete'].reduce((result,key)=>({...result,[key]:body?.steps?.[key]===true}),{});
+      if(body.ok===true){
+        const ok=body.testSizeBytes===100*1024&&Object.values(steps).every(Boolean);
+        return {ok,code:ok?'ok':'invalid-response',testSizeBytes:Number(body.testSizeBytes)||0,steps};
+      }
+      return {ok:false,code:String(body?.code||'shared-folder-test-failed'),testSizeBytes:Number(body?.testSizeBytes)||0,steps};
+    }catch{
+      return {ok:false,code:controller?.signal.aborted?'timeout':'connection-failed',steps:{}};
+    }finally{
+      if(timer!==undefined)root.clearTimeout?.(timer);
+    }
+  }
   function bridgeResultHtml(){
     if(bridgeTestBusy)return '<div class="bridge-test-result is-running" id="bridgeTestResult" role="status" aria-live="polite"><strong>ERP Bridge 연결 확인 중…</strong><span>이 PC의 127.0.0.1:17840 상태만 확인합니다.</span></div>';
     if(!lastBridgeResult)return '<div class="bridge-test-result" id="bridgeTestResult" role="status" aria-live="polite"><strong>아직 테스트하지 않았습니다.</strong><span>먼저 회사 PC에서 ERP Bridge를 실행하세요.</span></div>';
@@ -74,6 +105,42 @@
     bridgeTestBusy=false;
     await render();
     return lastBridgeResult.ok;
+  }
+  function sharedFolderResultHtml(){
+    if(sharedFolderTestBusy)return '<div class="bridge-test-result is-running" id="sharedFolderTestResult" role="status" aria-live="polite"><strong>공용폴더 읽기/쓰기 확인 중…</strong><span>약 100KB 가상 테스트 파일을 쓰고, 읽고, 검증한 뒤 삭제합니다.</span></div>';
+    if(!lastSharedFolderResult)return '<div class="bridge-test-result" id="sharedFolderTestResult" role="status" aria-live="polite"><strong>아직 테스트하지 않았습니다.</strong><span>RecruitERP_TEST 경로를 인자로 지정해 새 Bridge를 실행하세요.</span></div>';
+    if(lastSharedFolderResult.ok){
+      const steps=lastSharedFolderResult.steps||{};
+      return `<div class="bridge-test-result is-success" id="sharedFolderTestResult" role="status" aria-live="polite"><strong>✅ 공용폴더 읽기/쓰기 성공</strong><span>지원팀 공용폴더를 ERP 데이터 저장소로 사용할 수 있습니다.</span><dl class="bridge-test-steps"><div><dt>테스트 크기</dt><dd>100KB</dd></div><div><dt>쓰기</dt><dd>${steps.write?'성공':'실패'}</dd></div><div><dt>읽기</dt><dd>${steps.read?'성공':'실패'}</dd></div><div><dt>검증</dt><dd>${steps.verify?'성공':'실패'}</dd></div><div><dt>삭제</dt><dd>${steps.delete?'성공':'실패'}</dd></div></dl></div>`;
+    }
+    const titles={
+      FOLDER_ACCESS_FAILED:'❌ 공용폴더 접근 실패',
+      FILE_CREATE_DENIED:'❌ 파일 생성 권한 없음',
+      FILE_CREATE_FAILED:'❌ 파일 생성 실패',
+      FILE_WRITE_FAILED:'❌ 파일 쓰기 실패',
+      FILE_READ_FAILED:'❌ 파일 읽기 실패',
+      FILE_VERIFY_FAILED:'❌ 파일 검증 실패',
+      FILE_DELETE_DENIED:'❌ 파일 삭제 권한 없음',
+      FILE_DELETE_FAILED:'❌ 파일 삭제 실패',
+      FILE_DELETE_VERIFY_FAILED:'❌ 파일 삭제 확인 실패'
+    };
+    const connectionCodes=['unsupported','http-error','invalid-response','timeout','connection-failed','test-in-progress'];
+    const title=connectionCodes.includes(lastSharedFolderResult.code)?'❌ ERP Bridge 연결 실패':(titles[lastSharedFolderResult.code]||'❌ 공용폴더 테스트 실패');
+    const message=connectionCodes.includes(lastSharedFolderResult.code)?'Bridge 실행 상태와 회사 브라우저 보안정책을 확인하세요.':'Bridge 실행 창에서 해당 단계의 Windows 오류를 확인하세요.';
+    return `<div class="bridge-test-result is-failure" id="sharedFolderTestResult" role="alert" aria-live="assertive"><strong>${title}</strong><span>${message}</span></div>`;
+  }
+  async function runSharedFolderBridgeTest(){
+    if(!root.erpPermissions?.require?.('storage.manage'))return false;
+    if(sharedFolderTestBusy)return false;
+    sharedFolderTestBusy=true;
+    const button=root.document?.getElementById('btnSharedFolderTest');
+    const resultHost=root.document?.getElementById('sharedFolderTestResult');
+    if(button){button.disabled=true;button.textContent='테스트 중…';}
+    if(resultHost){resultHost.className='bridge-test-result is-running';resultHost.setAttribute('role','status');resultHost.innerHTML='<strong>공용폴더 읽기/쓰기 확인 중…</strong><span>약 100KB 가상 테스트 파일을 쓰고, 읽고, 검증한 뒤 삭제합니다.</span>';}
+    lastSharedFolderResult=await probeSharedFolderBridge();
+    sharedFolderTestBusy=false;
+    await render();
+    return lastSharedFolderResult.ok;
   }
 
   function byteLength(value){
@@ -235,11 +302,12 @@
     const quotaText=usage.quota?`${formatBytes(usage.usage)} / ${formatBytes(usage.quota)}`:'브라우저가 제공하지 않음';
     const warning=usage.warning?'<div class="storage-warning" role="alert"><strong>저장공간을 점검해 주세요.</strong><span>암호화 백업을 만든 뒤 불필요한 브라우저 데이터를 정리하세요.</span></div>':'<div class="storage-ok" role="status"><strong>저장공간 상태 양호</strong><span>현재 확인된 용량 위험이 없습니다.</span></div>';
     const mirrorText=!lastStatus.supported?'이 브라우저에서 지원하지 않음':lastStatus.error?'최근 갱신 실패':formatTime(lastStatus.lastMirroredAt);
-    host.innerHTML=`${warning}<div class="storage-metric-grid"><article><span>ERP localStorage</span><strong>${formatBytes(usage.localBytes)}</strong><small>현재 호환 저장소</small></article><article><span>브라우저 전체 사용량</span><strong>${quotaText}</strong><small>브라우저 제공 추정치</small></article><article><span>IndexedDB 안전 복사</span><strong>${escapeHtml(mirrorText)}</strong><small>저장 성공 후 자동 갱신</small></article><article><span>안전 스냅샷</span><strong>${snapshots.length} / ${MAX_SNAPSHOTS}</strong><small>오래된 항목 자동 정리</small></article></div><div class="storage-actions"><button class="ghost" id="btnStorageRefresh" type="button">사용량 다시 확인</button><button class="ghost" id="btnStorageMirror" type="button">안전 복사 갱신</button><button class="primary" id="btnStorageSnapshot" type="button">안전 스냅샷 만들기</button></div><div class="panel bridge-test-panel"><div class="bridge-test-copy"><div><h3>ERP Bridge 연결 진단</h3><p>웹 ERP와 이 PC에서 실행 중인 로컬 프로그램이 통신할 수 있는지만 확인합니다.</p></div><button class="primary" id="btnLocalBridgeTest" type="button" ${bridgeTestBusy?'disabled':''}>${bridgeTestBusy?'테스트 중…':'로컬 Bridge 연결 테스트'}</button></div>${bridgeResultHtml()}<small class="bridge-test-limit">파일·ERP 데이터·localStorage·Supabase·DB에는 접근하거나 변경하지 않습니다.</small></div><div class="panel storage-dataset-panel"><div class="panel-head"><div><h3>데이터별 사용량</h3><small>개인정보 내용 없이 건수와 용량만 표시합니다.</small></div></div><div class="storage-dataset-list">${usage.rows.map(row=>`<div><span>${escapeHtml(row.label)}</span><strong>${row.count.toLocaleString('ko-KR')}건</strong><small>${formatBytes(row.bytes)}</small></div>`).join('')}</div></div><div class="panel storage-snapshot-panel"><div class="panel-head"><div><h3>최근 안전 스냅샷</h3><small>최대 ${MAX_SNAPSHOTS}개까지 이 브라우저의 IndexedDB에 보관합니다.</small></div></div>${snapshots.length?`<div class="storage-snapshot-list">${snapshots.map(item=>`<div><span>${escapeHtml(formatTime(item.createdAt))}</span><strong>${Number(item.totalCount||0).toLocaleString('ko-KR')}건</strong><small>${formatBytes(item.bytes)}</small></div>`).join('')}</div>`:'<p class="muted">아직 만든 안전 스냅샷이 없습니다.</p>'}</div><p class="storage-limit-note">IndexedDB 안전 복사는 같은 브라우저 안의 장애 대비 계층이며 외부 백업을 대신하지 않습니다. 중요한 작업 전에는 백업센터에서 암호화 백업을 내려받으세요.</p>`;
+    host.innerHTML=`${warning}<div class="storage-metric-grid"><article><span>ERP localStorage</span><strong>${formatBytes(usage.localBytes)}</strong><small>현재 호환 저장소</small></article><article><span>브라우저 전체 사용량</span><strong>${quotaText}</strong><small>브라우저 제공 추정치</small></article><article><span>IndexedDB 안전 복사</span><strong>${escapeHtml(mirrorText)}</strong><small>저장 성공 후 자동 갱신</small></article><article><span>안전 스냅샷</span><strong>${snapshots.length} / ${MAX_SNAPSHOTS}</strong><small>오래된 항목 자동 정리</small></article></div><div class="storage-actions"><button class="ghost" id="btnStorageRefresh" type="button">사용량 다시 확인</button><button class="ghost" id="btnStorageMirror" type="button">안전 복사 갱신</button><button class="primary" id="btnStorageSnapshot" type="button">안전 스냅샷 만들기</button></div><div class="panel bridge-test-panel"><div class="bridge-test-block"><div class="bridge-test-copy"><div><h3>ERP Bridge 연결 진단</h3><p>웹 ERP와 이 PC에서 실행 중인 로컬 프로그램이 통신할 수 있는지 확인합니다.</p></div><button class="ghost" id="btnLocalBridgeTest" type="button" ${bridgeTestBusy?'disabled':''}>${bridgeTestBusy?'테스트 중…':'로컬 Bridge 연결 테스트'}</button></div>${bridgeResultHtml()}</div><div class="bridge-test-block shared-folder-test-block"><div class="bridge-test-copy"><div><h3>지원팀 공용폴더 진단</h3><p>Bridge 시작 때 지정된 RecruitERP_TEST 폴더에 가상 파일 하나만 생성·검증·삭제합니다.</p></div><button class="primary" id="btnSharedFolderTest" type="button" ${sharedFolderTestBusy?'disabled':''}>${sharedFolderTestBusy?'테스트 중…':'공용폴더 읽기/쓰기 테스트'}</button></div>${sharedFolderResultHtml()}</div><small class="bridge-test-limit">브라우저는 폴더 경로를 전달하지 않습니다. 실제 ERP 데이터·개인정보·localStorage·Supabase·DB는 변경하지 않으며 기존 공용폴더 파일도 수정하지 않습니다.</small></div><div class="panel storage-dataset-panel"><div class="panel-head"><div><h3>데이터별 사용량</h3><small>개인정보 내용 없이 건수와 용량만 표시합니다.</small></div></div><div class="storage-dataset-list">${usage.rows.map(row=>`<div><span>${escapeHtml(row.label)}</span><strong>${row.count.toLocaleString('ko-KR')}건</strong><small>${formatBytes(row.bytes)}</small></div>`).join('')}</div></div><div class="panel storage-snapshot-panel"><div class="panel-head"><div><h3>최근 안전 스냅샷</h3><small>최대 ${MAX_SNAPSHOTS}개까지 이 브라우저의 IndexedDB에 보관합니다.</small></div></div>${snapshots.length?`<div class="storage-snapshot-list">${snapshots.map(item=>`<div><span>${escapeHtml(formatTime(item.createdAt))}</span><strong>${Number(item.totalCount||0).toLocaleString('ko-KR')}건</strong><small>${formatBytes(item.bytes)}</small></div>`).join('')}</div>`:'<p class="muted">아직 만든 안전 스냅샷이 없습니다.</p>'}</div><p class="storage-limit-note">IndexedDB 안전 복사는 같은 브라우저 안의 장애 대비 계층이며 외부 백업을 대신하지 않습니다. 중요한 작업 전에는 백업센터에서 암호화 백업을 내려받으세요.</p>`;
     host.querySelector('#btnStorageRefresh')?.addEventListener('click',()=>render());
     host.querySelector('#btnStorageMirror')?.addEventListener('click',()=>mirrorAll().catch(error=>root.alert?.(error.message)));
     host.querySelector('#btnStorageSnapshot')?.addEventListener('click',()=>createSnapshot());
     host.querySelector('#btnLocalBridgeTest')?.addEventListener('click',()=>runLocalBridgeTest());
+    host.querySelector('#btnSharedFolderTest')?.addEventListener('click',()=>runSharedFolderBridgeTest());
   }
   function ensureUi(){
     if(!root.document)return;
@@ -282,7 +350,7 @@
     root.setTimeout?.(()=>mirrorAll().catch(()=>{}),0);
     root.setTimeout?.(()=>render(),0);
   }
-  const api={VERSION,DB_NAME,DB_VERSION,DATASET_STORE,SNAPSHOT_STORE,SNAPSHOT_META_STORE,MAX_SNAPSHOTS,LOCAL_WARNING_BYTES,LOW_REMAINING_BYTES,BRIDGE_HEALTH_URL,BRIDGE_SERVICE,BRIDGE_VERSION,BRIDGE_TIMEOUT_MS,DATASETS,byteLength,formatBytes,shouldWarn,datasetSummary,safeParseDataset,openDb,mirrorDataset,mirrorAll,listSnapshots,saveSnapshot,deleteSnapshot,createSnapshot,probeLocalBridge,runLocalBridgeTest,localUsage,estimateStorage,render,ensureUi,init};
+  const api={VERSION,DB_NAME,DB_VERSION,DATASET_STORE,SNAPSHOT_STORE,SNAPSHOT_META_STORE,MAX_SNAPSHOTS,LOCAL_WARNING_BYTES,LOW_REMAINING_BYTES,BRIDGE_HEALTH_URL,BRIDGE_SHARED_FOLDER_TEST_URL,BRIDGE_SERVICE,BRIDGE_VERSION,BRIDGE_TIMEOUT_MS,DATASETS,byteLength,formatBytes,shouldWarn,datasetSummary,safeParseDataset,openDb,mirrorDataset,mirrorAll,listSnapshots,saveSnapshot,deleteSnapshot,createSnapshot,probeLocalBridge,probeSharedFolderBridge,runLocalBridgeTest,runSharedFolderBridgeTest,localUsage,estimateStorage,render,ensureUi,init};
   if(root.document)init();
   return api;
 });
