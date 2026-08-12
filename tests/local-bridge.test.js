@@ -33,6 +33,7 @@ function request({method='GET',pathname='/health',origin=allowedOrigin,host=`127
   assert.equal(bridge.PORT,17840);
   assert.equal(bridge.SERVICE,'Recruit ERP Bridge');
   assert.equal(bridge.VERSION,'0.1-test');
+  assert.equal(bridge.ERP_PREVIEW_ORIGIN,'https://recruit-erp-git-agent-shared-folder-storage-test-htserp.vercel.app');
   assert.equal(bridge.normalizeAllowedOrigin(`${allowedOrigin}/`),allowedOrigin);
   assert.throws(()=>bridge.normalizeAllowedOrigin('http://public.example.test'),/HTTPS/);
   assert.throws(()=>bridge.normalizeAllowedOrigin(`${allowedOrigin}/path`),/경로/);

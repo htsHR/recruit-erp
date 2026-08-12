@@ -6,6 +6,11 @@ const HOST='127.0.0.1';
 const PORT=17840;
 const SERVICE='Recruit ERP Bridge';
 const VERSION='0.1-test';
+const ERP_PREVIEW_ORIGIN='https://recruit-erp-git-agent-shared-folder-storage-test-htserp.vercel.app';
+
+function isSeaRuntime(){
+  try{return require('node:sea').isSea();}catch{return false;}
+}
 
 function normalizeAllowedOrigin(value){
   if(typeof value!=='string'||!value.trim())throw new Error('ERP Preview Origin을 지정해야 합니다.');
@@ -82,8 +87,9 @@ function createBridgeServer({allowedOrigin,port=PORT}={}){
 }
 
 function readAllowedOrigin(argv=process.argv.slice(2),env=process.env){
+  if(isSeaRuntime())return ERP_PREVIEW_ORIGIN;
   const index=argv.indexOf('--origin');
-  return index>=0?argv[index+1]:env.ERP_BRIDGE_ALLOWED_ORIGIN;
+  return index>=0?argv[index+1]:(env.ERP_BRIDGE_ALLOWED_ORIGIN||ERP_PREVIEW_ORIGIN);
 }
 
 function startBridge({allowedOrigin=readAllowedOrigin(),port=PORT}={}){
@@ -102,9 +108,9 @@ function startBridge({allowedOrigin=readAllowedOrigin(),port=PORT}={}){
   return server;
 }
 
-if(require.main===module){
+if(require.main===module||isSeaRuntime()){
   try{startBridge();}
   catch(error){console.error(error.message);process.exitCode=1;}
 }
 
-module.exports={HOST,PORT,SERVICE,VERSION,normalizeAllowedOrigin,isLoopbackHost,createBridgeServer,startBridge};
+module.exports={HOST,PORT,SERVICE,VERSION,ERP_PREVIEW_ORIGIN,isSeaRuntime,normalizeAllowedOrigin,isLoopbackHost,createBridgeServer,startBridge};
