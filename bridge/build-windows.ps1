@@ -30,6 +30,4 @@ try {
 }
 
 if (-not (Test-Path -LiteralPath $exePath)) { throw 'ERP-Bridge-Test.exe가 생성되지 않았습니다.' }
-$hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $exePath).Hash
 Write-Host "생성 완료: $exePath"
-Write-Host "SHA-256: $hash"
