@@ -8,6 +8,7 @@
 - 모든 `/storage/*` 요청은 Origin 검사와 메모리 전용 Bridge 토큰을 함께 확인하며, 50MB 본문 제한·timeout·단일 쓰기·exclusive lock을 적용합니다.
 - 안전 트리·허용 데이터셋·ID·중복·깊이·노드·행 수·문자열 길이를 검사하고, 주민등록번호 필드와 13자리 형태를 공용 snapshot에서 차단합니다.
 - 공용 저장소 최초 생성은 사용자 확인 후에만 실행하며, 기존 localStorage가 있는 PC는 공용 master를 확인 없이 적용하지 않습니다.
+- 메모리 전용 `writeArmed`가 초기화·최신 자료 불러오기 성공 전 PUT을 차단합니다. 마지막 확인 revision과 master가 같은 재접속만 저장 준비 상태가 되며 이 로컬 메타정보는 공용 snapshot에 포함하지 않습니다.
 - 새 PC의 빈 cache에서는 같은 공용폴더의 정상 master를 읽어 지원자·입사대기·사원·학교·일정 등 업무 데이터를 복구할 수 있습니다.
 - 이 변경은 Draft PR Preview 전용이며 운영 데이터 초기화, `main` 병합, Production 배포는 포함하지 않습니다.
 

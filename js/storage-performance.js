@@ -309,7 +309,7 @@
     const local=shared?.primaryLocalCounts?.()||{applicants:0,hireWaitingProfiles:0,employees:0,schools:0,calendarEvents:0,total:0};
     const ready=status.phase==='ready';
     const tone=ready?'is-success':['error','offline','conflict'].includes(status.phase)?'is-failure':'is-running';
-    const title=ready?'● 공용 ERP 저장소 정상':status.phase==='empty'?'공용 ERP 저장소가 비어 있습니다.':status.phase==='conflict'?'⚠ 다른 PC에서 데이터 변경됨':status.phase==='offline'?'⚠ Bridge 실행 필요':'공용 ERP 저장소 확인 중';
+    const title=ready?'● 공용 ERP 저장소 정상':status.phase==='empty'?'공용 ERP 저장소가 비어 있습니다.':status.phase==='needs-confirmation'?'⚠ 공용 저장 승인 필요':status.phase==='conflict'?'⚠ 다른 PC에서 데이터 변경됨':status.phase==='offline'?'⚠ Bridge 실행 필요':'공용 ERP 저장소 확인 중';
     const last=status.savedAt?formatTime(status.savedAt):'아직 없음';
     const actions=[];
     if(status.phase==='empty')actions.push('<button class="primary" id="btnSharedStorageInitialize" type="button">현재 데이터로 공용 저장소 시작</button>');

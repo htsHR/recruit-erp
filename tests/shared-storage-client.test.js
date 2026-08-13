@@ -95,7 +95,20 @@ function fakeBridge({masterExists=true,revision=1,datasets=fakeDatasets(),confli
   const confirmationBridge=fakeBridge({masterExists:true,revision:8,datasets:fakeDatasets('031')});
   const confirmation=await shared.connect({fetchImpl:confirmationBridge.fetchImpl,autoApplyEmpty:true});assert.equal(confirmation.phase,'needs-confirmation','기존 로컬 데이터는 사용자 확인 없이 바꾸면 안 됩니다.');
   assert.equal(JSON.parse(localStorage.getItem(shared.DATASETS.employees.storageKey))[0].id,'employee-030');
+  const blockedRows=fakeDatasets('032').applicants;localStorage.setItem(shared.DATASETS.applicants.storageKey,JSON.stringify(blockedRows));
+  const blockedPutCount=confirmationBridge.calls.filter(call=>call.options.method==='PUT').length;
+  assert.equal(shared.scheduleSave({detail:{key:shared.DATASETS.applicants.storageKey}}),false,'needs-confirmation에서는 공용 저장을 예약하면 안 됩니다.');
+  await new Promise(resolve=>setTimeout(resolve,550));
+  assert.equal(confirmationBridge.calls.filter(call=>call.options.method==='PUT').length,blockedPutCount,'needs-confirmation의 localStorage 변경은 PUT 요청을 만들면 안 됩니다.');
+  assert.equal(JSON.parse(localStorage.getItem(shared.DATASETS.applicants.storageKey))[0].id,'applicant-032','공용 저장이 차단되어도 localStorage 변경은 유지해야 합니다.');
   assert.equal(await shared.loadLatest({fetchImpl:confirmationBridge.fetchImpl}),true);assert.equal(JSON.parse(localStorage.getItem(shared.DATASETS.employees.storageKey))[0].id,'employee-031');
+  assert.equal(shared.publicState().writeArmed,true);assert.equal(shared.readConfirmedRevision(),8);
+  const approvedRows=fakeDatasets('033').applicants;localStorage.setItem(shared.DATASETS.applicants.storageKey,JSON.stringify(approvedRows));
+  const originalFetch=globalThis.fetch;globalThis.fetch=confirmationBridge.fetchImpl;
+  try{assert.equal(shared.scheduleSave({detail:{key:shared.DATASETS.applicants.storageKey}}),true);await new Promise(resolve=>setTimeout(resolve,550));}
+  finally{globalThis.fetch=originalFetch;}
+  assert.equal(confirmationBridge.calls.filter(call=>call.options.method==='PUT').length,blockedPutCount+1,'loadLatest 승인 후 변경은 PUT 요청을 1건 실행해야 합니다.');
+  assert.equal(shared.readConfirmedRevision(),9);
 
   seedLocal(fakeDatasets('035'));const corruptBefore=localStorage.getItem(shared.DATASETS.employees.storageKey);
   const corruptFetch=async(url,options={})=>{
@@ -116,12 +129,12 @@ function fakeBridge({masterExists=true,revision=1,datasets=fakeDatasets(),confli
   localStorage.failKey='';assert.equal(localStorage.getItem(shared.DATASETS.applicants.storageKey),before,'cache 적용 실패 시 이미 쓴 데이터도 원상복구해야 합니다.');
 
   seedLocal(fakeDatasets('050'));
-  const saveBridge=fakeBridge({masterExists:true,revision:10,datasets:fakeDatasets('050')});await shared.connect({fetchImpl:saveBridge.fetchImpl,autoApplyEmpty:false});
+  const saveBridge=fakeBridge({masterExists:true,revision:10,datasets:fakeDatasets('050')});await shared.connect({fetchImpl:saveBridge.fetchImpl,autoApplyEmpty:false});await shared.loadLatest({fetchImpl:saveBridge.fetchImpl});
   assert.equal(await shared.saveNow({fetchImpl:saveBridge.fetchImpl,notify:false}),true);assert.equal(shared.publicState().revision,11);
   const putCall=saveBridge.calls.find(call=>call.options.method==='PUT');assert.equal(JSON.parse(putCall.options.body).expectedRevision,10);assert.equal(putCall.options.credentials,'omit');assert.equal(putCall.options.cache,'no-store');
 
-  const conflictBridge=fakeBridge({masterExists:true,revision:12,datasets:fakeDatasets('060'),conflict:true});await shared.connect({fetchImpl:conflictBridge.fetchImpl,autoApplyEmpty:false});
-  assert.equal(await shared.saveNow({fetchImpl:conflictBridge.fetchImpl,notify:false}),false);assert.equal(shared.publicState().phase,'conflict');assert.match(shared.publicState().message,/다른 PC/);
+  seedLocal(fakeDatasets('060'));const conflictBridge=fakeBridge({masterExists:true,revision:12,datasets:fakeDatasets('060'),conflict:true});await shared.connect({fetchImpl:conflictBridge.fetchImpl,autoApplyEmpty:false});await shared.loadLatest({fetchImpl:conflictBridge.fetchImpl});
+  assert.equal(await shared.saveNow({fetchImpl:conflictBridge.fetchImpl,notify:false}),false);assert.equal(shared.publicState().phase,'conflict');assert.equal(shared.publicState().writeArmed,false);assert.match(shared.publicState().message,/다른 PC/);
 
   const source=fs.readFileSync(path.join(__dirname,'..','js','shared-storage.js'),'utf8');
   assert.doesNotMatch(source,/showDirectoryPicker|showOpenFilePicker|sendBeacon|FormData|type=["']file["']/i);
