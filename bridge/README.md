@@ -1,39 +1,49 @@
-# Recruit ERP Bridge 공용폴더 PoC
+# Recruit ERP Bridge
 
-이 프로그램은 ERP Preview에서 회사 지원팀 공용폴더의 읽기/쓰기가 가능한지만 확인하는 Windows 10/11 x64용 portable 실행파일입니다.
+회사 로컬 모드의 ERP와 지원팀 공용폴더를 연결하는 Windows 10/11 x64용 portable 프로그램입니다.
 
-- `127.0.0.1:17840`에만 연결됩니다.
-- 지정된 ERP Preview Origin 하나만 CORS로 허용합니다.
-- `GET /health`와 `POST /shared-folder-test`만 제공합니다.
+- `127.0.0.1:17840`에만 연결합니다.
+- 허용된 ERP Preview Origin 하나만 CORS로 허용합니다.
 - 브라우저 요청으로 Windows 경로를 받지 않습니다.
-- 실행할 때 지정한 `RecruitERP_TEST` 폴더 하나만 접근합니다.
-- 실제 ERP 데이터, 개인정보, localStorage, Supabase 및 DB에는 접근하지 않습니다.
+- 실행할 때 지정한 `RecruitERP` 루트와 그 아래 `ERP_DATA`만 접근합니다.
+- Node.js, npm, Git, 설치 프로그램, 관리자 권한이 필요하지 않습니다.
 
 ## 회사 PC 실행
 
-1. 지원팀 공용폴더에 `RecruitERP_TEST` 폴더를 미리 만듭니다.
-2. 명령 프롬프트에서 실행파일과 폴더 경로를 함께 실행합니다.
-
 ```text
-ERP-Bridge-Test.exe "Z:\지원팀\RecruitERP_TEST"
+ERP-Bridge.exe "Z:\RecruitERP"
 ```
 
 UNC 경로도 사용할 수 있습니다.
 
 ```text
-ERP-Bridge-Test.exe "\\공용서버\지원팀\RecruitERP_TEST"
+ERP-Bridge.exe "\\공용서버\지원팀\RecruitERP"
 ```
 
-Node.js, npm, Git, 관리자 권한 및 설치 프로그램은 필요하지 않습니다. Bridge는 `127.0.0.1:17840`에서 대기하며, 창을 닫거나 `Ctrl+C`를 누르면 종료됩니다.
+Bridge는 창을 닫거나 `Ctrl+C`를 누르면 종료됩니다.
 
-## 테스트 동작
+## 저장 API
 
-`POST /shared-folder-test`는 고유 이름의 테스트 파일을 독점 생성하고 약 100KB의 가상 문자열을 기록합니다. 다시 읽어 크기와 SHA-256을 검증한 뒤 파일을 삭제하고, 실제로 삭제됐는지 확인합니다. 기존 파일은 열거나 변경하지 않습니다.
+- `GET /health`: Bridge 연결과 메모리 전용 세션 토큰 확인
+- `POST /shared-folder-test`: 100KB 가상 파일 쓰기·재읽기·hash·삭제 진단
+- `GET /storage/status`: master 존재·스키마·revision·저장시각·건수 확인
+- `GET /storage/snapshot`: 검증된 master 읽기
+- `POST /storage/initialize`: master가 없을 때만 최초 생성
+- `PUT /storage/snapshot`: `expectedRevision`이 일치할 때만 갱신
 
-네트워크 공용폴더에서 삭제 시 일시적인 `EBUSY` 또는 `EPERM`이 발생하면 300ms부터 점진적으로 기다리며 최대 5회 재시도합니다. 첫 삭제 오류가 아니라 마지막 재시도 후 테스트 파일이 실제로 남아 있는지를 최종 성공·실패 기준으로 사용합니다.
+`/health` 이외의 API는 허용 Origin과 `X-ERP-Bridge-Token`을 모두 확인합니다. 토큰은 Bridge 프로세스 메모리에만 있고 종료 시 폐기됩니다.
 
-오류 응답에는 단계 코드만 포함하고 실제 공용폴더 경로나 Windows 오류 원문은 포함하지 않습니다. 원본 Windows 오류는 외부로 전송하지 않고 Bridge 실행 창에서만 확인할 수 있습니다.
+## 안전 저장
+
+공용 master는 직접 덮어쓰지 않습니다. 기존 master 백업, 임시 파일 쓰기와 flush, 재읽기와 SHA-256·JSON 검사, master 교체, 최종 검증 순으로 저장합니다. exclusive 잠금으로 동시 쓰기를 막고 백업은 최근 20개를 유지합니다.
+
+네트워크 공용폴더에서 rename·delete 시 일시적인 `EBUSY` 또는 `EPERM`이 발생하면 300ms부터 점진적으로 최대 5회 재시도합니다. 마지막 재시도 뒤 파일이 실제로 존재하는지를 최종 기준으로 사용합니다.
 
 ## 개발용 빌드
 
-개발 환경에서 `npm run build:bridge:windows`를 실행하면 `dist/ERP-Bridge-Test.exe`가 생성됩니다. 회사 PC에는 이 실행파일 하나만 전달합니다.
+```text
+npm run build:bridge:windows
+npm run test:bridge-exe
+```
+
+생성 파일은 `dist/ERP-Bridge.exe`입니다. portable 검사는 개인정보 없는 약 5MB 가상 snapshot을 저장하고 다시 읽어 hash를 확인합니다.

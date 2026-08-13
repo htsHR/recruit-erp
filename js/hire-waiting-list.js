@@ -71,8 +71,8 @@ function loadHireWaitingProfiles(){
 }
 function saveHireWaitingProfiles(){
   try{
-    localStorage.setItem(HIRE_WAITING_PROFILES_KEY,JSON.stringify(hireWaitingProfiles.map(normalizeHireWaitingProfile).filter(p=>p.applicantId)));
-    return true;
+    const value=JSON.stringify(hireWaitingProfiles.map(normalizeHireWaitingProfile).filter(p=>p.applicantId));
+    return typeof safeLocalStorageSet==='function'?safeLocalStorageSet(HIRE_WAITING_PROFILES_KEY,value):!!localStorage.setItem(HIRE_WAITING_PROFILES_KEY,value)||true;
   }catch(err){
     console.error('입사대기 입력정보 저장 실패:',err);
     return false;

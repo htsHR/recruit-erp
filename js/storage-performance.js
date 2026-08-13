@@ -18,7 +18,7 @@
   const BRIDGE_HEALTH_URL='http://127.0.0.1:17840/health';
   const BRIDGE_SHARED_FOLDER_TEST_URL='http://127.0.0.1:17840/shared-folder-test';
   const BRIDGE_SERVICE='Recruit ERP Bridge';
-  const BRIDGE_VERSION='0.3-test';
+  const BRIDGE_VERSION='1.0-preview';
   const BRIDGE_TIMEOUT_MS=15000;
   const DATASETS=[
     {key:'recruit_erp_applicants_stable',label:'지원자'},
@@ -64,12 +64,17 @@
     const controller=typeof AbortController==='function'?new AbortController():null;
     const timer=root.setTimeout?.(()=>controller?.abort(),BRIDGE_TIMEOUT_MS);
     try{
+      const healthResponse=await fetchImpl(BRIDGE_HEALTH_URL,{
+        method:'GET',mode:'cors',cache:'no-store',credentials:'omit',headers:{Accept:'application/json'},signal:controller?.signal
+      });
+      const health=healthResponse?.ok?await healthResponse.json():null;
+      if(!health?.bridgeToken)return {ok:false,code:'token-required',steps:{}};
       const response=await fetchImpl(BRIDGE_SHARED_FOLDER_TEST_URL,{
         method:'POST',
         mode:'cors',
         cache:'no-store',
         credentials:'omit',
-        headers:{Accept:'application/json'},
+        headers:{Accept:'application/json','X-ERP-Bridge-Token':health.bridgeToken},
         signal:controller?.signal
       });
       if(!response?.ok)return {ok:false,code:response?.status===409?'test-in-progress':'http-error',steps:{}};
@@ -295,6 +300,35 @@
   }
   function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
   function formatTime(value){if(!value)return '아직 없음';const date=new Date(value);return Number.isNaN(date.getTime())?'확인 불가':date.toLocaleString('ko-KR');}
+  function loadSharedStorageScript(){
+    if(!root.document||root.erpSharedStorage||root.document.querySelector('script[data-erp-shared-storage]'))return;
+    const script=root.document.createElement('script');script.src='js/shared-storage.js?v=11.1.0';script.dataset.erpSharedStorage='true';script.addEventListener('load',()=>render());root.document.head.appendChild(script);
+  }
+  function sharedStoragePanelHtml(){
+    const shared=root.erpSharedStorage;const status=shared?.publicState?.()||{phase:'connecting',datasetCounts:{}};
+    const local=shared?.primaryLocalCounts?.()||{applicants:0,hireWaitingProfiles:0,employees:0,schools:0,calendarEvents:0,total:0};
+    const ready=status.phase==='ready';
+    const tone=ready?'is-success':['error','offline','conflict'].includes(status.phase)?'is-failure':'is-running';
+    const title=ready?'● 공용 ERP 저장소 정상':status.phase==='empty'?'공용 ERP 저장소가 비어 있습니다.':status.phase==='conflict'?'⚠ 다른 PC에서 데이터 변경됨':status.phase==='offline'?'⚠ Bridge 실행 필요':'공용 ERP 저장소 확인 중';
+    const last=status.savedAt?formatTime(status.savedAt):'아직 없음';
+    const actions=[];
+    if(status.phase==='empty')actions.push('<button class="primary" id="btnSharedStorageInitialize" type="button">현재 데이터로 공용 저장소 시작</button>');
+    if(status.phase==='needs-confirmation'||status.phase==='conflict')actions.push('<button class="primary" id="btnSharedStorageLoad" type="button">공용 저장소 최신 데이터 불러오기</button>');
+    if(status.phase==='ready')actions.push('<button class="ghost" id="btnSharedStorageSave" type="button">공용 저장 지금 저장</button>');
+    if(['offline','error'].includes(status.phase))actions.push('<button class="primary" id="btnSharedStorageRetry" type="button">공용 저장 다시 시도</button>');
+    const counts=status.phase==='empty'?local:(status.datasetCounts||{});
+    return `<div class="panel shared-storage-panel"><div class="bridge-test-result ${tone}" role="status" aria-live="polite"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(status.message||'지원팀 공용폴더 연결 상태를 확인합니다.')}</span>${ready?`<small>마지막 저장: ${escapeHtml(last)}</small>`:''}</div>${status.phase==='empty'?`<p>현재 이 PC의 ERP 데이터: 지원자 ${local.applicants||0}명 · 입사대기 ${local.hireWaitingProfiles||0}명 · 사원 ${local.employees||0}명 · 학교 ${local.schools||0}개 · 일정 ${local.calendarEvents||0}건</p>`:''}<div class="storage-actions">${actions.join('')}</div><details class="shared-storage-details"><summary>개발자 진단 정보</summary><dl class="bridge-test-steps"><div><dt>스키마</dt><dd>${escapeHtml(status.schemaVersion??'-')}</dd></div><div><dt>Revision</dt><dd>${escapeHtml(status.revision||0)}</dd></div><div><dt>파일 크기</dt><dd>${formatBytes(status.fileSize||0)}</dd></div><div><dt>업무 데이터</dt><dd>${Object.values(counts).reduce((sum,value)=>sum+(Number(value)||0),0).toLocaleString('ko-KR')}건</dd></div></dl></details></div>`;
+  }
+  function renderSharedStoragePanel(host){
+    host.querySelector('.shared-folder-test-block')?.remove();
+    const limit=host.querySelector('.bridge-test-limit');if(limit)limit.textContent='Bridge는 127.0.0.1에서만 동작하며 브라우저가 Windows 경로를 전달하지 않습니다.';
+    const panelHost=root.document.createElement('div');panelHost.innerHTML=sharedStoragePanelHtml();
+    const target=host.querySelector('.storage-dataset-panel');if(target)target.before(panelHost.firstElementChild);else host.appendChild(panelHost.firstElementChild);
+    host.querySelector('#btnSharedStorageInitialize')?.addEventListener('click',()=>root.erpSharedStorage?.initialize?.());
+    host.querySelector('#btnSharedStorageLoad')?.addEventListener('click',()=>root.erpSharedStorage?.loadLatest?.());
+    host.querySelector('#btnSharedStorageSave')?.addEventListener('click',()=>root.erpSharedStorage?.saveNow?.());
+    host.querySelector('#btnSharedStorageRetry')?.addEventListener('click',()=>root.erpSharedStorage?.retry?.());
+  }
   async function render(){
     const host=root.document?.getElementById('storagePerformanceBody');if(!host)return;
     const usage=await estimateStorage();
@@ -303,6 +337,7 @@
     const warning=usage.warning?'<div class="storage-warning" role="alert"><strong>저장공간을 점검해 주세요.</strong><span>암호화 백업을 만든 뒤 불필요한 브라우저 데이터를 정리하세요.</span></div>':'<div class="storage-ok" role="status"><strong>저장공간 상태 양호</strong><span>현재 확인된 용량 위험이 없습니다.</span></div>';
     const mirrorText=!lastStatus.supported?'이 브라우저에서 지원하지 않음':lastStatus.error?'최근 갱신 실패':formatTime(lastStatus.lastMirroredAt);
     host.innerHTML=`${warning}<div class="storage-metric-grid"><article><span>ERP localStorage</span><strong>${formatBytes(usage.localBytes)}</strong><small>현재 호환 저장소</small></article><article><span>브라우저 전체 사용량</span><strong>${quotaText}</strong><small>브라우저 제공 추정치</small></article><article><span>IndexedDB 안전 복사</span><strong>${escapeHtml(mirrorText)}</strong><small>저장 성공 후 자동 갱신</small></article><article><span>안전 스냅샷</span><strong>${snapshots.length} / ${MAX_SNAPSHOTS}</strong><small>오래된 항목 자동 정리</small></article></div><div class="storage-actions"><button class="ghost" id="btnStorageRefresh" type="button">사용량 다시 확인</button><button class="ghost" id="btnStorageMirror" type="button">안전 복사 갱신</button><button class="primary" id="btnStorageSnapshot" type="button">안전 스냅샷 만들기</button></div><div class="panel bridge-test-panel"><div class="bridge-test-block"><div class="bridge-test-copy"><div><h3>ERP Bridge 연결 진단</h3><p>웹 ERP와 이 PC에서 실행 중인 로컬 프로그램이 통신할 수 있는지 확인합니다.</p></div><button class="ghost" id="btnLocalBridgeTest" type="button" ${bridgeTestBusy?'disabled':''}>${bridgeTestBusy?'테스트 중…':'로컬 Bridge 연결 테스트'}</button></div>${bridgeResultHtml()}</div><div class="bridge-test-block shared-folder-test-block"><div class="bridge-test-copy"><div><h3>지원팀 공용폴더 진단</h3><p>Bridge 시작 때 지정된 RecruitERP_TEST 폴더에 가상 파일 하나만 생성·검증·삭제합니다.</p></div><button class="primary" id="btnSharedFolderTest" type="button" ${sharedFolderTestBusy?'disabled':''}>${sharedFolderTestBusy?'테스트 중…':'공용폴더 읽기/쓰기 테스트'}</button></div>${sharedFolderResultHtml()}</div><small class="bridge-test-limit">브라우저는 폴더 경로를 전달하지 않습니다. 실제 ERP 데이터·개인정보·localStorage·Supabase·DB는 변경하지 않으며 기존 공용폴더 파일도 수정하지 않습니다.</small></div><div class="panel storage-dataset-panel"><div class="panel-head"><div><h3>데이터별 사용량</h3><small>개인정보 내용 없이 건수와 용량만 표시합니다.</small></div></div><div class="storage-dataset-list">${usage.rows.map(row=>`<div><span>${escapeHtml(row.label)}</span><strong>${row.count.toLocaleString('ko-KR')}건</strong><small>${formatBytes(row.bytes)}</small></div>`).join('')}</div></div><div class="panel storage-snapshot-panel"><div class="panel-head"><div><h3>최근 안전 스냅샷</h3><small>최대 ${MAX_SNAPSHOTS}개까지 이 브라우저의 IndexedDB에 보관합니다.</small></div></div>${snapshots.length?`<div class="storage-snapshot-list">${snapshots.map(item=>`<div><span>${escapeHtml(formatTime(item.createdAt))}</span><strong>${Number(item.totalCount||0).toLocaleString('ko-KR')}건</strong><small>${formatBytes(item.bytes)}</small></div>`).join('')}</div>`:'<p class="muted">아직 만든 안전 스냅샷이 없습니다.</p>'}</div><p class="storage-limit-note">IndexedDB 안전 복사는 같은 브라우저 안의 장애 대비 계층이며 외부 백업을 대신하지 않습니다. 중요한 작업 전에는 백업센터에서 암호화 백업을 내려받으세요.</p>`;
+    renderSharedStoragePanel(host);
     host.querySelector('#btnStorageRefresh')?.addEventListener('click',()=>render());
     host.querySelector('#btnStorageMirror')?.addEventListener('click',()=>mirrorAll().catch(error=>root.alert?.(error.message)));
     host.querySelector('#btnStorageSnapshot')?.addEventListener('click',()=>createSnapshot());
@@ -333,6 +368,7 @@
   }
   function init(){
     if(!root.document)return;
+    loadSharedStorageScript();
     ensureUi();
     const baseSetPage=root.setPage;
     if(typeof baseSetPage==='function')root.setPage=function(page){

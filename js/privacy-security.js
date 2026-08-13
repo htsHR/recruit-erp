@@ -108,7 +108,8 @@
       try{
         const current=JSON.parse(win.localStorage.getItem(EXPORT_LOG_KEY)||'[]');
         const next=trimExportLog([makeExportRecord(id,label),...(Array.isArray(current)?current:[])],MAX_EXPORT_LOG);
-        win.localStorage.setItem(EXPORT_LOG_KEY,JSON.stringify(next));
+        if(typeof win.safeLocalStorageSet==='function')win.safeLocalStorageSet(EXPORT_LOG_KEY,JSON.stringify(next),{notify:false});
+        else win.localStorage.setItem(EXPORT_LOG_KEY,JSON.stringify(next));
       }catch(error){console.warn('개인정보 내보내기 기록을 저장하지 못했습니다.',error);}
     }
     function guardExport(event){

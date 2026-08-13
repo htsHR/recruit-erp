@@ -70,7 +70,7 @@ jobs:
       - name: 회사 PC 전달용 실행파일 보관
         uses: actions/upload-artifact@v4
         with:
-          name: ERP-Bridge-Shared-Folder-Test-windows-x64-${{ github.run_attempt }}
-          path: dist/ERP-Bridge-Test.exe
+          name: ERP-Bridge-Shared-Storage-windows-x64-${{ github.run_attempt }}
+          path: dist/ERP-Bridge.exe
           if-no-files-found: error
           retention-days: 14

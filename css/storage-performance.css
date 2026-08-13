@@ -26,10 +26,16 @@
 .bridge-test-steps dt,.bridge-test-steps dd{margin:0;font-size:12px}
 .bridge-test-steps dt{color:#475569}.bridge-test-steps dd{font-weight:700}
 .bridge-test-limit{color:var(--muted,#64748b);line-height:1.6}
+.shared-storage-panel{margin-top:14px;display:grid;gap:12px}
+.shared-storage-panel p{margin:0;color:var(--muted,#64748b);font-size:13px;line-height:1.65}
+.shared-storage-panel .storage-actions{margin:0}
+.shared-storage-details{border-top:1px solid var(--line,#e5e7eb);padding-top:10px;color:var(--muted,#64748b)}
+.shared-storage-details summary{cursor:pointer;font-size:12px;font-weight:700}
+.shared-storage-details .bridge-test-steps{grid-template-columns:repeat(4,minmax(0,1fr))}
 .storage-dataset-panel,.storage-snapshot-panel{margin-top:14px}
 .storage-dataset-list,.storage-snapshot-list{display:grid;gap:0}
 .storage-dataset-list>div,.storage-snapshot-list>div{display:grid;grid-template-columns:minmax(130px,1fr) 100px 100px;gap:12px;align-items:center;padding:12px 4px;border-top:1px solid var(--line,#e5e7eb)}
 .storage-dataset-list strong,.storage-dataset-list small,.storage-snapshot-list strong,.storage-snapshot-list small{text-align:right}
 .storage-limit-note{margin:16px 2px 0;color:var(--muted,#64748b);font-size:12px;line-height:1.65}
 @media(max-width:900px){.storage-metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:520px){.storage-metric-grid{grid-template-columns:1fr}.storage-warning,.storage-ok{align-items:flex-start;flex-direction:column}.storage-actions>*{width:100%}.bridge-test-copy{align-items:stretch;flex-direction:column}.bridge-test-copy button{width:100%}.bridge-test-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.bridge-test-steps div:first-child{grid-column:1/-1}.storage-dataset-list>div,.storage-snapshot-list>div{grid-template-columns:1fr auto}.storage-dataset-list small,.storage-snapshot-list small{grid-column:1/-1;text-align:left}}
+@media(max-width:520px){.storage-metric-grid{grid-template-columns:1fr}.storage-warning,.storage-ok{align-items:flex-start;flex-direction:column}.storage-actions>*{width:100%}.bridge-test-copy{align-items:stretch;flex-direction:column}.bridge-test-copy button{width:100%}.bridge-test-steps,.shared-storage-details .bridge-test-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.bridge-test-steps div:first-child{grid-column:1/-1}.storage-dataset-list>div,.storage-snapshot-list>div{grid-template-columns:1fr auto}.storage-dataset-list small,.storage-snapshot-list small{grid-column:1/-1;text-align:left}}

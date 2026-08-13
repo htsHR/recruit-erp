@@ -65,6 +65,19 @@ npm run test:ui-layout
 
 Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하고 Noto CJK 한글 글꼴 캐시를 준비한 뒤 `npm run check` → `npm run test:ui-layout` 순서로 실행합니다. UI 검사 실패도 병합 검사 실패로 처리하며, 성공·실패 여부와 관계없이 한글이 표시된 화면검사 스크린샷을 `ui-layout-screenshots-<실행 시도 번호>` artifact로 14일간 보관합니다.
 
+## 회사 공용폴더 저장 — PR #17 Preview
+
+- 회사 로컬 모드에서는 `ERP-Bridge.exe "Z:\RecruitERP"`처럼 portable Bridge에 `RecruitERP` 루트만 지정합니다. Node.js·npm·Git·관리자 권한은 필요하지 않습니다.
+- Bridge는 `127.0.0.1:17840`에서만 대기하며, 지정한 루트 아래 `ERP_DATA/erp-data.json`과 `ERP_DATA/backup`만 관리합니다. 브라우저가 Windows 경로를 전달하지 않습니다.
+- 공용 저장소가 비어 있으면 자동 업로드하지 않습니다. `저장소·속도`에서 현재 건수를 확인하고 `현재 데이터로 공용 저장소 시작`을 직접 눌러야 합니다.
+- 공용 master는 `schemaVersion`과 `revision`을 사용합니다. 다른 PC가 먼저 저장해 revision이 달라지면 덮어쓰지 않고 최신 자료를 다시 불러오도록 안내합니다.
+- 저장 전 정상 master를 백업하고 임시 파일 쓰기·재읽기·hash 검증 뒤 교체합니다. 백업은 최근 20개만 유지합니다.
+- 지원자·입사대기·사원·학교·일정·안내문·면접·담당자 배정·변경 이력·개인정보 내보내기 기록·저장 검색·학교 분석조건만 allowlist로 저장합니다. 로그인 세션·토큰·키·임시 상태는 저장하지 않습니다.
+- `residentNumber` 필드는 제거하고 최종 snapshot 전체에서도 주민등록번호 형태의 13자리 값이 발견되면 저장을 차단합니다.
+- Bridge가 꺼져 있거나 공용폴더 저장에 실패해도 현재 브라우저 cache는 삭제하지 않으며, 화면에 공용 저장 실패를 명확히 표시합니다.
+
+자세한 실행·복구·보안 기준은 `docs/SHARED_FOLDER_STORAGE_PREVIEW.md`를 확인하세요. 이 기능은 현재 Draft PR Preview 전용이며 `main`과 Production에는 반영되지 않았습니다.
+
 ## 안전한 업데이트 순서
 
 1. `agent/...` 작업 브랜치에서 수정합니다.

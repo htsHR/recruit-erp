@@ -6,7 +6,7 @@ if (-not [Environment]::Is64BitProcess -or $env:OS -ne 'Windows_NT') {
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $distDir = Join-Path $projectRoot 'dist'
-$exePath = Join-Path $distDir 'ERP-Bridge-Test.exe'
+$exePath = Join-Path $distDir 'ERP-Bridge.exe'
 $blobPath = Join-Path $distDir 'erp-bridge-sea.blob'
 $configPath = Join-Path $PSScriptRoot 'sea-config.json'
 $postjectPath = Join-Path $projectRoot 'node_modules\.bin\postject.cmd'
@@ -29,5 +29,5 @@ try {
   Remove-Item -LiteralPath $blobPath -Force -ErrorAction SilentlyContinue
 }
 
-if (-not (Test-Path -LiteralPath $exePath)) { throw 'ERP-Bridge-Test.exe가 생성되지 않았습니다.' }
+if (-not (Test-Path -LiteralPath $exePath)) { throw 'ERP-Bridge.exe가 생성되지 않았습니다.' }
 Write-Host "생성 완료: $exePath"

@@ -482,12 +482,13 @@
     });
   }
   function writeDatasets(next){
-    if(Object.prototype.hasOwnProperty.call(next,'applicants')){applicants=normalizeRows('applicants',next.applicants);localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(applicants));}
-    if(Object.prototype.hasOwnProperty.call(next,'schools')){schools=normalizeRows('schools',next.schools);localStorage.setItem('recruit_erp_schools',JSON.stringify(schools));}
-    if(Object.prototype.hasOwnProperty.call(next,'employees')){employees=normalizeRows('employees',next.employees);localStorage.setItem('recruit_erp_employees',JSON.stringify(employees));}
-    if(Object.prototype.hasOwnProperty.call(next,'calendarEvents')){calendarEvents=normalizeRows('calendarEvents',next.calendarEvents);localStorage.setItem('recruit_erp_calendar_events',JSON.stringify(calendarEvents));}
-    if(Object.prototype.hasOwnProperty.call(next,'hireWaitingProfiles')){hireWaitingProfiles=normalizeRows('hireWaitingProfiles',next.hireWaitingProfiles);localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(hireWaitingProfiles));}
-    if(Object.prototype.hasOwnProperty.call(next,'messageTemplates')){messageTemplates=normalizeRows('messageTemplates',next.messageTemplates);localStorage.setItem('recruit_erp_message_templates',JSON.stringify(messageTemplates));if(typeof renderMessageTemplateList==='function')renderMessageTemplateList();}
+    const write=(key,value)=>{const text=JSON.stringify(value);if(typeof safeLocalStorageSet==='function'){if(!safeLocalStorageSet(key,text))throw new Error('LOCAL_STORAGE_WRITE_FAILED');}else localStorage.setItem(key,text);};
+    if(Object.prototype.hasOwnProperty.call(next,'applicants')){applicants=normalizeRows('applicants',next.applicants);write('recruit_erp_applicants_stable',applicants);}
+    if(Object.prototype.hasOwnProperty.call(next,'schools')){schools=normalizeRows('schools',next.schools);write('recruit_erp_schools',schools);}
+    if(Object.prototype.hasOwnProperty.call(next,'employees')){employees=normalizeRows('employees',next.employees);write('recruit_erp_employees',employees);}
+    if(Object.prototype.hasOwnProperty.call(next,'calendarEvents')){calendarEvents=normalizeRows('calendarEvents',next.calendarEvents);write('recruit_erp_calendar_events',calendarEvents);}
+    if(Object.prototype.hasOwnProperty.call(next,'hireWaitingProfiles')){hireWaitingProfiles=normalizeRows('hireWaitingProfiles',next.hireWaitingProfiles);write('recruit_erp_hire_waiting_profiles',hireWaitingProfiles);}
+    if(Object.prototype.hasOwnProperty.call(next,'messageTemplates')){messageTemplates=normalizeRows('messageTemplates',next.messageTemplates);write('recruit_erp_message_templates',messageTemplates);if(typeof renderMessageTemplateList==='function')renderMessageTemplateList();}
     if(typeof renderAll==='function')renderAll();
     if(typeof updateStorageNote==='function')updateStorageNote();
     refreshCounts();

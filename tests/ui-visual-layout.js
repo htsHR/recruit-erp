@@ -14,11 +14,11 @@ const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
 const bridgeTempRoot=fs.realpathSync(os.tmpdir());
 const bridgeTempParent=fs.mkdtempSync(path.join(bridgeTempRoot,'erp-bridge-ui-'));
-const bridgeSharedFolder=path.join(bridgeTempParent,'RecruitERP_TEST');
+const bridgeSharedFolder=path.join(bridgeTempParent,'RecruitERP');
 const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt');
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
-const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,sharedFolderPath:bridgeSharedFolder,port:bridgePort});
+const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
 const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.1.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
@@ -120,7 +120,7 @@ async function restoreSchoolWorkforceFixture(page){
         const storageState=await page.evaluate(()=>({active:document.querySelector('.page.active')?.id,count:document.querySelectorAll('#storagePerformanceBody .storage-metric-grid article').length,overflow:document.querySelector('#storagePerformance').scrollWidth-document.querySelector('#storagePerformance').clientWidth,mirror:document.querySelector('#storagePerformanceBody')?.innerText||''}));
         assert.equal(storageState.active,'storagePerformance');assert.equal(storageState.count,4);assert.ok(storageState.overflow<=1,`${viewport.name} 저장소 화면 가로 넘침: ${JSON.stringify(storageState)}`);assert.ok(storageState.mirror.includes('지원자')&&storageState.mirror.includes('3건'));
         assert.ok(storageState.mirror.includes('로컬 Bridge 연결 테스트'),'로컬 Bridge 연결 진단 버튼이 보여야 합니다.');
-        assert.ok(storageState.mirror.includes('공용폴더 읽기/쓰기 테스트'),'공용폴더 읽기/쓰기 진단 버튼이 보여야 합니다.');
+        assert.ok(storageState.mirror.includes('공용 ERP 저장소'),'공용 ERP 영구 저장 상태가 보여야 합니다.');
         if(viewport.width===390){
           const bridgeBefore=await page.evaluate(()=>JSON.stringify({...localStorage}));
           await page.locator('#btnLocalBridgeTest').click();
@@ -131,13 +131,15 @@ async function restoreSchoolWorkforceFixture(page){
           }
           const bridgeState=await page.evaluate(()=>({after:JSON.stringify({...localStorage}),result:document.querySelector('#bridgeTestResult')?.innerText||''}));
           assert.equal(bridgeState.after,bridgeBefore,'Bridge 연결 테스트는 localStorage를 변경하면 안 됩니다.');assert.ok(bridgeState.result.includes('ERP Bridge 연결 성공')&&bridgeState.result.includes('로컬 저장 프로그램과 ERP 통신이 가능합니다.'));
-          await page.locator('#btnSharedFolderTest').click();
-          await page.locator('#sharedFolderTestResult.is-success').waitFor({timeout:15000});
-          const sharedState=await page.evaluate(()=>({after:JSON.stringify({...localStorage}),result:document.querySelector('#sharedFolderTestResult')?.innerText||''}));
-          assert.equal(sharedState.after,bridgeBefore,'공용폴더 테스트는 localStorage를 변경하면 안 됩니다.');
-          assert.ok(sharedState.result.includes('공용폴더 읽기/쓰기 성공')&&sharedState.result.includes('테스트 크기')&&sharedState.result.includes('100KB')&&sharedState.result.includes('삭제')&&sharedState.result.includes('성공'));
+          page.once('dialog',dialog=>dialog.accept());await page.locator('#btnSharedStorageInitialize').click();
+          await page.waitForFunction(()=>window.erpSharedStorage?.publicState?.().phase==='ready',null,{timeout:15000});
+          const sharedState=await page.evaluate(()=>({after:JSON.stringify({...localStorage}),state:window.erpSharedStorage.publicState(),result:document.querySelector('.shared-storage-panel')?.innerText||''}));
+          assert.equal(sharedState.after,bridgeBefore,'공용 저장소 초기화는 기존 localStorage 내용을 바꾸면 안 됩니다.');
+          assert.ok(sharedState.result.includes('공용 ERP 저장소 정상')&&sharedState.state.revision===1);
           assert.equal(fs.readFileSync(bridgeExistingFile,'utf8'),'existing file must not change','공용폴더 기존 파일을 바꾸면 안 됩니다.');
-          assert.deepEqual(fs.readdirSync(bridgeSharedFolder),['existing-company-file.txt'],'공용폴더 UI 테스트 파일은 즉시 삭제되어야 합니다.');
+          assert.deepEqual(fs.readdirSync(bridgeSharedFolder).sort(),['ERP_DATA','existing-company-file.txt']);
+          const sharedMaster=fs.readFileSync(path.join(bridgeSharedFolder,'ERP_DATA','erp-data.json'),'utf8');
+          assert.ok(!sharedMaster.includes('residentNumber')&&!/000000-?0000000/.test(sharedMaster),'공용 snapshot에 주민번호 필드와 값이 있으면 안 됩니다.');
         }
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-storage-performance.png`),fullPage:true});
         await page.evaluate(()=>window.setPage?.('backup'));await page.waitForTimeout(80);

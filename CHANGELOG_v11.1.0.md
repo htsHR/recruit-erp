@@ -1,5 +1,16 @@
 # v11.1.0 학교별 인력분석·명단 XLSX 최신화
 
+## PR #17 회사 공용폴더 영구 저장 Preview
+
+- 회사 PC에서 검증된 `ERP Preview → 127.0.0.1 Bridge → 지원팀 공용폴더` 경로를 versioned master 저장소로 확장했습니다.
+- `ERP_DATA/erp-data.json`은 revision 기반 동시 저장 충돌을 막고, 임시 파일·flush·재읽기·hash 검증 후에만 master로 교체합니다.
+- 정상 master 갱신 전 백업을 만들고 최근 20개를 유지하며, 네트워크 폴더의 일시적 `EBUSY`·`EPERM`은 점진적으로 재시도합니다.
+- 모든 `/storage/*` 요청은 Origin 검사와 메모리 전용 Bridge 토큰을 함께 확인하며, 50MB 본문 제한·timeout·단일 쓰기·exclusive lock을 적용합니다.
+- 안전 트리·허용 데이터셋·ID·중복·깊이·노드·행 수·문자열 길이를 검사하고, 주민등록번호 필드와 13자리 형태를 공용 snapshot에서 차단합니다.
+- 공용 저장소 최초 생성은 사용자 확인 후에만 실행하며, 기존 localStorage가 있는 PC는 공용 master를 확인 없이 적용하지 않습니다.
+- 새 PC의 빈 cache에서는 같은 공용폴더의 정상 master를 읽어 지원자·입사대기·사원·학교·일정 등 업무 데이터를 복구할 수 있습니다.
+- 이 변경은 Draft PR Preview 전용이며 운영 데이터 초기화, `main` 병합, Production 배포는 포함하지 않습니다.
+
 ## 범위
 
 - 최신 기준 파일 `인사DB_(260728).xlsx`를 수정하지 않고 허용된 사원명부·휴직자·퇴직자 시트만 읽어 사번 기준 변경 미리보기를 만듭니다.
