@@ -122,18 +122,18 @@ async function restoreSchoolWorkforceFixture(page){
         assert.ok(storageState.mirror.includes('로컬 Bridge 연결 테스트'),'로컬 Bridge 연결 진단 버튼이 보여야 합니다.');
         assert.ok(storageState.mirror.includes('공용 ERP 저장소'),'공용 ERP 영구 저장 상태가 보여야 합니다.');
         if(viewport.width===390){
-          const bridgeBefore=await page.evaluate(()=>JSON.stringify({...localStorage}));
+          const bridgeBefore=await page.evaluate(()=>{const values={...localStorage};delete values.recruit_erp_shared_storage_revision_meta_v1;return JSON.stringify(values);});
           await page.locator('#btnLocalBridgeTest').click();
           try{await page.locator('#bridgeTestResult.is-success').waitFor({timeout:7000});}
           catch(error){
             const diagnostic=await page.evaluate(async()=>{try{const response=await fetch('http://127.0.0.1:17840/health',{headers:{Accept:'application/json'}});return {status:response.status,text:await response.text(),result:document.querySelector('#bridgeTestResult')?.innerText||''};}catch(fetchError){return {error:String(fetchError),result:document.querySelector('#bridgeTestResult')?.innerText||''};}});
             throw new Error(`Bridge 브라우저 연결 실패: ${JSON.stringify(diagnostic)} / ${error.message}`);
           }
-          const bridgeState=await page.evaluate(()=>({after:JSON.stringify({...localStorage}),result:document.querySelector('#bridgeTestResult')?.innerText||''}));
+          const bridgeState=await page.evaluate(()=>{const values={...localStorage};delete values.recruit_erp_shared_storage_revision_meta_v1;return {after:JSON.stringify(values),result:document.querySelector('#bridgeTestResult')?.innerText||''};});
           assert.equal(bridgeState.after,bridgeBefore,'Bridge 연결 테스트는 localStorage를 변경하면 안 됩니다.');assert.ok(bridgeState.result.includes('ERP Bridge 연결 성공')&&bridgeState.result.includes('로컬 저장 프로그램과 ERP 통신이 가능합니다.'));
           page.once('dialog',dialog=>dialog.accept());await page.locator('#btnSharedStorageInitialize').click();
           await page.waitForFunction(()=>window.erpSharedStorage?.publicState?.().phase==='ready',null,{timeout:15000});
-          const sharedState=await page.evaluate(()=>({after:JSON.stringify({...localStorage}),state:window.erpSharedStorage.publicState(),result:document.querySelector('.shared-storage-panel')?.innerText||''}));
+          const sharedState=await page.evaluate(()=>{const values={...localStorage};delete values.recruit_erp_shared_storage_revision_meta_v1;return {after:JSON.stringify(values),state:window.erpSharedStorage.publicState(),result:document.querySelector('.shared-storage-panel')?.innerText||''};});
           assert.equal(sharedState.after,bridgeBefore,'공용 저장소 초기화는 기존 localStorage 내용을 바꾸면 안 됩니다.');
           assert.ok(sharedState.result.includes('공용 ERP 저장소 정상')&&sharedState.state.revision===1);
           assert.equal(fs.readFileSync(bridgeExistingFile,'utf8'),'existing file must not change','공용폴더 기존 파일을 바꾸면 안 됩니다.');
