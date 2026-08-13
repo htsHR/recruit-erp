@@ -18,7 +18,7 @@
   const BRIDGE_HEALTH_URL='http://127.0.0.1:17840/health';
   const BRIDGE_SHARED_FOLDER_TEST_URL='http://127.0.0.1:17840/shared-folder-test';
   const BRIDGE_SERVICE='Recruit ERP Bridge';
-  const BRIDGE_VERSION='0.2-test';
+  const BRIDGE_VERSION='0.3-test';
   const BRIDGE_TIMEOUT_MS=15000;
   const DATASETS=[
     {key:'recruit_erp_applicants_stable',label:'지원자'},

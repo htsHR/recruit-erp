@@ -37,8 +37,9 @@ function request({method='GET',pathname='/health',origin=allowedOrigin,host=`127
 }
 
 function fakeFileSystem(failStage){
-  const failure=Object.assign(new Error(`fake ${failStage} failure`),{code:failStage==='create'||failStage==='delete'?'EACCES':'EIO'});
+  const failure=Object.assign(new Error(`fake ${failStage} failure`),{code:failStage==='create'?'EACCES':failStage==='delete'?'EBUSY':'EIO'});
   let statCount=0;
+  let exists=false;
   return {
     async stat(){
       statCount+=1;
@@ -47,11 +48,12 @@ function fakeFileSystem(failStage){
     },
     async open(){
       if(failStage==='create')throw failure;
+      exists=true;
       return {async writeFile(){if(failStage==='write')throw failure;},async sync(){},async close(){}};
     },
     async readFile(){if(failStage==='read')throw failure;return failStage==='verify'?Buffer.alloc(bridge.TEST_SIZE_BYTES,'X'):Buffer.from(bridge.TEST_PAYLOAD);},
-    async unlink(){if(failStage==='delete')throw failure;},
-    async access(){if(failStage==='deleteVerify')return;throw Object.assign(new Error('not found'),{code:'ENOENT'});}
+    async unlink(){if(failStage==='delete')throw failure;exists=false;},
+    async access(){if(exists)return;throw Object.assign(new Error('not found'),{code:'ENOENT'});}
   };
 }
 
@@ -60,7 +62,9 @@ function fakeFileSystem(failStage){
     assert.equal(bridge.HOST,'127.0.0.1');
     assert.equal(bridge.PORT,17840);
     assert.equal(bridge.SERVICE,'Recruit ERP Bridge');
-    assert.equal(bridge.VERSION,'0.2-test');
+    assert.equal(bridge.VERSION,'0.3-test');
+    assert.equal(bridge.DELETE_RETRY_DELAY_MS,300);
+    assert.equal(bridge.MAX_DELETE_RETRIES,5);
     assert.equal(bridge.TEST_SIZE_BYTES,102400);
     assert.equal(bridge.ERP_PREVIEW_ORIGIN,'https://recruit-erp-git-agent-shared-folder-storage-test-htserp.vercel.app');
     assert.equal(bridge.normalizeAllowedOrigin(`${allowedOrigin}/`),allowedOrigin);
@@ -79,7 +83,7 @@ function fakeFileSystem(failStage){
       assert.equal(server.address().address,'127.0.0.1');
       const health=await request();
       assert.equal(health.status,200);
-      assert.deepEqual(JSON.parse(health.text),{ok:true,service:'Recruit ERP Bridge',version:'0.2-test'});
+      assert.deepEqual(JSON.parse(health.text),{ok:true,service:'Recruit ERP Bridge',version:'0.3-test'});
       assert.equal(health.headers['access-control-allow-origin'],allowedOrigin);
       assert.notEqual(health.headers['access-control-allow-origin'],'*');
       assert.equal(health.headers['cache-control'],'no-store');
@@ -87,7 +91,7 @@ function fakeFileSystem(failStage){
       const shared=await request({method:'POST',pathname:'/shared-folder-test'});
       const sharedBody=JSON.parse(shared.text);
       assert.equal(shared.status,200);
-      assert.deepEqual(sharedBody,{ok:true,service:'Recruit ERP Bridge',version:'0.2-test',testSizeBytes:102400,steps:{access:true,create:true,write:true,read:true,verify:true,delete:true}});
+      assert.deepEqual(sharedBody,{ok:true,service:'Recruit ERP Bridge',version:'0.3-test',testSizeBytes:102400,steps:{access:true,create:true,write:true,read:true,verify:true,delete:true}});
       assert.equal(fs.readFileSync(existingFile,'utf8'),'existing file must not change','기존 공용폴더 파일이 바뀌면 안 됩니다.');
       assert.deepEqual(fs.readdirSync(sharedFolder),['existing-company-file.txt'],'테스트 파일은 즉시 삭제되어야 합니다.');
       assert.ok(!shared.text.includes(tempParent)&&!shared.text.includes(bridge.TEST_FILE_PREFIX),'HTTP 응답에 경로나 테스트 파일명을 노출하면 안 됩니다.');
@@ -113,9 +117,89 @@ function fakeFileSystem(failStage){
       await new Promise(resolve=>server.close(resolve));
     }
 
-    const expectedFailures={access:'FOLDER_ACCESS_FAILED',create:'FILE_CREATE_DENIED',write:'FILE_WRITE_FAILED',read:'FILE_READ_FAILED',verify:'FILE_VERIFY_FAILED',delete:'FILE_DELETE_DENIED',deleteVerify:'FILE_DELETE_VERIFY_FAILED'};
+    let transientExists=true;
+    let transientUnlinkCalls=0;
+    const transientDelays=[];
+    const transientResult=await bridge.deleteFileWithRetry('transient-test-file',{
+      fsApi:{
+        async unlink(){
+          transientUnlinkCalls+=1;
+          if(transientUnlinkCalls===1)throw Object.assign(new Error('temporary network lock'),{code:'EBUSY',errno:-4082});
+          transientExists=false;
+        },
+        async access(){if(transientExists)return;throw Object.assign(new Error('not found'),{code:'ENOENT'});}
+      },
+      waitFn:async milliseconds=>transientDelays.push(milliseconds),
+      logger:{warn(){}}
+    });
+    assert.deepEqual(transientResult,{deleted:true,attempts:2,retries:1});
+    assert.equal(transientUnlinkCalls,2);
+    assert.deepEqual(transientDelays,[300]);
+
+    let permissionExists=true;
+    let permissionUnlinkCalls=0;
+    const permissionDelays=[];
+    const permissionResult=await bridge.deleteFileWithRetry('permission-test-file',{
+      fsApi:{
+        async unlink(){
+          permissionUnlinkCalls+=1;
+          if(permissionUnlinkCalls<=2)throw Object.assign(new Error('temporary permission lock'),{code:'EPERM'});
+          permissionExists=false;
+        },
+        async access(){if(permissionExists)return;throw Object.assign(new Error('not found'),{code:'ENOENT'});}
+      },
+      waitFn:async milliseconds=>permissionDelays.push(milliseconds),
+      logger:{warn(){}}
+    });
+    assert.deepEqual(permissionResult,{deleted:true,attempts:3,retries:2});
+    assert.deepEqual(permissionDelays,[300,600]);
+
+    const alreadyAbsentResult=await bridge.deleteFileWithRetry('already-removed-test-file',{
+      fsApi:{
+        async unlink(){throw Object.assign(new Error('temporary network lock'),{code:'EBUSY',errno:-4082});},
+        async access(){throw Object.assign(new Error('not found'),{code:'ENOENT'});}
+      },
+      waitFn:async()=>{throw new Error('absent file must not wait');},
+      logger:{warn(){}}
+    });
+    assert.deepEqual(alreadyAbsentResult,{deleted:true,attempts:1,retries:0});
+
+    let persistentUnlinkCalls=0;
+    const persistentDelays=[];
+    await assert.rejects(()=>bridge.deleteFileWithRetry('persistently-locked-test-file',{
+      fsApi:{
+        async unlink(){persistentUnlinkCalls+=1;throw Object.assign(new Error('persistent network lock'),{code:'EBUSY',errno:-4082});},
+        async access(){}
+      },
+      waitFn:async milliseconds=>persistentDelays.push(milliseconds),
+      logger:{warn(){}}
+    }),error=>error.code==='EBUSY'&&error.deleteAttempts===6);
+    assert.equal(persistentUnlinkCalls,6);
+    assert.deepEqual(persistentDelays,[300,600,900,1200,1500]);
+
+    let integrationUnlinkCalls=0;
+    const integrationDelays=[];
+    const transientFsApi={
+      stat:fs.promises.stat.bind(fs.promises),
+      open:fs.promises.open.bind(fs.promises),
+      readFile:fs.promises.readFile.bind(fs.promises),
+      access:fs.promises.access.bind(fs.promises),
+      async unlink(filePath){
+        integrationUnlinkCalls+=1;
+        if(integrationUnlinkCalls===1)throw Object.assign(new Error('temporary network lock'),{code:'EBUSY',errno:-4082});
+        return fs.promises.unlink(filePath);
+      }
+    };
+    const transientSharedResult=await bridge.runSharedFolderTest(sharedFolder,{fsApi:transientFsApi,waitFn:async milliseconds=>integrationDelays.push(milliseconds),logger,now:()=>2,randomBytes:()=>Buffer.alloc(6,1)});
+    assert.equal(transientSharedResult.ok,true);
+    assert.equal(transientSharedResult.steps.delete,true);
+    assert.equal(integrationUnlinkCalls,2);
+    assert.deepEqual(integrationDelays,[300]);
+    assert.deepEqual(fs.readdirSync(sharedFolder),['existing-company-file.txt']);
+
+    const expectedFailures={access:'FOLDER_ACCESS_FAILED',create:'FILE_CREATE_DENIED',write:'FILE_WRITE_FAILED',read:'FILE_READ_FAILED',verify:'FILE_VERIFY_FAILED',delete:'FILE_DELETE_FAILED'};
     for(const [stage,code] of Object.entries(expectedFailures)){
-      const result=await bridge.runSharedFolderTest(sharedFolder,{fsApi:fakeFileSystem(stage),now:()=>1,randomBytes:()=>Buffer.alloc(6),logger});
+      const result=await bridge.runSharedFolderTest(sharedFolder,{fsApi:fakeFileSystem(stage),now:()=>1,randomBytes:()=>Buffer.alloc(6),logger,waitFn:async()=>{}});
       assert.equal(result.ok,false,`${stage} 실패는 PASS로 처리하면 안 됩니다.`);
       assert.equal(result.code,code,`${stage} 실패 코드가 명확해야 합니다.`);
       assert.ok(!JSON.stringify(result).includes(tempParent),'실패 응답에 민감한 경로를 포함하면 안 됩니다.');
@@ -123,13 +207,13 @@ function fakeFileSystem(failStage){
 
     assert.equal(storage.BRIDGE_HEALTH_URL,'http://127.0.0.1:17840/health');
     assert.equal(storage.BRIDGE_SHARED_FOLDER_TEST_URL,'http://127.0.0.1:17840/shared-folder-test');
-    assert.equal(storage.BRIDGE_VERSION,'0.2-test');
+    assert.equal(storage.BRIDGE_VERSION,'0.3-test');
     let fetchCall=null;
     const localStorageGuard=new Proxy({}, {get(){throw new Error('localStorage must not be used');}});
     Object.defineProperty(globalThis,'localStorage',{value:localStorageGuard,configurable:true});
     const healthResult=await storage.probeLocalBridge(async(url,options)=>{
       fetchCall={url,options};
-      return {ok:true,json:async()=>({ok:true,service:'Recruit ERP Bridge',version:'0.2-test'})};
+      return {ok:true,json:async()=>({ok:true,service:'Recruit ERP Bridge',version:'0.3-test'})};
     });
     assert.deepEqual(healthResult,{ok:true,code:'ok'});
     assert.equal(fetchCall.url,storage.BRIDGE_HEALTH_URL);
@@ -139,7 +223,7 @@ function fakeFileSystem(failStage){
 
     const sharedResult=await storage.probeSharedFolderBridge(async(url,options)=>{
       fetchCall={url,options};
-      return {ok:true,json:async()=>({ok:true,service:'Recruit ERP Bridge',version:'0.2-test',testSizeBytes:102400,steps:{access:true,create:true,write:true,read:true,verify:true,delete:true}})};
+      return {ok:true,json:async()=>({ok:true,service:'Recruit ERP Bridge',version:'0.3-test',testSizeBytes:102400,steps:{access:true,create:true,write:true,read:true,verify:true,delete:true}})};
     });
     delete globalThis.localStorage;
     assert.deepEqual(sharedResult,{ok:true,code:'ok',testSizeBytes:102400,steps:{access:true,create:true,write:true,read:true,verify:true,delete:true}});
@@ -147,8 +231,8 @@ function fakeFileSystem(failStage){
     assert.equal(fetchCall.options.method,'POST');
     assert.equal(fetchCall.options.credentials,'omit');
     assert.equal('body' in fetchCall.options,false,'브라우저는 폴더 경로나 본문을 Bridge에 전송하면 안 됩니다.');
-    assert.deepEqual(await storage.probeSharedFolderBridge(async()=>({ok:true,json:async()=>({ok:false,service:'Recruit ERP Bridge',version:'0.2-test',code:'FILE_WRITE_FAILED',steps:{access:true,create:true,write:false}})})),{ok:false,code:'FILE_WRITE_FAILED',testSizeBytes:0,steps:{access:true,create:true,write:false,read:false,verify:false,delete:false}});
-    assert.deepEqual(await storage.probeLocalBridge(async()=>({ok:true,json:async()=>({ok:true,service:'Other',version:'0.2-test'})})),{ok:false,code:'invalid-response'});
+    assert.deepEqual(await storage.probeSharedFolderBridge(async()=>({ok:true,json:async()=>({ok:false,service:'Recruit ERP Bridge',version:'0.3-test',code:'FILE_WRITE_FAILED',steps:{access:true,create:true,write:false}})})),{ok:false,code:'FILE_WRITE_FAILED',testSizeBytes:0,steps:{access:true,create:true,write:false,read:false,verify:false,delete:false}});
+    assert.deepEqual(await storage.probeLocalBridge(async()=>({ok:true,json:async()=>({ok:true,service:'Other',version:'0.3-test'})})),{ok:false,code:'invalid-response'});
     assert.deepEqual(await storage.probeLocalBridge(async()=>{throw new Error('blocked');}),{ok:false,code:'connection-failed'});
 
     assert.match(storageSource,/공용폴더 읽기\/쓰기 테스트/);

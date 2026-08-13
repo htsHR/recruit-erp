@@ -55,10 +55,10 @@ function request(pathname='/health',method='GET',origin=bridge.ERP_PREVIEW_ORIGI
     const health=await request();
     assert.equal(health.status,200);
     assert.equal(health.headers['access-control-allow-origin'],bridge.ERP_PREVIEW_ORIGIN);
-    assert.deepEqual(JSON.parse(health.body),{ok:true,service:'Recruit ERP Bridge',version:'0.2-test'});
+    assert.deepEqual(JSON.parse(health.body),{ok:true,service:'Recruit ERP Bridge',version:'0.3-test'});
     const shared=await request('/shared-folder-test','POST');
     assert.equal(shared.status,200);
-    assert.deepEqual(JSON.parse(shared.body),{ok:true,service:'Recruit ERP Bridge',version:'0.2-test',testSizeBytes:102400,steps:{access:true,create:true,write:true,read:true,verify:true,delete:true}});
+    assert.deepEqual(JSON.parse(shared.body),{ok:true,service:'Recruit ERP Bridge',version:'0.3-test',testSizeBytes:102400,steps:{access:true,create:true,write:true,read:true,verify:true,delete:true}});
     assert.equal((await request('/health','GET','https://untrusted.example.test')).status,403,'portable EXE는 환경변수로 허용 Origin을 바꾸면 안 됩니다.');
     assert.deepEqual(fs.readdirSync(runtimeDir),[],'portable Bridge는 실행 폴더에 파일을 만들면 안 됩니다.');
     assert.deepEqual(fs.readdirSync(sharedFolder),['existing-company-file.txt'],'공용폴더에는 기존 파일만 남아야 합니다.');

@@ -8,12 +8,14 @@ const path=require('node:path');
 const HOST='127.0.0.1';
 const PORT=17840;
 const SERVICE='Recruit ERP Bridge';
-const VERSION='0.2-test';
+const VERSION='0.3-test';
 const ERP_PREVIEW_ORIGIN='https://recruit-erp-git-agent-shared-folder-storage-test-htserp.vercel.app';
 const TARGET_FOLDER_NAME='RecruitERP_TEST';
 const TEST_SIZE_BYTES=100*1024;
 const TEST_FILE_PREFIX='recruit_erp_bridge_test_';
 const TEST_PAYLOAD=Buffer.alloc(TEST_SIZE_BYTES,'Recruit ERP shared folder test ');
+const DELETE_RETRY_DELAY_MS=300;
+const MAX_DELETE_RETRIES=5;
 
 function isSeaRuntime(){
   try{return require('node:sea').isSea();}catch{return false;}
@@ -78,6 +80,48 @@ function sendJson(response,status,body,headers={}){
 
 function hash(value){return crypto.createHash('sha256').update(value).digest('hex');}
 
+function wait(milliseconds){return new Promise(resolve=>setTimeout(resolve,milliseconds));}
+
+async function fileExists(fsApi,filePath){
+  try{
+    await fsApi.access(filePath);
+    return true;
+  }catch(error){
+    if(error?.code==='ENOENT')return false;
+    throw error;
+  }
+}
+
+async function deleteFileWithRetry(filePath,{fsApi=fs.promises,waitFn=wait,logger=console,maxRetries=MAX_DELETE_RETRIES,retryDelayMs=DELETE_RETRY_DELAY_MS}={}){
+  let lastError=null;
+  let attempts=0;
+  for(let retry=0;retry<=maxRetries;retry+=1){
+    attempts+=1;
+    try{
+      await fsApi.unlink(filePath);
+      lastError=null;
+    }catch(error){
+      if(error?.code==='ENOENT')return {deleted:true,attempts,retries:retry};
+      lastError=error;
+    }
+
+    try{
+      if(!await fileExists(fsApi,filePath))return {deleted:true,attempts,retries:retry};
+    }catch(error){
+      lastError=error;
+    }
+
+    const retryable=!lastError||lastError.code==='EBUSY'||lastError.code==='EPERM';
+    if(!retryable||retry===maxRetries)break;
+    logger.warn?.(`공용폴더 테스트 파일 삭제 재시도 ${retry+1}/${maxRetries}`);
+    await waitFn(retryDelayMs*(retry+1));
+  }
+
+  const failure=lastError||Object.assign(new Error('TEST_FILE_STILL_EXISTS'),{code:'EBUSY'});
+  failure.deleteAttempts=attempts;
+  throw failure;
+}
+
 function publicFailure(stage,error,steps){
   const permissionDenied=error?.code==='EACCES'||error?.code==='EPERM';
   const failures={
@@ -86,14 +130,13 @@ function publicFailure(stage,error,steps){
     write:{code:'FILE_WRITE_FAILED',message:'파일 쓰기 실패'},
     read:{code:'FILE_READ_FAILED',message:'파일 읽기 실패'},
     verify:{code:'FILE_VERIFY_FAILED',message:'파일 검증 실패'},
-    delete:{code:permissionDenied?'FILE_DELETE_DENIED':'FILE_DELETE_FAILED',message:permissionDenied?'파일 삭제 권한 없음':'파일 삭제 실패'},
-    deleteVerify:{code:'FILE_DELETE_VERIFY_FAILED',message:'파일 삭제 확인 실패'}
+    delete:{code:permissionDenied?'FILE_DELETE_DENIED':'FILE_DELETE_FAILED',message:permissionDenied?'파일 삭제 권한 없음':'파일 삭제 실패'}
   };
   const failure=failures[stage]||{code:'SHARED_FOLDER_TEST_FAILED',message:'공용폴더 테스트 실패'};
   return {ok:false,service:SERVICE,version:VERSION,code:failure.code,message:failure.message,testSizeBytes:TEST_SIZE_BYTES,steps};
 }
 
-async function runSharedFolderTest(sharedFolderPath,{fsApi=fs.promises,now=Date.now,randomBytes=crypto.randomBytes,logger=console}={}){
+async function runSharedFolderTest(sharedFolderPath,{fsApi=fs.promises,now=Date.now,randomBytes=crypto.randomBytes,logger=console,waitFn=wait}={}){
   const target=normalizeSharedFolderPath(sharedFolderPath);
   const steps={access:false,create:false,write:false,read:false,verify:false,delete:false};
   const fileName=`${TEST_FILE_PREFIX}${now()}_${randomBytes(6).toString('hex')}.txt`;
@@ -128,18 +171,15 @@ async function runSharedFolderTest(sharedFolderPath,{fsApi=fs.promises,now=Date.
     steps.verify=true;
 
     stage='delete';
-    await fsApi.unlink(filePath);
+    await deleteFileWithRetry(filePath,{fsApi,waitFn,logger});
+    created=false;
     steps.delete=true;
-
-    stage='deleteVerify';
-    try{await fsApi.access(filePath);throw new Error('TEST_FILE_STILL_EXISTS');}
-    catch(error){if(error?.code!=='ENOENT')throw error;created=false;}
 
     return {ok:true,service:SERVICE,version:VERSION,testSizeBytes:TEST_SIZE_BYTES,steps};
   }catch(error){
     try{if(handle)await handle.close();}catch(closeError){logger.error('공용폴더 테스트 파일 닫기 실패:',closeError);}
-    if(created){
-      try{await fsApi.unlink(filePath);created=false;}
+    if(created&&stage!=='delete'){
+      try{await deleteFileWithRetry(filePath,{fsApi,waitFn,logger});created=false;}
       catch(cleanupError){logger.error('공용폴더 테스트 파일 정리 실패:',cleanupError);}
     }
     logger.error(`공용폴더 테스트 실패 단계: ${stage}`,error);
@@ -238,4 +278,4 @@ if(require.main===module||isSeaRuntime()){
   catch(error){console.error(error.message);process.exitCode=1;}
 }
 
-module.exports={HOST,PORT,SERVICE,VERSION,ERP_PREVIEW_ORIGIN,TARGET_FOLDER_NAME,TEST_SIZE_BYTES,TEST_FILE_PREFIX,TEST_PAYLOAD,isSeaRuntime,normalizeAllowedOrigin,normalizeSharedFolderPath,readSharedFolderArgument,isLoopbackHost,corsHeaders,runSharedFolderTest,createBridgeServer,readAllowedOrigin,startBridge};
+module.exports={HOST,PORT,SERVICE,VERSION,ERP_PREVIEW_ORIGIN,TARGET_FOLDER_NAME,TEST_SIZE_BYTES,TEST_FILE_PREFIX,TEST_PAYLOAD,DELETE_RETRY_DELAY_MS,MAX_DELETE_RETRIES,isSeaRuntime,normalizeAllowedOrigin,normalizeSharedFolderPath,readSharedFolderArgument,isLoopbackHost,corsHeaders,fileExists,deleteFileWithRetry,runSharedFolderTest,createBridgeServer,readAllowedOrigin,startBridge};
