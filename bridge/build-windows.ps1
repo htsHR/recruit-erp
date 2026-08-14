@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 if (-not [Environment]::Is64BitProcess -or $env:OS -ne 'Windows_NT') {
-  throw 'Windows x64 Node.js에서만 Bridge 실행파일을 만들 수 있습니다.'
+  throw 'Bridge executables can only be built with Windows x64 Node.js.'
 }
 
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -28,7 +28,7 @@ function New-BridgeExecutable {
   $blobPath = Join-Path $distDir "erp-bridge-$Name.blob"
 
   $source = Get-Content -LiteralPath $sourcePath -Raw -Encoding UTF8
-  if (-not $source.Contains($placeholder)) { throw 'Bridge Origin 빌드 표식을 찾을 수 없습니다.' }
+  if (-not $source.Contains($placeholder)) { throw 'Bridge Origin build placeholder was not found.' }
   $source = $source.Replace($placeholder, $AllowedOrigin)
   Set-Content -LiteralPath $generatedSourcePath -Value $source -Encoding UTF8
 
@@ -42,19 +42,19 @@ function New-BridgeExecutable {
 
   try {
     & $nodePath --experimental-sea-config $generatedConfigPath
-    if ($LASTEXITCODE -ne 0) { throw "$Name SEA 준비 파일 생성에 실패했습니다." }
+    if ($LASTEXITCODE -ne 0) { throw "$Name SEA blob generation failed." }
 
     Copy-Item -LiteralPath $nodePath -Destination $exePath
     & $postjectPath $exePath NODE_SEA_BLOB $blobPath --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
-    if ($LASTEXITCODE -ne 0) { throw "$Name 실행파일 생성에 실패했습니다." }
+    if ($LASTEXITCODE -ne 0) { throw "$Name executable generation failed." }
   } finally {
     Remove-Item -LiteralPath $blobPath -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $generatedSourcePath -Force -ErrorAction SilentlyContinue
     Remove-Item -LiteralPath $generatedConfigPath -Force -ErrorAction SilentlyContinue
   }
 
-  if (-not (Test-Path -LiteralPath $exePath)) { throw "$OutputName 파일이 생성되지 않았습니다." }
-  Write-Host "생성 완료: $exePath ($AllowedOrigin)"
+  if (-not (Test-Path -LiteralPath $exePath)) { throw "$OutputName was not created." }
+  Write-Host "Created: $exePath ($AllowedOrigin)"
 }
 
 Push-Location $projectRoot
