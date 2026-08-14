@@ -57,14 +57,22 @@ function request({method='GET',pathname='/health',origin=allowedOrigin,host=`127
   let server;
   try{
     assert.equal(bridge.HOST,'127.0.0.1');assert.equal(bridge.PORT,17840);assert.equal(bridge.VERSION,'1.0-preview');
+    assert.equal(bridge.ERP_PRODUCTION_ORIGIN,'https://recruit-erp.vercel.app');assert.equal(bridge.ERP_PREVIEW_ORIGIN,'https://recruit-erp-git-agent-shared-folder-storage-test-htserp.vercel.app');
     assert.equal(bridge.TARGET_FOLDER_NAME,'RecruitERP');assert.equal(bridge.SCHEMA_VERSION,1);assert.equal(bridge.MAX_BACKUPS,20);
     assert.equal(bridge.MAX_REQUEST_BYTES,50*1024*1024);assert.equal(bridge.DELETE_RETRY_DELAY_MS,300);assert.equal(bridge.MAX_DELETE_RETRIES,5);
     assert.equal(bridge.normalizeRootPath(recruitRoot),path.resolve(recruitRoot));
     assert.throws(()=>bridge.normalizeRootPath(tempParent),error=>error.code==='INVALID_ROOT_NAME');
     assert.throws(()=>bridge.readRootArgument(['ERP-Bridge.exe']),error=>error.code==='ROOT_PATH_REQUIRED');
     assert.equal(bridge.readRootArgument(['ERP-Bridge.exe',recruitRoot]),path.resolve(recruitRoot));
+    assert.deepEqual(bridge.parseBridgeConfigText(JSON.stringify({rootPath:recruitRoot,autoStart:true})),{rootPath:path.resolve(recruitRoot),autoStart:true});
+    assert.throws(()=>bridge.parseBridgeConfigText(JSON.stringify({rootPath:recruitRoot,token:'do-not-store'})),error=>error.code==='INVALID_CONFIG');
+    const bridgeConfigPath=path.join(tempParent,'bridge-config.json');fs.writeFileSync(bridgeConfigPath,JSON.stringify({rootPath:recruitRoot,autoStart:false}));
+    assert.equal(bridge.resolveStartupSettings({argv:['ERP-Bridge.exe'],configPath:bridgeConfigPath}).rootPath,path.resolve(recruitRoot));
+    assert.equal(bridge.readAllowedOrigin([],{},true),bridge.ERP_PREVIEW_ORIGIN);
     assert.equal(bridge.normalizeAllowedOrigin(`${allowedOrigin}/`),allowedOrigin);
     assert.throws(()=>bridge.normalizeAllowedOrigin('http://public.example.test'));
+    const monitor=bridge.createStorageReconnectMonitor(recruitRoot,{logger:{log(){},warn(){}}});assert.equal((await monitor.check()).available,true);monitor.stop();
+    const delayedRoot=path.join(tempParent,'delayed',bridge.TARGET_FOLDER_NAME);const delayedMonitor=bridge.createStorageReconnectMonitor(delayedRoot,{logger:{log(){},warn(){}}});assert.equal((await delayedMonitor.check()).available,false);fs.mkdirSync(delayedRoot,{recursive:true});assert.equal((await delayedMonitor.check()).available,true);delayedMonitor.stop();
 
     const logs=[];const logger={warn:value=>logs.push(String(value)),error:value=>logs.push(String(value))};
     server=bridge.createBridgeServer({allowedOrigin,rootPath:recruitRoot,port:testPort,logger,token:'fixed-test-token-with-at-least-32-characters'});

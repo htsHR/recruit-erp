@@ -67,9 +67,12 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 
 ## 회사 공용폴더 저장 — PR #17 Preview
 
-- 회사 로컬 모드에서는 `ERP-Bridge.exe "Z:\RecruitERP"`처럼 portable Bridge에 `RecruitERP` 루트만 지정합니다. Node.js·npm·Git·관리자 권한은 필요하지 않습니다.
+- 회사 로컬 모드에서는 EXE 옆 `bridge-config.json`에 `RecruitERP` 루트를 한 번 설정한 뒤 Bridge를 더블클릭합니다. Node.js·npm·Git·PowerShell·관리자 권한은 필요하지 않습니다.
+- `autoStart: true`를 선택하면 현재 사용자 Windows 시작프로그램에 등록되어 Windows 로그인 뒤 자동 실행됩니다. 공용폴더가 늦게 준비되어도 Bridge와 ERP가 10초 간격으로 자동 재연결합니다.
+- Preview용 `ERP-Bridge-Preview.exe`는 현재 Preview Origin만, Production용 `ERP-Bridge.exe`는 `https://recruit-erp.vercel.app`만 허용합니다. wildcard Origin은 사용하지 않습니다.
 - Bridge는 `127.0.0.1:17840`에서만 대기하며, 지정한 루트 아래 `ERP_DATA/erp-data.json`과 `ERP_DATA/backup`만 관리합니다. 브라우저가 Windows 경로를 전달하지 않습니다.
 - 공용 저장소가 비어 있으면 자동 업로드하지 않습니다. `저장소·속도`에서 현재 건수를 확인하고 `현재 데이터로 공용 저장소 시작`을 직접 눌러야 합니다.
+- `erp-data.json`이 한 번 생성되면 초기화 버튼은 다시 표시되지 않습니다. 정상 운영에서는 업무 변경 뒤 자동 저장되므로 수동 저장 버튼을 반복해서 누르지 않습니다.
 - 공용 master는 `schemaVersion`과 `revision`을 사용합니다. 다른 PC가 먼저 저장해 revision이 달라지면 덮어쓰지 않고 최신 자료를 다시 불러오도록 안내합니다.
 - 공용 master를 초기화하거나 최신 자료를 불러오기 전에는 메모리의 저장 승인이 잠겨 있어 localStorage만 갱신되고 공용폴더 PUT은 실행되지 않습니다. 마지막 확인 revision만 개인정보 없는 로컬 메타정보로 남기며 공용 snapshot에는 포함하지 않습니다.
 - 저장 전 정상 master를 백업하고 임시 파일 쓰기·재읽기·hash 검증 뒤 교체합니다. 백업은 최근 20개만 유지합니다.

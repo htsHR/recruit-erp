@@ -63,14 +63,17 @@ jobs:
           package-manager-cache: false
       - name: 고정된 빌드 의존성 설치
         run: npm ci
-      - name: 단일 실행파일 생성
+      - name: Preview·Production 단일 실행파일 생성
         run: npm run build:bridge:windows
-      - name: Node.js 없는 환경을 모의한 실행 검사
+      - name: 설정파일 기반 더블클릭 실행 검사
         run: npm run test:bridge-exe
       - name: 회사 PC 전달용 실행파일 보관
         uses: actions/upload-artifact@v4
         with:
           name: ERP-Bridge-Shared-Storage-windows-x64-${{ github.run_attempt }}
-          path: dist/ERP-Bridge.exe
+          path: |
+            dist/ERP-Bridge.exe
+            dist/ERP-Bridge-Preview.exe
+            dist/bridge-config.json
           if-no-files-found: error
           retention-days: 14

@@ -15,6 +15,7 @@
   const MAX_TREE_NODES=500000;
   const MAX_STRING_LENGTH=200000;
   const REQUEST_TIMEOUT_MS=30000;
+  const RECONNECT_INTERVAL_MS=10000;
   const REVISION_META_KEY='recruit_erp_shared_storage_revision_meta_v1';
   const BLOCKED_KEYS=new Set(['__proto__','prototype','constructor']);
   const EXCLUDED_FIELD_KEYS=new Set(['residentnumber','password','passphrase','apikey','encryptionkey','accesstoken','refreshtoken','authtoken','sessiontoken','token','secret','filesystemhandle','supabasesession']);
@@ -42,6 +43,9 @@
   let state={...DEFAULT_STATE};
   let writeArmed=false;
   let saveTimer=0;
+  let reconnectTimer=0;
+  let reconnectNeedsSave=false;
+  let reconnectExpectedRevision=0;
   let savePromise=null;
   let saveAgain=false;
   let applying=false;
@@ -240,8 +244,25 @@
     updateState({phase:'ready',connected:true,masterExists:true,revision:snapshot.revision,savedAt:snapshot.savedAt,schemaVersion:snapshot.schemaVersion,datasetCounts:datasetCounts(snapshot.datasets),errorCode:'',message:'공용 ERP 저장소 정상'});
     return true;
   }
+  function clearReconnect(){if(reconnectTimer){root.clearTimeout?.(reconnectTimer);reconnectTimer=0;}reconnectNeedsSave=false;reconnectExpectedRevision=0;return true;}
+  function scheduleReconnect({fetchImpl=root.fetch,resumeSave=false,expectedRevision=state.revision}={}){
+    if(!isCompanyMode())return false;
+    if(resumeSave){reconnectNeedsSave=true;reconnectExpectedRevision=Number(expectedRevision)||0;}
+    if(reconnectTimer)return true;
+    reconnectTimer=root.setTimeout?.(async()=>{
+      reconnectTimer=0;
+      const shouldResumeSave=reconnectNeedsSave;const previousRevision=reconnectExpectedRevision;
+      reconnectNeedsSave=false;reconnectExpectedRevision=0;
+      const connected=await connect({fetchImpl,autoApplyEmpty:true});
+      if(!connected.connected){if(shouldResumeSave)scheduleReconnect({fetchImpl,resumeSave:true,expectedRevision:previousRevision});return;}
+      if(!shouldResumeSave)return;
+      if(connected.phase==='ready'&&connected.revision===previousRevision){failureNotified=false;await saveNow({fetchImpl});return;}
+      if(connected.masterExists&&connected.revision!==previousRevision){setWriteArmed(false);updateState({...connected,phase:'conflict',message:friendlyMessage('REVISION_CONFLICT')});}
+    },RECONNECT_INTERVAL_MS)||0;
+    return !!reconnectTimer;
+  }
   async function connect({fetchImpl=root.fetch,autoApplyEmpty=true}={}){
-    setWriteArmed(false);root.clearTimeout?.(saveTimer);
+    clearReconnect();setWriteArmed(false);root.clearTimeout?.(saveTimer);
     if(!isCompanyMode()){bridgeToken='';return updateState({...DEFAULT_STATE,phase:'disabled',message:'회사 로컬 모드에서 사용합니다.'});}
     updateState({phase:'connecting',connected:false,message:'공용 ERP 저장소 연결 확인 중'});
     try{
@@ -252,7 +273,7 @@
       if(autoApplyEmpty&&!hasLocalBusinessData()){applySnapshot(snapshot);return publicState();}
       if(readConfirmedRevision()===snapshot.revision){setWriteArmed(true);return updateState({...base,phase:'ready',message:'공용 ERP 저장소 정상'});}
       return updateState({...base,phase:'needs-confirmation',message:'공용 master를 확인하기 전이라 브라우저에만 임시 저장됩니다. 최신 데이터를 불러와 저장을 승인해주세요.'});
-    }catch(error){bridgeToken='';return updateState({phase:'offline',connected:false,errorCode:error.code||'CONNECTION_FAILED',message:friendlyMessage(error.code)});}
+    }catch(error){bridgeToken='';const next=updateState({phase:'offline',connected:false,errorCode:error.code||'CONNECTION_FAILED',message:friendlyMessage(error.code)});scheduleReconnect({fetchImpl});return next;}
   }
   async function loadLatest(options={}){
     if(!isCompanyMode())return false;
@@ -261,13 +282,13 @@
   }
   function canManage(){return root.erpPermissions?.has?.('storage.manage')!==false&&root.erpPermissions?.require?.('storage.manage')!==false;}
   async function initialize(options={}){
-    if(!isCompanyMode()||!canManage())return false;
+    if(!isCompanyMode()||!canManage()||state.masterExists||state.phase!=='empty')return false;
     try{
       if(!bridgeToken)await openBridgeSession(options);const datasets=collectDatasets();
       updateState({phase:'saving',message:'공용 ERP 저장소 생성 중'});
       const result=await bridgeRequest('/storage/initialize',{...options,method:'POST',body:{datasets}});
       const snapshot=result.snapshot;validateSnapshot(snapshot);
-      rememberConfirmedRevision(snapshot.revision);setWriteArmed(true);failureNotified=false;updateState({phase:'ready',connected:true,masterExists:true,revision:snapshot.revision,savedAt:snapshot.savedAt,schemaVersion:snapshot.schemaVersion,fileSize:Number(result.fileSize)||0,datasetCounts:result.datasetCounts||datasetCounts(datasets),errorCode:'',message:'공용 ERP 저장소 생성 완료'});
+      clearReconnect();rememberConfirmedRevision(snapshot.revision);setWriteArmed(true);failureNotified=false;updateState({phase:'ready',connected:true,masterExists:true,revision:snapshot.revision,savedAt:snapshot.savedAt,schemaVersion:snapshot.schemaVersion,fileSize:Number(result.fileSize)||0,datasetCounts:result.datasetCounts||datasetCounts(datasets),errorCode:'',message:'공용 ERP 저장소 생성 완료'});
       root.alert?.('✅ 공용 ERP 저장소 생성 완료');return true;
     }catch(error){updateState({phase:'error',errorCode:error.code||'CONNECTION_FAILED',message:friendlyMessage(error.code)});root.alert?.(`⚠ ${friendlyMessage(error.code)}`);return false;}
   }
@@ -288,6 +309,7 @@
       }catch(error){
         const phase=error.code==='REVISION_CONFLICT'?'conflict':'error';if(phase==='conflict')setWriteArmed(false);
         updateState({phase,connected:error.code!=='CONNECTION_FAILED',errorCode:error.code||'CONNECTION_FAILED',message:friendlyMessage(error.code)});
+        if(error.code==='CONNECTION_FAILED')scheduleReconnect({fetchImpl,resumeSave:true,expectedRevision:state.revision});
         if(notify&&!failureNotified){failureNotified=true;root.alert?.(`⚠ 공용폴더 저장 실패\n현재 PC의 임시 저장 데이터는 남아 있습니다.\n${friendlyMessage(error.code)}`);}return false;
       }finally{
         savePromise=null;
@@ -312,7 +334,7 @@
   }
   function statusNote(){
     const phase=state.phase;
-    if(phase==='ready')return {title:'공용 ERP 저장소 정상',description:`마지막 저장: ${new Date(state.savedAt).toLocaleString('ko-KR')}`,badge:'SHARED OK',className:'sync-ok-note'};
+    if(phase==='ready')return {title:'공용 ERP 연결됨',description:`마지막 저장: ${new Date(state.savedAt).toLocaleString('ko-KR')}`,badge:'SHARED OK',className:'sync-ok-note'};
     if(phase==='saving'||phase==='pending'||phase==='connecting')return {title:'공용 ERP 저장 중',description:'공용폴더 저장 상태를 확인하고 있습니다.',badge:'SHARED SAVING',className:'sync-progress-note'};
     if(phase==='conflict')return {title:'다른 PC에서 데이터 변경됨',description:friendlyMessage('REVISION_CONFLICT'),badge:'SHARED CONFLICT',className:'sync-warn-note'};
     if(phase==='needs-confirmation')return {title:'공용 저장 승인 필요',description:state.message,badge:'SHARED CONFIRM',className:'sync-warn-note'};
@@ -322,12 +344,12 @@
   function init(){
     if(!root.document)return;
     root.document.addEventListener('erp:storage-write',scheduleSave);
-    root.document.addEventListener('erp:operation-environment-change',()=>{bridgeToken='';setWriteArmed(false);root.clearTimeout?.(saveTimer);connect({autoApplyEmpty:true});});
+    root.document.addEventListener('erp:operation-environment-change',()=>{bridgeToken='';setWriteArmed(false);root.clearTimeout?.(saveTimer);clearReconnect();connect({autoApplyEmpty:true});});
     root.document.addEventListener('erp:permission-change',()=>updateState({}));
-    root.addEventListener?.('pagehide',()=>{bridgeToken='';});
+    root.addEventListener?.('pagehide',()=>{bridgeToken='';clearReconnect();});
     root.setTimeout?.(()=>connect({autoApplyEmpty:true}),0);
   }
-  const api={VERSION,BASE_URL,FORMAT,SCHEMA_VERSION,MAX_REQUEST_BYTES,MAX_TREE_DEPTH,MAX_TREE_NODES,MAX_STRING_LENGTH,REQUEST_TIMEOUT_MS,REVISION_META_KEY,BLOCKED_KEYS,EXCLUDED_FIELD_KEYS,SNAPSHOT_KEYS,ID_PATTERN,RESIDENT_NUMBER_PATTERN,DATASETS,DATASET_NAMES,STORAGE_KEY_TO_DATASET,isPlainObject,assertSafeTree,validateDataset,validateDatasets,validateSnapshot,stripResidentNumbers,parseLocalDataset,collectDatasets,datasetCounts,primaryLocalCounts,hasLocalBusinessData,readConfirmedRevision,rememberConfirmedRevision,isCompanyMode,publicState,friendlyMessage,bridgeRequest,openBridgeSession,getStatus,fetchSnapshot,stageSnapshot,applySnapshot,connect,loadLatest,initialize,saveNow,scheduleSave,retry,statusNote,init};
+  const api={VERSION,BASE_URL,FORMAT,SCHEMA_VERSION,MAX_REQUEST_BYTES,MAX_TREE_DEPTH,MAX_TREE_NODES,MAX_STRING_LENGTH,REQUEST_TIMEOUT_MS,RECONNECT_INTERVAL_MS,REVISION_META_KEY,BLOCKED_KEYS,EXCLUDED_FIELD_KEYS,SNAPSHOT_KEYS,ID_PATTERN,RESIDENT_NUMBER_PATTERN,DATASETS,DATASET_NAMES,STORAGE_KEY_TO_DATASET,isPlainObject,assertSafeTree,validateDataset,validateDatasets,validateSnapshot,stripResidentNumbers,parseLocalDataset,collectDatasets,datasetCounts,primaryLocalCounts,hasLocalBusinessData,readConfirmedRevision,rememberConfirmedRevision,isCompanyMode,publicState,friendlyMessage,bridgeRequest,openBridgeSession,getStatus,fetchSnapshot,stageSnapshot,applySnapshot,clearReconnect,scheduleReconnect,connect,loadLatest,initialize,saveNow,scheduleSave,retry,statusNote,init};
   if(root.document)init();
   return api;
 });

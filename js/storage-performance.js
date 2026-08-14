@@ -309,15 +309,15 @@
     const local=shared?.primaryLocalCounts?.()||{applicants:0,hireWaitingProfiles:0,employees:0,schools:0,calendarEvents:0,total:0};
     const ready=status.phase==='ready';
     const tone=ready?'is-success':['error','offline','conflict'].includes(status.phase)?'is-failure':'is-running';
-    const title=ready?'● 공용 ERP 저장소 정상':status.phase==='empty'?'공용 ERP 저장소가 비어 있습니다.':status.phase==='needs-confirmation'?'⚠ 공용 저장 승인 필요':status.phase==='conflict'?'⚠ 다른 PC에서 데이터 변경됨':status.phase==='offline'?'⚠ Bridge 실행 필요':'공용 ERP 저장소 확인 중';
+    const title=ready?'● 공용 ERP 연결됨':status.phase==='empty'?'공용 ERP 저장소가 비어 있습니다.':status.phase==='needs-confirmation'?'⚠ 공용 저장 승인 필요':status.phase==='conflict'?'⚠ 다른 PC에서 데이터 변경됨':status.phase==='offline'?'⚠ Bridge 실행 필요':'공용 ERP 저장소 확인 중';
     const last=status.savedAt?formatTime(status.savedAt):'아직 없음';
     const actions=[];
     if(status.phase==='empty')actions.push('<button class="primary" id="btnSharedStorageInitialize" type="button">현재 데이터로 공용 저장소 시작</button>');
     if(status.phase==='needs-confirmation'||status.phase==='conflict')actions.push('<button class="primary" id="btnSharedStorageLoad" type="button">공용 저장소 최신 데이터 불러오기</button>');
-    if(status.phase==='ready')actions.push('<button class="ghost" id="btnSharedStorageSave" type="button">공용 저장 지금 저장</button>');
     if(['offline','error'].includes(status.phase))actions.push('<button class="primary" id="btnSharedStorageRetry" type="button">공용 저장 다시 시도</button>');
     const counts=status.phase==='empty'?local:(status.datasetCounts||{});
-    return `<div class="panel shared-storage-panel"><div class="bridge-test-result ${tone}" role="status" aria-live="polite"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(status.message||'지원팀 공용폴더 연결 상태를 확인합니다.')}</span>${ready?`<small>마지막 저장: ${escapeHtml(last)}</small>`:''}</div>${status.phase==='empty'?`<p>현재 이 PC의 ERP 데이터: 지원자 ${local.applicants||0}명 · 입사대기 ${local.hireWaitingProfiles||0}명 · 사원 ${local.employees||0}명 · 학교 ${local.schools||0}개 · 일정 ${local.calendarEvents||0}건</p>`:''}<div class="storage-actions">${actions.join('')}</div><details class="shared-storage-details"><summary>개발자 진단 정보</summary><dl class="bridge-test-steps"><div><dt>스키마</dt><dd>${escapeHtml(status.schemaVersion??'-')}</dd></div><div><dt>Revision</dt><dd>${escapeHtml(status.revision||0)}</dd></div><div><dt>파일 크기</dt><dd>${formatBytes(status.fileSize||0)}</dd></div><div><dt>업무 데이터</dt><dd>${Object.values(counts).reduce((sum,value)=>sum+(Number(value)||0),0).toLocaleString('ko-KR')}건</dd></div></dl></details></div>`;
+    const message=ready?'':(status.message||'지원팀 공용폴더 연결 상태를 확인합니다.');
+    return `<div class="panel shared-storage-panel"><div class="bridge-test-result ${tone}" role="status" aria-live="polite"><strong>${escapeHtml(title)}</strong>${message?`<span>${escapeHtml(message)}</span>`:''}${ready?`<small>마지막 저장: ${escapeHtml(last)}</small>`:''}</div>${status.phase==='empty'?`<p>현재 이 PC의 ERP 데이터: 지원자 ${local.applicants||0}명 · 입사대기 ${local.hireWaitingProfiles||0}명 · 사원 ${local.employees||0}명 · 학교 ${local.schools||0}개 · 일정 ${local.calendarEvents||0}건</p>`:''}<div class="storage-actions">${actions.join('')}</div><details class="shared-storage-details"><summary>개발자 진단 정보</summary><dl class="bridge-test-steps"><div><dt>스키마</dt><dd>${escapeHtml(status.schemaVersion??'-')}</dd></div><div><dt>Revision</dt><dd>${escapeHtml(status.revision||0)}</dd></div><div><dt>파일 크기</dt><dd>${formatBytes(status.fileSize||0)}</dd></div><div><dt>업무 데이터</dt><dd>${Object.values(counts).reduce((sum,value)=>sum+(Number(value)||0),0).toLocaleString('ko-KR')}건</dd></div></dl></details></div>`;
   }
   function renderSharedStoragePanel(host){
     host.querySelector('.shared-folder-test-block')?.remove();
@@ -326,7 +326,6 @@
     const target=host.querySelector('.storage-dataset-panel');if(target)target.before(panelHost.firstElementChild);else host.appendChild(panelHost.firstElementChild);
     host.querySelector('#btnSharedStorageInitialize')?.addEventListener('click',()=>root.erpSharedStorage?.initialize?.());
     host.querySelector('#btnSharedStorageLoad')?.addEventListener('click',()=>root.erpSharedStorage?.loadLatest?.());
-    host.querySelector('#btnSharedStorageSave')?.addEventListener('click',()=>root.erpSharedStorage?.saveNow?.());
     host.querySelector('#btnSharedStorageRetry')?.addEventListener('click',()=>root.erpSharedStorage?.retry?.());
   }
   async function render(){

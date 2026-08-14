@@ -9,8 +9,15 @@ const HOST='127.0.0.1';
 const PORT=17840;
 const SERVICE='Recruit ERP Bridge';
 const VERSION='1.0-preview';
+const ERP_PRODUCTION_ORIGIN='https://recruit-erp.vercel.app';
 const ERP_PREVIEW_ORIGIN='https://recruit-erp-git-agent-shared-folder-storage-test-htserp.vercel.app';
+const ERP_BUILD_ORIGIN='__ERP_BRIDGE_BUILD_ORIGIN__';
+const DEFAULT_ALLOWED_ORIGIN=ERP_BUILD_ORIGIN.startsWith('__ERP_BRIDGE_')?ERP_PREVIEW_ORIGIN:ERP_BUILD_ORIGIN;
 const TARGET_FOLDER_NAME='RecruitERP';
+const CONFIG_FILE_NAME='bridge-config.json';
+const CONFIG_MAX_BYTES=8*1024;
+const STORAGE_RECONNECT_INTERVAL_MS=10000;
+const AUTOSTART_FILE_NAME='Recruit ERP Bridge.cmd';
 const DATA_DIR_NAME='ERP_DATA';
 const BACKUP_DIR_NAME='backup';
 const MASTER_FILE_NAME='erp-data.json';
@@ -32,6 +39,7 @@ const TEST_PAYLOAD=Buffer.alloc(TEST_SIZE_BYTES,'Recruit ERP shared folder test 
 const ID_PATTERN=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const RESIDENT_NUMBER_PATTERN=/(?:^|\D)\d{6}-?\d{7}(?:\D|$)/;
 const BLOCKED_KEYS=new Set(['__proto__','prototype','constructor']);
+const CONFIG_KEYS=new Set(['rootPath','autoStart']);
 const EXCLUDED_FIELD_KEYS=new Set(['residentnumber','password','passphrase','apikey','encryptionkey','accesstoken','refreshtoken','authtoken','sessiontoken','token','secret','filesystemhandle','supabasesession']);
 const SNAPSHOT_KEYS=new Set(['format','schemaVersion','revision','savedAt','datasets']);
 const DATASET_DEFINITIONS=Object.freeze({
@@ -176,13 +184,54 @@ function normalizeRootPath(value){
   if(path.basename(resolved).toLowerCase()!==TARGET_FOLDER_NAME.toLowerCase())throw codedError('INVALID_ROOT_NAME');
   return resolved;
 }
-function readRootArgument(argv=process.argv){
+function findRootArgument(argv=process.argv){
   const targets=argv.filter(value=>{
     if(typeof value!=='string'||!value.trim())return false;
     try{return path.basename(path.resolve(value.trim())).toLowerCase()===TARGET_FOLDER_NAME.toLowerCase();}catch{return false;}
   });
-  if(targets.length!==1)throw codedError('ROOT_PATH_REQUIRED');
-  return normalizeRootPath(targets[0]);
+  if(targets.length>1)throw codedError('MULTIPLE_ROOT_PATHS');
+  return targets.length===1?normalizeRootPath(targets[0]):'';
+}
+function readRootArgument(argv=process.argv){
+  const target=findRootArgument(argv);
+  if(!target)throw codedError('ROOT_PATH_REQUIRED');
+  return target;
+}
+function defaultConfigPath({seaRuntime=isSeaRuntime(),execPath=process.execPath,moduleDirectory=__dirname}={}){
+  return path.join(seaRuntime?path.dirname(execPath):moduleDirectory,CONFIG_FILE_NAME);
+}
+function parseBridgeConfigText(raw){
+  const text=String(raw??'').replace(/^\uFEFF/,'');
+  if(!text.trim()||Buffer.byteLength(text)>CONFIG_MAX_BYTES)throw codedError('INVALID_CONFIG');
+  let parsed;try{parsed=JSON.parse(text);}catch{throw codedError('INVALID_CONFIG');}
+  if(!isPlainObject(parsed))throw codedError('INVALID_CONFIG');
+  assertOnlyKeys(parsed,CONFIG_KEYS,'INVALID_CONFIG');
+  if(!Object.prototype.hasOwnProperty.call(parsed,'rootPath'))throw codedError('ROOT_PATH_REQUIRED');
+  if(Object.prototype.hasOwnProperty.call(parsed,'autoStart')&&typeof parsed.autoStart!=='boolean')throw codedError('INVALID_CONFIG');
+  return {rootPath:normalizeRootPath(parsed.rootPath),autoStart:parsed.autoStart===true};
+}
+function readBridgeConfig({fsApi=fs,configPath=defaultConfigPath()}={}){
+  let raw;try{raw=fsApi.readFileSync(configPath,'utf8');}catch(error){if(error?.code==='ENOENT')throw codedError('CONFIG_NOT_FOUND');throw codedError('CONFIG_READ_FAILED');}
+  return {...parseBridgeConfigText(raw),configPath};
+}
+function resolveStartupSettings({argv=process.argv,fsApi=fs,configPath=defaultConfigPath()}={}){
+  const argumentRoot=findRootArgument(argv);
+  if(argumentRoot)return {rootPath:argumentRoot,autoStart:false,source:'argument',configPath:''};
+  const config=readBridgeConfig({fsApi,configPath});
+  return {...config,source:'config'};
+}
+function startupLauncherText(executablePath){
+  const value=String(executablePath||'');
+  if(!value||/[\r\n"]/u.test(value))throw codedError('INVALID_EXECUTABLE_PATH');
+  return `@echo off\r\nstart "" "${value.replace(/%/g,'%%')}"\r\n`;
+}
+function installCurrentUserAutostart({fsApi=fs,appData=process.env.APPDATA,executablePath=process.execPath,platform=process.platform}={}){
+  if(platform!=='win32'||!appData)throw codedError('AUTOSTART_UNAVAILABLE');
+  const startupDirectory=path.join(appData,'Microsoft','Windows','Start Menu','Programs','Startup');
+  const launcherPath=path.join(startupDirectory,AUTOSTART_FILE_NAME);
+  fsApi.mkdirSync(startupDirectory,{recursive:true});
+  fsApi.writeFileSync(launcherPath,startupLauncherText(executablePath),{encoding:'utf8',mode:0o600});
+  return launcherPath;
 }
 function isLoopbackHost(hostHeader,port){
   if(typeof hostHeader!=='string')return false;
@@ -227,6 +276,31 @@ async function ensureStorageLayout(rootPath,{fsApi=fs.promises}={}){
     if(!isWithin(dataReal,lockReal))throw codedError('STORAGE_PATH_ESCAPE');
   }
   return {rootReal,dataDir:dataReal,backupDir:backupReal,masterPath,lockPath};
+}
+
+function createStorageReconnectMonitor(rootPath,{fsApi=fs.promises,intervalMs=STORAGE_RECONNECT_INTERVAL_MS,setIntervalFn=setInterval,clearIntervalFn=clearInterval,logger=console}={}){
+  const target=normalizeRootPath(rootPath);
+  let timer=null;let available=false;let lastCode='CONNECTING';let checking=false;
+  async function check(){
+    if(checking)return {available,lastCode};
+    checking=true;
+    try{
+      await ensureStorageLayout(target,{fsApi});
+      if(!available)logger.log?.('공용폴더 연결됨');
+      available=true;lastCode='';
+    }catch(error){
+      if(available||lastCode==='CONNECTING')logger.warn?.('공용폴더 연결 대기 중');
+      available=false;lastCode=String(error?.code||'STORAGE_UNAVAILABLE');
+    }finally{checking=false;}
+    return {available,lastCode};
+  }
+  function start(){
+    if(timer)return false;
+    void check();timer=setIntervalFn(()=>void check(),intervalMs);timer?.unref?.();return true;
+  }
+  function stop(){if(timer){clearIntervalFn(timer);timer=null;}return true;}
+  function status(){return {available,lastCode};}
+  return {check,start,stop,status};
 }
 
 async function fileExists(fsApi,filePath){return pathExists(fsApi,filePath);}
@@ -491,7 +565,7 @@ function errorResponse(error){
   return {status,body};
 }
 
-function createBridgeServer({allowedOrigin,rootPath,port=PORT,logger=console,token=crypto.randomBytes(32).toString('base64url')}={}){
+function createBridgeServer({allowedOrigin,rootPath,port=PORT,logger=console,token=crypto.randomBytes(32).toString('base64url'),storageMonitor=null}={}){
   const origin=normalizeAllowedOrigin(allowedOrigin);const target=normalizeRootPath(rootPath);const expectedPort=Number(port);
   if(!Number.isInteger(expectedPort)||expectedPort<1||expectedPort>65535)throw codedError('INVALID_PORT');
   let storageBusy=false;let diagnosticBusy=false;
@@ -511,7 +585,8 @@ function createBridgeServer({allowedOrigin,rootPath,port=PORT,logger=console,tok
     }
     if(request.method!==expectedMethod){sendJson(response,405,{ok:false,error:'METHOD_NOT_ALLOWED'},corsHeaders(origin));return;}
     if(requestUrl.pathname==='/health'){
-      sendJson(response,200,{ok:true,service:SERVICE,version:VERSION,bridgeToken:token},corsHeaders(origin));return;
+      const storageState=storageMonitor?.status?.()||null;
+      sendJson(response,200,{ok:true,service:SERVICE,version:VERSION,bridgeToken:token,storageAvailable:storageState?storageState.available:null},corsHeaders(origin));return;
     }
     if(!hasValidToken(request,token)){sendJson(response,401,{ok:false,service:SERVICE,version:VERSION,code:'TOKEN_REQUIRED'},corsHeaders(origin));return;}
     if(requestUrl.pathname==='/shared-folder-test'){
@@ -549,20 +624,29 @@ function createBridgeServer({allowedOrigin,rootPath,port=PORT,logger=console,tok
   });
 }
 
-function readAllowedOrigin(argv=process.argv.slice(2),env=process.env){
-  if(isSeaRuntime())return ERP_PREVIEW_ORIGIN;
+function readAllowedOrigin(argv=process.argv.slice(2),env=process.env,seaRuntime=isSeaRuntime()){
+  if(seaRuntime)return DEFAULT_ALLOWED_ORIGIN;
   const index=argv.indexOf('--origin');return index>=0?argv[index+1]:(env.ERP_BRIDGE_ALLOWED_ORIGIN||ERP_PREVIEW_ORIGIN);
 }
-function startBridge({allowedOrigin=readAllowedOrigin(),rootPath=readRootArgument(),port=PORT}={}){
-  const origin=normalizeAllowedOrigin(allowedOrigin);const target=normalizeRootPath(rootPath);
-  const server=createBridgeServer({allowedOrigin:origin,rootPath:target,port});
+function startBridge(options={}){
+  const settings=options.rootPath?{rootPath:options.rootPath,autoStart:options.autoStart===true,source:'options'}:resolveStartupSettings(options);
+  const origin=normalizeAllowedOrigin(options.allowedOrigin||readAllowedOrigin());const target=normalizeRootPath(settings.rootPath);const port=options.port||PORT;
+  if(settings.autoStart&&isSeaRuntime()){
+    try{installCurrentUserAutostart();console.log('현재 사용자 Windows 자동시작 등록 완료');}
+    catch(error){console.warn(`Windows 자동시작 등록 실패: ${String(error?.code||'UNKNOWN')}`);}
+  }
+  const storageMonitor=createStorageReconnectMonitor(target,{logger:options.logger||console});storageMonitor.start();
+  const server=createBridgeServer({allowedOrigin:origin,rootPath:target,port,logger:options.logger||console,storageMonitor});
+  server.on('close',()=>storageMonitor.stop());
   server.on('error',error=>{console.error(`ERP Bridge 시작 실패: ${String(error?.code||'UNKNOWN')}`);process.exitCode=1;});
   server.listen(port,HOST,()=>{
     console.log(`Recruit ERP Bridge ${VERSION}`);
     console.log(`대기 주소: http://${HOST}:${port}`);
-    console.log('RecruitERP 공용 저장 루트: 설정됨');
+    console.log(`허용 ERP: ${origin}`);
+    console.log('RecruitERP 공용 저장 루트: 설정파일에서 확인됨');
     console.log('종료: Ctrl+C');
   });
+  server.storageMonitor=storageMonitor;
   return server;
 }
 
@@ -571,11 +655,11 @@ if(require.main===module||isSeaRuntime()){
 }
 
 module.exports={
-  HOST,PORT,SERVICE,VERSION,ERP_PREVIEW_ORIGIN,TARGET_FOLDER_NAME,DATA_DIR_NAME,BACKUP_DIR_NAME,MASTER_FILE_NAME,LOCK_FILE_NAME,
+  HOST,PORT,SERVICE,VERSION,ERP_PRODUCTION_ORIGIN,ERP_PREVIEW_ORIGIN,ERP_BUILD_ORIGIN,DEFAULT_ALLOWED_ORIGIN,TARGET_FOLDER_NAME,CONFIG_FILE_NAME,CONFIG_MAX_BYTES,STORAGE_RECONNECT_INTERVAL_MS,AUTOSTART_FILE_NAME,DATA_DIR_NAME,BACKUP_DIR_NAME,MASTER_FILE_NAME,LOCK_FILE_NAME,
   SNAPSHOT_FORMAT,SCHEMA_VERSION,MAX_BACKUPS,MAX_REQUEST_BYTES,REQUEST_TIMEOUT_MS,DELETE_RETRY_DELAY_MS,MAX_DELETE_RETRIES,LOCK_STALE_MS,
-  TEST_SIZE_BYTES,TEST_FILE_PREFIX,TEST_PAYLOAD,DATASET_DEFINITIONS,DATASET_NAMES,ID_PATTERN,RESIDENT_NUMBER_PATTERN,EXCLUDED_FIELD_KEYS,isSeaRuntime,wait,hash,
+  TEST_SIZE_BYTES,TEST_FILE_PREFIX,TEST_PAYLOAD,DATASET_DEFINITIONS,DATASET_NAMES,ID_PATTERN,RESIDENT_NUMBER_PATTERN,EXCLUDED_FIELD_KEYS,CONFIG_KEYS,isSeaRuntime,wait,hash,
   isPlainObject,assertSafeTree,validateDataset,validateDatasets,datasetCounts,validateSnapshot,parseSnapshotText,normalizeAllowedOrigin,
-  normalizeRootPath,readRootArgument,isLoopbackHost,isWithin,ensureStorageLayout,fileExists,retryFsOperation,deleteFileWithRetry,renameWithRetry,
+  normalizeRootPath,findRootArgument,readRootArgument,defaultConfigPath,parseBridgeConfigText,readBridgeConfig,resolveStartupSettings,startupLauncherText,installCurrentUserAutostart,isLoopbackHost,isWithin,ensureStorageLayout,createStorageReconnectMonitor,fileExists,retryFsOperation,deleteFileWithRetry,renameWithRetry,
   acquireWriteLock,readMaster,createBackup,trimBackups,writeSnapshotAtomic,storageStatus,initializeStorage,updateStorage,runSharedFolderTest,
   corsHeaders,hasValidToken,readJsonBody,errorResponse,createBridgeServer,readAllowedOrigin,startBridge,
   normalizeSharedFolderPath:normalizeRootPath,readSharedFolderArgument:readRootArgument

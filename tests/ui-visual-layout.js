@@ -135,7 +135,9 @@ async function restoreSchoolWorkforceFixture(page){
           await page.waitForFunction(()=>window.erpSharedStorage?.publicState?.().phase==='ready',null,{timeout:15000});
           const sharedState=await page.evaluate(()=>{const values={...localStorage};delete values.recruit_erp_shared_storage_revision_meta_v1;return {after:JSON.stringify(values),state:window.erpSharedStorage.publicState(),result:document.querySelector('.shared-storage-panel')?.innerText||''};});
           assert.equal(sharedState.after,bridgeBefore,'공용 저장소 초기화는 기존 localStorage 내용을 바꾸면 안 됩니다.');
-          assert.ok(sharedState.result.includes('공용 ERP 저장소 정상')&&sharedState.state.revision===1);
+          assert.ok(sharedState.result.includes('공용 ERP 연결됨')&&sharedState.state.revision===1);
+          assert.equal(await page.locator('#btnSharedStorageInitialize').count(),0,'master 생성 후 초기화 버튼이 다시 보이면 안 됩니다.');
+          assert.equal(await page.locator('#btnSharedStorageSave').count(),0,'정상 운영 화면에 반복 수동 저장 버튼을 표시하면 안 됩니다.');
           assert.equal(fs.readFileSync(bridgeExistingFile,'utf8'),'existing file must not change','공용폴더 기존 파일을 바꾸면 안 됩니다.');
           assert.deepEqual(fs.readdirSync(bridgeSharedFolder).sort(),['ERP_DATA','existing-company-file.txt']);
           const sharedMaster=fs.readFileSync(path.join(bridgeSharedFolder,'ERP_DATA','erp-data.json'),'utf8');

@@ -3,16 +3,22 @@
 ## 실행
 
 1. 지원팀 공용폴더에 `RecruitERP` 폴더를 준비합니다.
-2. 회사 PC에서 아래처럼 portable Bridge를 실행합니다.
+2. `ERP-Bridge-Preview.exe` 옆의 `bridge-config.json`에 공용폴더 경로를 한 번 입력합니다.
 
-```text
-ERP-Bridge.exe "Z:\RecruitERP"
+```json
+{
+  "rootPath": "Z:\\RecruitERP",
+  "autoStart": true
+}
 ```
 
-3. ERP Preview에 접속합니다.
-4. `저장소·속도`에서 공용 저장 상태를 확인합니다.
+3. EXE를 더블클릭합니다. `autoStart`가 `true`이면 현재 사용자 Windows 시작프로그램에도 등록됩니다.
+4. ERP Preview에 접속합니다.
+5. `저장소·속도`에서 공용 저장 상태를 확인합니다.
 
-Bridge는 `127.0.0.1:17840`에만 연결되며 창을 닫거나 `Ctrl+C`로 종료합니다. Node.js, npm, Git, 설치 프로그램, 관리자 권한은 필요하지 않습니다.
+Bridge는 `127.0.0.1:17840`에만 연결되며 창을 닫거나 `Ctrl+C`로 종료합니다. Node.js, npm, Git, PowerShell, 설치 프로그램, 관리자 권한은 필요하지 않습니다. Windows 로그인 직후 공용폴더가 준비되지 않았으면 종료하지 않고 10초 간격으로 다시 확인합니다.
+
+Preview 실행파일은 Preview 주소만 허용합니다. Production 전환용 `ERP-Bridge.exe`는 `https://recruit-erp.vercel.app`만 허용하며 wildcard Origin을 사용하지 않습니다.
 
 ## 최초 초기화
 
@@ -26,6 +32,8 @@ RecruitERP/
 ```
 
 실제 운영데이터 초기화 전에는 회사 PC에서 개인정보 없는 약 5MB 가상 snapshot의 저장·재읽기·hash 검증을 한 번 통과해야 합니다.
+
+`erp-data.json`이 생성된 뒤에는 초기화 버튼이 다시 표시되지 않습니다. 이후 평상시에는 Windows 로그인 → Bridge 자동 시작 → ERP 접속 → 공용 master 자동 연결 순서로 동작하며 수동 저장 버튼을 반복해서 누르지 않습니다.
 
 ## 저장과 충돌
 
