@@ -502,12 +502,16 @@ updateStorageNote=function(){
   const modeDescription=isCompany?'이 브라우저에만 저장하며 클라우드로 보내지 않습니다.':cloudFailed?'로컬 저장은 완료됐지만 클라우드 반영에 실패했습니다.':cloudOk?'로컬과 클라우드 저장이 정상 작동합니다.':cloudSyncing?'클라우드 상태를 확인하고 있습니다.':loggedOut?'로컬 저장만 사용 중입니다. 로그인하면 동기화를 다시 시작합니다.':'클라우드 설정이 없어 이 브라우저에만 저장합니다.';
   const lastLabel=typeof cloudLastSuccessLabel==='function'?cloudLastSuccessLabel():'아직 성공 기록 없음';
   const statusClass=cloudFailed?'sync-warn-note':cloudOk?'sync-ok-note':cloudSyncing?'sync-progress-note':loggedOut?'sync-logged-out-note':'sync-local-note';
-  el.className=`security-note operation-mode-note ${mode} ${statusClass}`;
+  const sharedNote=isCompany&&window.erpSharedStorage?.statusNote?.();
+  const displayTitle=sharedNote?.title||modeTitle;
+  const displayDescription=sharedNote?.description||modeDescription;
+  const displayStatusClass=sharedNote?.className||statusClass;
+  el.className=`security-note operation-mode-note ${mode} ${displayStatusClass}`;
   el.setAttribute('aria-live','polite');
   el.innerHTML=`
     <div class="operation-mode-copy">
-      <strong>${modeTitle}</strong>
-      <span>${modeDescription}</span>
+      <strong>${displayTitle}</strong>
+      <span>${displayDescription}</span>
       ${!isCompany&&hasCloud?`<small>마지막 성공: ${lastLabel}</small>`:''}
     </div>
     <div class="operation-mode-switch" role="group" aria-label="운영 환경 선택">
@@ -517,8 +521,8 @@ updateStorageNote=function(){
   el.querySelectorAll('[data-operation-mode]').forEach(btn=>btn.addEventListener('click',()=>uxSetOperationEnvironment(btn.dataset.operationMode)));
   const badge=document.querySelector('.local-mode-badge');
   if(badge){
-    badge.textContent=isCompany?'회사 · LOCAL':cloudFailed?'CLOUD ERROR':cloudOk?'CLOUD OK':cloudSyncing?'CLOUD SYNCING':loggedOut?'CLOUD LOGOUT':'LOCAL';
-    badge.title=modeDescription;
+    badge.textContent=sharedNote?.badge||(isCompany?'회사 · LOCAL':cloudFailed?'CLOUD ERROR':cloudOk?'CLOUD OK':cloudSyncing?'CLOUD SYNCING':loggedOut?'CLOUD LOGOUT':'LOCAL');
+    badge.title=displayDescription;
     badge.classList.toggle('company',isCompany);
     badge.classList.toggle('home',!isCompany);
     badge.classList.toggle('cloud-ready',cloudOk);

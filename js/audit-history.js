@@ -36,7 +36,7 @@
   function readJson(key,fallback){try{const value=JSON.parse(root.localStorage?.getItem(key)||'null');return value==null?fallback:value;}catch(_){return fallback;}}
   function readLocal(){return asArray(readJson(STORAGE_KEY,[]));}
   function writeLocal(rows){
-    try{root.localStorage?.setItem(STORAGE_KEY,JSON.stringify(rows.slice(0,MAX_LOCAL_RECORDS)));return true;}
+    try{const value=JSON.stringify(rows.slice(0,MAX_LOCAL_RECORDS));return typeof root.safeLocalStorageSet==='function'?root.safeLocalStorageSet(STORAGE_KEY,value,{notify:false}):(root.localStorage?.setItem(STORAGE_KEY,value),true);}
     catch(error){console.warn('변경 이력을 로컬에 저장하지 못했습니다.',error);return false;}
   }
   function scrubText(value){

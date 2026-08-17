@@ -8,7 +8,7 @@ function loadMessageTemplates(){
 }
 function saveMessageTemplates(){
   if(window.erpPermissions&&!window.erpPermissions.require('message.write'))return false;
-  try{localStorage.setItem(MESSAGE_TEMPLATES_KEY,JSON.stringify(messageTemplates.map(normalizeMessageTemplate)));return true;}catch(err){console.error('문구함 저장 실패:',err);return false;}
+  try{const value=JSON.stringify(messageTemplates.map(normalizeMessageTemplate));return typeof safeLocalStorageSet==='function'?safeLocalStorageSet(MESSAGE_TEMPLATES_KEY,value):!!localStorage.setItem(MESSAGE_TEMPLATES_KEY,value)||true;}catch(err){console.error('문구함 저장 실패:',err);return false;}
 }
 let messageTemplateCurrentId='';
 let messageTemplateSearch='';

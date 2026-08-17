@@ -38,14 +38,14 @@
       }
     });
     sessions=sessions.filter(s=>!(s.source==='applicantSchedule'&&s.participants.length===0));
-    if(created||linked||updated)localStorage.setItem(KEY,JSON.stringify(sessions));
+    if(created||linked||updated){const value=JSON.stringify(sessions);if(typeof safeLocalStorageSet==='function')safeLocalStorageSet(KEY,value);else localStorage.setItem(KEY,value);}
     const total=rows.length,connected=rows.filter(a=>sessions.some(s=>s.participants.some(p=>String(p.applicantId)===String(a.id)))).length;
     const txt=el('interviewAutoLinkText');if(txt)txt.textContent=total?`지원자 면접일정 ${total}건 중 ${connected}건 연결됨 · 새 회차 ${created}개 · 신규 배정 ${linked}명${updated?` · 일정 갱신 ${updated}건`:''}`:'지원자 목록에 등록된 면접일정이 없습니다.';
     if(showNotice&&typeof alert==='function')alert(total?`면접일정 자동 연결 완료\n지원자 일정 ${total}건 / 연결 ${connected}건 / 새 회차 ${created}개 / 신규 배정 ${linked}명`:'연결할 지원자 면접일정이 없습니다.');
     return {total,connected,created,linked,updated};
   }
-  function persistApplicants(){localStorage.setItem(typeof STORAGE_KEY!=='undefined'?STORAGE_KEY:'recruit_erp_applicants_stable',JSON.stringify(applicants)); if(typeof save==='function'){} }
-  function save(){if(window.erpPermissions&&!window.erpPermissions.require('schedule.write'))return false;localStorage.setItem(KEY,JSON.stringify(sessions));render();return true;}
+  function persistApplicants(){const key=typeof STORAGE_KEY!=='undefined'?STORAGE_KEY:'recruit_erp_applicants_stable',value=JSON.stringify(applicants);if(typeof safeLocalStorageSet==='function')safeLocalStorageSet(key,value);else localStorage.setItem(key,value);if(typeof save==='function'){} }
+  function save(){if(window.erpPermissions&&!window.erpPermissions.require('schedule.write'))return false;const value=JSON.stringify(sessions);if(typeof safeLocalStorageSet==='function'&&!safeLocalStorageSet(KEY,value))return false;else if(typeof safeLocalStorageSet!=='function')localStorage.setItem(KEY,value);render();return true;}
   function current(){return sessions.find(s=>s.id===selectedId)||null;}
   function pendingCount(s){return s.participants.filter(p=>p.attendance!=='불참'&&(!p.result||p.result==='미입력')).length;}
   function checkinPending(s){return s.participants.filter(p=>p.attendance==='미확인').length;}
