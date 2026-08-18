@@ -1,86 +1,115 @@
-/* Recruit ERP v10.40.30 APPLICANT_QUICK_ENTRY
- * 기존 정식 입력폼·엑셀 붙여넣기·applicants 구조를 변경하지 않는 별도 빠른 등록 모드
+/* Recruit ERP v11.5.0 APPLICANT QUICK ENTRY
+ * 기존 applicants 스키마·정규화·권한·save() 경로만 재사용하며 별도 저장 키를 만들지 않습니다.
  */
-(function(){
+(function(root){
 'use strict';
-const QUICK_DEFAULTS_KEY='recruit_erp_quick_entry_defaults_v10_40_30';
-const ids=['quickApplyDate','quickWorkplace','quickSource','quickDormUse','quickStatus'];
-function el(id){return document.getElementById(id);}
-function readDefaults(){try{return JSON.parse(localStorage.getItem(QUICK_DEFAULTS_KEY)||'{}')||{};}catch{return{};}}
-function writeDefaults(){
-  if(!el('quickRememberDefaults')?.checked){localStorage.removeItem(QUICK_DEFAULTS_KEY);return;}
-  const out={}; ids.forEach(id=>{if(el(id))out[id]=el(id).value;});
-  localStorage.setItem(QUICK_DEFAULTS_KEY,JSON.stringify(out));
+const state={open:false,trigger:null,saving:false};
+const $id=id=>document.getElementById(id);
+function canWrite(){return !root.erpPermissions||root.erpPermissions.has('applicant.write');}
+function optionsFrom(sourceId,fallback){
+  const source=$id(sourceId);
+  if(source?.options?.length)return [...source.options].map(option=>`<option value="${esc(option.value)}"${option.selected?' selected':''}>${esc(option.textContent)}</option>`).join('');
+  return fallback.map(value=>`<option value="${esc(value)}">${esc(value||'선택')}</option>`).join('');
 }
-function applyDefaults(){
-  const d=readDefaults();
-  if(el('quickApplyDate'))el('quickApplyDate').value=d.quickApplyDate||today();
-  if(el('quickWorkplace'))el('quickWorkplace').value=d.quickWorkplace||'';
-  if(el('quickSource'))el('quickSource').value=d.quickSource||'';
-  if(el('quickDormUse'))el('quickDormUse').value=d.quickDormUse||'';
-  if(el('quickStatus'))el('quickStatus').value=d.quickStatus||'미연락';
+function ensureUi(){
+  if($id('applicantQuickEntry'))return;
+  const shell=document.createElement('div');
+  shell.id='applicantQuickEntry';shell.className='applicant-quick-entry';shell.setAttribute('aria-hidden','true');
+  shell.innerHTML=`<div class="applicant-quick-entry-backdrop" data-quick-entry-close></div><section class="applicant-quick-entry-card" role="dialog" aria-modal="true" aria-labelledby="applicantQuickEntryTitle" aria-describedby="applicantQuickEntryDescription"><header><div><p class="eyebrow">QUICK APPLICANT ENTRY</p><h3 id="applicantQuickEntryTitle">지원자 빠른 등록</h3><p id="applicantQuickEntryDescription">자주 쓰는 항목만 입력하고 기존 저장 절차로 한 번만 등록합니다.</p></div><button class="ghost" id="btnQuickEntryClose" type="button" aria-label="빠른 등록 닫기">닫기</button></header><form id="applicantQuickEntryForm" novalidate><div class="quick-entry-grid"><label>성명 <em class="req">*</em><input id="quickEntryName" autocomplete="off" required></label><label>연락처<input id="quickEntryPhone" inputmode="tel" placeholder="010-0000-0000"></label><label>근무지<select id="quickEntryWorkplace">${optionsFrom('workplace',['','천안','평택','기타'])}</select></label><label>연락 상태<select id="quickEntryStatus">${optionsFrom('status',['서류검토','서류합격','부재중','면접예정'])}</select></label><label class="wide">메모 / 다음 작업<textarea id="quickEntryMemo" rows="3" placeholder="다음 연락이나 확인할 내용을 입력하세요."></textarea></label></div><div class="quick-entry-feedback" id="quickEntryFeedback" role="status" aria-live="polite"></div><div class="quick-entry-duplicate" id="quickEntryDuplicate" hidden></div><footer><button class="ghost" data-quick-entry-close type="button">취소</button><button class="primary" id="btnQuickEntrySave" type="submit" data-required-permission="applicant.write">확인 후 등록</button></footer></form></section>`;
+  document.body.appendChild(shell);
+  shell.querySelectorAll('[data-quick-entry-close]').forEach(button=>button.addEventListener('click',close));
+  $id('btnQuickEntryClose')?.addEventListener('click',close);
+  $id('applicantQuickEntryForm')?.addEventListener('submit',submit);
+  $id('quickEntryPhone')?.addEventListener('blur',event=>{event.target.value=formatPhoneDisplay(event.target.value);refreshDuplicate();});
+  $id('quickEntryPhone')?.addEventListener('input',refreshDuplicate);
+  shell.addEventListener('keydown',trapFocus);
 }
-function setMode(mode){
-  const quick=mode==='quick';
-  if(el('quickApplicantForm'))el('quickApplicantForm').hidden=!quick;
-  if(el('fullApplicantFormWrap'))el('fullApplicantFormWrap').hidden=quick;
-  el('btnApplicantQuickMode')?.classList.toggle('active',quick);
-  el('btnApplicantFullMode')?.classList.toggle('active',!quick);
-  if(el('submitBtn'))el('submitBtn').style.display=quick?'none':'';
-  if(el('btnResetForm'))el('btnResetForm').style.display=quick?'none':'';
-  if(quick){applyDefaults();setTimeout(()=>el('quickName')?.focus(),0);}
-  else setTimeout(()=>el('name')?.focus(),0);
+function feedback(message,type=''){
+  const target=$id('quickEntryFeedback');if(!target)return;
+  target.className=`quick-entry-feedback ${type}`;target.textContent=message||'';
 }
-function normalizeQuickPhone(){if(el('quickPhone'))el('quickPhone').value=formatPhoneDisplay(el('quickPhone').value);}
-function resetPersonFields(){
-  ['quickName','quickPhone','quickSchool','quickMemo'].forEach(id=>{if(el(id))el(id).value='';});
-  if(!el('quickRememberDefaults')?.checked){localStorage.removeItem(QUICK_DEFAULTS_KEY);applyDefaults();}
-  setTimeout(()=>el('quickName')?.focus(),0);
+function reset(){
+  $id('applicantQuickEntryForm')?.reset();
+  if($id('quickEntryStatus'))$id('quickEntryStatus').value='서류검토';
+  if($id('quickEntryWorkplace'))$id('quickEntryWorkplace').value='';
+  feedback('');
+  const duplicate=$id('quickEntryDuplicate');if(duplicate){duplicate.hidden=true;duplicate.innerHTML='';}
 }
-function submitQuick(e){
-  e.preventDefault();
-  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
-  normalizeQuickPhone();
-  const name=String(el('quickName')?.value||'').trim();
-  if(!name){alert('성명을 입력해주세요.');el('quickName')?.focus();return;}
-  const phone=String(el('quickPhone')?.value||'').trim();
-  const phoneKey=normalizePhone(phone);
-  const dup=applicants.find(a=>phoneKey&&phoneKey.length>=8&&normalizePhone(a.phone)===phoneKey);
-  if(dup&&!confirm(`중복 가능성이 있습니다: ${dup.name}\n그래도 빠른 등록할까요?`))return;
-  const record=normalize({
-    id:uid(),createdAt:new Date().toISOString(),
-    applyDate:el('quickApplyDate')?.value||today(),
-    name,phone,
-    workplace:el('quickWorkplace')?.value||'',
-    school:el('quickSchool')?.value||'',schoolId:'',
-    status:el('quickStatus')?.value||'미연락',
-    source:el('quickSource')?.value||'',
-    dormUse:el('quickDormUse')?.value||'',
-    memo:el('quickMemo')?.value||''
-  });
-  const before=applicants.slice();
-  applicants.unshift(record);
-  writeDefaults();
-  if(!save()){applicants=before;if(typeof window.applicantProgressHistoryRefreshSnapshots==='function')window.applicantProgressHistoryRefreshSnapshots();return;}
-  const result=el('quickEntryResult');
-  if(result){result.textContent=`${record.name} 등록 완료 · 반복값을 유지했습니다.`;result.classList.add('show');setTimeout(()=>result.classList.remove('show'),2500);}
-  resetPersonFields();
+function open(trigger=null){
+  ensureUi();
+  if(!canWrite()){root.erpPermissions?.require('applicant.write');return false;}
+  state.open=true;state.trigger=trigger||document.activeElement;reset();
+  const shell=$id('applicantQuickEntry');shell.classList.add('is-open');shell.setAttribute('aria-hidden','false');
+  document.body.classList.add('applicant-quick-entry-open');
+  requestAnimationFrame(()=>$id('quickEntryName')?.focus({preventScroll:true}));
+  return true;
 }
-function openExcelFromQuick(){
-  setMode('full');
-  if(typeof openExcelRowPaste==='function')openExcelRowPaste();
+function close(){
+  if(!state.open||state.saving)return false;
+  state.open=false;const trigger=state.trigger;state.trigger=null;
+  const shell=$id('applicantQuickEntry');shell?.classList.remove('is-open');shell?.setAttribute('aria-hidden','true');
+  document.body.classList.remove('applicant-quick-entry-open');
+  requestAnimationFrame(()=>trigger?.isConnected&&trigger.focus?.({preventScroll:true}));
+  return true;
 }
-function init(){
-  el('btnApplicantQuickMode')?.addEventListener('click',()=>setMode('quick'));
-  el('btnApplicantFullMode')?.addEventListener('click',()=>setMode('full'));
-  el('btnOpenFullFromQuick')?.addEventListener('click',()=>setMode('full'));
-  el('quickApplicantForm')?.addEventListener('submit',submitQuick);
-  el('quickPhone')?.addEventListener('blur',normalizeQuickPhone);
-  el('btnQuickClearDefaults')?.addEventListener('click',()=>{localStorage.removeItem(QUICK_DEFAULTS_KEY);applyDefaults();});
-  el('btnOpenExcelRowPaste')?.addEventListener('click',()=>{if(!el('quickApplicantForm')?.hidden)setMode('full');});
-  applyDefaults();
-  window.setApplicantEntryMode=setMode;
-  window.openExcelFromQuick=openExcelFromQuick;
+function duplicateRows(){
+  const phone=normalizePhone($id('quickEntryPhone')?.value||'');
+  if(phone.length<8)return[];
+  return applicants.filter(applicant=>normalizePhone(applicant.phone)===phone);
 }
-init();
-})();
+function refreshDuplicate(){
+  const host=$id('quickEntryDuplicate');if(!host)return[];
+  const rows=duplicateRows();
+  if(!rows.length){host.hidden=true;host.innerHTML='';return rows;}
+  host.hidden=false;
+  host.innerHTML=`<strong>중복 가능성 ${rows.length}명</strong><span>같은 연락처가 있습니다. 기존 지원자를 확인한 뒤 계속하세요.</span><label><input id="quickEntryDuplicateConfirm" type="checkbox"> 중복 가능성을 확인했습니다.</label>`;
+  return rows;
+}
+function restoreBrowserSnapshot(before){
+  try{
+    if(localStorage.getItem(STORAGE_KEY)===before)return true;
+    if(before===null)localStorage.removeItem(STORAGE_KEY);else localStorage.setItem(STORAGE_KEY,before);
+    return localStorage.getItem(STORAGE_KEY)===before;
+  }catch{return false;}
+}
+function values(){return{
+  name:String($id('quickEntryName')?.value||'').trim(),phone:String($id('quickEntryPhone')?.value||'').trim(),
+  workplace:String($id('quickEntryWorkplace')?.value||'').trim(),status:String($id('quickEntryStatus')?.value||'').trim(),
+  memo:String($id('quickEntryMemo')?.value||'').trim()
+};}
+function submit(event){
+  event?.preventDefault?.();
+  if(state.saving)return false;
+  if(!canWrite()){root.erpPermissions?.require('applicant.write');return false;}
+  const input=values();
+  if(!input.name){feedback('성명을 입력해 주세요.','error');$id('quickEntryName')?.focus();return false;}
+  const duplicates=refreshDuplicate();
+  if(duplicates.length&&!$id('quickEntryDuplicateConfirm')?.checked){feedback('중복 가능성을 확인해야 등록할 수 있습니다.','warning');$id('quickEntryDuplicateConfirm')?.focus();return false;}
+  if(!root.confirm('입력한 내용으로 지원자를 등록할까요?'))return false;
+  const id=uid(),record=normalize({...input,id,createdAt:new Date().toISOString(),applyDate:today(),status:input.status||'서류검토'});
+  const beforeApplicants=applicants,beforeStorage=localStorage.getItem(STORAGE_KEY);
+  state.saving=true;applicants=[record,...applicants];
+  let saved=false;try{saved=save()===true;}catch{saved=false;}state.saving=false;
+  if(!saved){
+    applicants=beforeApplicants;
+    const restored=restoreBrowserSnapshot(beforeStorage);
+    if(typeof root.applicantProgressHistoryRefreshSnapshots==='function')root.applicantProgressHistoryRefreshSnapshots();
+    feedback(restored?'저장하지 못했습니다. 입력 내용은 그대로 남아 있습니다.':'저장과 원상복구에 실패했습니다. 브라우저 저장공간을 확인해 주세요.','error');
+    return false;
+  }
+  state.open=false;state.trigger=null;
+  const shell=$id('applicantQuickEntry');shell?.classList.remove('is-open');shell?.setAttribute('aria-hidden','true');document.body.classList.remove('applicant-quick-entry-open');
+  root.openApplicantQuickDetailFromWorkflow?.(id,$id('btnQuickApplicantEntry'));
+  return true;
+}
+function focusable(){return [...($id('applicantQuickEntry')?.querySelectorAll('button:not([disabled]):not([hidden]),input:not([disabled]),select:not([disabled]),textarea:not([disabled])')||[])].filter(element=>element.getClientRects().length&&!element.classList.contains('erp-permission-hidden'));}
+function trapFocus(event){
+  if(!state.open)return;if(event.key==='Escape'){event.preventDefault();close();return;}if(event.key!=='Tab')return;
+  const list=focusable(),first=list[0],last=list.at(-1);if(!first)return;
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
+}
+function init(){ensureUi();$id('btnQuickApplicantEntry')?.addEventListener('click',event=>open(event.currentTarget));}
+root.erpApplicantQuickEntry={open,close,submit,refreshDuplicate,state};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})(window);
