@@ -527,6 +527,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
           assert.equal(bridgeState.after,bridgeBefore,'Bridge 연결 테스트는 localStorage를 변경하면 안 됩니다.');assert.ok(bridgeState.result.includes('ERP Bridge 연결 성공')&&bridgeState.result.includes('로컬 저장 프로그램과 ERP 통신이 가능합니다.'));
           page.once('dialog',dialog=>dialog.accept());await page.locator('#btnSharedStorageInitialize').click();
           await page.waitForFunction(()=>window.erpSharedStorage?.publicState?.().phase==='ready',null,{timeout:15000});
+          await page.waitForFunction(()=>document.querySelector('.shared-storage-panel')?.innerText.includes('공용 ERP 연결됨'));
           const sharedState=await page.evaluate(()=>{const values={...localStorage};delete values.recruit_erp_shared_storage_revision_meta_v1;return {after:JSON.stringify(values),state:window.erpSharedStorage.publicState(),result:document.querySelector('.shared-storage-panel')?.innerText||''};});
           assert.equal(sharedState.after,bridgeBefore,'공용 저장소 초기화는 기존 localStorage 내용을 바꾸면 안 됩니다.');
           assert.ok(sharedState.result.includes('공용 ERP 연결됨')&&sharedState.state.revision===1);
