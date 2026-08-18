@@ -19,7 +19,7 @@ const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
 const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.1.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.2.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -98,7 +98,7 @@ async function restoreSchoolWorkforceFixture(page){
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v11.1.0');
+      assert.equal(await page.title(),'채용관리 시스템 v11.2.0');
       const queue=page.locator('#homeTodayGrid .queue-card');assert.equal(await queue.count(),5);for(let i=0;i<5;i++)assert.notEqual(await queue.nth(i).evaluate(el=>getComputedStyle(el).display),'none');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
@@ -296,7 +296,28 @@ async function restoreSchoolWorkforceFixture(page){
     const mergeDialogHandler=dialog=>dialog.accept();page.on('dialog',mergeDialogHandler);await openEncryptedRestoreFixture(page);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>applicants.length),4,'첫 병합은 가상 지원자 1건을 추가해야 합니다.');await openEncryptedRestoreFixture(page);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});page.off('dialog',mergeDialogHandler);assert.equal(await page.evaluate(()=>applicants.length),4,'같은 암호화 파일을 다시 병합해도 중복이 늘면 안 됩니다.');
     await page.evaluate(()=>window.erpSyncSafety.openConflicts());assert.ok(await page.locator('#syncConflictModal').isVisible());assert.ok(await page.locator('#syncConflictModal .safety-intro-card').count());await page.screenshot({path:path.join(outputDir,'390x844-sync-conflict.png'),fullPage:false});await page.locator('#btnCloseSyncConflicts').click();await page.evaluate(()=>window.erpSyncSafety.openDeletes());assert.ok(await page.locator('#syncDeleteModal').isVisible());assert.ok(await page.locator('#syncDeleteModal .safety-intro-card').count());await page.locator('#btnCloseSyncDeletes').click();
     assert.ok(await page.locator('#employeeOrgImportModal .employee-org-import-notice.safety-intro-card').count(),'조직정보 Import 안전 안내가 명시적으로 표시되어야 합니다.');
-    await page.evaluate(()=>window.openHireWaitingList?.('2026-08-08'));if(await page.locator('#hireWaitingModal.show').count())assert.ok(await page.locator('#hireWaitingModal .safety-intro-card').count());
+    await page.evaluate(()=>{
+      window.__hireAutomationFixture={applicants,hireWaitingProfiles};
+      applicants=[...applicants,
+        {id:'55555555-5555-4555-8555-555555555555',name:'가상자동신입',status:'입사예정',hireDate:'2026-08-10',birthYear:'2000-05-20',careerType:'신입'},
+        {id:'66666666-6666-4666-8666-666666666666',name:'가상자동경력',status:'입사예정',hireDate:'2026-08-20',birthYear:'1990.01.02',careerType:'경력',career:'가상 설비 PM 2년'},
+        {id:'77777777-7777-4777-8777-777777777777',name:'가상생년확인',status:'입사예정',hireDate:'2026-08-28',birthYear:'2000년생',careerType:'경력'}
+      ];
+      window.__hireAutomationBefore={applicants:JSON.stringify(applicants),profiles:JSON.stringify(hireWaitingProfiles),storage:localStorage.getItem('recruit_erp_hire_waiting_profiles')};
+      window.openHireWaitingList?.('2026-08-10');
+    });
+    await page.locator('#hireWaitingModal.show').waitFor();assert.ok(await page.locator('#hireWaitingModal .safety-intro-card').count());
+    await page.locator('#btnHireWaitingAutomation').click();await page.locator('#hireWaitingAutomationModal.show').waitFor();
+    assert.equal(await page.locator('#hireWaitingAutomationBody tr').count(),3);assert.equal(await page.locator('#hireWaitingAutomationNeedsBirth').innerText(),'1명');
+    assert.ok((await page.locator('#hireWaitingAutomationBody').innerText()).includes('S2608'));assert.equal(await page.locator('[data-automation-measurement]').count(),2);
+    const previewUnchanged=await page.evaluate(()=>({applicants:JSON.stringify(applicants)===window.__hireAutomationBefore.applicants,profiles:JSON.stringify(hireWaitingProfiles)===window.__hireAutomationBefore.profiles,storage:localStorage.getItem('recruit_erp_hire_waiting_profiles')===window.__hireAutomationBefore.storage}));
+    assert.deepEqual(previewUnchanged,{applicants:true,profiles:true,storage:true},'자동작성 미리보기는 브라우저 데이터와 배열을 변경하면 안 됩니다.');
+    await page.locator('[data-automation-measurement="heightCm"]').fill('182');await page.locator('[data-automation-measurement="weightKg"]').fill('78');await page.locator('[data-automation-measurement="weightKg"]').press('Tab');
+    await page.screenshot({path:path.join(outputDir,'390x844-hire-waiting-automation.png'),fullPage:false});
+    await page.locator('#btnHireWaitingAutomationCancel').click();
+    const cancelUnchanged=await page.evaluate(()=>({applicants:JSON.stringify(applicants)===window.__hireAutomationBefore.applicants,profiles:JSON.stringify(hireWaitingProfiles)===window.__hireAutomationBefore.profiles,storage:localStorage.getItem('recruit_erp_hire_waiting_profiles')===window.__hireAutomationBefore.storage}));
+    assert.deepEqual(cancelUnchanged,{applicants:true,profiles:true,storage:true},'자동작성 취소는 브라우저 데이터와 배열을 변경하면 안 됩니다.');
+    await page.evaluate(()=>{closeHireWaitingList(true);applicants=window.__hireAutomationFixture.applicants;hireWaitingProfiles=window.__hireAutomationFixture.hireWaitingProfiles;delete window.__hireAutomationFixture;delete window.__hireAutomationBefore;});
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
     console.log(`ui-visual-layout.js: 7개 화면 조건(5개 뷰포트+125% 확대)·17개 화면·학교 인력분석·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);

@@ -30,3 +30,26 @@
 .hire-waiting-statusbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 18px;background:#fff}.hire-waiting-status-text{font-weight:600;font-size:13px}.hire-waiting-status-text.is-warning{color:#9a6700}.hire-waiting-status-text.is-error{color:#b3352e}.hire-waiting-status-text.is-complete{color:#1a7f57}
 .hire-waiting-actions{display:flex;gap:8px}.hire-waiting-actions button{min-width:112px}
 @media(max-width:900px){.hire-waiting-modal-card{width:100vw;height:100dvh;border-radius:0}.hire-waiting-toolbar,.hire-waiting-guide,.hire-waiting-statusbar{align-items:flex-start;flex-direction:column}.hire-waiting-kpis{width:100%}.hire-waiting-kpis>div{flex:1}.hire-waiting-actions{width:100%}.hire-waiting-actions button{flex:1}.hire-waiting-table{font-size:11px}}
+
+/* ===== v11.2.0 HIRE_WAITING_AUTOMATION ===== */
+.hire-waiting-automation-modal{z-index:1700}
+.hire-waiting-automation-card{width:min(94vw,1320px);height:min(90vh,860px);max-width:none;display:flex;flex-direction:column;overflow:hidden;padding:0}
+.hire-waiting-automation-card .modal-head{flex:0 0 auto;padding:18px 22px 14px;border-bottom:1px solid #e3e6eb}
+.hire-waiting-automation-body{display:flex;flex:1;min-height:0;flex-direction:column;background:#fafbfc}
+.hire-waiting-automation-notice{display:flex;align-items:center;gap:16px;padding:12px 18px;border-bottom:1px solid #bae6fd;background:#ecfeff;color:#155e75;font-size:13px}
+.hire-waiting-automation-notice strong{white-space:nowrap;color:#0f766e}
+.hire-waiting-automation-summary{display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:8px;padding:12px 18px;border-bottom:1px solid #e3e6eb;background:#fff}
+.hire-waiting-automation-summary>div{padding:9px 12px;border:1px solid #e3e6eb;border-radius:10px;background:#fafbfc}
+.hire-waiting-automation-summary span{display:block;font-size:11px;color:#5c6673}.hire-waiting-automation-summary strong{font-size:17px;color:#1c2330}
+.hire-waiting-automation-table-wrap{flex:1;min-height:0;overflow:auto;background:#fff}
+.hire-waiting-automation-table{width:100%;min-width:1040px;border-collapse:separate;border-spacing:0;font-size:12px}
+.hire-waiting-automation-table th,.hire-waiting-automation-table td{padding:9px 10px;border-right:1px solid #e3e6eb;border-bottom:1px solid #e3e6eb;vertical-align:middle;text-align:left}
+.hire-waiting-automation-table th{position:sticky;top:0;z-index:3;background:#dbeafe;text-align:center;color:#1c2330}
+.hire-waiting-automation-name{font-weight:700}.hire-waiting-automation-number{font-weight:700;color:#1d4ed8}
+.hire-waiting-automation-table td strong,.hire-waiting-automation-table td span{display:block}.hire-waiting-automation-table td>span{margin-top:3px;color:#5c6673}
+.hire-waiting-measurements{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:190px}.hire-waiting-measurements label{font-size:10px;color:#5c6673}.hire-waiting-measurements input{width:100%;min-width:76px;margin-top:3px;padding:6px 7px;border:1px solid #cbd5e1;border-radius:7px}
+.hire-waiting-automation-state{display:inline-block!important;padding:5px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:normal}.hire-waiting-automation-state.is-change{background:#dbeafe;color:#1d4ed8}.hire-waiting-automation-state.is-keep{background:#ecfdf5;color:#047857}.hire-waiting-automation-state.is-warning{background:#fff7d6;color:#9a6700}
+.hire-waiting-automation-na{color:#8a94a3}.hire-waiting-automation-empty{height:180px;text-align:center!important;color:#5c6673}
+.hire-waiting-automation-message{min-height:40px;padding:11px 18px;border-top:1px solid #e3e6eb;font-size:13px;font-weight:600}.hire-waiting-automation-message.is-info{color:#155e75;background:#ecfeff}.hire-waiting-automation-message.is-warning{color:#9a6700;background:#fff7d6}.hire-waiting-automation-message.is-error{color:#b3352e;background:#fee2e2}
+.hire-waiting-automation-actions{flex:0 0 auto;padding:12px 18px;border-top:1px solid #e3e6eb;background:#fff}.hire-waiting-automation-actions button{min-width:120px}
+@media(max-width:900px){.hire-waiting-automation-card{width:100vw;height:100dvh;border-radius:0}.hire-waiting-automation-notice{align-items:flex-start;flex-direction:column;gap:4px}.hire-waiting-automation-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.hire-waiting-automation-summary>div:last-child{grid-column:1/-1}.hire-waiting-automation-actions{display:grid;grid-template-columns:1fr 1fr}.hire-waiting-automation-actions button{width:100%}}

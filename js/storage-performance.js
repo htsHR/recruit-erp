@@ -302,7 +302,7 @@
   function formatTime(value){if(!value)return '아직 없음';const date=new Date(value);return Number.isNaN(date.getTime())?'확인 불가':date.toLocaleString('ko-KR');}
   function loadSharedStorageScript(){
     if(!root.document||root.erpSharedStorage||root.document.querySelector('script[data-erp-shared-storage]'))return;
-    const script=root.document.createElement('script');script.src='js/shared-storage.js?v=11.1.0';script.dataset.erpSharedStorage='true';script.addEventListener('load',()=>render());root.document.head.appendChild(script);
+    const script=root.document.createElement('script');script.src='js/shared-storage.js?v=11.2.0';script.dataset.erpSharedStorage='true';script.addEventListener('load',()=>render());root.document.head.appendChild(script);
   }
   function sharedStoragePanelHtml(){
     const shared=root.erpSharedStorage;const status=shared?.publicState?.()||{phase:'connecting',datasetCounts:{}};

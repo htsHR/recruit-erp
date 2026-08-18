@@ -5,7 +5,7 @@
    - 부서배치·사번·주민번호 등은 표 안에서 직접 입력/붙여넣기
    - 추가 입력정보는 로컬 전용 저장키에 저장하고 Supabase에는 전송하지 않음
    ========================================================= */
-const HIRE_WAITING_PROFILE_FIELDS=['employeeNo','pmtc','groupName','product','part','rank','residentNumber','commuteMethod','remarks'];
+const HIRE_WAITING_PROFILE_FIELDS=['employeeNo','pmtc','groupName','product','part','rank','residentNumber','commuteMethod','remarks','heightCm','weightKg'];
 const HIRE_WAITING_REQUIRED_FIELDS=['employeeNo','groupName','product','part','rank','residentNumber','commuteMethod'];
 const HIRE_WAITING_COLUMNS=[
   {key:'no',label:'NO',editable:false},
@@ -34,6 +34,8 @@ const HIRE_WAITING_COLUMNS=[
 ];
 let hireWaitingCurrentDate='';
 let hireWaitingDirty=false;
+let hireWaitingAutomationState=null;
+let hireWaitingAutomationDrafts={};
 
 function normalizeHireWaitingProfile(raw){
   const p=raw&&typeof raw==='object'?raw:{};
@@ -47,7 +49,9 @@ function normalizeHireWaitingProfile(raw){
     rank:String(p.rank||'').trim(),
     residentNumber:hireWaitingFormatResidentNumber(p.residentNumber||''),
     commuteMethod:hireWaitingNormalizeCommute(p.commuteMethod||''),
-    remarks:String(p.remarks||'').trim(),
+    remarks:String(p.remarks??''),
+    heightCm:String(p.heightCm??'').trim(),
+    weightKg:String(p.weightKg??'').trim(),
     documentsRequestedAt:String(p.documentsRequestedAt||'').trim(),
     submittedDocuments:Array.isArray(p.submittedDocuments)?[...new Set(p.submittedDocuments.map(v=>String(v||'').trim()).filter(Boolean))]:[],
     trainingDate:String(p.trainingDate||'').trim(),
@@ -69,9 +73,9 @@ function loadHireWaitingProfiles(){
   }catch(err){ console.warn('입사대기 입력정보 로드 실패:',err); }
   return [];
 }
-function saveHireWaitingProfiles(){
+function saveHireWaitingProfiles(rows=hireWaitingProfiles){
   try{
-    const value=JSON.stringify(hireWaitingProfiles.map(normalizeHireWaitingProfile).filter(p=>p.applicantId));
+    const value=JSON.stringify((Array.isArray(rows)?rows:[]).map(normalizeHireWaitingProfile).filter(p=>p.applicantId));
     return typeof safeLocalStorageSet==='function'?safeLocalStorageSet(HIRE_WAITING_PROFILES_KEY,value):!!localStorage.setItem(HIRE_WAITING_PROFILES_KEY,value)||true;
   }catch(err){
     console.error('입사대기 입력정보 저장 실패:',err);
@@ -154,7 +158,7 @@ function hireWaitingRowData(a,index){
     workplace:a.workplace||'',pmtc:profile.pmtc||'',gender:normalizeGender(a.gender)||a.gender||'',groupName:profile.groupName||employee.groupName||'',
     product:profile.product||employee.product||'',part:profile.part||employee.part||'',name:a.name||'',rank:profile.rank||employee.rank||employee.position||'',
     residentNumber:resident,birthDate:birth,age:hireWaitingAgeOn(birth,today()),email:a.email||'',education:hireWaitingEducation(a),school:a.school||'',major:a.major||'',
-    phone:formatPhoneDisplay(a.phone||''),region:a.region||'',commuteMethod:profile.commuteMethod||hireWaitingDefaultCommute(a),remarks:profile.remarks||a.memo||a.extra||''
+    phone:formatPhoneDisplay(a.phone||''),region:a.region||'',commuteMethod:profile.commuteMethod||hireWaitingDefaultCommute(a),remarks:profile.remarks||''
   };
 }
 function hireWaitingCellValue(row,key){ return row[key]==null?'':String(row[key]); }
@@ -262,6 +266,149 @@ function saveHireWaitingGrid(showMessage=true){
   if(showMessage){ if(typeof uxToast==='function')uxToast(`${checked.rows.length}명의 입사대기 입력정보를 저장했습니다.`); else alert('입사대기 입력정보를 저장했습니다.'); }
   return true;
 }
+function ensureHireWaitingAutomationUi(){
+  const actions=document.querySelector('#hireWaitingModal .hire-waiting-actions');
+  if(actions&&!$('btnHireWaitingAutomation')){
+    const button=document.createElement('button');
+    button.className='ghost hire-waiting-automation-launch';
+    button.id='btnHireWaitingAutomation';
+    button.type='button';
+    button.textContent='사번·비고 자동작성';
+    actions.prepend(button);
+  }
+  if(!$('hireWaitingAutomationModal')){
+    const wrapper=document.createElement('div');
+    wrapper.innerHTML=`<div aria-hidden="true" class="modal hire-waiting-automation-modal" id="hireWaitingAutomationModal">
+      <div class="modal-backdrop" id="hireWaitingAutomationBackdrop"></div>
+      <div aria-labelledby="hireWaitingAutomationTitle" aria-modal="true" class="modal-card hire-waiting-automation-card" role="dialog">
+        <div class="modal-head"><div><p class="eyebrow">MONTHLY PREVIEW · SAFE APPLY</p><h3 id="hireWaitingAutomationTitle">사번·비고 자동작성</h3><p class="hire-waiting-subtitle">선택 날짜가 포함된 월 전체를 계산합니다. 적용 전에는 어떤 데이터도 저장하지 않습니다.</p></div><button class="ghost" id="btnHireWaitingAutomationClose" type="button">닫기</button></div>
+        <div class="hire-waiting-automation-body">
+          <div class="hire-waiting-automation-notice"><strong id="hireWaitingAutomationMonth">입사월 확인 중</strong><span>기존 사번과 수기 비고는 그대로 유지하며, 완전한 생년월일만 자동채번에 사용합니다.</span></div>
+          <div class="hire-waiting-automation-summary">
+            <div><span>전체 대상</span><strong id="hireWaitingAutomationTotal">0명</strong></div>
+            <div><span>기존 사번</span><strong id="hireWaitingAutomationExisting">0명</strong></div>
+            <div><span>신규 채번</span><strong id="hireWaitingAutomationAssigned">0명</strong></div>
+            <div><span>확인 필요</span><strong id="hireWaitingAutomationNeedsBirth">0명</strong></div>
+            <div><span>비고 자동작성</span><strong id="hireWaitingAutomationRemarks">0명</strong></div>
+          </div>
+          <div class="hire-waiting-automation-table-wrap"><table class="hire-waiting-automation-table"><thead><tr><th>성명</th><th>입사일</th><th>현재 사번</th><th>변경 후 사번</th><th>키·체중</th><th>비고 처리</th><th>상태</th></tr></thead><tbody id="hireWaitingAutomationBody"></tbody></table></div>
+          <div class="hire-waiting-automation-message" id="hireWaitingAutomationMessage"></div>
+        </div>
+        <div class="form-actions hire-waiting-automation-actions"><button class="ghost" id="btnHireWaitingAutomationCancel" type="button">취소</button><button class="primary" data-required-permission="employee.write" id="btnHireWaitingAutomationApply" type="button">적용</button></div>
+      </div>
+    </div>`;
+    document.body.appendChild(wrapper.firstElementChild);
+  }
+}
+function calculateHireWaitingAutomation(){
+  const api=window.erpHireWaitingAutomation;
+  if(!api)return null;
+  return api.planAutomation({
+    selectedDate:hireWaitingCurrentDate||selectedCalendarDate||today(),
+    applicants:Array.isArray(applicants)?applicants:[],
+    profiles:Array.isArray(hireWaitingProfiles)?hireWaitingProfiles:[],
+    employees:Array.isArray(employees)?employees:[],
+    draftMeasurements:hireWaitingAutomationDrafts,
+    normalizeStatus
+  });
+}
+function hireWaitingAutomationMeasurementHtml(row){
+  if(!row.needsMeasurements)return '<span class="hire-waiting-automation-na">해당 없음</span>';
+  return `<div class="hire-waiting-measurements"><label>키(cm)<input aria-label="${esc(row.name)} 키(cm)" data-automation-measurement="heightCm" inputmode="decimal" max="250" min="100" step="0.1" type="number" value="${esc(row.heightCm)}"/></label><label>체중(kg)<input aria-label="${esc(row.name)} 체중(kg)" data-automation-measurement="weightKg" inputmode="decimal" max="250" min="30" step="0.1" type="number" value="${esc(row.weightKg)}"/></label></div>`;
+}
+function updateHireWaitingAutomationControls(){
+  const plan=hireWaitingAutomationState;
+  if(!plan)return;
+  setText('hireWaitingAutomationMonth',`${plan.month||'-'} 입사예정자 월 전체`);
+  setText('hireWaitingAutomationTotal',`${plan.summary.total}명`);
+  setText('hireWaitingAutomationExisting',`${plan.summary.existingNumber}명`);
+  setText('hireWaitingAutomationAssigned',`${plan.summary.assignedNumber}명`);
+  setText('hireWaitingAutomationNeedsBirth',`${plan.summary.needsBirth}명`);
+  setText('hireWaitingAutomationRemarks',`${plan.summary.automatedRemarks}명`);
+  const message=$('hireWaitingAutomationMessage');
+  const canWrite=!window.erpPermissions||window.erpPermissions.has('employee.write');
+  const hasChanges=plan.summary.assignedNumber>0||plan.summary.automatedRemarks>0;
+  if(message){
+    message.className=`hire-waiting-automation-message ${plan.errors.length?'is-error':!canWrite?'is-warning':'is-info'}`;
+    message.textContent=plan.errors.length?'키·체중 입력 범위 또는 자동채번 가능 범위를 확인해주세요.':!canWrite?'조회 권한으로는 미리보기만 가능하며 적용할 수 없습니다.':hasChanges?'적용을 누를 때만 입사대기 정보가 한 번 저장됩니다.':'자동작성할 변경 내용이 없습니다.';
+  }
+  const apply=$('btnHireWaitingAutomationApply');
+  if(apply){apply.disabled=!canWrite||!plan.ok||!hasChanges;apply.title=!canWrite?'입사대기 수정 권한이 필요합니다.':'';}
+}
+function renderHireWaitingAutomation(){
+  const plan=hireWaitingAutomationState;
+  const body=$('hireWaitingAutomationBody');
+  if(!plan||!body)return;
+  updateHireWaitingAutomationControls();
+  if(!plan.rows.length)body.innerHTML='<tr><td class="hire-waiting-automation-empty" colspan="7">선택한 월의 입사예정자가 없습니다.</td></tr>';
+  else body.innerHTML=plan.rows.map(row=>{
+    const remarkValue=row.remarkAction==='수기 비고 유지'?row.currentRemarks:row.proposedRemarks;
+    const statusClass=row.numberAction==='생년월일 확인 필요'||row.measurementInvalid?'is-warning':row.willAssignNumber?'is-change':'is-keep';
+    return `<tr data-automation-applicant-id="${esc(row.applicantId)}"><td class="hire-waiting-automation-name">${esc(row.name||'-')}</td><td>${esc(row.hireDate||'-')}</td><td>${esc(row.currentEmployeeNo||'-')}</td><td class="hire-waiting-automation-number">${esc(row.proposedEmployeeNo||'-')}</td><td>${hireWaitingAutomationMeasurementHtml(row)}</td><td data-automation-remarks><strong>${esc(row.remarkAction)}</strong><span>${esc(remarkValue||'-')}</span></td><td><span class="hire-waiting-automation-state ${statusClass}" data-automation-state>${esc(row.status)}</span></td></tr>`;
+  }).join('');
+}
+function openHireWaitingAutomation(){
+  ensureHireWaitingAutomationUi();
+  if(hireWaitingDirty){alert('표에 저장하지 않은 입력이 있습니다. 먼저 전체 저장하거나 변경을 취소한 뒤 자동작성을 열어주세요.');return false;}
+  if(!window.erpHireWaitingAutomation){alert('자동작성 기능을 불러오지 못했습니다. 화면을 새로고침해주세요.');return false;}
+  hireWaitingAutomationDrafts={};
+  hireWaitingAutomationState=calculateHireWaitingAutomation();
+  renderHireWaitingAutomation();
+  const modal=$('hireWaitingAutomationModal');
+  modal?.classList.add('show');modal?.setAttribute('aria-hidden','false');document.body.classList.add('modal-open');
+  setTimeout(()=>$('btnHireWaitingAutomationCancel')?.focus(),40);
+  return true;
+}
+function closeHireWaitingAutomation(){
+  const modal=$('hireWaitingAutomationModal');
+  modal?.classList.remove('show');modal?.setAttribute('aria-hidden','true');
+  hireWaitingAutomationState=null;hireWaitingAutomationDrafts={};
+  if(!$('hireWaitingModal')?.classList.contains('show'))document.body.classList.remove('modal-open');
+}
+function updateHireWaitingAutomationDraft(input){
+  const row=input.closest('[data-automation-applicant-id]');
+  const applicantId=row?.dataset.automationApplicantId,field=input.dataset.automationMeasurement;
+  if(!applicantId||!['heightCm','weightKg'].includes(field))return;
+  hireWaitingAutomationDrafts[applicantId]={...(hireWaitingAutomationDrafts[applicantId]||{}),[field]:input.value};
+}
+function refreshHireWaitingAutomation(){
+  hireWaitingAutomationState=calculateHireWaitingAutomation();
+  updateHireWaitingAutomationControls();
+  hireWaitingAutomationState?.rows.forEach(row=>{
+    const tr=[...document.querySelectorAll('#hireWaitingAutomationBody [data-automation-applicant-id]')].find(element=>element.dataset.automationApplicantId===row.applicantId);
+    if(!tr)return;
+    const remark=tr.querySelector('[data-automation-remarks]'),state=tr.querySelector('[data-automation-state]');
+    if(remark){remark.querySelector('strong').textContent=row.remarkAction;remark.querySelector('span').textContent=(row.remarkAction==='수기 비고 유지'?row.currentRemarks:row.proposedRemarks)||'-';}
+    if(state){const statusClass=row.numberAction==='생년월일 확인 필요'||row.measurementInvalid?'is-warning':row.willAssignNumber?'is-change':'is-keep';state.className=`hire-waiting-automation-state ${statusClass}`;state.textContent=row.status;}
+  });
+}
+function applyHireWaitingAutomation(){
+  if(window.erpPermissions&&!window.erpPermissions.require('employee.write'))return false;
+  hireWaitingAutomationState=calculateHireWaitingAutomation();
+  if(!hireWaitingAutomationState?.ok){renderHireWaitingAutomation();alert('키·체중 입력 범위를 확인한 뒤 다시 적용해주세요.');return false;}
+  let persistedProfiles=null;
+  const result=window.erpHireWaitingAutomation.executeApply({
+    plan:hireWaitingAutomationState,
+    profiles:hireWaitingProfiles,
+    employees,
+    now:new Date().toISOString(),
+    persist(nextProfiles){
+      persistedProfiles=nextProfiles.map(normalizeHireWaitingProfile).filter(profile=>profile.applicantId);
+      return saveHireWaitingProfiles(persistedProfiles);
+    }
+  });
+  if(!result.ok){alert(result.message||'자동작성 내용을 저장하지 못했습니다. 변경 전 상태를 유지합니다.');return false;}
+  if(!result.persisted){closeHireWaitingAutomation();return true;}
+  hireWaitingProfiles=persistedProfiles;
+  hireWaitingDirty=false;
+  const numberChanges=result.numberChanges,remarkChanges=result.remarkChanges;
+  closeHireWaitingAutomation();
+  renderHireWaitingTable();
+  if(document.body.dataset.activePage==='onboarding')window.erpOnboarding?.render?.();
+  const message=`사번 ${numberChanges}명 · 비고 ${remarkChanges}명 자동작성 완료`;
+  if(typeof uxToast==='function')uxToast(message);else alert(message);
+  return true;
+}
 function openHireWaitingList(dateStr){
   if(window.erpPermissions&&!window.erpPermissions.require('sensitive.read'))return false;
   hireWaitingCurrentDate=dateStr||selectedCalendarDate||today();
@@ -272,6 +419,7 @@ function openHireWaitingList(dateStr){
 }
 function closeHireWaitingList(force=false){
   if(hireWaitingDirty&&!force&&!confirm('아직 저장하지 않은 입력 내용이 있습니다. 저장하지 않고 닫을까요?')) return;
+  closeHireWaitingAutomation();
   const modal=$('hireWaitingModal'); if(modal){modal.classList.remove('show');modal.setAttribute('aria-hidden','true');}
   document.body.classList.remove('modal-open'); hireWaitingDirty=false;
 }
@@ -418,12 +566,23 @@ function hireWaitingExportExcel(){
   if(typeof uxToast==='function')uxToast(`${rows.length}명의 입사대기자 XLSX 출력을 요청했습니다.`);
 }
 function initHireWaitingListBindings(){
+  ensureHireWaitingAutomationUi();
   bind('btnCalendarHireWaiting','click',()=>openHireWaitingList(selectedCalendarDate));
   bind('btnHireWaitingClose','click',()=>closeHireWaitingList());
   bind('hireWaitingBackdrop','click',()=>closeHireWaitingList());
   bind('btnHireWaitingSave','click',()=>saveHireWaitingGrid(true));
   bind('btnHireWaitingExport','click',hireWaitingExportExcel);
+  bind('btnHireWaitingAutomation','click',openHireWaitingAutomation);
+  bind('btnHireWaitingAutomationClose','click',closeHireWaitingAutomation);
+  bind('btnHireWaitingAutomationCancel','click',closeHireWaitingAutomation);
+  bind('hireWaitingAutomationBackdrop','click',closeHireWaitingAutomation);
+  bind('btnHireWaitingAutomationApply','click',applyHireWaitingAutomation);
   bind('hireWaitingDateInput','change',e=>changeHireWaitingDate(e.target.value));
+  const automationBody=$('hireWaitingAutomationBody');
+  if(automationBody){
+    automationBody.addEventListener('input',e=>{if(e.target.matches('[data-automation-measurement]'))updateHireWaitingAutomationDraft(e.target);});
+    automationBody.addEventListener('change',e=>{if(e.target.matches('[data-automation-measurement]')){updateHireWaitingAutomationDraft(e.target);refreshHireWaitingAutomation();}});
+  }
   const table=$('hireWaitingTable');
   if(table){
     table.addEventListener('input',e=>{if(e.target.matches('[data-hire-field]'))markHireWaitingDirty();});
@@ -431,7 +590,7 @@ function initHireWaitingListBindings(){
     table.addEventListener('paste',e=>{const target=e.target.closest('[data-hire-field]');if(!target)return;const text=e.clipboardData?.getData('text/plain');if(hireWaitingApplyPaste(target,text)){e.preventDefault();}});
     table.addEventListener('keydown',e=>{const target=e.target.closest('[data-hire-field]');if(!target)return;if(e.key==='Enter'){e.preventDefault();hireWaitingMoveVertical(target,e.shiftKey?-1:1);}});
   }
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('hireWaitingModal')?.classList.contains('show'))closeHireWaitingList();});
+  document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if($('hireWaitingAutomationModal')?.classList.contains('show'))closeHireWaitingAutomation();else if($('hireWaitingModal')?.classList.contains('show'))closeHireWaitingList();});
 }
 
 initHireWaitingListBindings();

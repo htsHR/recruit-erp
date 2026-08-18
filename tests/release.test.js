@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const root=path.resolve(__dirname,'..');
-const version='11.1.0';
+const version='11.2.0';
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
 const packageJson=JSON.parse(read('package.json'));
 const index=read('index.html');
@@ -29,7 +29,7 @@ assert.match(workflow,/fc-cache -f/);
 assert.match(workflow,/fc-match "Noto Sans CJK KR"/);
 assert.match(workflow,/timeout-minutes: 10/);
 assert.match(workflow,/actions\/upload-artifact@v4/);
-assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v11\.1\.0/);
+assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v11\.2\.0/);
 assert.match(workflow,/if: always\(\)/);
 assert.match(workflow,/pull_request:/);
 assert.match(workflow,/branches: \[main\]/);
