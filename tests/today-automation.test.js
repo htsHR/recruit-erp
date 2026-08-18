@@ -52,7 +52,7 @@ const bulkGroups=automation.buildGroups(bulk,{today:TODAY});
 assert.equal(bulkGroups.screening.length,5000);
 assert.ok(Date.now()-started<3000,'지원자 5,000명 분류는 3초 안에 끝나야 합니다.');
 
-assert.match(index,/js\/today-automation\.js\?v=11\.3\.1/);
+assert.match(index,/js\/today-automation\.js\?v=11\.3\.2/);
 assert.match(index,/오늘부터 D-3까지/);
 assert.match(index,/입사 임박[\s\S]*D-3 이내/);
 assert.match(index,/dailySummaryUrgent/);

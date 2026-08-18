@@ -19,7 +19,7 @@ const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
 const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.3.1');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.3.2');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -45,7 +45,11 @@ const denseApplicants=Array.from({length:60},(_,index)=>{
     interviewDate:status==='면접예정'?`2026-08-${String((index%9)+19).padStart(2,'0')}`:'',
     interviewTime:status==='면접예정'?'10:00':'',
     hireDate:status==='입사예정'?`2026-09-${String((index%9)+1).padStart(2,'0')}`:'',
-    school:'가상밀도대학교',region:'가상지역',memo:'UI 밀도 자동검사용 가상 메모',
+    source:index%2?'가상 채용채널':'',careerType:index%3?'경력':'',dormUse:index%2?'출퇴근':'',
+    education:index%4?'대학교':'',school:index%4?'가상밀도대학교':'',major:index%5?'가상설비전공':'',region:index%3?'가상지역':'',
+    career:index===29?'가상 장비 유지보수와 현장 대응 경험을 여러 단계에 걸쳐 검토하기 위한 긴 경력 설명입니다. '.repeat(7):'',
+    certs:index===29?'가상설비자격 · 가상안전자격 · 가상전기자격':'',memo:index===1?'':index===12?'<img src=x onerror=alert(1)>':index===29?'긴 메모의 줄바꿈과 스크롤을 확인합니다.\n'.repeat(18):'UI 밀도 자동검사용 가상 메모',
+    ...(index===10?{residentNumber:'991231-1234567'}:{}),
     createdAt:`2026-08-${day}T01:00:00.000Z`,updatedAt:`2026-08-${day}T01:00:00.000Z`
   };
 });
@@ -202,6 +206,76 @@ async function verifyUiDensity(page,label){
   }),baseline);
   assert.deepEqual(restored,{applicants:true,employees:true,schools:true,events:true},'UI 밀도 검사는 기존 업무 저장값을 변경하면 안 됩니다.');
 }
+async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
+  let bridgeSaveRequests=0;
+  let precheckedSafety=null;
+  const requestListener=request=>{if(request.method()==='PUT'&&request.url()==='http://127.0.0.1:17840/storage/snapshot')bridgeSaveRequests++;};
+  page.on('request',requestListener);
+  await page.evaluate(rows=>{
+    window.__quickDetailOriginalApplicants=applicants;
+    applicants=rows.map(row=>({...row}));
+    resetListFiltersToAll();currentSort='nameAsc';applicantPageSize=30;currentApplicantPage=1;
+    const sort=document.getElementById('sortSelect');if(sort)sort.value='nameAsc';
+    renderTable();setPage('applicants');
+    const keys=['recruit_erp_applicants_stable','recruit_erp_employees','recruit_erp_schools','recruit_erp_calendar_events','recruit_erp_hire_waiting_profiles'];
+    window.__quickDetailBaseline={arrays:{applicants:JSON.stringify(applicants),employees:JSON.stringify(employees),schools:JSON.stringify(schools),events:typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents)},storage:Object.fromEntries(keys.map(key=>[key,localStorage.getItem(key)])),filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId,applicantPageSize}};
+    window.__quickDetailRealSave=window.save;window.__quickDetailSaveCalls=0;window.save=function(){window.__quickDetailSaveCalls++;return window.__quickDetailRealSave.apply(this,arguments);};
+  },denseApplicants);
+  await page.waitForTimeout(80);
+  assert.equal(await page.locator('#applicantQuickDetail').count(),1,`${label} 빠른 보기 패널은 정확히 하나여야 합니다.`);
+  assert.equal(await page.locator('#applicantQuickDetail').getAttribute('aria-hidden'),'true');
+
+  await page.locator('#applicantTbody .applicant-row').first().locator('.status-inline').click();
+  assert.equal(await page.locator('#applicantQuickDetail').getAttribute('aria-hidden'),'true','상태 선택 클릭은 빠른 보기를 열면 안 됩니다.');
+  await page.locator('#applicantTbody .applicant-row').first().locator('.applicant-actions .view').click();
+  await page.locator('#detailModal.show').waitFor();assert.equal(await page.locator('#applicantQuickDetail').getAttribute('aria-hidden'),'true','기존 상세 버튼은 전체 상세만 열어야 합니다.');await page.locator('#btnCloseDetail').click();
+  await page.evaluate(()=>{const keys=Object.keys(window.__quickDetailBaseline.storage);window.__quickDetailBaseline={arrays:{applicants:JSON.stringify(applicants),employees:JSON.stringify(employees),schools:JSON.stringify(schools),events:typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents)},storage:Object.fromEntries(keys.map(key=>[key,localStorage.getItem(key)])),filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId,applicantPageSize}};});
+
+  const firstRow=page.locator('#applicantTbody .applicant-row').first();
+  await firstRow.focus();await page.keyboard.press('Enter');await page.locator('#applicantQuickDetail.is-open').waitFor();await page.waitForFunction(()=>document.activeElement?.id==='btnApplicantQuickDetailClose');
+  assert.ok((await page.locator('#applicantQuickDetailPosition').innerText()).includes('1 / 60'));
+  const panelState=await page.evaluate(()=>{
+    const shell=document.getElementById('applicantQuickDetail'),panel=shell.querySelector('.applicant-quick-detail-panel'),header=shell.querySelector('.applicant-quick-detail-header'),footer=shell.querySelector('.applicant-quick-detail-footer'),pr=panel.getBoundingClientRect(),hr=header.getBoundingClientRect(),fr=footer.getBoundingClientRect();
+    return {panel:{left:pr.left,right:pr.right,top:pr.top,bottom:pr.bottom,width:pr.width,height:pr.height},header:{top:hr.top,bottom:hr.bottom},footer:{top:fr.top,bottom:fr.bottom},viewport:{width:innerWidth,height:innerHeight},bodyOverflow:getComputedStyle(document.body).overflow,buttons:[...shell.querySelectorAll('button:not([hidden])')].map(button=>{const rect=button.getBoundingClientRect();return{id:button.id,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};}),text:shell.innerText,html:shell.innerHTML};
+  });
+  assert.ok(panelState.panel.left>=-1&&panelState.panel.right<=panelState.viewport.width+1&&panelState.panel.top>=-1&&panelState.panel.bottom<=panelState.viewport.height+1,`${label} 빠른 보기 패널 잘림: ${JSON.stringify(panelState.panel)}`);
+  if(panelState.viewport.width>900)assert.ok(panelState.panel.width>=420&&panelState.panel.width<=480,`${label} 데스크톱 빠른 보기 폭: ${panelState.panel.width}`);else assert.ok(Math.abs(panelState.panel.width-panelState.viewport.width)<=1,`${label} 모바일·태블릿 빠른 보기는 화면 너비를 사용해야 합니다.`);
+  assert.ok(panelState.header.top>=-1&&panelState.footer.bottom<=panelState.viewport.height+1&&panelState.footer.top>panelState.header.bottom,`${label} 빠른 보기 고정 머리말·작업영역 배치 오류`);
+  assert.ok(panelState.buttons.every(button=>button.left>=-1&&button.right<=panelState.viewport.width+1&&button.top>=-1&&button.bottom<=panelState.viewport.height+1),`${label} 빠른 보기 버튼 잘림: ${JSON.stringify(panelState.buttons)}`);
+  assert.equal(panelState.bodyOverflow,'hidden');assert.ok(!panelState.html.includes('residentNumber')&&!/\d{6}-?\d{7}/.test(panelState.text),'빠른 보기 DOM에 주민등록번호 필드나 형태가 있으면 안 됩니다.');
+  await page.keyboard.press('Shift+Tab');assert.ok(await page.evaluate(()=>document.getElementById('applicantQuickDetail').contains(document.activeElement)),'Shift+Tab 포커스가 빠른 보기 안에 있어야 합니다.');
+  await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail.png`),fullPage:false});
+  await page.keyboard.press('Escape');await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>document.activeElement?.dataset?.applicantId),denseApplicants[0].id,'Escape 후 실행한 행으로 포커스가 돌아가야 합니다.');
+
+  if(exercise){
+    await page.evaluate(()=>{currentApplicantPage=1;renderTable();const wrap=document.querySelector('#applicants .table-wrap');wrap.scrollLeft=Math.min(180,Math.max(0,wrap.scrollWidth-wrap.clientWidth));window.scrollTo(0,Math.min(120,document.documentElement.scrollHeight-innerHeight));});
+    await page.locator('#applicantTbody .applicant-row').nth(29).locator('.apply-date-cell').click();await page.locator('#applicantQuickDetail.is-open').waitFor();
+    const contextBefore=await page.evaluate(()=>{const wrap=document.querySelector('#applicants .table-wrap');return{windowY:scrollY,tableLeft:wrap.scrollLeft,filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId,applicantPageSize}};});
+    assert.ok((await page.locator('#applicantQuickDetailPosition').innerText()).includes('30 / 60'));await page.locator('#applicantQuickDetailBody').evaluate(body=>{body.scrollTop=body.scrollHeight;});await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail-long-memo.png`),fullPage:false});
+    await page.locator('#btnApplicantQuickDetailNext').click();await page.waitForFunction(()=>currentApplicantPage===2&&document.querySelector('#applicantQuickDetailPosition')?.textContent.includes('31 / 60'));
+    const crossPage=await page.evaluate(()=>{const wrap=document.querySelector('#applicants .table-wrap');return{page:currentApplicantPage,id:window.erpApplicantQuickDetail.state.id,windowY:scrollY,tableLeft:wrap.scrollLeft,filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId,applicantPageSize}};});
+    assert.equal(crossPage.page,2);assert.deepEqual(crossPage.filters,contextBefore.filters,'이전·다음은 검색·필터·정렬·페이지 크기를 바꾸면 안 됩니다.');assert.equal(crossPage.windowY,contextBefore.windowY);assert.equal(crossPage.tableLeft,contextBefore.tableLeft,'페이지 경계 이동이 원래 표 가로 위치를 잃으면 안 됩니다.');
+    await page.locator('#btnApplicantQuickDetailPrevious').click();await page.waitForFunction(()=>currentApplicantPage===1&&document.querySelector('#applicantQuickDetailPosition')?.textContent.includes('30 / 60'));await page.keyboard.press('Escape');
+
+    await page.evaluate(()=>{currentApplicantPage=1;renderTable();});await page.locator('#applicantTbody .applicant-row').nth(1).locator('.apply-date-cell').click();assert.ok(await page.locator('#applicantQuickDetailBody .is-empty').count()>=8,'빈 핵심정보는 미입력으로 일관되게 표시해야 합니다.');await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail-empty.png`),fullPage:false});await page.keyboard.press('Escape');
+    await page.evaluate(id=>window.openApplicantQuickDetail(id),denseApplicants[12].id);assert.equal(await page.locator('#applicantQuickDetailBody img').count(),0,'지원자 입력값이 HTML로 실행되면 안 됩니다.');assert.ok((await page.locator('#applicantQuickDetailBody').innerText()).includes('<img src=x onerror=alert(1)>'));await page.keyboard.press('Escape');
+    await page.locator('#applicantTbody .applicant-row').first().locator('.apply-date-cell').click();assert.equal(await page.locator('#btnApplicantQuickDetailPrevious').isDisabled(),true);await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail-first.png`),fullPage:false});await page.keyboard.press('Escape');
+    await page.evaluate(()=>{currentApplicantPage=2;renderTable();});await page.locator('#applicantTbody .applicant-row').last().locator('.apply-date-cell').click();assert.equal(await page.locator('#btnApplicantQuickDetailNext').isDisabled(),true);await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail-last.png`),fullPage:false});await page.keyboard.press('Escape');
+
+    precheckedSafety=await page.evaluate(()=>{const baseline=window.__quickDetailBaseline,keys=Object.keys(baseline.storage);return{saveCalls:window.__quickDetailSaveCalls,arrays:{applicants:JSON.stringify(applicants)===baseline.arrays.applicants,employees:JSON.stringify(employees)===baseline.arrays.employees,schools:JSON.stringify(schools)===baseline.arrays.schools,events:(typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents))===baseline.arrays.events},storage:keys.every(key=>localStorage.getItem(key)===baseline.storage[key])};});
+    assert.deepEqual(precheckedSafety,{saveCalls:0,arrays:{applicants:true,employees:true,schools:true,events:true},storage:true},`${label} 빠른 보기 동작은 업무 배열·저장값·save를 변경하면 안 됩니다.`);
+    await page.evaluate(()=>{currentApplicantPage=1;renderTable();});await page.locator('#applicantTbody .applicant-row').first().locator('.apply-date-cell').click();await page.locator('#btnApplicantQuickDetailFull').click();await page.locator('#detailModal.show').waitFor();assert.equal(await page.locator('#applicantQuickDetail').getAttribute('aria-hidden'),'true');await page.locator('#btnCloseDetail').click();
+    await page.locator('#applicantTbody .applicant-row').first().locator('.apply-date-cell').click();assert.equal(await page.locator('#btnApplicantQuickDetailEdit').isVisible(),true);await page.locator('#btnApplicantQuickDetailEdit').click();assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'form');assert.equal(await page.locator('#editId').inputValue(),denseApplicants[0].id);await page.evaluate(()=>window.setPage('applicants'));
+  }
+
+  const safety=await page.evaluate(prechecked=>{
+    const baseline=window.__quickDetailBaseline,keys=Object.keys(baseline.storage),result=prechecked||{saveCalls:window.__quickDetailSaveCalls,arrays:{applicants:JSON.stringify(applicants)===baseline.arrays.applicants,employees:JSON.stringify(employees)===baseline.arrays.employees,schools:JSON.stringify(schools)===baseline.arrays.schools,events:(typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents))===baseline.arrays.events},storage:keys.every(key=>localStorage.getItem(key)===baseline.storage[key])};
+    window.save=window.__quickDetailRealSave;applicants=window.__quickDetailOriginalApplicants;delete window.__quickDetailRealSave;delete window.__quickDetailOriginalApplicants;delete window.__quickDetailBaseline;delete window.__quickDetailSaveCalls;resetListFiltersToAll();renderAll();setPage('applicants');return result;
+  },precheckedSafety);
+  page.off('request',requestListener);
+  assert.deepEqual(safety,{saveCalls:0,arrays:{applicants:true,employees:true,schools:true,events:true},storage:true},`${label} 빠른 보기 동작은 업무 배열·저장값·save를 변경하면 안 됩니다.`);
+  assert.equal(bridgeSaveRequests,0,`${label} 빠른 보기 동작은 Bridge 저장 PUT을 호출하면 안 됩니다.`);
+}
 async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
   await page.evaluate(()=>window.setPage?.('applicants'));await page.locator('#btnApplicantWorksheetView').click();await page.locator('#applicantWorksheet:not([hidden])').waitFor();
   const layout=await page.evaluate(()=>{
@@ -303,7 +377,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v11.3.1');
+      assert.equal(await page.title(),'채용관리 시스템 v11.3.2');
       const queue=page.locator('#homeTodayGrid .queue-card');assert.equal(await queue.count(),5);for(let i=0;i<5;i++)assert.notEqual(await queue.nth(i).evaluate(el=>getComputedStyle(el).display),'none');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
@@ -373,6 +447,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
       assert.equal(introState.stats,'none','통계는 중복 인트로 카드를 숨겨 세로 공간을 줄여야 합니다.');
       assert.ok(introState.required.every(item=>item.safety&&item.display!=='none'),`안전 화면 안내 카드 누락: ${JSON.stringify(introState.required)}`);
       await page.evaluate(()=>window.setPage?.('applicants'));await page.waitForTimeout(30);
+      await verifyApplicantQuickDetail(page,viewport.name,{exercise:viewport.width===1366});
       if(viewport.width>760){
         const columns=await page.locator('#applicants .no-head,#applicants .name-head,#applicants .workplace-head,#applicants .status-head').evaluateAll(elements=>elements.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,position:getComputedStyle(el).position}}));
         assert.equal(columns.length,4);assert.ok(columns.every(column=>column.position==='sticky'));for(let i=1;i<columns.length;i++)assert.ok(columns[i].left>=columns[i-1].right-1,`${viewport.name} 지원자 고정 열 겹침: ${JSON.stringify(columns)}`);
@@ -435,6 +510,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
     zoomPage.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`1366x768-zoom125: ${message.text()}`);});
     await zoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
     await zoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await zoomPage.waitForTimeout(700);
+    await verifyApplicantQuickDetail(zoomPage,'1366x768-zoom125');
     await verifyHireWaitingGrid(zoomPage,'1366x768-zoom125');
     await verifyApplicantWorksheet(zoomPage,'1366x768-zoom125');
     for(const screen of ['home','applicants','form','today','onboarding','storagePerformance','productionReadiness']){
@@ -499,6 +575,11 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
     await page.evaluate(()=>{window.erpAudit.recordEvent({entityType:'applicant',entityId:'fake',entityLabel:'테*',action:'update',fields:['phone','memo'],before:{phone:'010-9999-9999',memo:'비밀메모'},after:{phone:'010-8888-8888',memo:'변경메모'},reason:'연락처 010-7777-7777 test@example.com'});window.setPage('auditHistory');window.erpAudit.renderPage();});assert.ok(!(await page.locator('#auditHistory').innerText()).includes('010-7777-7777'));assert.ok(!(await page.locator('#auditHistory').innerText()).includes('test@example.com'));
     for(const role of ['admin','recruiter','viewer']){
       await page.evaluate(async role=>{window.sb={from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:{user_id:'fake-user',email:'fake@example.com',display_name:'가상 사용자',role}})})};await window.erpPermissions.load({user:{id:'fake-user',email:'fake@example.com'}});},role);
+      await page.evaluate(()=>{window.setPage('applicants');window.erpApplicantWorksheet?.setViewMode?.('normal');renderTable();window.openApplicantQuickDetail(applicants[0]?.id);});await page.locator('#applicantQuickDetail.is-open').waitFor();
+      const quickPermission=await page.evaluate(()=>({editVisible:document.getElementById('btnApplicantQuickDetailEdit').getClientRects().length>0,deleteButtons:document.querySelectorAll('#applicantQuickDetail [data-erp-handler*="delete"],#applicantQuickDetail .delete').length,page:document.querySelector('.page.active')?.id,text:document.getElementById('applicantQuickDetail').innerText}));
+      assert.equal(quickPermission.editVisible,role!=='viewer',`${role} 빠른 보기 수정 권한 표시가 잘못되었습니다.`);assert.equal(quickPermission.deleteButtons,0,'빠른 보기에는 삭제 동작이 없어야 합니다.');assert.ok(!/000000-0000000|\d{6}-\d{7}/.test(quickPermission.text),'역할별 빠른 보기에 주민등록번호가 표시되면 안 됩니다.');
+      if(role==='viewer'){await page.locator('#btnApplicantQuickDetailEdit').evaluate(button=>button.click());assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'applicants','조회 전용은 숨은 수정 버튼을 실행해도 편집 화면으로 이동하면 안 됩니다.');}
+      await page.evaluate(()=>window.closeApplicantQuickDetail());
       const state=await page.evaluate(()=>{window.setPage('onboarding');window.erpOnboarding.openModal('33333333-3333-4333-8333-333333333333');const value={role:window.erpPermissions.current().role,formHidden:document.querySelector('[data-page="form"]')?.classList.contains('erp-permission-hidden'),backupHidden:document.querySelector('[data-page="backup"]')?.classList.contains('erp-permission-hidden'),auditHidden:document.querySelector('[data-page="auditHistory"]')?.classList.contains('erp-permission-hidden'),readinessHidden:document.querySelector('[data-page="productionReadiness"]')?.classList.contains('erp-permission-hidden'),dailyStartHidden:document.querySelector('#btnDailyStartFirst')?.classList.contains('erp-permission-hidden'),onboardingVisible:document.querySelector('[data-page="onboarding"]')&&!document.querySelector('[data-page="onboarding"]').classList.contains('erp-permission-hidden'),saveVisible:!document.querySelector('#btnOnboardingSave').hidden,convertVisible:!document.querySelector('#btnOnboardingConvert').hidden};window.erpOnboarding.closeModal();return value;});assert.equal(state.role,role);assert.ok(state.onboardingVisible);if(role==='admin')assert.ok(!state.formHidden&&!state.backupHidden&&!state.auditHidden&&!state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&state.convertVisible);if(role==='recruiter')assert.ok(!state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&!state.convertVisible);if(role==='viewer')assert.ok(state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&state.dailyStartHidden&&!state.saveVisible&&!state.convertVisible);
       await openSchoolWorkforceFixture(page);const workforcePermission=await page.evaluate(()=>({privacy:!!document.querySelector('#schoolWorkforceRoster .school-workforce-privacy'),rows:document.querySelectorAll('#schoolWorkforceRoster tbody tr').length,exportDisabled:document.querySelector('#btnSchoolWorkforceExport').disabled,text:document.querySelector('#schoolWorkforceRoster').innerText}));if(role==='viewer'){assert.equal(workforcePermission.privacy,true);assert.equal(workforcePermission.rows,0);assert.equal(workforcePermission.exportDisabled,true);assert.ok(!workforcePermission.text.includes('가상재직자'));}else{assert.equal(workforcePermission.privacy,false);assert.ok(workforcePermission.rows>=3);assert.equal(workforcePermission.exportDisabled,false);}await restoreSchoolWorkforceFixture(page);
     }
@@ -570,7 +651,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
     await page.evaluate(()=>{closeHireWaitingList(true);applicants=window.__hireAutomationFixture.applicants;hireWaitingProfiles=window.__hireAutomationFixture.hireWaitingProfiles;delete window.__hireAutomationFixture;delete window.__hireAutomationBefore;});
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
-    console.log(`ui-visual-layout.js: 8개 화면 조건(6개 뷰포트+125% 확대)·17개 화면·지원자 워크시트·학교 인력분석·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
+    console.log(`ui-visual-layout.js: 8개 화면 조건(6개 뷰포트+125% 확대)·17개 화면·지원자 빠른 보기/워크시트·학교 인력분석·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
   }finally{
     await browser.close();server.kill();await new Promise(resolve=>bridgeServer.close(resolve));
     const resolved=fs.realpathSync(bridgeTempParent);
