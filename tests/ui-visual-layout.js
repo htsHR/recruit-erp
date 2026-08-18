@@ -244,6 +244,7 @@ async function verifyUsabilityPolish(page,label){
 }
 async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   const closeQuickDetail=async()=>{
+    await page.waitForFunction(()=>document.getElementById('applicantQuickDetail')?.contains(document.activeElement));
     await page.keyboard.press('Escape');
     await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});
   };
