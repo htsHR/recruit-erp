@@ -150,6 +150,7 @@ function countText(n){ return `${n}명`; }
 function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 
 function setPage(page){
+  if(page!=='applicants'&&applicantQuickDetailIsOpen())closeApplicantQuickDetail({restoreFocus:false});
   document.body.dataset.activePage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
@@ -441,6 +442,121 @@ function changeApplicantPageSize(value){
 }
 window.goApplicantPage=goApplicantPage;
 window.changeApplicantPageSize=changeApplicantPageSize;
+
+const APPLICANT_QUICK_DETAIL_EMPTY='미입력';
+const applicantQuickDetailState={id:'',trigger:null,context:null};
+function applicantQuickDetailIsOpen(){return !!document.getElementById('applicantQuickDetail')?.classList.contains('is-open');}
+function applicantQuickDetailCanRead(){return !window.erpPermissions||window.erpPermissions.has('applicant.read');}
+function applicantQuickDetailCanWrite(){return !window.erpPermissions||window.erpPermissions.has('applicant.write');}
+function applicantQuickDetailValue(value){const text=String(value??'').trim();return{text:text||APPLICANT_QUICK_DETAIL_EMPTY,empty:!text};}
+function applicantQuickDetailCombined(...values){return applicantQuickDetailValue(values.map(value=>String(value??'').trim()).filter(Boolean).join(' '));}
+function applicantQuickDetailField(label,value,{wide=false}={}){
+  const normalized=applicantQuickDetailValue(value);
+  return `<div class="applicant-quick-detail-field ${wide?'is-wide':''}"><dt>${esc(label)}</dt><dd class="${normalized.empty?'is-empty':''}">${esc(normalized.text)}</dd></div>`;
+}
+function applicantQuickDetailSection(title,fields){return `<section class="applicant-quick-detail-section"><h4>${esc(title)}</h4><dl class="applicant-quick-detail-grid">${fields.join('')}</dl></section>`;}
+function ensureApplicantQuickDetailUi(){
+  if(document.getElementById('applicantQuickDetail'))return;
+  const shell=document.createElement('div');shell.id='applicantQuickDetail';shell.className='applicant-quick-detail';shell.setAttribute('aria-hidden','true');
+  shell.innerHTML='<div class="applicant-quick-detail-backdrop" id="applicantQuickDetailBackdrop"></div><section class="applicant-quick-detail-panel" role="dialog" aria-modal="true" aria-labelledby="applicantQuickDetailTitle" aria-describedby="applicantQuickDetailDescription"><p class="applicant-quick-detail-sr" id="applicantQuickDetailDescription">현재 검색과 정렬 결과에서 지원자 핵심정보를 읽기 전용으로 확인합니다.</p><header class="applicant-quick-detail-header"><div class="applicant-quick-detail-heading"><div><p class="eyebrow">QUICK REVIEW</p><h3 id="applicantQuickDetailTitle">지원자 빠른 보기</h3><p class="applicant-quick-detail-position" id="applicantQuickDetailPosition" aria-live="polite"></p></div><button class="applicant-quick-detail-close" id="btnApplicantQuickDetailClose" type="button" aria-label="지원자 빠른 보기 닫기">×</button></div><div class="applicant-quick-detail-navigation" aria-label="현재 검색 결과 안에서 이동"><button class="ghost" id="btnApplicantQuickDetailPrevious" type="button">← 이전</button><button class="ghost" id="btnApplicantQuickDetailNext" type="button">다음 →</button></div></header><div class="applicant-quick-detail-body" id="applicantQuickDetailBody"></div><footer class="applicant-quick-detail-footer"><button class="ghost" id="btnApplicantQuickDetailFull" type="button">전체 상세보기</button><button class="primary" id="btnApplicantQuickDetailEdit" type="button" data-required-permission="applicant.write">수정</button></footer></section>';
+  document.body.appendChild(shell);
+  document.getElementById('applicantQuickDetailBackdrop')?.addEventListener('click',()=>closeApplicantQuickDetail());
+  document.getElementById('btnApplicantQuickDetailClose')?.addEventListener('click',()=>closeApplicantQuickDetail());
+  document.getElementById('btnApplicantQuickDetailPrevious')?.addEventListener('click',()=>moveApplicantQuickDetail(-1));
+  document.getElementById('btnApplicantQuickDetailNext')?.addEventListener('click',()=>moveApplicantQuickDetail(1));
+  document.getElementById('btnApplicantQuickDetailFull')?.addEventListener('click',openApplicantQuickDetailFull);
+  document.getElementById('btnApplicantQuickDetailEdit')?.addEventListener('click',editApplicantFromQuickDetail);
+  shell.addEventListener('keydown',applicantQuickDetailKeydown);
+}
+function applicantQuickDetailRow(id){return [...document.querySelectorAll('#applicantTbody .applicant-row')].find(row=>String(row.dataset.applicantId)===String(id))||null;}
+function applicantQuickDetailCapture(trigger){
+  const wrap=document.querySelector('#applicants .table-wrap');
+  return {windowX:window.scrollX||0,windowY:window.scrollY||document.documentElement.scrollTop||0,tableLeft:wrap?.scrollLeft||0,tableTop:wrap?.scrollTop||0,trigger:trigger||null};
+}
+function applicantQuickDetailRestoreContext(context){
+  if(!context)return;
+  requestAnimationFrame(()=>{const wrap=document.querySelector('#applicants .table-wrap');if(wrap){wrap.scrollLeft=context.tableLeft;wrap.scrollTop=context.tableTop;}window.scrollTo(context.windowX,context.windowY);});
+}
+function applicantQuickDetailMarkSelected(){
+  document.querySelectorAll('#applicantTbody .applicant-row').forEach(row=>{
+    const selected=applicantQuickDetailIsOpen()&&String(row.dataset.applicantId)===String(applicantQuickDetailState.id);
+    row.classList.toggle('is-quick-detail-selected',selected);row.setAttribute('aria-expanded',selected?'true':'false');
+    if(selected)row.setAttribute('aria-current','true');else row.removeAttribute('aria-current');
+  });
+}
+function renderApplicantQuickDetail(){
+  if(!applicantQuickDetailIsOpen())return false;
+  const rows=filtered(),index=rows.findIndex(row=>String(row.id)===String(applicantQuickDetailState.id));
+  if(index<0){closeApplicantQuickDetail({restoreFocus:false});return false;}
+  const applicant=rows[index],name=applicantQuickDetailValue(applicant.name),status=applicantQuickDetailValue(normalizeStatus(applicant.status)),workplace=applicantQuickDetailValue(applicant.workplace);
+  const body=document.getElementById('applicantQuickDetailBody'),position=document.getElementById('applicantQuickDetailPosition');
+  if(position)position.textContent=`검색 결과 ${index+1} / ${rows.length} · 읽기 전용`;
+  if(body)body.innerHTML=`<div class="applicant-quick-detail-summary"><h4>${esc(name.text)}</h4><p>${esc(applicantQuickDetailCombined(applicant.phone,applicant.email).text)}</p><div class="applicant-quick-detail-badges"><span>${esc(status.text)}</span><span>${esc(workplace.text)}</span></div></div>${applicantQuickDetailSection('연락·지원',[applicantQuickDetailField('연락처',applicant.phone),applicantQuickDetailField('이메일',applicant.email),applicantQuickDetailField('지역',applicant.region),applicantQuickDetailField('지원일',applicant.applyDate),applicantQuickDetailField('지원경로',applicant.source),applicantQuickDetailField('경력구분',applicant.careerType)])}${applicantQuickDetailSection('일정·근무',[applicantQuickDetailField('면접일시',[applicant.interviewDate,applicant.interviewTime].filter(Boolean).join(' ')),applicantQuickDetailField('입사예정일',applicant.hireDate),applicantQuickDetailField('출근방법',applicant.dormUse||applicant.commuteMethod),applicantQuickDetailField('담당자',applicant.manager)])}${applicantQuickDetailSection('학력',[applicantQuickDetailField('최종학력',applicant.education||applicant.finalEducation),applicantQuickDetailField('학교',applicant.school),applicantQuickDetailField('전공',applicant.major),applicantQuickDetailField('학점',applicant.gradePoint)])}${applicantQuickDetailSection('경력·검토',[applicantQuickDetailField('경력사항',applicant.career,{wide:true}),applicantQuickDetailField('최근 회사',applicant.lastCompany),applicantQuickDetailField('담당업무',applicant.duties),applicantQuickDetailField('자격증',applicant.certs,{wide:true}),applicantQuickDetailField('상담내용',applicant.consult,{wide:true})])}${applicantQuickDetailSection('메모',[applicantQuickDetailField('지원자 메모',applicant.memo,{wide:true}),applicantQuickDetailField('판정 사유',applicant.decisionReason,{wide:true})])}`;
+  const previous=document.getElementById('btnApplicantQuickDetailPrevious'),next=document.getElementById('btnApplicantQuickDetailNext'),edit=document.getElementById('btnApplicantQuickDetailEdit');
+  if(previous)previous.disabled=index===0;if(next)next.disabled=index===rows.length-1;
+  if(edit){const allowed=applicantQuickDetailCanWrite();edit.hidden=!allowed;edit.disabled=!allowed;edit.setAttribute('aria-disabled',allowed?'false':'true');}
+  applicantQuickDetailMarkSelected();
+  return true;
+}
+function openApplicantQuickDetail(id,trigger=null){
+  if(!applicantQuickDetailCanRead())return false;
+  ensureApplicantQuickDetailUi();
+  const rows=filtered(),index=rows.findIndex(row=>String(row.id)===String(id));if(index<0)return false;
+  const shell=document.getElementById('applicantQuickDetail'),row=trigger?.closest?.('.applicant-row')||applicantQuickDetailRow(id)||document.activeElement;
+  if(!applicantQuickDetailIsOpen()){applicantQuickDetailState.trigger=row;applicantQuickDetailState.context=applicantQuickDetailCapture(row);}
+  applicantQuickDetailState.id=String(id);
+  const targetPage=Math.floor(index/applicantPageSize)+1;
+  shell.classList.add('is-open');shell.setAttribute('aria-hidden','false');document.body.classList.add('applicant-quick-detail-open');
+  if(targetPage!==currentApplicantPage){currentApplicantPage=targetPage;renderTable();}
+  renderApplicantQuickDetail();
+  requestAnimationFrame(()=>document.getElementById('btnApplicantQuickDetailClose')?.focus({preventScroll:true}));
+  return true;
+}
+function closeApplicantQuickDetail(options={}){
+  const shell=document.getElementById('applicantQuickDetail');if(!shell?.classList.contains('is-open'))return false;
+  const restoreFocus=options.restoreFocus!==false,restoreScroll=options.restoreScroll!==false,context=applicantQuickDetailState.context,trigger=applicantQuickDetailState.trigger,currentId=applicantQuickDetailState.id;
+  shell.classList.remove('is-open');shell.setAttribute('aria-hidden','true');document.body.classList.remove('applicant-quick-detail-open');applicantQuickDetailMarkSelected();
+  if(restoreScroll)applicantQuickDetailRestoreContext(context);
+  applicantQuickDetailState.id='';applicantQuickDetailState.trigger=null;applicantQuickDetailState.context=null;
+  if(restoreFocus)requestAnimationFrame(()=>{const target=(trigger&&trigger.isConnected?trigger:applicantQuickDetailRow(currentId));target?.focus?.({preventScroll:true});});
+  return true;
+}
+function moveApplicantQuickDetail(direction){
+  if(!applicantQuickDetailIsOpen())return false;
+  const rows=filtered(),index=rows.findIndex(row=>String(row.id)===String(applicantQuickDetailState.id)),nextIndex=index+Number(direction||0);if(index<0||nextIndex<0||nextIndex>=rows.length)return false;
+  applicantQuickDetailState.id=String(rows[nextIndex].id);const targetPage=Math.floor(nextIndex/applicantPageSize)+1;
+  if(targetPage!==currentApplicantPage){currentApplicantPage=targetPage;renderTable();}
+  return renderApplicantQuickDetail();
+}
+function openApplicantQuickDetailFull(){const id=applicantQuickDetailState.id;if(!id)return false;closeApplicantQuickDetail({restoreFocus:false});window.viewApplicant?.(id);return true;}
+function editApplicantFromQuickDetail(){if(!applicantQuickDetailCanWrite())return false;const id=applicantQuickDetailState.id;if(!id)return false;closeApplicantQuickDetail({restoreFocus:false});window.editApplicant?.(id);return true;}
+function applicantQuickDetailFocusables(){const shell=document.getElementById('applicantQuickDetail');if(!shell)return[];return [...shell.querySelectorAll('button:not([disabled]):not([hidden]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(element=>element.getClientRects().length&&!element.classList.contains('erp-permission-hidden'));}
+function applicantQuickDetailKeydown(event){
+  if(!applicantQuickDetailIsOpen())return;
+  if(event.key==='Escape'){event.preventDefault();closeApplicantQuickDetail();return;}
+  if(event.key!=='Tab')return;
+  const focusable=applicantQuickDetailFocusables();if(!focusable.length){event.preventDefault();return;}
+  const first=focusable[0],last=focusable.at(-1);
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus({preventScroll:true});}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus({preventScroll:true});}
+}
+function bindApplicantQuickDetailRows(){
+  document.querySelectorAll('#applicantTbody .applicant-row').forEach(row=>{
+    row.setAttribute('aria-haspopup','dialog');row.setAttribute('aria-controls','applicantQuickDetail');row.setAttribute('aria-expanded','false');
+    row.addEventListener('click',event=>{if(event.target.closest('button,select,a,input,textarea,label,summary,details,[role="button"],[contenteditable="true"]'))return;openApplicantQuickDetail(row.dataset.applicantId,row);});
+    row.addEventListener('keydown',event=>{if(!['Enter',' '].includes(event.key)||event.target.closest('button,select,a,input,textarea,label,summary,details,[role="button"],[contenteditable="true"]'))return;event.preventDefault();openApplicantQuickDetail(row.dataset.applicantId,row);});
+  });
+}
+function applicantQuickDetailAfterListRender(allRows){
+  bindApplicantQuickDetailRows();
+  if(!applicantQuickDetailIsOpen())return;
+  if(!allRows.some(row=>String(row.id)===String(applicantQuickDetailState.id)))closeApplicantQuickDetail({restoreFocus:false});else applicantQuickDetailMarkSelected();
+}
+window.openApplicantQuickDetail=openApplicantQuickDetail;
+window.closeApplicantQuickDetail=closeApplicantQuickDetail;
+window.moveApplicantQuickDetail=moveApplicantQuickDetail;
+window.erpApplicantQuickDetail={isOpen:applicantQuickDetailIsOpen,state:applicantQuickDetailState,render:renderApplicantQuickDetail};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureApplicantQuickDetailUi,{once:true});else ensureApplicantQuickDetailUi();
 function renderApplicantPagination(totalRows){
   const host=$('applicantPagination'); if(!host)return;
   const totalPages=Math.max(1,Math.ceil(totalRows/applicantPageSize));
@@ -481,7 +597,7 @@ function renderTable(){
     </div>
     <div class="list-summary-side">
       <span>${pageText}</span>
-      <span class="list-interaction-hint">행 클릭 → 상세보기</span>
+      <span class="list-interaction-hint">행 클릭 → 빠른 보기</span>
     </div>`;
   const canRegister=!window.erpPermissions||window.erpPermissions.has('applicant.write');
   $('applicantTbody').innerHTML=rows.length?rows.map((a,idx)=>{
@@ -493,7 +609,7 @@ function renderTable(){
     const typeLine = [a.careerType, a.education].filter(Boolean).join(' · ') || '기본정보 미입력';
     const staleDays = ['서류검토','부재중'].includes(a.status) ? daysSinceApply(a) : null;
     const staleBadge = (staleDays!==null && staleDays>=3) ? `<span class="stale-badge" title="지원일 기준 ${staleDays}일째 연락 안 됨">${staleDays}일째</span>` : '';
-    return `<tr class="applicant-row compact-row clickable-data-row ${applicantRowToneClass(a)}" data-applicant-id="${esc(a.id)}" tabindex="0" data-erp-handler="if(!event.target.closest('button,select,a,input,label,summary,details')) viewApplicant('${a.id}')" data-erp-key-handler="listRowKeyActivate(event,()=>viewApplicant('${a.id}'))">
+    return `<tr class="applicant-row compact-row clickable-data-row ${applicantRowToneClass(a)}" data-applicant-id="${esc(a.id)}" tabindex="0">
       <td class="no-cell sticky-app-col sticky-app-no" data-label="번호">${pageStart+idx+1}</td>
       <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><div class="applicant-name-line"><button class="name-button ${genderClass(a)}" data-erp-handler="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button>${staleBadge}</div><small>${esc(typeLine)}</small></td>
       <td class="workplace-cell sticky-app-col sticky-app-workplace" data-label="근무지"><span class="workplace-pill ${workplaceBadgeClass(a.workplace)}">${esc(a.workplace||'미지정')}</span></td>
@@ -510,6 +626,7 @@ function renderTable(){
     </tr>`;
   }).join(''):`<tr><td colspan="13" class="empty list-empty-cell"><div class="applicant-list-empty-state"><strong>조건에 맞는 지원자가 없습니다.</strong><span>새 지원자를 등록하거나 현재 필터를 초기화해 다시 확인하세요.</span><div class="applicant-list-empty-actions">${canRegister?'<button class="primary applicant-empty-register" type="button" data-required-permission="applicant.write" data-erp-handler="setPage(\'form\')">지원자 등록</button>':''}<button class="ghost applicant-empty-reset" type="button" data-erp-handler="resetAndRenderList()">필터 초기화</button></div></div></td></tr>`;
   renderApplicantPagination(allRows.length);
+  applicantQuickDetailAfterListRender(allRows);
 }
 function resetAndRenderList(){ resetListFiltersToAll(); renderTable(); }
 function clearApplicantSchoolFilter(){ currentSchoolFilterId=''; renderTable(); }
