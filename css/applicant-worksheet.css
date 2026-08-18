@@ -1,4 +1,4 @@
-/* Recruit ERP v11.3.0 — 지원자 워크시트 1단계 */
+/* Recruit ERP v11.3.1 — 지원자 워크시트 1단계 */
 .worksheet-view-toggle{display:flex;align-items:center;gap:4px;padding:4px;border:1px solid #d9e2ef;border-radius:10px;background:#f7f9fc;white-space:nowrap}
 .worksheet-view-toggle button{min-height:34px;padding:0 13px;border:0;border-radius:7px;background:transparent;color:#526174;font-weight:700;cursor:pointer}
 .worksheet-view-toggle button.active{background:#fff;color:#174ea6;box-shadow:0 1px 5px rgba(26,58,103,.14)}

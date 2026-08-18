@@ -22,12 +22,24 @@ const hireWaitingCss=read('css/hire-waiting-list.css');
 const dailyOperationsCss=read('css/daily-operations-polish.css');
 const applicantWorksheet=read('js/applicant-worksheet.js');
 const applicantWorksheetCss=read('css/applicant-worksheet.css');
+const densityCss=read('css/ui-density-navigation.css');
 
 const queue=index.match(/<div class="home-work-queue"[^>]*>([\s\S]*?)<\/div>/)?.[1]||'';
 const queueTargets=[...queue.matchAll(/class="queue-card[^\"]*" data-task-target="([^"]+)"/g)].map(match=>match[1]);
 assert.deepEqual(queueTargets,['today','overdue','contact','decision','hire'],'홈 업무 카드가 정확히 5개여야 합니다.');
+const kpiBlock=enhancements.match(/const kpis=\[([\s\S]*?)\];/)?.[1]||'';
+const kpiKeys=[...kpiBlock.matchAll(/\['[^']+',\s*[^,]+,\s*'([^']+)'/g)].map(match=>match[1]);
+assert.deepEqual(kpiKeys,['applicants','active','monthApplications','hirePlanned'],'홈 누적 KPI가 정확히 4개여야 합니다.');
+assert.equal(kpiKeys.some(key=>queueTargets.includes(key)),false,'누적 KPI와 오늘 업무 키가 중복되면 안 됩니다.');
 assert.doesNotMatch(uiLayout,/queue-card[^\n{}]*nth-child[^{}]*display\s*:\s*none/i);
 assert.match(enhancements,/today:'interviewToday',overdue:'overdue',contact:'contact',decision:'resultPending',hire:'hireUpcoming'/);
+assert.match(enhancements,/function uxConsolidateSidebarStatus\(\)/);assert.match(enhancements,/dataset\.sidebarStatusArea/);assert.match(enhancements,/authUserMark/);
+assert.match(densityCss,/--erp-sidebar-w:224px/);assert.match(densityCss,/\.nav-btn,.nav-btn\.nav-sub\{height:36px!important;min-height:36px!important/);assert.match(densityCss,/height:44px!important;min-height:44px!important/);
+assert.match(densityCss,/grid-template-columns:minmax\(0,1fr\) auto/);assert.match(densityCss,/max-height:calc\(100vh - 292px\)/);assert.match(densityCss,/\.applicant-list-empty-state/);assert.doesNotMatch(densityCss,/localStorage|sessionStorage|Supabase|shared-storage/);
+['searchInput','sortSelect','hideFinished','btnOpenApplicantFilter','bulkModeButton','btnResetFilters'].forEach(id=>assert.match(index,new RegExp(`id="${id}"`)));
+assert.deepEqual([...index.matchAll(/data-filter="([^"]+)"/g)].map(match=>match[1]).slice(0,9),['all','active','docpass','interview','hire','finished','contact','decision','duplicate']);
+assert.deepEqual([...index.matchAll(/data-workplace="([^"]+)"/g)].map(match=>match[1]).slice(0,4),['all','천안','평택','기타']);
+assert.match(applicants,/applicant-list-empty-state/);assert.match(applicants,/applicant-empty-register/);assert.match(applicants,/applicant-empty-reset/);assert.match(applicants,/erpPermissions\.has\('applicant\.write'\)/);
 
 ['no-head','name-head','workplace-head','status-head','actions-head'].forEach(className=>assert.match(index,new RegExp(`class="${className}"`)));
 ['sticky-app-no','sticky-app-name','sticky-app-workplace','sticky-app-status','sticky-app-actions'].forEach(className=>assert.match(applicants,new RegExp(className)));
@@ -52,11 +64,12 @@ const visualTest=read('tests/ui-visual-layout.js');
 assert.match(visualTest,/formWorkflowBanner/);assert.match(visualTest,/formActions\.overlaps,false/);
 assert.match(visualTest,/390x844-status-modal\.png'\),fullPage:false/);
 assert.match(visualTest,/390x844-sync-conflict\.png'\),fullPage:false/);
-assert.match(index,/css\/applicant-worksheet\.css\?v=11\.3\.0/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.3\.0/);
+assert.match(index,/css\/applicant-worksheet\.css\?v=11\.3\.1/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.3\.1/);assert.match(index,/css\/ui-density-navigation\.css\?v=11\.3\.1/);
 assert.match(applicantWorksheet,/일반보기/);assert.match(applicantWorksheet,/워크시트 보기/);assert.match(applicantWorksheet,/변경 \$\{entries\.length\}건/);
 assert.match(applicantWorksheet,/root\.save\(\)/);assert.match(applicantWorksheet,/applicants=snapshot/);assert.match(applicantWorksheet,/beforeunload/);
 assert.match(applicantWorksheetCss,/nth-child\(2\).*position:sticky/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-dirty/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-error/);
 assert.match(visualTest,/1440x900/);assert.match(visualTest,/verifyApplicantWorksheet/);assert.match(visualTest,/__worksheetSaveCalls/);
+assert.match(visualTest,/const denseApplicants=Array\.from\(\{length:60\}/);assert.match(visualTest,/visibleRows>=3/);assert.match(visualTest,/390x844-mobile-menu\.png/);assert.match(visualTest,/\$\{label\}-sidebar\.png/);
 
 const emptyTopbarButtons=[...index.matchAll(/<button[^>]*class="[^"]*topbar-icon-btn[^"]*"[^>]*>[\s\S]*?<\/button>/g)];
 assert.equal(emptyTopbarButtons.length,0,'기능 없는 상단 아이콘 버튼이 남아 있습니다.');

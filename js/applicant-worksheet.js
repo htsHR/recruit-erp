@@ -1,4 +1,4 @@
-/* Recruit ERP v11.3.0 — 지원자 워크시트 1단계 */
+/* Recruit ERP v11.3.1 — 지원자 워크시트 1단계 */
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -6,7 +6,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
 
-  const VERSION='11.3.0';
+  const VERSION='11.3.1';
   const SETTINGS_KEY='recruit_erp_applicant_worksheet_view_v1';
   const VIEW_MODES=['normal','worksheet'];
   const WORKPLACES=['all','천안','평택','기타'];

@@ -19,7 +19,7 @@ const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
 const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.3.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.3.1');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -32,6 +32,23 @@ const fakeApplicants=[
   {id:'22222222-2222-4222-8222-222222222222',name:'테스트지원자2',phone:'010-0000-0002',applyDate:'2026-08-02',workplace:'평택',status:'면접예정',interviewDate:'2026-08-02',interviewTime:'10:00',createdAt:'2026-08-02T01:00:00.000Z',updatedAt:'2026-08-02T01:00:00.000Z'},
   {id:'33333333-3333-4333-8333-333333333333',name:'가상긴이름지원자삼',phone:'010-0000-0003',email:'very-long-synthetic-address@recruit-erp.example',applyDate:'2026-08-01',workplace:'천안',status:'입사예정',hireDate:'2026-08-06',dormUse:'출퇴근',education:'대학교',school:'가상으로만사용하는매우긴대학교명',major:'가상스마트설비자동화융합전공',region:'가상광역시테스트구역',createdAt:'2026-08-01T02:00:00.000Z',updatedAt:'2026-08-01T02:00:00.000Z'}
 ];
+const denseApplicants=Array.from({length:60},(_,index)=>{
+  const number=index+1,statuses=['서류검토','면접예정','입사예정','서류합격','부재중','서류탈락'];
+  const status=statuses[index%statuses.length],day=String((index%18)+1).padStart(2,'0');
+  return {
+    id:`90000000-0000-4000-8000-${String(number).padStart(12,'0')}`,
+    name:`가상밀도지원자${String(number).padStart(2,'0')}`,
+    phone:`010-9000-${String(number).padStart(4,'0')}`,
+    email:`density-${number}@example.invalid`,
+    applyDate:`2026-08-${day}`,
+    workplace:index%3===0?'평택':'천안',status,
+    interviewDate:status==='면접예정'?`2026-08-${String((index%9)+19).padStart(2,'0')}`:'',
+    interviewTime:status==='면접예정'?'10:00':'',
+    hireDate:status==='입사예정'?`2026-09-${String((index%9)+1).padStart(2,'0')}`:'',
+    school:'가상밀도대학교',region:'가상지역',memo:'UI 밀도 자동검사용 가상 메모',
+    createdAt:`2026-08-${day}T01:00:00.000Z`,updatedAt:`2026-08-${day}T01:00:00.000Z`
+  };
+});
 const fakeHireWaitingProfiles=[
   {applicantId:'33333333-3333-4333-8333-333333333333',employeeNo:'V-1003',groupName:'가상부서',product:'가상제품',part:'가상파트',rank:'사원',commuteMethod:'출퇴근',remarks:'가상 업무 확인용으로 충분히 긴 비고이며 실제 개인정보나 운영 내용은 포함하지 않습니다.',documentsRequestedAt:'2026-08-02T00:00:00.000Z',submittedDocuments:['신분증 사본','통장 사본','졸업증명서'],trainingDate:'2026-08-05',residentNumber:'000000-0000000'}
 ];
@@ -82,6 +99,108 @@ async function openSchoolWorkforceFixture(page){
 }
 async function restoreSchoolWorkforceFixture(page){
   await page.evaluate(()=>{const original=window.__schoolWorkforceFixtureOriginal;if(original){employees=original.employees;schools=original.schools;applicants=original.applicants;delete window.__schoolWorkforceFixtureOriginal;}window.openSchoolWorkforceAnalytics&&document.querySelector('#btnCloseSchoolWorkforce')?.click();});
+}
+async function verifyUiDensity(page,label){
+  const baseline=await page.evaluate(()=>{
+    window.__densityOriginalApplicants=applicants;
+    window.__densityEmployeesJson=JSON.stringify(employees);
+    window.__densitySchoolsJson=JSON.stringify(schools);
+    return {
+      applicants:localStorage.getItem('recruit_erp_applicants_stable'),
+      employees:localStorage.getItem('recruit_erp_employees'),
+      schools:localStorage.getItem('recruit_erp_schools'),
+      events:localStorage.getItem('recruit_erp_calendar_events')
+    };
+  });
+  await page.evaluate(rows=>{applicants=rows.map(row=>({...row}));window.__densityApplicantsJson=JSON.stringify(applicants);resetListFiltersToAll();renderAll();setPage('applicants');},denseApplicants);
+  await page.waitForTimeout(80);
+  const density=await page.evaluate(()=>{
+    const wrap=document.querySelector('#applicants .table-wrap'),wrapRect=wrap.getBoundingClientRect();
+    const header=document.querySelector('#applicants .applicant-table thead').getBoundingClientRect();
+    const rows=[...document.querySelectorAll('#applicantTbody tr.applicant-row')].map(row=>row.getBoundingClientRect());
+    const regions=['.applicant-list-header-row','.applicant-list-tool-row','.applicant-list-filter-stack'].map(selector=>{const rect=document.querySelector(`#applicants ${selector}`).getBoundingClientRect();return{selector,top:Math.round(rect.top),height:rect.height};});
+    const storage=document.querySelector('#storageNote'),auth=document.querySelector('#authNote'),sidebar=document.querySelector('.sidebar'),nav=document.querySelector('.nav'),stateArea=document.querySelector('[data-sidebar-status-area]');
+    const sidebarRect=sidebar.getBoundingClientRect(),navRect=nav.getBoundingClientRect(),stateRect=stateArea.getBoundingClientRect();
+    const kpiKeys=[...document.querySelectorAll('#statsGrid [data-kpi-key]')].map(node=>node.dataset.kpiKey);
+    const taskKeys=[...document.querySelectorAll('#homeTodayGrid [data-task-target]')].map(node=>node.dataset.taskTarget);
+    return {
+      sidebarWidth:document.querySelector('.sidebar').getBoundingClientRect().width,
+      sidebarBounds:{top:sidebarRect.top,bottom:sidebarRect.bottom,stateTop:stateRect.top,stateBottom:stateRect.bottom,navTop:navRect.top,navBottom:navRect.bottom},
+      navHeights:[...document.querySelectorAll('.nav-btn')].filter(node=>getComputedStyle(node).display!=='none').map(node=>node.getBoundingClientRect().height),
+      stateAreas:document.querySelectorAll('[data-sidebar-status-area]').length,
+      stateChildren:!!storage?.closest('[data-sidebar-status-area]')&&!!auth?.closest('[data-sidebar-status-area]'),
+      authDescriptions:document.querySelectorAll('#authLoggedOut>strong,#authLoggedOut>span,#authLoggedIn small,#authUserMark').length,
+      authActions:document.querySelectorAll('#btnOpenLogin,#btnLogout').length,
+      visibleAuthActions:[...document.querySelectorAll('#btnOpenLogin,#btnLogout')].filter(node=>node.getClientRects().length>0).length,
+      kpiKeys,taskKeys,
+      regions,visualRows:new Set(regions.map(region=>region.top)).size,
+      visibleRows:rows.filter(rect=>rect.top>=header.bottom-1&&rect.bottom<=Math.min(wrapRect.bottom,innerHeight)+1).length,
+      headerVisible:header.top>=wrapRect.top-1&&header.bottom<=Math.min(wrapRect.bottom,innerHeight)+1,
+      bodyOverflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,
+      internalScroll:wrap.scrollWidth>wrap.clientWidth,
+      tableOverflow:getComputedStyle(wrap).overflowX,
+      controlIds:['searchInput','sortSelect','hideFinished','btnOpenApplicantFilter','bulkModeButton','btnResetFilters'].every(id=>!!document.getElementById(id)),
+      statusFilters:[...document.querySelectorAll('#quickFilters [data-filter]')].map(node=>node.dataset.filter),
+      statusCounts:[...document.querySelectorAll('#quickFilters [data-filter-count]')].map(node=>node.dataset.filterCount),
+      workplaceFilters:[...document.querySelectorAll('#workplaceTabs [data-workplace]')].map(node=>node.dataset.workplace),
+      workplaceCounts:[...document.querySelectorAll('#workplaceTabs [data-workplace-count]')].map(node=>node.dataset.workplaceCount)
+    };
+  });
+  assert.ok(Math.abs(density.sidebarWidth-224)<=1,`${label} 데스크톱 사이드바는 224px이어야 합니다: ${density.sidebarWidth}`);
+  assert.ok(density.navHeights.length&&density.navHeights.every(height=>height>=36),`${label} 데스크톱 메뉴 버튼은 36px 이상이어야 합니다.`);
+  assert.ok(density.sidebarBounds.stateBottom<=density.sidebarBounds.bottom+1&&density.sidebarBounds.navBottom<=density.sidebarBounds.stateTop+1,`${label} 메뉴와 하단 상태 영역이 잘리거나 겹치면 안 됩니다: ${JSON.stringify(density.sidebarBounds)}`);
+  assert.deepEqual({areas:density.stateAreas,children:density.stateChildren,descriptions:density.authDescriptions,actions:density.authActions,visibleActions:density.visibleAuthActions},{areas:1,children:true,descriptions:0,actions:2,visibleActions:1},`${label} 사이드바 상태 설명과 로그인 동작이 중복되었습니다.`);
+  assert.deepEqual(density.kpiKeys,['applicants','active','monthApplications','hirePlanned']);
+  assert.equal(density.kpiKeys.some(key=>density.taskKeys.includes(key)),false,'홈 누적 KPI와 오늘 업무 키가 겹치면 안 됩니다.');
+  assert.equal(density.visualRows,3,`${label} 지원자 상단 제어영역은 3개 시각 행이어야 합니다: ${JSON.stringify(density.regions)}`);
+  const regionLimits={'.applicant-list-header-row':48,'.applicant-list-tool-row':44,'.applicant-list-filter-stack':56};
+  assert.ok(density.regions.every(region=>region.height<=regionLimits[region.selector]),`${label} 지원자 상단 제어행이 과도하게 높습니다: ${JSON.stringify(density.regions)}`);
+  assert.ok(density.headerVisible&&density.visibleRows>=3,`${label} 768px 높이에서 표 헤더와 지원자 3행 이상이 보여야 합니다: ${JSON.stringify(density)}`);
+  assert.ok(density.bodyOverflow<=1,`${label} 본문 가로 넘침: ${density.bodyOverflow}`);
+  assert.ok(density.internalScroll&&density.tableOverflow!=='visible',`${label} 넓은 지원자 표는 table-wrap 안에서만 스크롤되어야 합니다.`);
+  assert.equal(density.controlIds,true,'지원자 검색·정렬·상세조건·선택·초기화 제어가 유지되어야 합니다.');
+  assert.deepEqual(density.statusFilters,['all','active','docpass','interview','hire','finished','contact','decision','duplicate']);
+  assert.deepEqual(density.statusCounts,density.statusFilters);
+  assert.deepEqual(density.workplaceFilters,['all','천안','평택','기타']);
+  assert.deepEqual(density.workplaceCounts,density.workplaceFilters);
+  await page.screenshot({path:path.join(outputDir,`${label}-applicants-normal.png`),fullPage:false});
+  await page.locator('.sidebar').screenshot({path:path.join(outputDir,`${label}-sidebar.png`)});
+
+  for(const key of ['applicants','active','monthApplications','hirePlanned']){
+    await page.evaluate(()=>window.setPage?.('home'));
+    await page.locator(`#statsGrid [data-kpi-key="${key}"]`).click();
+    assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'applicants',`${key} KPI는 지원자 목록으로 이동해야 합니다.`);
+  }
+  await page.locator('#quickFilters [data-filter="interview"]').click();
+  await page.locator('#sidebarToggle').click();await page.locator('#sidebarToggle').click();
+  const readOnlyState=await page.evaluate(snapshot=>({
+    memory:JSON.stringify(applicants)===window.__densityApplicantsJson,
+    employeeMemory:JSON.stringify(employees)===window.__densityEmployeesJson,
+    schoolMemory:JSON.stringify(schools)===window.__densitySchoolsJson,
+    applicants:localStorage.getItem('recruit_erp_applicants_stable')===snapshot.applicants,
+    employees:localStorage.getItem('recruit_erp_employees')===snapshot.employees,
+    schools:localStorage.getItem('recruit_erp_schools')===snapshot.schools,
+    events:localStorage.getItem('recruit_erp_calendar_events')===snapshot.events
+  }),baseline);
+  assert.deepEqual(readOnlyState,{memory:true,employeeMemory:true,schoolMemory:true,applicants:true,employees:true,schools:true,events:true},'화면 이동·필터·사이드바 동작이 업무 배열이나 localStorage를 변경하면 안 됩니다.');
+
+  await page.evaluate(()=>{applicants=[];resetListFiltersToAll();renderTable();});
+  const emptyAdmin=await page.evaluate(()=>{const state=document.querySelector('.applicant-list-empty-state').getBoundingClientRect();return{height:state.height,register:!!document.querySelector('.applicant-empty-register'),reset:!!document.querySelector('.applicant-empty-reset')};});
+  assert.ok(emptyAdmin.height<=240&&emptyAdmin.register&&emptyAdmin.reset,`관리자 빈 목록은 240px 이하에서 등록·초기화를 제공해야 합니다: ${JSON.stringify(emptyAdmin)}`);
+  await page.evaluate(()=>{window.__densityPermissionHas=window.erpPermissions.has;window.erpPermissions.has=permission=>permission==='applicant.write'?false:window.__densityPermissionHas(permission);renderTable();});
+  assert.equal(await page.locator('.applicant-empty-register').count(),0,'조회 전용 빈 목록에는 등록 버튼이 보이면 안 됩니다.');
+  await page.evaluate(()=>{
+    window.erpPermissions.has=window.__densityPermissionHas;delete window.__densityPermissionHas;
+    applicants=window.__densityOriginalApplicants;delete window.__densityOriginalApplicants;delete window.__densityApplicantsJson;delete window.__densityEmployeesJson;delete window.__densitySchoolsJson;
+    resetListFiltersToAll();renderAll();setPage('applicants');
+  });
+  const restored=await page.evaluate(snapshot=>({
+    applicants:localStorage.getItem('recruit_erp_applicants_stable')===snapshot.applicants,
+    employees:localStorage.getItem('recruit_erp_employees')===snapshot.employees,
+    schools:localStorage.getItem('recruit_erp_schools')===snapshot.schools,
+    events:localStorage.getItem('recruit_erp_calendar_events')===snapshot.events
+  }),baseline);
+  assert.deepEqual(restored,{applicants:true,employees:true,schools:true,events:true},'UI 밀도 검사는 기존 업무 저장값을 변경하면 안 됩니다.');
 }
 async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
   await page.evaluate(()=>window.setPage?.('applicants'));await page.locator('#btnApplicantWorksheetView').click();await page.locator('#applicantWorksheet:not([hidden])').waitFor();
@@ -184,7 +303,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v11.3.0');
+      assert.equal(await page.title(),'채용관리 시스템 v11.3.1');
       const queue=page.locator('#homeTodayGrid .queue-card');assert.equal(await queue.count(),5);for(let i=0;i<5;i++)assert.notEqual(await queue.nth(i).evaluate(el=>getComputedStyle(el).display),'none');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
@@ -261,8 +380,26 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
       }else{
         assert.notEqual(await page.locator('#applicants .applicant-row').first().evaluate(el=>getComputedStyle(el).display),'table-row','760 이하 지원자 목록은 카드형이어야 합니다.');
       }
+      if(viewport.width===1366)await verifyUiDensity(page,viewport.name);
       if(viewport.width===390){
-        await page.evaluate(()=>window.setPage?.('home'));await page.locator('#sidebarToggle').click();assert.ok(await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')));await page.locator('[data-page="today"]').click();assert.ok(!await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')),'모바일 메뉴가 화면 이동 뒤 닫혀야 합니다.');
+        await page.evaluate(()=>window.scrollTo(0,0));
+        const mobileApplicantControls=await page.evaluate(()=>{
+          const rect=selector=>{const value=document.querySelector(selector).getBoundingClientRect();return{left:value.left,right:value.right,width:value.width,height:value.height};};
+          return{search:rect('#searchInput'),status:rect('#applicants .applicant-status-filter-group'),workplace:rect('#applicants .applicant-workplace-filter-group'),width:innerWidth};
+        });
+        assert.ok(mobileApplicantControls.search.width>=300&&mobileApplicantControls.search.height<=50,`390 지원자 검색창이 세로로 눌리거나 과도하게 늘어나면 안 됩니다: ${JSON.stringify(mobileApplicantControls)}`);
+        assert.ok([mobileApplicantControls.status,mobileApplicantControls.workplace].every(group=>group.width>=300&&group.left>=-1&&group.right<=mobileApplicantControls.width+1),`390 상태·근무지 필터는 읽을 수 있는 한 열 너비를 유지해야 합니다: ${JSON.stringify(mobileApplicantControls)}`);
+        await page.screenshot({path:path.join(outputDir,'390x844-applicants-normal.png'),fullPage:false});
+      }
+      if(viewport.width===390){
+        await page.evaluate(()=>{window.setPage?.('home');window.scrollTo(0,0);});
+        const mobileHomeBounds=await page.evaluate(()=>{const action=document.querySelector('.top-actions .primary').getBoundingClientRect(),kpi=document.querySelector('#statsGrid .stat').getBoundingClientRect();return{action:{left:action.left,right:action.right,top:action.top,bottom:action.bottom},kpi:{left:kpi.left,right:kpi.right,top:kpi.top,bottom:kpi.bottom},width:innerWidth,overlaps:!(action.right<=kpi.left||action.left>=kpi.right||action.bottom<=kpi.top||action.top>=kpi.bottom)};});
+        assert.ok(mobileHomeBounds.action.left>=-1&&mobileHomeBounds.action.right<=mobileHomeBounds.width+1&&!mobileHomeBounds.overlaps,`390 홈 등록 버튼이 KPI와 겹치거나 잘리면 안 됩니다: ${JSON.stringify(mobileHomeBounds)}`);
+        await page.locator('#sidebarToggle').click();assert.ok(await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')));await page.waitForFunction(()=>document.querySelector('.sidebar').getBoundingClientRect().left>=-1);
+        const mobileNav=await page.evaluate(()=>{const sidebar=document.querySelector('.sidebar').getBoundingClientRect();return{heights:[...document.querySelectorAll('.nav-btn')].filter(node=>node.getClientRects().length).map(node=>node.getBoundingClientRect().height),stateAreas:document.querySelectorAll('[data-sidebar-status-area]').length,sidebar:{left:sidebar.left,right:sidebar.right,top:sidebar.top,bottom:sidebar.bottom},width:innerWidth,height:innerHeight};});
+        assert.ok(mobileNav.heights.length&&mobileNav.heights.every(height=>height>=44),'모바일 메뉴 버튼은 44px 이상이어야 합니다.');assert.equal(mobileNav.stateAreas,1);assert.ok(mobileNav.sidebar.left>=-1&&mobileNav.sidebar.right<=mobileNav.width+1&&mobileNav.sidebar.top>=-1&&mobileNav.sidebar.bottom<=mobileNav.height+1,`모바일 메뉴가 화면 안에 보여야 합니다: ${JSON.stringify(mobileNav)}`);
+        await page.screenshot({path:path.join(outputDir,'390x844-mobile-menu.png'),fullPage:false});
+        await page.locator('[data-page="today"]').click();assert.ok(!await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')),'모바일 메뉴가 화면 이동 뒤 닫혀야 합니다.');
         await page.evaluate(()=>window.setPage?.('permissions'));const permissionWidth=await page.locator('#permissions').evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth,widest:[...el.querySelectorAll('*')].map(node=>({name:node.className||node.tagName,scroll:node.scrollWidth,client:node.clientWidth})).sort((a,b)=>b.scroll-a.scroll).slice(0,4)}));assert.ok(permissionWidth.scroll<=permissionWidth.client+1,`390 권한 화면 넘침: ${JSON.stringify(permissionWidth)}`);
         await page.evaluate(()=>window.setPage?.('form'));await page.waitForTimeout(50);
         assert.equal(await page.locator('[data-form-step="2"] [data-form-step-status]').innerText(),'선택 입력');
@@ -276,6 +413,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
       if([1366,1440,1920].includes(viewport.width))await verifyApplicantWorksheet(page,viewport.name,{exercise:viewport.width===1366});
       await page.evaluate(()=>window.setPage?.('home'));await queue.first().focus();await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'today');await page.evaluate(()=>window.setPage?.('home'));await queue.nth(4).focus();await page.keyboard.press('Space');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'today');
       if(viewport.width===390||viewport.width===1366){
+        await page.evaluate(()=>{window.setPage?.('home');window.scrollTo(0,0);});await page.waitForTimeout(30);
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-home.png`),fullPage:true});
         await openSchoolWorkforceFixture(page);
         const workforce=await page.evaluate(()=>{const card=document.querySelector('.school-workforce-card').getBoundingClientRect(),body=document.querySelector('.school-workforce-body'),text=document.querySelector('#schoolWorkforceModal').innerText,topElement=document.elementFromPoint(card.right-24,card.top+24);return{card:{left:card.left,right:card.right,top:card.top,bottom:card.bottom},width:innerWidth,height:innerHeight,bodyOverflow:body.scrollWidth-body.clientWidth,kpis:document.querySelectorAll('#schoolWorkforceKpis>div').length,rosterRows:document.querySelectorAll('#schoolWorkforceRoster tbody tr').length,modalOnTop:!!topElement?.closest('#schoolWorkforceModal'),text};});

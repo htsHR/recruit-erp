@@ -350,6 +350,7 @@ function filtered(){
     if(currentFilter==='hold') filterOk=a.finalDecision==='보류';
     if(currentFilter==='active') filterOk=isActive(a);
     if(currentFilter==='hire') filterOk=['입사예정','출근'].includes(a.status) || a.finalDecision==='합격';
+    if(currentFilter==='hirePlanned') filterOk=normalizeStatus(a.status)==='입사예정';
     if(currentFilter==='finished') filterOk=isFinished(a);
     if(currentFilter==='rejected') filterOk=a.status==='서류탈락';
     if(currentFilter==='duplicate') filterOk=dupSet.has(normalizePhone(a.phone));
@@ -482,6 +483,7 @@ function renderTable(){
       <span>${pageText}</span>
       <span class="list-interaction-hint">행 클릭 → 상세보기</span>
     </div>`;
+  const canRegister=!window.erpPermissions||window.erpPermissions.has('applicant.write');
   $('applicantTbody').innerHTML=rows.length?rows.map((a,idx)=>{
     const score=calcScore(a), decision=finalDecisionOf(a);
     const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
@@ -506,7 +508,7 @@ function renderTable(){
       <td class="decision-cell" data-label="판정"><span class="decision-pill ${decisionToneClass(a)}">${esc(decision)}</span><small>${score}점</small></td>
       <td class="row-actions compact-actions applicant-actions sticky-app-actions" data-label="관리"><button class="view" data-erp-handler="event.stopPropagation();viewApplicant('${a.id}')">상세</button><button data-erp-handler="event.stopPropagation();editApplicant('${a.id}')">수정</button><button class="delete" data-erp-handler="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="13" class="empty list-empty-cell"><div>조건에 맞는 지원자가 없습니다.</div><button class="mini" data-erp-handler="resetAndRenderList()">필터 초기화</button></td></tr>`;
+  }).join(''):`<tr><td colspan="13" class="empty list-empty-cell"><div class="applicant-list-empty-state"><strong>조건에 맞는 지원자가 없습니다.</strong><span>새 지원자를 등록하거나 현재 필터를 초기화해 다시 확인하세요.</span><div class="applicant-list-empty-actions">${canRegister?'<button class="primary applicant-empty-register" type="button" data-required-permission="applicant.write" data-erp-handler="setPage(\'form\')">지원자 등록</button>':''}<button class="ghost applicant-empty-reset" type="button" data-erp-handler="resetAndRenderList()">필터 초기화</button></div></div></td></tr>`;
   renderApplicantPagination(allRows.length);
 }
 function resetAndRenderList(){ resetListFiltersToAll(); renderTable(); }

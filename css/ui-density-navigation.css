@@ -1,0 +1,241 @@
+/* =========================================================
+   Recruit ERP v11.3.1 — UI density and navigation
+   화면 밀도만 조정하며 업무 데이터·저장 구조에는 관여하지 않습니다.
+   ========================================================= */
+
+:root{--erp-sidebar-w:224px;}
+
+@media (min-width:1021px){
+  .app-shell{grid-template-columns:224px minmax(0,1fr)!important;}
+  .sidebar{width:224px!important;min-width:224px!important;padding:14px 12px!important;}
+  .brand{min-height:52px!important;margin-bottom:7px!important;padding:0 7px 10px!important;}
+  .nav{gap:6px!important;padding:2px 0 7px!important;}
+  .nav-group{gap:2px!important;}
+  .nav-group-label{min-height:22px!important;height:22px!important;}
+  .nav-group-items{gap:2px!important;}
+  .nav-btn,.nav-btn.nav-sub{height:36px!important;min-height:36px!important;padding:0 9px!important;}
+}
+
+/* 저장 상태와 로그인 동작을 하나의 상태 영역으로 묶습니다. */
+.sidebar-status-area{
+  flex:0 0 auto;
+  margin:6px 4px 0;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:10px;
+  background:rgba(255,255,255,.045);
+}
+.sidebar-status-area .security-note,
+.sidebar-status-area .auth-note{
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.sidebar-status-area .security-note{padding:9px 10px!important;}
+.sidebar-status-area .security-note.sync-warn-note{background:rgba(179,53,46,.14)!important;}
+.sidebar-status-area .auth-note{
+  padding:7px 10px 9px!important;
+  border-top:1px solid rgba(255,255,255,.08)!important;
+}
+.sidebar-status-area .auth-logged-in,
+.sidebar-status-area .auth-logged-out{
+  width:100%;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:8px!important;
+}
+.sidebar-status-area .auth-user-info{min-width:0;}
+.sidebar-status-area .auth-user-copy{min-width:0;}
+.sidebar-status-area #authEmailText{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.sidebar-status-area #btnOpenLogin{width:100%;}
+
+body.sidebar-collapsed .sidebar-status-area{
+  margin:6px 0 0;
+  border:0;
+  background:transparent;
+}
+body.sidebar-collapsed .sidebar-status-area .security-note{display:none!important;}
+body.sidebar-collapsed .sidebar-status-area .auth-note{padding:0!important;border:0!important;}
+
+/* 홈: 누적 KPI와 오늘 업무를 분리하면서 한 화면 밀도를 높입니다. */
+#home .home-dashboard-intro{display:none!important;}
+#home .dashboard-stats{gap:9px!important;margin-bottom:11px!important;}
+#home .dashboard-stats .stat{min-height:72px!important;padding:11px 13px!important;gap:2px!important;}
+#home .dashboard-stats .stat strong{font-size:23px!important;}
+#home .home-work-queue{gap:9px!important;margin:4px 0 12px!important;}
+#home .home-work-queue .queue-card{min-height:70px!important;padding:10px 13px!important;gap:2px!important;}
+#home .home-work-queue .queue-card strong{font-size:22px!important;}
+#home .section-heading{margin:11px 0 7px!important;}
+
+/* 지원자 목록 상단은 요약·검색/동작·빠른필터의 3개 밀도 행으로 유지합니다. */
+#applicants .applicant-list-filter-card,
+#applicants.ui-system-v20 .applicant-list-filter-card{padding:9px 12px!important;gap:7px!important;}
+#applicants .applicant-list-header-row,
+#applicants.ui-system-v20 .applicant-list-header-row{min-height:24px!important;margin:0!important;padding:0!important;}
+#applicants .applicant-list-header-metrics{width:100%;gap:4px 16px!important;}
+#applicants .applicant-list-tool-row,
+#applicants.ui-system-v20 .applicant-list-tool-row,
+#applicants.ui-system-v20 .compact-list-controls{
+  min-width:0!important;
+  flex-wrap:nowrap!important;
+  gap:7px!important;
+  min-height:36px!important;
+  padding:0!important;
+}
+#applicants .applicant-list-tool-row .search,
+#applicants.ui-system-v20 .applicant-list-tool-row .search{
+  min-width:180px!important;
+  height:36px!important;
+  min-height:36px!important;
+}
+#applicants .applicant-list-tool-row .sort-select,
+#applicants.ui-system-v20 .applicant-list-tool-row .sort-select{
+  min-width:132px!important;
+  height:36px!important;
+}
+#applicants .applicant-list-tool-row button{min-height:36px!important;height:36px!important;}
+#applicants .applicant-list-button-row{gap:6px!important;white-space:nowrap;}
+#applicants .applicant-list-button-row button{min-width:68px!important;padding-left:10px!important;padding-right:10px!important;}
+#applicants .applicant-list-filter-stack,
+#applicants.ui-system-v20 .applicant-list-filter-stack{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-width:0!important;
+  padding:0!important;
+}
+#applicants .applicant-filter-group,
+#applicants.ui-system-v20 .applicant-filter-group{
+  display:flex!important;
+  min-width:0!important;
+  align-items:center!important;
+  gap:6px!important;
+  padding:4px 6px!important;
+  border:1px solid var(--calm-line,#e3e6eb)!important;
+  border-radius:8px!important;
+  background:#fff!important;
+}
+#applicants .applicant-filter-group-head{flex:0 0 auto!important;margin:0!important;}
+#applicants .applicant-filter-group-head small{display:none!important;}
+#applicants #quickFilters,
+#applicants #workplaceTabs{
+  min-width:0!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  flex-wrap:nowrap!important;
+  padding:0!important;
+  scrollbar-width:thin;
+}
+#applicants #quickFilters{display:flex!important;flex:1 1 auto!important;}
+#applicants #quickFilters .chip{flex:0 0 auto!important;height:30px!important;}
+#applicants #workplaceTabs{display:flex!important;flex:0 0 auto!important;}
+#applicants #workplaceTabs .tab{height:30px!important;min-height:30px!important;padding:0 10px!important;}
+#applicants .list-summary{min-height:34px!important;padding:6px 12px!important;}
+#applicants .table-wrap{
+  min-height:0!important;
+  max-height:calc(100vh - 292px)!important;
+  overflow:auto!important;
+}
+#applicants .applicant-table thead th{padding-top:8px!important;padding-bottom:8px!important;}
+#applicants .applicant-table tbody td{padding-top:9px!important;padding-bottom:9px!important;}
+
+@media (min-width:761px){
+  #applicants .applicant-table,#applicants.ui-system-v20 .applicant-table{min-width:1260px!important;}
+}
+
+#applicants .list-empty-cell{height:auto!important;max-height:240px!important;padding:18px!important;}
+#applicants .applicant-list-empty-state{
+  min-height:130px;
+  max-height:220px;
+  display:grid;
+  place-content:center;
+  justify-items:center;
+  gap:7px;
+  color:var(--calm-ink-2,#5c6673);
+  text-align:center;
+}
+#applicants .applicant-list-empty-state strong{color:var(--calm-ink,#1c2330);font-size:15px;}
+#applicants .applicant-list-empty-state>span{font-size:12px;}
+#applicants .applicant-list-empty-actions{display:flex;gap:7px;margin-top:3px;}
+#applicants .applicant-list-empty-actions button{min-height:36px!important;}
+
+@media (max-width:1200px) and (min-width:1021px){
+  #applicants .applicant-list-tool-row,
+  #applicants.ui-system-v20 .applicant-list-tool-row{gap:5px!important;}
+  #applicants .applicant-list-tool-row .search{min-width:150px!important;}
+  #applicants .applicant-list-tool-row .sort-select{min-width:120px!important;}
+  #applicants .compact-check-inline{font-size:11px!important;}
+  #applicants .applicant-list-button-row button{min-width:58px!important;padding-left:7px!important;padding-right:7px!important;}
+  #applicants .applicant-filter-group-title{display:none!important;}
+}
+
+@media (max-width:1020px){
+  .sidebar .nav-btn,.sidebar .nav-btn.nav-sub{height:44px!important;min-height:44px!important;}
+  body.sidebar-collapsed .sidebar-status-area{margin:6px 4px 0;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.045);}
+  body.sidebar-collapsed .sidebar-status-area .security-note{display:block!important;}
+  body.sidebar-collapsed .sidebar-status-area .auth-note{padding:7px 10px 9px!important;border-top:1px solid rgba(255,255,255,.08)!important;}
+  #applicants .applicant-list-tool-row,
+  #applicants.ui-system-v20 .applicant-list-tool-row,
+  #applicants.ui-system-v20 .compact-list-controls{flex-wrap:wrap!important;}
+  #applicants .applicant-list-filter-stack{grid-template-columns:1fr!important;}
+  #applicants .table-wrap{max-height:none!important;}
+}
+
+@media (max-width:640px){
+  body:not([data-active-page="form"]) .topbar{
+    flex-direction:row!important;
+    align-items:center!important;
+  }
+  body:not([data-active-page="form"]) .topbar-left{
+    flex:0 1 auto!important;
+    min-width:0!important;
+  }
+  body:not([data-active-page="form"]) .topbar-title-wrap{min-width:0!important;}
+  body:not([data-active-page="form"]) .topbar-actions-shell{flex:0 0 auto!important;}
+  #home .dashboard-stats .stat,#home .home-work-queue .queue-card{min-height:76px!important;}
+  #applicants .applicant-list-header-metrics{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important;}
+  #applicants .applicant-header-metric{justify-content:center!important;}
+  #applicants .applicant-list-tool-row,
+  #applicants.ui-system-v20 .applicant-list-tool-row,
+  #applicants.ui-system-v20 .compact-list-controls{
+    flex-direction:row!important;
+    align-items:center!important;
+    min-height:0!important;
+  }
+  #applicants .applicant-list-tool-row .search,
+  #applicants.ui-system-v20 .applicant-list-tool-row .search{
+    flex:1 1 100%!important;
+    width:100%!important;
+    min-width:0!important;
+    height:44px!important;
+    min-height:44px!important;
+  }
+  #applicants .applicant-list-tool-row .sort-select{
+    flex:1 1 150px!important;
+    width:auto!important;
+    min-width:140px!important;
+    height:44px!important;
+  }
+  #applicants .applicant-list-tool-row .compact-check-inline{flex:0 0 auto!important;}
+  #applicants .applicant-list-button-row{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;width:100%;}
+  #applicants .applicant-list-button-row button{min-height:44px!important;height:44px!important;width:100%;}
+  #applicants .applicant-list-filter-stack{
+    grid-template-columns:minmax(0,1fr)!important;
+  }
+  #applicants .applicant-filter-group{align-items:flex-start!important;flex-direction:column!important;}
+  #applicants .applicant-list-filter-stack>.applicant-filter-group{
+    grid-column:1!important;
+    width:100%!important;
+  }
+  #applicants #quickFilters,#applicants #workplaceTabs{width:100%!important;}
+  #applicants .applicant-list-empty-actions{flex-direction:column;width:min(240px,100%);}
+  #applicants .applicant-list-empty-actions button{min-height:44px!important;width:100%;}
+}

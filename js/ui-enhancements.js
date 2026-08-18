@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='11.0.0';
+const UX_VERSION='11.3.1';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -194,11 +194,44 @@ card=function(a){
 };
 window.card=card;
 
+/* ---------- Sidebar status density ---------- */
+function uxConsolidateSidebarStatus(){
+  const storage=uxEl('storageNote'),auth=uxEl('authNote');
+  if(!storage||!auth)return null;
+  let area=document.querySelector('.sidebar-status-area');
+  if(!area){
+    area=document.createElement('div');
+    area.className='sidebar-status-area';
+    area.dataset.sidebarStatusArea='';
+    area.setAttribute('aria-label','저장 및 로그인 상태');
+    storage.parentNode.insertBefore(area,storage);
+    area.append(storage,auth);
+  }
+  auth.querySelector('#authLoggedIn small')?.remove();
+  auth.querySelector('#authUserMark')?.remove();
+  const loggedOut=auth.querySelector('#authLoggedOut');
+  if(loggedOut){
+    [...loggedOut.children].forEach(child=>{if(child.id!=='btnOpenLogin')child.remove();});
+    const login=loggedOut.querySelector('#btnOpenLogin');
+    if(login){login.textContent='로그인';login.title='Supabase 로그인';}
+  }
+  return area;
+}
+
 /* ---------- Home ---------- */
 const uxBaseRenderStats=renderStats;
 renderStats=function(){
   const total=applicants.length, active=applicants.filter(isActive).length, g=taskGroups();
-  if(uxEl('statsGrid')) uxEl('statsGrid').innerHTML=[['전체 지원자',total,'applicants'],['진행중',active,'active'],['오늘 면접',g.todayInterviews.length,'today'],['기한 경과',g.overdue.length,'overdue']].map(([k,v,key])=>`<button type="button" class="stat stat-button" data-dashboard-target="${key}"><span>${k}</span><strong>${v}</strong><small>목록 확인 →</small></button>`).join('');
+  const currentMonth=today().slice(0,7);
+  const monthApplications=applicants.filter(applicant=>String(applicant.applyDate||'').slice(0,7)===currentMonth).length;
+  const plannedHires=applicants.filter(applicant=>normalizeStatus(applicant.status)==='입사예정').length;
+  const kpis=[
+    ['전체 지원자',total,'applicants','전체 목록'],
+    ['진행중',active,'active','진행 목록'],
+    ['이번 달 지원',monthApplications,'monthApplications','지원일 기준'],
+    ['입사예정',plannedHires,'hirePlanned','대상 목록']
+  ];
+  if(uxEl('statsGrid')) uxEl('statsGrid').innerHTML=kpis.map(([label,value,key,caption])=>`<button type="button" class="stat stat-button" data-kpi-key="${key}" data-dashboard-target="${key}"><span>${label}</span><strong>${value}</strong><small>${caption} →</small></button>`).join('');
   const dg=typeof dailyWorkflowGroups==='function'?dailyWorkflowGroups():null;
   const map={
     homeTodayInterviewCount:dg?dg.interviewToday.length:g.todayInterviews.length,
@@ -216,6 +249,8 @@ function uxOpenApplicantFilter(filter){
   if(filter==='active') currentFilter='active';
   if(filter==='contact') currentFilter='contact';
   if(filter==='decision') currentFilter='decision';
+  if(filter==='hirePlanned') currentFilter='hirePlanned';
+  if(filter==='monthApplications') { currentSearch=today().slice(0,7); if(uxEl('searchInput')) uxEl('searchInput').value=currentSearch; }
   if(filter==='today') { currentFilter='interview'; currentSearch=today(); if(uxEl('searchInput')) uxEl('searchInput').value=today(); }
   if(filter==='overdue') { currentFilter='active'; currentSort='interviewAsc'; }
   document.querySelectorAll('#quickFilters .chip').forEach(x=>x.classList.toggle('active',x.dataset.filter===currentFilter));
@@ -539,6 +574,7 @@ function uxReplaceButton(id,handler){
 }
 function uxInit(){
   document.documentElement.dataset.erpVersion=UX_VERSION;
+  uxConsolidateSidebarStatus();
   updateStorageNote();
   // 안전·위험 작업 화면만 명시적으로 공통 인트로 카드로 표시합니다.
   ['#dataHealth .health-hero','#duplicates .duplicate-hero','#backup .backup-center-hero','#employeeOrgImportModal .employee-org-import-notice','#hireWaitingModal .hire-waiting-guide'].forEach(selector=>document.querySelector(selector)?.classList.add('page-intro-card','safety-intro-card'));
