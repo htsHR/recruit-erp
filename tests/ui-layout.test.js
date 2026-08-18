@@ -38,6 +38,8 @@ assert.match(enhancements,/function uxConsolidateSidebarStatus\(\)/);assert.matc
 assert.match(densityCss,/--erp-sidebar-w:224px/);assert.match(densityCss,/\.nav-btn,.nav-btn\.nav-sub\{height:36px!important;min-height:36px!important/);assert.match(densityCss,/height:44px!important;min-height:44px!important/);
 assert.match(densityCss,/grid-template-columns:minmax\(0,1fr\) auto/);assert.match(densityCss,/max-height:calc\(100vh - 292px\)/);assert.match(densityCss,/\.applicant-list-empty-state/);assert.doesNotMatch(densityCss,/localStorage|sessionStorage|Supabase|shared-storage/);
 ['searchInput','sortSelect','hideFinished','btnOpenApplicantFilter','bulkModeButton','btnResetFilters'].forEach(id=>assert.match(index,new RegExp(`id="${id}"`)));
+const accessibleNames={searchInput:'지원자 검색',sortSelect:'지원자 정렬',calendarWorkplaceFilter:'일정 근무지 필터',dailyWorkflowSearch:'오늘 할 일 검색',rosterDate:'면접 명단 날짜'};
+Object.entries(accessibleNames).forEach(([id,label])=>assert.match(index,new RegExp(`aria-label="${label}"[^>]*id="${id}"|id="${id}"[^>]*aria-label="${label}"`),`${id} 접근 가능한 이름이 없습니다.`));
 assert.deepEqual([...index.matchAll(/data-filter="([^"]+)"/g)].map(match=>match[1]).slice(0,9),['all','active','docpass','interview','hire','finished','contact','decision','duplicate']);
 assert.deepEqual([...index.matchAll(/data-workplace="([^"]+)"/g)].map(match=>match[1]).slice(0,4),['all','천안','평택','기타']);
 assert.match(applicants,/applicant-list-empty-state/);assert.match(applicants,/applicant-empty-register/);assert.match(applicants,/applicant-empty-reset/);assert.match(applicants,/erpPermissions\.has\('applicant\.write'\)/);
@@ -65,13 +67,14 @@ const visualTest=read('tests/ui-visual-layout.js');
 assert.match(visualTest,/formWorkflowBanner/);assert.match(visualTest,/formActions\.overlaps,false/);
 assert.match(visualTest,/390x844-status-modal\.png'\),fullPage:false/);
 assert.match(visualTest,/390x844-sync-conflict\.png'\),fullPage:false/);
-assert.match(index,/css\/applicant-worksheet\.css\?v=11\.4\.0/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.4\.0/);assert.match(index,/css\/ui-density-navigation\.css\?v=11\.4\.0/);
+assert.match(index,/css\/applicant-worksheet\.css\?v=11\.4\.1/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.4\.1/);assert.match(index,/css\/ui-density-navigation\.css\?v=11\.4\.1/);
 assert.match(applicantWorksheet,/일반보기/);assert.match(applicantWorksheet,/워크시트 보기/);assert.match(applicantWorksheet,/변경 \$\{entries\.length\}건/);
 assert.match(applicantWorksheet,/root\.save\(\)/);assert.match(applicantWorksheet,/applicants=snapshot/);assert.match(applicantWorksheet,/beforeunload/);
-assert.match(applicantWorksheetCss,/nth-child\(2\).*position:sticky/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-dirty/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-error/);
+assert.match(applicantWorksheetCss,/nth-child\(2\).*position:sticky/);assert.match(applicantWorksheetCss,/nth-child\(3\).*position:sticky/);assert.match(applicantWorksheetCss,/--worksheet-phone-left/);assert.match(applicantWorksheet,/syncStickyOffsets/);assert.match(applicantWorksheet,/getBoundingClientRect\(\)\.width/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-dirty/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-error/);
+assert.match(densityCss,/overflow:visible!important;[\s\S]*flex-wrap:wrap!important/);assert.match(densityCss,/#applicants #quickFilters \.chip\{[^}]*height:36px!important;min-height:36px!important/);assert.match(densityCss,/#calendar \.calendar-today-dot\{[^}]*color:#fff!important/);assert.match(densityCss,/\.sidebar \.nav\{[^}]*overflow-y:auto/);
 assert.match(visualTest,/1440x900/);assert.match(visualTest,/verifyApplicantWorksheet/);assert.match(visualTest,/__worksheetSaveCalls/);
 assert.match(visualTest,/const denseApplicants=Array\.from\(\{length:60\}/);assert.match(visualTest,/visibleRows>=3/);assert.match(visualTest,/390x844-mobile-menu\.png/);assert.match(visualTest,/\$\{label\}-sidebar\.png/);
-assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.4\.0/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
+assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.4\.1/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
 assert.match(applicants,/window\.viewApplicant\?\.\(id\)/);assert.match(applicants,/window\.editApplicant\?\.\(id\)/);assert.match(applicants,/applicantQuickDetailCanWrite/);assert.doesNotMatch(applicants.match(/function renderApplicantQuickDetail\(\)[\s\S]*?function openApplicantQuickDetail\(/)?.[0]||'',/residentNumber|Object\.values/);
 assert.match(quickDetailCss,/width:clamp\(420px,34vw,480px\)/);assert.match(quickDetailCss,/@media\(max-width:900px\)[\s\S]*width:100%/);assert.match(visualTest,/verifyApplicantQuickDetail/);assert.match(visualTest,/bridgeSaveRequests,0/);assert.match(visualTest,/applicant-quick-detail-long-memo\.png/);
 
@@ -80,6 +83,7 @@ assert.equal(emptyTopbarButtons.length,0,'기능 없는 상단 아이콘 버튼�
 assert.match(read('css/privacy-security.css'),/\.privacy-shield-button\{display:inline-grid!important/);
 assert.match(readiness,/readiness-check-grid/);assert.match(readiness,/@media\(max-width:600px\)/);
 assert.match(visualTest,/\$\{viewport\.name\}-production-readiness\.png/);assert.match(visualTest,/1366x768-zoom125-production-readiness\.png/);
+assert.match(visualTest,/412x915/);assert.match(visualTest,/1363x936-sidebar/);assert.match(visualTest,/verifyUsabilityPolish/);assert.match(visualTest,/sticky\.phone\.left-sticky\.name\.right/);assert.match(visualTest,/quickOverflow<=1/);assert.match(visualTest,/ariaCurrent==='date'/);
 
 const hireWaitingKeys=['no','employeeNo','contactStatus','hireDate','workplace','pmtc','gender','groupName','product','part','name','rank','residentNumber','birthDate','age','email','education','school','major','phone','region','commuteMethod','remarks'];
 const declaredHireWaitingKeys=[...hireWaitingList.matchAll(/\{key:'([^']+)',label:/g)].map(match=>match[1]);

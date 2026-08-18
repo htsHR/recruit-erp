@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='11.4.0';
+const UX_VERSION='11.4.1';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -556,8 +556,8 @@ updateStorageNote=function(){
   el.querySelectorAll('[data-operation-mode]').forEach(btn=>btn.addEventListener('click',()=>uxSetOperationEnvironment(btn.dataset.operationMode)));
   const badge=document.querySelector('.local-mode-badge');
   if(badge){
-    badge.textContent=sharedNote?.badge||(isCompany?'회사 · LOCAL':cloudFailed?'CLOUD ERROR':cloudOk?'CLOUD OK':cloudSyncing?'CLOUD SYNCING':loggedOut?'CLOUD LOGOUT':'LOCAL');
-    badge.title=displayDescription;
+    badge.textContent=isCompany?'회사 · LOCAL':'집 · CLOUD';
+    badge.title=isCompany?'회사 로컬 운영 모드':'집 클라우드 운영 모드';
     badge.classList.toggle('company',isCompany);
     badge.classList.toggle('home',!isCompany);
     badge.classList.toggle('cloud-ready',cloudOk);

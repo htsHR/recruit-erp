@@ -19,7 +19,7 @@ const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
 const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.4.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.4.1');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -73,8 +73,8 @@ const viewports=[
   {name:'1920x1080',width:1920,height:1080},
   {name:'1440x900',width:1440,height:900},
   {name:'1366x768',width:1366,height:768},
-  {name:'1024x768',width:1024,height:768},
   {name:'768x1024',width:768,height:1024},
+  {name:'412x915',width:412,height:915},
   {name:'390x844',width:390,height:844}
 ];
 const hireWaitingKeys=['no','employeeNo','contactStatus','hireDate','workplace','pmtc','gender','groupName','product','part','name','rank','residentNumber','birthDate','age','email','education','school','major','phone','region','commuteMethod','remarks'];
@@ -161,7 +161,7 @@ async function verifyUiDensity(page,label){
   assert.deepEqual(density.kpiKeys,['applicants','active','monthApplications','hirePlanned']);
   assert.equal(density.kpiKeys.some(key=>density.taskKeys.includes(key)),false,'홈 누적 KPI와 오늘 업무 키가 겹치면 안 됩니다.');
   assert.equal(density.visualRows,3,`${label} 지원자 상단 제어영역은 3개 시각 행이어야 합니다: ${JSON.stringify(density.regions)}`);
-  const regionLimits={'.applicant-list-header-row':48,'.applicant-list-tool-row':44,'.applicant-list-filter-stack':56};
+  const regionLimits={'.applicant-list-header-row':48,'.applicant-list-tool-row':44,'.applicant-list-filter-stack':104};
   assert.ok(density.regions.every(region=>region.height<=regionLimits[region.selector]),`${label} 지원자 상단 제어행이 과도하게 높습니다: ${JSON.stringify(density.regions)}`);
   assert.ok(density.headerVisible&&density.visibleRows>=3,`${label} 768px 높이에서 표 헤더와 지원자 3행 이상이 보여야 합니다: ${JSON.stringify(density)}`);
   assert.ok(density.bodyOverflow<=1,`${label} 본문 가로 넘침: ${density.bodyOverflow}`);
@@ -209,6 +209,38 @@ async function verifyUiDensity(page,label){
     events:localStorage.getItem('recruit_erp_calendar_events')===snapshot.events
   }),baseline);
   assert.deepEqual(restored,{applicants:true,employees:true,schools:true,events:true},'UI 밀도 검사는 기존 업무 저장값을 변경하면 안 됩니다.');
+}
+async function verifyUsabilityPolish(page,label){
+  const accessible=await page.evaluate(()=>Object.fromEntries(['searchInput','sortSelect','calendarWorkplaceFilter','dailyWorkflowSearch','rosterDate'].map(id=>[id,document.getElementById(id)?.getAttribute('aria-label')||''])));
+  assert.ok(Object.values(accessible).every(Boolean),`${label} 핵심 검색·정렬·날짜 컨트롤에 접근 가능한 이름이 필요합니다: ${JSON.stringify(accessible)}`);
+
+  await page.evaluate(()=>window.setPage?.('applicants'));await page.waitForTimeout(40);
+  const filterLayout=await page.evaluate(()=>{
+    const card=document.querySelector('#applicants .applicant-list-filter-card'),quick=document.getElementById('quickFilters'),workplace=document.getElementById('workplaceTabs');
+    const buttons=[...document.querySelectorAll('#quickFilters button,#workplaceTabs button,#btnOpenApplicantFilter,#bulkModeButton,#btnResetFilters')].filter(node=>node.getClientRects().length);
+    return{cardOverflow:card.scrollWidth-card.clientWidth,quickOverflow:quick.scrollWidth-quick.clientWidth,workplaceOverflow:workplace.scrollWidth-workplace.clientWidth,heights:buttons.map(button=>button.getBoundingClientRect().height)};
+  });
+  assert.ok(filterLayout.cardOverflow<=1&&filterLayout.quickOverflow<=1&&filterLayout.workplaceOverflow<=1,`${label} 데스크톱 지원자 필터 내부에 가로 스크롤이나 잘림이 있으면 안 됩니다: ${JSON.stringify(filterLayout)}`);
+  assert.ok(filterLayout.heights.length&&filterLayout.heights.every(height=>height>=36),`${label} 반복 필터와 주요 조작 버튼은 36px 이상이어야 합니다: ${JSON.stringify(filterLayout.heights)}`);
+  await page.locator('#searchInput').fill('가상검색');await page.locator('#sortSelect').selectOption('nameAsc');await page.locator('#quickFilters [data-filter="interview"]').click();await page.locator('#workplaceTabs [data-workplace="평택"]').click();await page.locator('#hideFinished').check();
+  assert.deepEqual(await page.evaluate(()=>({search:currentSearch,sort:currentSort,filter:currentFilter,workplace:currentWorkplace,hidden:hideFinished})),{search:'가상검색',sort:'nameAsc',filter:'interview',workplace:'평택',hidden:true},`${label} 검색·정렬·필터 선택값이 유지되어야 합니다.`);
+  await page.locator('#btnResetFilters').click();assert.deepEqual(await page.evaluate(()=>({search:currentSearch,sort:currentSort,filter:currentFilter,workplace:currentWorkplace,hidden:hideFinished})),{search:'',sort:'recent',filter:'all',workplace:'all',hidden:false},`${label} 필터 초기화가 기존 동작을 유지해야 합니다.`);
+
+  await page.evaluate(()=>{window.setPage?.('calendar');window.__v1141CalendarEvents=calendarEvents;calendarEvents=[...calendarEvents,{id:'calendar-v1141-synthetic',title:'가상 오늘 일정',date:today(),type:'중요',workplace:'전체',importance:'normal'}];goCalendarToday();});await page.waitForTimeout(40);
+  const todayCell=await page.locator('#calendar .calendar-day.today').evaluate(cell=>{const dot=cell.querySelector('.calendar-today-dot'),date=cell.querySelector('.calendar-date-num'),style=getComputedStyle(cell),dotStyle=getComputedStyle(dot),dateStyle=getComputedStyle(date);return{selected:cell.classList.contains('selected'),ariaCurrent:cell.getAttribute('aria-current'),ariaLabel:cell.getAttribute('aria-label'),background:style.backgroundColor,dateColor:dateStyle.color,dotBackground:dotStyle.backgroundColor,dotColor:dotStyle.color,dotText:dot.textContent,events:cell.querySelectorAll('.calendar-day-line').length};});
+  assert.ok(todayCell.selected&&todayCell.ariaCurrent==='date'&&todayCell.ariaLabel.includes('오늘')&&todayCell.dotText==='오늘'&&todayCell.events>=1,`${label} 오늘 날짜는 텍스트·접근성 이름·일정과 함께 구분되어야 합니다: ${JSON.stringify(todayCell)}`);
+  assert.notEqual(todayCell.background,todayCell.dateColor,`${label} 오늘 날짜 숫자와 배경색이 같으면 안 됩니다.`);assert.notEqual(todayCell.dotBackground,todayCell.dotColor,`${label} 오늘 배지 글자와 배경색이 같으면 안 됩니다.`);
+  await page.screenshot({path:path.join(outputDir,`${label}-calendar-today.png`),fullPage:true});
+  await page.evaluate(()=>{calendarEvents=window.__v1141CalendarEvents;delete window.__v1141CalendarEvents;renderCalendar();});
+
+  const sidebar=await page.evaluate(()=>{
+    localStorage.setItem('recruit_erp_ui_operation_environment','home');updateStorageNote();
+    const nav=document.querySelector('.sidebar .nav'),area=document.querySelector('.sidebar-status-area'),last=[...nav.querySelectorAll('.nav-btn')].filter(node=>node.getClientRects().length).at(-1);nav.scrollTop=nav.scrollHeight;
+    const nr=nav.getBoundingClientRect(),ar=area.getBoundingClientRect(),lr=last.getBoundingClientRect(),result={navClient:nav.clientHeight,navScroll:nav.scrollHeight,lastBottom:lr.bottom,navBottom:nr.bottom,statusTop:ar.top,statusBottom:ar.bottom,sidebarBottom:document.querySelector('.sidebar').getBoundingClientRect().bottom,badge:document.querySelector('.local-mode-badge')?.textContent||'',status:document.querySelector('#storageNote strong')?.textContent||''};
+    nav.scrollTop=0;localStorage.setItem('recruit_erp_ui_operation_environment','company');updateStorageNote();return result;
+  });
+  assert.ok(sidebar.lastBottom<=sidebar.navBottom+1&&sidebar.navBottom<=sidebar.statusTop+1&&sidebar.statusBottom<=sidebar.sidebarBottom+1,`${label} 사이드바 메뉴 끝과 상태 영역이 겹치거나 가려지면 안 됩니다: ${JSON.stringify(sidebar)}`);
+  assert.equal(sidebar.badge,'집 · CLOUD',`${label} 상단 모드 표시는 동기화 상태 문구를 중복하면 안 됩니다.`);assert.ok(sidebar.status.length>0&&sidebar.status!==sidebar.badge,`${label} 모드 표시와 저장 상태를 분리해야 합니다.`);
 }
 async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   let bridgeSaveRequests=0;
@@ -287,6 +319,7 @@ async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
     applicants=rows.map(row=>({...row}));resetListFiltersToAll();applicantPageSize=30;currentApplicantPage=1;renderAll();
   },worksheetApplicants);
   const restoreFixture=()=>page.evaluate(()=>{
+    window.erpApplicantWorksheet?.discard?.();
     applicants=window.__worksheetUiOriginalApplicants;
     if(window.__worksheetUiOriginalStorage===null)localStorage.removeItem('recruit_erp_applicants_stable');else localStorage.setItem('recruit_erp_applicants_stable',window.__worksheetUiOriginalStorage);
     delete window.__worksheetUiOriginalApplicants;delete window.__worksheetUiOriginalStorage;resetListFiltersToAll();renderAll();setPage('applicants');
@@ -294,17 +327,37 @@ async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
   await page.evaluate(()=>window.setPage?.('applicants'));await page.locator('#btnApplicantWorksheetView').click();await page.locator('#applicantWorksheet:not([hidden])').waitFor();
   const layout=await page.evaluate(()=>{
     const section=document.querySelector('#applicants'),wrap=document.querySelector('.applicant-worksheet-scroll'),table=document.querySelector('.applicant-worksheet-table'),first=document.querySelector('#applicantWorksheet tbody tr[data-applicant-id]');
-    const no=first?.querySelector('[data-field="no"]'),name=first?.querySelector('[data-field="name"]');
+    const no=first?.querySelector('[data-field="no"]'),name=first?.querySelector('[data-field="name"]'),phone=first?.querySelector('[data-field="phone"]');
     const headers=[...document.querySelectorAll('.applicant-worksheet-table thead [data-field]')],alignments=headers.map(header=>{const cell=first.querySelector('[data-field="'+header.dataset.field+'"]'),headRect=header.getBoundingClientRect(),cellRect=cell.getBoundingClientRect();return{field:header.dataset.field,left:Math.abs(headRect.left-cellRect.left),right:Math.abs(headRect.right-cellRect.right)};});
-    return {fields:headers.map(node=>node.dataset.field),firstValues:Object.fromEntries([...first.querySelectorAll('[data-field]')].map(cell=>[cell.dataset.field,cell.innerText.trim()])),normalHidden:document.querySelector('#applicantTbody').closest('.table-wrap').hidden,bodyOverflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,internalScroll:wrap.scrollWidth>wrap.clientWidth,noPosition:getComputedStyle(no).position,namePosition:getComputedStyle(name).position,noLeft:no.getBoundingClientRect().left-wrap.getBoundingClientRect().left,nameLeft:name.getBoundingClientRect().left-no.getBoundingClientRect().right,sectionWidth:section.clientWidth,tableWidth:table.getBoundingClientRect().width,visibleRows:document.querySelectorAll('#applicantWorksheet tbody tr[data-applicant-id]').length,totalApplicants:applicants.length,alignments};
+    return {fields:headers.map(node=>node.dataset.field),firstValues:Object.fromEntries([...first.querySelectorAll('[data-field]')].map(cell=>[cell.dataset.field,cell.innerText.trim()])),normalHidden:document.querySelector('#applicantTbody').closest('.table-wrap').hidden,bodyOverflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,internalScroll:wrap.scrollWidth>wrap.clientWidth,noPosition:getComputedStyle(no).position,namePosition:getComputedStyle(name).position,phonePosition:getComputedStyle(phone).position,noLeft:no.getBoundingClientRect().left-wrap.getBoundingClientRect().left,nameLeft:name.getBoundingClientRect().left-no.getBoundingClientRect().right,phoneLeft:phone.getBoundingClientRect().left-name.getBoundingClientRect().right,sectionWidth:section.clientWidth,tableWidth:table.getBoundingClientRect().width,visibleRows:document.querySelectorAll('#applicantWorksheet tbody tr[data-applicant-id]').length,totalApplicants:applicants.length,alignments};
   });
   assert.deepEqual(layout.fields,['no','name','phone','email','region','workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo'],label+' 워크시트 열 순서가 달라졌습니다.');
   assert.equal(layout.firstValues.interviewDate,'2026-08-02');assert.equal(layout.firstValues.interviewTime,'10:00','면접일과 면접시간이 서로 다른 열에 유지되어야 합니다.');
   assert.deepEqual({visibleRows:layout.visibleRows,totalApplicants:layout.totalApplicants},{visibleRows:30,totalApplicants:60},'합성 지원자 60명에서 현재 페이지 30행을 표시해야 합니다.');
   assert.ok(layout.alignments.every(item=>item.left<=1&&item.right<=1),'워크시트 헤더와 데이터 셀 경계가 맞아야 합니다: '+JSON.stringify(layout.alignments));
-  assert.equal(layout.normalHidden,true);assert.equal(layout.noPosition,'sticky');assert.equal(layout.namePosition,'sticky');assert.ok(Math.abs(layout.noLeft)<=1&&Math.abs(layout.nameLeft)<=1,label+' NO·성명 고정 열 위치가 맞지 않습니다: '+JSON.stringify(layout));
+  assert.equal(layout.normalHidden,true);assert.equal(layout.noPosition,'sticky');assert.equal(layout.namePosition,'sticky');assert.equal(layout.phonePosition,'sticky');assert.ok(Math.abs(layout.noLeft)<=1&&Math.abs(layout.nameLeft)<=1&&Math.abs(layout.phoneLeft)<=1,label+' NO·성명·연락처 고정 열 위치가 맞지 않습니다: '+JSON.stringify(layout));
   assert.ok((layout.internalScroll||layout.tableWidth<=layout.sectionWidth)&&layout.bodyOverflow<=1,label+' 워크시트는 필요한 경우 표 내부에서만 가로 스크롤되어야 합니다: '+JSON.stringify(layout));
   assert.equal(await page.locator('#applicantWorksheet [data-field="residentNumber"]').count(),0,'주민등록번호는 워크시트 열에 없어야 합니다.');
+  await page.evaluate(()=>{const wrap=document.querySelector('.applicant-worksheet-scroll');wrap.scrollLeft=wrap.scrollWidth;});await page.waitForTimeout(30);
+  const sticky=await page.evaluate(()=>{
+    const wrap=document.querySelector('.applicant-worksheet-scroll'),row=document.querySelector('#applicantWorksheet tbody tr[data-applicant-id]');
+    const cell=field=>{const body=row.querySelector(`[data-field="${field}"]`),head=document.querySelector(`#applicantWorksheet thead [data-field="${field}"]`),br=body.getBoundingClientRect(),hr=head.getBoundingClientRect();return{left:br.left,right:br.right,width:br.width,headLeft:hr.left,headRight:hr.right,value:body.innerText.trim(),position:getComputedStyle(body).position};};
+    return{scrollLeft:wrap.scrollLeft,wrapLeft:wrap.getBoundingClientRect().left,no:cell('no'),name:cell('name'),phone:cell('phone')};
+  });
+  assert.ok(sticky.scrollLeft>100,`${label} 워크시트 실제 가로 스크롤이 필요합니다.`);assert.deepEqual([sticky.no.value,sticky.name.value,sticky.phone.value],[layout.firstValues.no,layout.firstValues.name,layout.firstValues.phone],`${label} 가로 스크롤 뒤 행 식별값이 유지되어야 합니다.`);
+  assert.ok(Math.abs(sticky.no.left-sticky.wrapLeft)<=1&&Math.abs(sticky.name.left-sticky.no.right)<=1&&Math.abs(sticky.phone.left-sticky.name.right)<=1,`${label} 누적 고정 열 offset이 실제 렌더 너비와 맞아야 합니다: ${JSON.stringify(sticky)}`);
+  assert.ok(Math.abs(sticky.no.left-sticky.no.headLeft)<=1&&Math.abs(sticky.name.left-sticky.name.headLeft)<=1&&Math.abs(sticky.phone.left-sticky.phone.headLeft)<=1,`${label} 고정 헤더와 본문 위치가 맞아야 합니다.`);
+  await page.evaluate(({id,otherPhone})=>{window.erpApplicantWorksheet.setDirty(id,'name','가상 고정열 수정');window.erpApplicantWorksheet.setDirty(id,'phone',otherPhone);},{id:worksheetApplicants[0].id,otherPhone:worksheetApplicants[1].phone});
+  await page.locator(`#applicantWorksheet tr[data-applicant-id="${worksheetApplicants[0].id}"] [data-field="phone"]`).click();await page.evaluate(()=>{const wrap=document.querySelector('.applicant-worksheet-scroll');wrap.scrollLeft=wrap.scrollWidth;});
+  const stickyStates=await page.evaluate(id=>{const row=document.querySelector(`#applicantWorksheet tr[data-applicant-id="${id}"]`),read=field=>[...row.querySelector(`[data-field="${field}"]`).classList];return{no:read('no'),name:read('name'),phone:read('phone')};},worksheetApplicants[0].id);
+  assert.ok(stickyStates.no.includes('is-readonly')&&stickyStates.name.includes('is-dirty')&&stickyStates.phone.includes('is-duplicate')&&stickyStates.phone.includes('is-current'),`${label} 고정 열에서 읽기전용·변경·중복·선택 상태가 유지되어야 합니다: ${JSON.stringify(stickyStates)}`);
+  await page.evaluate(id=>window.erpApplicantWorksheet.setDirty(id,'phone','010-12'),worksheetApplicants[0].id);await page.evaluate(()=>{const wrap=document.querySelector('.applicant-worksheet-scroll');wrap.scrollLeft=wrap.scrollWidth;});
+  assert.equal(await page.locator(`#applicantWorksheet tr[data-applicant-id="${worksheetApplicants[0].id}"] [data-field="phone"]`).evaluate(cell=>cell.classList.contains('is-error')),true,`${label} 고정 연락처 열의 오류 표시가 유지되어야 합니다.`);
+  await page.evaluate(()=>window.erpApplicantWorksheet.discard());
+  await page.evaluate(()=>{currentSearch='__v11_4_1_empty__';document.getElementById('searchInput').value=currentSearch;window.erpApplicantWorksheet.render();});
+  const empty=await page.locator('#applicantWorksheet .worksheet-empty').evaluate(node=>{const r=node.getBoundingClientRect(),wrap=node.closest('.applicant-worksheet-scroll').getBoundingClientRect();return{center:r.left+r.width/2,viewportCenter:wrap.left+wrap.width/2,width:r.width,viewportWidth:wrap.width};});
+  assert.ok(Math.abs(empty.center-empty.viewportCenter)<=1&&empty.width<=empty.viewportWidth+1,`${label} 빈 상태는 1854px 표가 아니라 보이는 워크시트 영역 중앙에 있어야 합니다: ${JSON.stringify(empty)}`);
+  await page.evaluate(()=>{currentSearch='';document.getElementById('searchInput').value='';window.erpApplicantWorksheet.render();});
   await page.screenshot({path:path.join(outputDir,label+'-applicant-worksheet.png'),fullPage:false});
   if(!exercise){await restoreFixture();return;}
 
@@ -438,7 +491,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v11.4.0');
+      assert.equal(await page.title(),'채용관리 시스템 v11.4.1');
       const queue=page.locator('#homeTodayGrid .queue-card');assert.equal(await queue.count(),5);for(let i=0;i<5;i++)assert.notEqual(await queue.nth(i).evaluate(el=>getComputedStyle(el).display),'none');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
@@ -516,7 +569,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
       }else{
         assert.notEqual(await page.locator('#applicants .applicant-row').first().evaluate(el=>getComputedStyle(el).display),'table-row','760 이하 지원자 목록은 카드형이어야 합니다.');
       }
-      if(viewport.width===1366)await verifyUiDensity(page,viewport.name);
+      if(viewport.width===1366){await verifyUiDensity(page,viewport.name);await verifyUsabilityPolish(page,viewport.name);}
       if(viewport.width===390){
         await page.evaluate(()=>window.scrollTo(0,0));
         const mobileApplicantControls=await page.evaluate(()=>{
@@ -566,6 +619,12 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
       await context.close();
     }
 
+    const sidebarContext=await browser.newContext({viewport:{width:1363,height:936}}),sidebarPage=await sidebarContext.newPage();
+    sidebarPage.on('pageerror',error=>consoleErrors.push(`1363x936-sidebar: ${error.message}`));
+    await sidebarPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_ui_operation_environment','company');}, {applicants:fakeApplicants});
+    await sidebarPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await sidebarPage.waitForTimeout(700);await verifyUsabilityPolish(sidebarPage,'1363x936-sidebar');
+    await sidebarPage.locator('.sidebar').screenshot({path:path.join(outputDir,'1363x936-sidebar.png')});await sidebarContext.close();
+
     const zoomContext=await browser.newContext({viewport:{width:1093,height:614},deviceScaleFactor:1.25}),zoomPage=await zoomContext.newPage();
     zoomPage.on('pageerror',error=>consoleErrors.push(`1366x768-zoom125: ${error.message}`));
     zoomPage.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`1366x768-zoom125: ${message.text()}`);});
@@ -574,6 +633,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
     await verifyApplicantQuickDetail(zoomPage,'1366x768-zoom125');
     await verifyHireWaitingGrid(zoomPage,'1366x768-zoom125');
     await verifyApplicantWorksheet(zoomPage,'1366x768-zoom125');
+    await verifyUsabilityPolish(zoomPage,'1366x768-zoom125');
     for(const screen of ['home','applicants','form','today','onboarding','storagePerformance','productionReadiness']){
       await zoomPage.evaluate(id=>window.setPage?.(id),screen);await zoomPage.waitForTimeout(50);
       const layout=await zoomPage.evaluate(()=>({screen:document.querySelector('.page.active')?.id,width:innerWidth,body:document.body.scrollWidth,html:document.documentElement.scrollWidth}));
