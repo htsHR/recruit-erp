@@ -1,4 +1,4 @@
-/* Recruit ERP v11.4.0 — 지원자 워크시트 2단계 */
+/* Recruit ERP v11.4.1 — 지원자 워크시트 사용성 마감 */
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -6,7 +6,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
 
-  const VERSION='11.4.0';
+  const VERSION='11.4.1';
   const SETTINGS_KEY='recruit_erp_applicant_worksheet_view_v1';
   const VIEW_MODES=['normal','worksheet'];
   const WORKPLACES=['all','천안','평택','기타'];
@@ -361,6 +361,12 @@
     const row=Math.min(Math.max(0,state.selected?.row||0),state.pageRows.length-1),col=Math.min(Math.max(0,state.selected?.col||0),COLUMNS.length-1);
     state.selected={row,col};if(!state.anchor)state.anchor={...state.selected};
   }
+  function syncStickyOffsets(table){
+    const headers=table?.querySelectorAll('thead th');if(!headers||headers.length<3)return;
+    const noWidth=headers[0].getBoundingClientRect().width,nameWidth=headers[1].getBoundingClientRect().width;
+    table.style.setProperty('--worksheet-name-left',`${noWidth}px`);
+    table.style.setProperty('--worksheet-phone-left',`${noWidth+nameWidth}px`);
+  }
   function renderWorksheet(){
     const host=root.document.getElementById('applicantWorksheet');if(!host||state.viewMode!=='worksheet')return;
     if(!canRead()){host.innerHTML='<div class="worksheet-empty">지원자 조회 권한이 없습니다.</div>';return;}
@@ -372,8 +378,10 @@
     ensureSelection();
     const writable=canWrite(),entries=currentEntries();
     const head=COLUMNS.map(column=>`<th style="width:${column.width}px;min-width:${column.width}px" data-field="${column.key}">${column.label}</th>`).join('');
-    const body=state.pageRows.length?state.pageRows.map((row,rowIndex)=>`<tr class="${state.selected?.row===rowIndex?'is-current-row':''} ${entries.some(entry=>entry.id===String(row.id))?'is-dirty-row':''}" data-applicant-id="${escapeHtml(row.id)}">${COLUMNS.map((column,columnIndex)=>renderCell(row,column,rowIndex,columnIndex)).join('')}</tr>`).join(''):`<tr><td colspan="12" class="worksheet-empty">현재 조건에 해당하는 지원자가 없습니다.</td></tr>`;
-    host.innerHTML=`<div class="worksheet-guide"><strong>현재 페이지 워크시트</strong><span>클릭으로 선택하고 Enter 또는 타이핑으로 편집합니다. 붙여넣기는 현재 페이지의 편집 열에서만 가능합니다.</span>${writable?'':'<em>조회 전용 권한에서는 편집·붙여넣기·저장을 사용할 수 없습니다.</em>'}</div><div class="applicant-worksheet-scroll"><table class="applicant-worksheet-table" aria-label="지원자 워크시트"><colgroup>${COLUMNS.map(column=>`<col style="width:${column.width}px">`).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div><div class="worksheet-savebar" role="status"><div><strong>변경 ${entries.length}건</strong><span>${entries.length?`${dirtyPeople()}명 · 저장 전 임시 변경`:(state.lastNotice||'저장 전에는 지원자 데이터가 바뀌지 않습니다.')}</span>${state.errors.size?`<em>오류 ${state.errors.size}건을 먼저 확인하세요.</em>`:''}</div><div><button type="button" class="ghost" id="btnWorksheetCancel" ${entries.length&&!writable?'disabled':''}>취소</button><button type="button" class="primary" id="btnWorksheetSave" data-required-permission="applicant.write" ${!entries.length||state.errors.size||!writable?'disabled':''}>저장</button></div></div>`;
+    const body=state.pageRows.map((row,rowIndex)=>`<tr class="${state.selected?.row===rowIndex?'is-current-row':''} ${entries.some(entry=>entry.id===String(row.id))?'is-dirty-row':''}" data-applicant-id="${escapeHtml(row.id)}">${COLUMNS.map((column,columnIndex)=>renderCell(row,column,rowIndex,columnIndex)).join('')}</tr>`).join('');
+    const table=state.pageRows.length?`<table class="applicant-worksheet-table" aria-label="지원자 워크시트"><colgroup>${COLUMNS.map(column=>`<col style="width:${column.width}px">`).join('')}</colgroup><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`:'<div class="worksheet-empty" role="status">현재 조건에 해당하는 지원자가 없습니다.</div>';
+    host.innerHTML=`<div class="worksheet-guide"><strong>현재 페이지 워크시트</strong><span>클릭으로 선택하고 Enter 또는 타이핑으로 편집합니다. 붙여넣기는 현재 페이지의 편집 열에서만 가능합니다.</span>${writable?'':'<em>조회 전용 권한에서는 편집·붙여넣기·저장을 사용할 수 없습니다.</em>'}</div><div class="applicant-worksheet-scroll">${table}</div><div class="worksheet-savebar" role="status"><div><strong>변경 ${entries.length}건</strong><span>${entries.length?`${dirtyPeople()}명 · 저장 전 임시 변경`:(state.lastNotice||'저장 전에는 지원자 데이터가 바뀌지 않습니다.')}</span>${state.errors.size?`<em>오류 ${state.errors.size}건을 먼저 확인하세요.</em>`:''}</div><div><button type="button" class="ghost" id="btnWorksheetCancel" ${entries.length&&!writable?'disabled':''}>취소</button><button type="button" class="primary" id="btnWorksheetSave" data-required-permission="applicant.write" ${!entries.length||state.errors.size||!writable?'disabled':''}>저장</button></div></div>`;
+    syncStickyOffsets(host.querySelector('.applicant-worksheet-table'));
     enhanceWorksheetUi(host,writable,entries);bindWorksheetHost(host);
     if(typeof renderApplicantPagination==='function')renderApplicantPagination(all.length);
     root.document.querySelector('#applicantPagination')?.classList.add('worksheet-pagination');

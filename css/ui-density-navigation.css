@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v11.4.0 — UI density and navigation
+   Recruit ERP v11.4.1 — UI usability polish
    화면 밀도만 조정하며 업무 데이터·저장 구조에는 관여하지 않습니다.
    ========================================================= */
 
@@ -25,6 +25,7 @@
   border-radius:10px;
   background:rgba(255,255,255,.045);
 }
+.sidebar .nav{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;}
 .sidebar-status-area .security-note,
 .sidebar-status-area .auth-note{
   margin:0!important;
@@ -33,10 +34,10 @@
   background:transparent!important;
   box-shadow:none!important;
 }
-.sidebar-status-area .security-note{padding:9px 10px!important;}
+.sidebar-status-area .security-note{padding:8px 9px!important;}
 .sidebar-status-area .security-note.sync-warn-note{background:rgba(179,53,46,.14)!important;}
 .sidebar-status-area .auth-note{
-  padding:7px 10px 9px!important;
+  padding:6px 9px 8px!important;
   border-top:1px solid rgba(255,255,255,.08)!important;
 }
 .sidebar-status-area .auth-logged-in,
@@ -128,16 +129,14 @@ body.sidebar-collapsed .sidebar-status-area .auth-note{padding:0!important;borde
 #applicants #quickFilters,
 #applicants #workplaceTabs{
   min-width:0!important;
-  overflow-x:auto!important;
-  overflow-y:hidden!important;
-  flex-wrap:nowrap!important;
+  overflow:visible!important;
+  flex-wrap:wrap!important;
   padding:0!important;
-  scrollbar-width:thin;
 }
 #applicants #quickFilters{display:flex!important;flex:1 1 auto!important;}
-#applicants #quickFilters .chip{flex:0 0 auto!important;height:30px!important;}
+#applicants #quickFilters .chip{flex:0 0 auto!important;height:36px!important;min-height:36px!important;}
 #applicants #workplaceTabs{display:flex!important;flex:0 0 auto!important;}
-#applicants #workplaceTabs .tab{height:30px!important;min-height:30px!important;padding:0 10px!important;}
+#applicants #workplaceTabs .tab{height:36px!important;min-height:36px!important;padding:0 10px!important;}
 #applicants .list-summary{min-height:34px!important;padding:6px 12px!important;}
 #applicants .table-wrap{
   min-height:0!important;
@@ -166,6 +165,14 @@ body.sidebar-collapsed .sidebar-status-area .auth-note{padding:0!important;borde
 #applicants .applicant-list-empty-state>span{font-size:12px;}
 #applicants .applicant-list-empty-actions{display:flex;gap:7px;margin-top:3px;}
 #applicants .applicant-list-empty-actions button{min-height:36px!important;}
+
+/* 달력의 오늘 표시는 배경색뿐 아니라 명시적 텍스트와 대비로 구분합니다. */
+#calendar .calendar-day.today{background:#e5edff!important;box-shadow:inset 0 0 0 2px #6d8fce!important;}
+#calendar .calendar-day.today.selected{background:#dce7ff!important;box-shadow:inset 0 0 0 2px #174ea6!important;}
+#calendar .calendar-today-dot{border:1px solid #174ea6!important;background:#174ea6!important;color:#fff!important;line-height:1.2!important;}
+
+/* 명시적 이름이 있는 핵심 검색·정렬 컨트롤의 키보드 위치를 분명하게 보입니다. */
+#searchInput:focus-visible,#sortSelect:focus-visible,#calendarWorkplaceFilter:focus-visible,#dailyWorkflowSearch:focus-visible,#rosterDate:focus-visible{outline:3px solid rgba(39,87,214,.34)!important;outline-offset:2px!important;border-color:#2757d6!important;}
 
 @media (max-width:1200px) and (min-width:1021px){
   #applicants .applicant-list-tool-row,
@@ -235,7 +242,7 @@ body.sidebar-collapsed .sidebar-status-area .auth-note{padding:0!important;borde
     grid-column:1!important;
     width:100%!important;
   }
-  #applicants #quickFilters,#applicants #workplaceTabs{width:100%!important;}
+  #applicants #quickFilters,#applicants #workplaceTabs{width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;flex-wrap:nowrap!important;scrollbar-width:thin;}
   #applicants .applicant-list-empty-actions{flex-direction:column;width:min(240px,100%);}
   #applicants .applicant-list-empty-actions button{min-height:44px!important;width:100%;}
 }

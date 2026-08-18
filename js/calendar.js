@@ -149,7 +149,7 @@ function renderCalendar(){
     if(hireCount) lines.push(`<span class="calendar-day-line calendar-type-hire"><span class="calendar-line-main">입사 ${hireCount}</span></span>`);
     if(urgentCount) lines.push(`<span class="calendar-day-line calendar-type-urgent"><span class="calendar-line-main">매우중요 ${urgentCount}</span></span>`);
     else if(customCount) lines.push(`<span class="calendar-day-line calendar-type-custom"><span class="calendar-line-main">직접 ${customCount}</span></span>`);
-    cells.push(`<button type="button" class="calendar-day ${inMonth?'':'other-month'} ${dateStr===today()?'today':''} ${dateStr===selectedCalendarDate?'selected':''}" data-erp-handler="selectCalendarDate('${dateStr}')">
+    cells.push(`<button type="button" class="calendar-day ${inMonth?'':'other-month'} ${dateStr===today()?'today':''} ${dateStr===selectedCalendarDate?'selected':''}" data-erp-handler="selectCalendarDate('${dateStr}')" aria-label="${dateStr}${dateStr===today()?' 오늘':''} 일정 ${dayItems.length}건" ${dateStr===today()?'aria-current="date"':''}>
       <span class="calendar-date-num"><span>${d.getDate()}</span>${dateStr===today()?'<span class="calendar-today-dot">오늘</span>':''}</span>
       <span class="calendar-day-lines">${lines.join('')}</span>
     </button>`);
