@@ -147,7 +147,7 @@ async function restoreSchoolWorkforceFixture(page){
         await page.evaluate(()=>window.setPage?.('backup'));await page.waitForTimeout(80);
         assert.ok(await page.locator('#bcEncryptedPanel').isVisible(),'암호화 백업이 기본 화면에 보여야 합니다.');
         assert.equal(await page.locator('.legacy-backup-details').getAttribute('open'),null,'평문 JSON은 기본적으로 접혀 있어야 합니다.');
-        await page.locator('#bcEncryptedFull').focus();await page.locator('#bcEncryptedFull').click();await page.locator('#encryptedBackupDialog:not([hidden])').waitFor();
+        await page.locator('#bcEncryptedFull').focus();await page.locator('#bcEncryptedFull').click();await page.locator('#encryptedBackupDialog:not([hidden])').waitFor();await page.waitForFunction(()=>document.activeElement?.id==='encryptedBackupPassword');
         const modalLayout=await page.locator('.encrypted-backup-dialog').evaluate(dialog=>{const r=dialog.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,active:document.activeElement?.id};});
         assert.ok(modalLayout.left>=0&&modalLayout.right<=modalLayout.width&&modalLayout.top>=0&&modalLayout.bottom<=modalLayout.height,`${viewport.name} 암호화 비밀번호 팝업 잘림: ${JSON.stringify(modalLayout)}`);
         assert.equal(modalLayout.active,'encryptedBackupPassword');await page.keyboard.press('Shift+Tab');assert.ok(await page.evaluate(()=>document.querySelector('#encryptedBackupDialog').contains(document.activeElement)),'Tab 포커스가 암호화 팝업 안에 있어야 합니다.');
