@@ -14,7 +14,7 @@ const options={
   interviewTime:new Set(['','09:00','10:00']),careerType:new Set(['','신입','경력']),dormUse:new Set(['','기숙사','출퇴근','확인필요'])
 };
 
-assert.equal(worksheet.VERSION,'11.3.0');
+assert.equal(worksheet.VERSION,'11.3.1');
 assert.deepEqual(worksheet.COLUMNS.map(column=>column.key),['no','name','phone','workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo']);
 assert.deepEqual(worksheet.EDITABLE_FIELDS,['workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo']);
 
