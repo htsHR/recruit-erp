@@ -17,6 +17,9 @@ const listLayout=read('css/list-layout.css');
 const clearview=read('css/applicant-clearview.css');
 const calm=read('css/design-calm-cascade.css');
 const readiness=read('css/production-readiness.css');
+const hireWaitingList=read('js/hire-waiting-list.js');
+const hireWaitingCss=read('css/hire-waiting-list.css');
+const dailyOperationsCss=read('css/daily-operations-polish.css');
 
 const queue=index.match(/<div class="home-work-queue"[^>]*>([\s\S]*?)<\/div>/)?.[1]||'';
 const queueTargets=[...queue.matchAll(/class="queue-card[^\"]*" data-task-target="([^"]+)"/g)].map(match=>match[1]);
@@ -54,4 +57,17 @@ assert.match(read('css/privacy-security.css'),/\.privacy-shield-button\{display:
 assert.match(readiness,/readiness-check-grid/);assert.match(readiness,/@media\(max-width:600px\)/);
 assert.match(visualTest,/\$\{viewport\.name\}-production-readiness\.png/);assert.match(visualTest,/1366x768-zoom125-production-readiness\.png/);
 
-console.log('ui-layout.test.js: 5개 업무 카드·의미 기반 고정 열·모바일 권한/감사·상태 팝업 확인 완료');
+const hireWaitingKeys=['no','employeeNo','contactStatus','hireDate','workplace','pmtc','gender','groupName','product','part','name','rank','residentNumber','birthDate','age','email','education','school','major','phone','region','commuteMethod','remarks'];
+const declaredHireWaitingKeys=[...hireWaitingList.matchAll(/\{key:'([^']+)',label:/g)].map(match=>match[1]);
+assert.deepEqual(declaredHireWaitingKeys,hireWaitingKeys,'입사대기 회사 양식 23열 순서가 유지되어야 합니다.');
+assert.match(hireWaitingList,/ensureHireWaitingColumnSemantics/);assert.match(hireWaitingList,/th\.dataset\.colKey=column\.key/);assert.match(hireWaitingList,/hireWaitingColumnClass\(col\.key\)/);
+assert.doesNotMatch(hireWaitingCss,/\.hire-waiting-table[^{}]*(?:first-child|nth-child)/,'입사대기 핵심 열 스타일은 열 번호가 아니라 data-col-key를 사용해야 합니다.');
+assert.doesNotMatch(dailyOperationsCss,/\.hire-waiting-table[^{}]*(?:first-child|nth-child)/,'후순위 디자인 CSS가 입사대기 열 번호를 다시 덮어쓰면 안 됩니다.');
+const hireWaitingWidths={no:52,employeeNo:124,contactStatus:88,hireDate:104,workplace:90,pmtc:108,gender:64,groupName:112,product:112,part:112,name:118,rank:88,residentNumber:150,birthDate:112,age:60,email:230,education:100,school:210,major:210,phone:136,region:120,commuteMethod:108,remarks:420};
+Object.entries(hireWaitingWidths).forEach(([key,width])=>assert.match(hireWaitingCss,new RegExp(`\\[data-col-key="${key}"\\]\\{width:${width}px;min-width:${width}px`),`${key} 열 너비가 업무 기준과 달라졌습니다.`));
+assert.match(hireWaitingCss,/data-col-key="employeeNo"\]\{position:sticky;left:var\(--hire-waiting-no-width\)/);assert.match(hireWaitingCss,/data-col-key="name"\]\{position:sticky;left:calc\(var\(--hire-waiting-no-width\) \+ var\(--hire-waiting-employee-width\)\)/);
+['name','email','school','major','phone','region'].forEach(key=>assert.match(hireWaitingCss,new RegExp(`data-col-key="${key}"`)));
+assert.match(hireWaitingCss,/text-overflow:clip/);assert.match(hireWaitingCss,/tbody tr:focus-within td/);assert.match(hireWaitingCss,/td:focus-within/);
+assert.match(hireWaitingList,/HIRE_WAITING_AUTO_HIGHLIGHT_MS=4000/);assert.match(hireWaitingList,/td\.is-auto-filled/);assert.doesNotMatch(hireWaitingList,/localStorage\.setItem\([^\n]*highlight/i,'자동입력 강조 상태를 저장하면 안 됩니다.');
+
+console.log('ui-layout.test.js: 5개 업무 카드·입사대기 23열·고정 열·모바일 권한/감사·상태 팝업 확인 완료');

@@ -1,4 +1,4 @@
-/* ===== v10.46.6 HIRE_WAITING_LIST_GRID ===== */
+/* ===== v11.2.1 HIRE_WAITING_LIST_GRID ===== */
 .calendar-hire-waiting-btn{background:#0f766e!important;border-color:#0f766e!important;color:#fff!important}
 .hire-waiting-modal{z-index:1600}
 .hire-waiting-modal-card{width:min(98vw,1880px);height:min(94vh,980px);max-width:none;display:flex;flex-direction:column;overflow:hidden;padding:0}
@@ -10,28 +10,53 @@
 .hire-waiting-date-title{font-weight:600;color:#0f766e}
 .hire-waiting-kpis{display:flex;gap:8px;flex-wrap:wrap}.hire-waiting-kpis>div{min-width:88px;padding:7px 10px;border:1px solid #e3e6eb;border-radius:10px;background:#fafbfc}.hire-waiting-kpis span{display:block;font-size:11px;color:#5c6673}.hire-waiting-kpis strong{font-size:16px;color:#1c2330}
 .hire-waiting-guide{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:9px 18px;border-bottom:1px solid #e3e6eb;background:#ecfeff;color:#155e75;font-size:12px}.hire-waiting-guide strong{white-space:nowrap}.hire-waiting-guide span{flex:1}.hire-waiting-local-note{color:#7c2d12}
-.hire-waiting-table-wrap{flex:1;min-height:0;overflow:auto;background:#fff;border-bottom:1px solid #e3e6eb}
-.hire-waiting-table{border-collapse:separate;border-spacing:0;min-width:2600px;width:max-content;font-size:12px}
-.hire-waiting-table th,.hire-waiting-table td{height:38px;min-width:84px;border-right:1px solid #e3e6eb;border-bottom:1px solid #e3e6eb;padding:0;background:#fff;white-space:nowrap}
-.hire-waiting-table th{position:sticky;top:0;z-index:12;height:42px;padding:0 8px;background:#dbeafe;color:#1c2330;text-align:center;font-weight:600;border-top:1px solid #bfdbfe}
-.hire-waiting-table th:first-child,.hire-waiting-table td:first-child{position:sticky;left:0;z-index:9;min-width:48px;width:48px;text-align:center;background:#fafbfc}
-.hire-waiting-table th:first-child{z-index:14;background:#bfdbfe}
-.hire-waiting-table th:nth-child(11),.hire-waiting-table td:nth-child(11){position:sticky;left:48px;z-index:8;min-width:100px;background:#fff}
-.hire-waiting-table th:nth-child(11){z-index:13;background:#bfdbfe}
-.hire-waiting-table th:nth-child(20),.hire-waiting-table td:nth-child(20){min-width:126px}
-.hire-waiting-table th:nth-child(23),.hire-waiting-table td:nth-child(23){min-width:270px}
+.hire-waiting-table-wrap{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable;background:#fff;border-bottom:1px solid #e3e6eb}
+.hire-waiting-table{--hire-waiting-no-width:52px;--hire-waiting-employee-width:124px;--hire-waiting-name-width:118px;border-collapse:separate;border-spacing:0;table-layout:fixed;width:3028px;min-width:3028px;font-size:12px}
+.hire-waiting-table th,.hire-waiting-table td{box-sizing:border-box;height:38px;min-width:0;border-right:1px solid #e3e6eb;border-bottom:1px solid #e3e6eb;padding:0!important;background:#fff;white-space:nowrap}
+.hire-waiting-table th{position:sticky;top:0;z-index:12;height:42px;background:#dbeafe;color:#1c2330;text-align:center;font-weight:600;border-top:1px solid #bfdbfe}
+.hire-waiting-table [data-col-key="no"]{width:52px;min-width:52px;max-width:52px}
+.hire-waiting-table [data-col-key="employeeNo"]{width:124px;min-width:124px;max-width:124px}
+.hire-waiting-table [data-col-key="contactStatus"]{width:88px;min-width:88px;max-width:88px}
+.hire-waiting-table [data-col-key="hireDate"]{width:104px;min-width:104px;max-width:104px}
+.hire-waiting-table [data-col-key="workplace"]{width:90px;min-width:90px;max-width:90px}
+.hire-waiting-table [data-col-key="pmtc"]{width:108px;min-width:108px;max-width:108px}
+.hire-waiting-table [data-col-key="gender"]{width:64px;min-width:64px;max-width:64px}
+.hire-waiting-table [data-col-key="groupName"]{width:112px;min-width:112px;max-width:112px}
+.hire-waiting-table [data-col-key="product"]{width:112px;min-width:112px;max-width:112px}
+.hire-waiting-table [data-col-key="part"]{width:112px;min-width:112px;max-width:112px}
+.hire-waiting-table [data-col-key="name"]{width:118px;min-width:118px;max-width:118px}
+.hire-waiting-table [data-col-key="rank"]{width:88px;min-width:88px;max-width:88px}
+.hire-waiting-table [data-col-key="residentNumber"]{width:150px;min-width:150px;max-width:150px}
+.hire-waiting-table [data-col-key="birthDate"]{width:112px;min-width:112px;max-width:112px}
+.hire-waiting-table [data-col-key="age"]{width:60px;min-width:60px;max-width:60px}
+.hire-waiting-table [data-col-key="email"]{width:230px;min-width:230px;max-width:230px}
+.hire-waiting-table [data-col-key="education"]{width:100px;min-width:100px;max-width:100px}
+.hire-waiting-table [data-col-key="school"]{width:210px;min-width:210px;max-width:210px}
+.hire-waiting-table [data-col-key="major"]{width:210px;min-width:210px;max-width:210px}
+.hire-waiting-table [data-col-key="phone"]{width:136px;min-width:136px;max-width:136px}
+.hire-waiting-table [data-col-key="region"]{width:120px;min-width:120px;max-width:120px}
+.hire-waiting-table [data-col-key="commuteMethod"]{width:108px;min-width:108px;max-width:108px}
+.hire-waiting-table [data-col-key="remarks"]{width:420px;min-width:420px;max-width:420px}
+.hire-waiting-table :is(th,td)[data-col-key="no"]{position:sticky;left:0;z-index:10;text-align:center;background:#fafbfc}
+.hire-waiting-table :is(th,td)[data-col-key="employeeNo"]{position:sticky;left:var(--hire-waiting-no-width);z-index:9;background:#fffdf2}
+.hire-waiting-table :is(th,td)[data-col-key="name"]{position:sticky;left:calc(var(--hire-waiting-no-width) + var(--hire-waiting-employee-width));z-index:8;background:#fff;box-shadow:4px 0 6px -5px rgba(28,35,48,.55)}
+.hire-waiting-table thead :is(th[data-col-key="no"],th[data-col-key="employeeNo"],th[data-col-key="name"]){z-index:15;background:#bfdbfe}
 .hire-waiting-readonly>span{display:block;padding:0 8px;overflow:hidden;text-overflow:ellipsis;max-width:210px;color:#3d4757}
-.hire-waiting-name-cell>span{font-weight:700;color:#1c2330;max-width:120px}
-.hire-waiting-editable{background:#fffdf2!important}.hire-waiting-editable input,.hire-waiting-editable select{width:100%;height:100%;min-width:90px;border:0;border-radius:0;background:transparent;padding:0 8px;color:#1c2330;font:inherit;outline:none}
+.hire-waiting-table :is(td[data-col-key="name"],td[data-col-key="email"],td[data-col-key="school"],td[data-col-key="major"],td[data-col-key="phone"],td[data-col-key="region"])>span{max-width:none;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;line-height:1.25}
+.hire-waiting-name-cell>span{font-weight:700;color:#1c2330}
+.hire-waiting-editable{background:#fffdf2!important}.hire-waiting-editable input,.hire-waiting-editable select{box-sizing:border-box;width:100%;height:100%;min-width:0;border:0;border-radius:0;background:transparent;padding:0 8px;color:#1c2330;font:inherit;outline:none}
 .hire-waiting-editable input:focus,.hire-waiting-editable select:focus{box-shadow:none;background:#eef3fd;position:relative;z-index:2}
 .hire-waiting-editable input.is-missing,.hire-waiting-editable select.is-missing{background:#fff7d6}.hire-waiting-editable input.is-invalid,.hire-waiting-editable select.is-invalid{background:#fee2e2;box-shadow:none}
-.hire-waiting-resident-cell{min-width:148px!important}.hire-waiting-remarks-cell{min-width:270px!important}.hire-waiting-remarks-cell input{min-width:270px}
+.hire-waiting-table tbody tr:focus-within td{background:#f4f8ff!important}
+.hire-waiting-table tbody td:focus-within{box-shadow:inset 0 0 0 2px #2563eb!important}
+.hire-waiting-table tbody td.is-auto-filled{background:#e6f7ed!important;box-shadow:inset 0 0 0 2px #22a06b}
+.hire-waiting-resident-cell input,.hire-waiting-remarks-cell input{min-width:0}
 .hire-waiting-empty{height:220px!important;text-align:center;background:#fff!important}.hire-waiting-empty strong,.hire-waiting-empty span{display:block}.hire-waiting-empty strong{font-size:16px;margin-bottom:8px}.hire-waiting-empty span{color:#5c6673}
 .hire-waiting-statusbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 18px;background:#fff}.hire-waiting-status-text{font-weight:600;font-size:13px}.hire-waiting-status-text.is-warning{color:#9a6700}.hire-waiting-status-text.is-error{color:#b3352e}.hire-waiting-status-text.is-complete{color:#1a7f57}
-.hire-waiting-actions{display:flex;gap:8px}.hire-waiting-actions button{min-width:112px}
-@media(max-width:900px){.hire-waiting-modal-card{width:100vw;height:100dvh;border-radius:0}.hire-waiting-toolbar,.hire-waiting-guide,.hire-waiting-statusbar{align-items:flex-start;flex-direction:column}.hire-waiting-kpis{width:100%}.hire-waiting-kpis>div{flex:1}.hire-waiting-actions{width:100%}.hire-waiting-actions button{flex:1}.hire-waiting-table{font-size:11px}}
+.hire-waiting-actions{display:flex;gap:8px;flex-wrap:wrap}.hire-waiting-actions button{min-width:112px}
+@media(max-width:900px){.hire-waiting-modal-card{width:100vw;height:100dvh;max-height:100dvh;border-radius:0}.hire-waiting-modal-card .modal-head{padding:12px 14px 10px}.hire-waiting-toolbar,.hire-waiting-guide,.hire-waiting-statusbar{align-items:flex-start;flex-direction:column;gap:9px}.hire-waiting-toolbar,.hire-waiting-guide,.hire-waiting-statusbar{padding-left:12px;padding-right:12px}.hire-waiting-kpis{width:100%}.hire-waiting-kpis>div{flex:1}.hire-waiting-actions{width:100%}.hire-waiting-actions button{flex:1;min-width:0}.hire-waiting-actions .hire-waiting-automation-launch{flex:1 0 100%}.hire-waiting-table{font-size:11px}.hire-waiting-table tbody td[data-col-key="employeeNo"]{position:static}.hire-waiting-table thead th[data-col-key="employeeNo"]{left:auto;z-index:12}.hire-waiting-table :is(th,td)[data-col-key="name"]{left:var(--hire-waiting-no-width);z-index:10}.hire-waiting-table thead th[data-col-key="name"]{z-index:15}}
 
-/* ===== v11.2.0 HIRE_WAITING_AUTOMATION ===== */
+/* ===== v11.2.1 HIRE_WAITING_AUTOMATION ===== */
 .hire-waiting-automation-modal{z-index:1700}
 .hire-waiting-automation-card{width:min(94vw,1320px);height:min(90vh,860px);max-width:none;display:flex;flex-direction:column;overflow:hidden;padding:0}
 .hire-waiting-automation-card .modal-head{flex:0 0 auto;padding:18px 22px 14px;border-bottom:1px solid #e3e6eb}
