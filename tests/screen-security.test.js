@@ -12,7 +12,7 @@ const runtimeSources=[index,...fs.readdirSync(path.join(root,'js')).filter(name=
 
 assert.doesNotMatch(runtimeSources,/(?:<|\s)on(?:click|change|keydown|input|submit|error|load)\s*=\s*["']/i,'HTML 인라인 이벤트 속성이 남아 있습니다.');
 assert.match(runtimeSources,/data-erp-handler=/,'CSP 호환 선언형 화면 동작이 없습니다.');
-assert.match(index,/js\/security\.js\?v=11\.1\.0/);
+assert.match(index,/js\/security\.js\?v=11\.2\.0/);
 assert.match(index,/@supabase\/supabase-js@2\.111\.0\/dist\/umd\/supabase\.min\.js/);
 assert.match(index,/integrity="sha384-[A-Za-z0-9+/=]+"/);
 

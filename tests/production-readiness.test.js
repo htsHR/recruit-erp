@@ -131,7 +131,7 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   const reportText=JSON.stringify(cloudReport);
   for(const forbidden of ['가상지원자홍길동','010-1234-5678','900101-1234567','residentNumber','phone','address','memo','password','ciphertext'])assert.ok(!reportText.includes(forbidden),`점검 보고서에 금지된 개인정보 필드가 포함됨: ${forbidden}`);
 
-  assert.match(index,/css\/production-readiness\.css\?v=11\.1\.0/);assert.match(index,/js\/production-readiness\.js\?v=11\.1\.0/);assert.match(permissions,/readiness\.manage/);
+  assert.match(index,/css\/production-readiness\.css\?v=11\.2\.0/);assert.match(index,/js\/production-readiness\.js\?v=11\.2\.0/);assert.match(permissions,/readiness\.manage/);
   assert.match(source,/CLOUD_ADMIN_MESSAGE/);assert.match(source,/runEncryptionRoundTrip/);assert.match(source,/verificationSource/);assert.doesNotMatch(source,/localStorage[^\n]*(?:name|phone|residentNumber|address|memo)/i);
 
   for(const documentPath of ['docs/OPERATOR_GUIDE_v11.0.0.md','docs/INCIDENT_RECOVERY_v11.0.0.md','docs/RELEASE_READINESS_v11.0.0.md'])assert.ok(fs.existsSync(path.join(root,documentPath)),`${documentPath} 누락`);

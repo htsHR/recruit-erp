@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v10.63.0**입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v11.2.0**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -46,6 +46,7 @@ GitHub에 변경 요청이 올라오거나 `main`에 코드가 합쳐지면 다�
 - Playwright 기반 5개 뷰포트와 125% 확대·주요 화면·3개 역할 UI 회귀 검사
 - 오늘 연락·면접·결과·D-3 입사·출근·14일 정체 자동 분류와 5,000명 성능 검사
 - 입사·온보딩 9단계, 미제출 서류, 사번 중복, 1회 전환과 입사 취소 검사
+- 입사월 생년월일순 자동사번, 기존 사번·비고 보호, 경력·신입 비고와 저장 실패 원상복구 검사
 - 인사DB XLSX 허용 시트·self-closing 빈 셀·수식 캐시·오류·중복·기준일·학교 연결 검사와 직책·직책/직무 분리 보존
 - 학교 인력분석 집계 합계, 역할별 개인 명단 보호, 모바일·125% 확대 화면 검사
 
@@ -59,17 +60,17 @@ npm run check
 npm run test:ui-layout
 ```
 
-로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.1.0`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
+로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.2.0`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
 
 ### GitHub CI 테스트
 
 Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하고 Noto CJK 한글 글꼴 캐시를 준비한 뒤 `npm run check` → `npm run test:ui-layout` 순서로 실행합니다. UI 검사 실패도 병합 검사 실패로 처리하며, 성공·실패 여부와 관계없이 한글이 표시된 화면검사 스크린샷을 `ui-layout-screenshots-<실행 시도 번호>` artifact로 14일간 보관합니다.
 
-## 회사 공용폴더 저장 — PR #17 Preview
+## 회사 공용폴더 저장
 
 - 회사 로컬 모드에서는 EXE 옆 `bridge-config.json`에 `RecruitERP` 루트를 한 번 설정한 뒤 Bridge를 더블클릭합니다. Node.js·npm·Git·PowerShell·관리자 권한은 필요하지 않습니다.
 - `autoStart: true`를 선택하면 현재 사용자 Windows 시작프로그램에 등록되어 Windows 로그인 뒤 자동 실행됩니다. 공용폴더가 늦게 준비되어도 Bridge와 ERP가 10초 간격으로 자동 재연결합니다.
-- Preview용 `ERP-Bridge-Preview.exe`는 현재 Preview Origin만, Production용 `ERP-Bridge.exe`는 `https://recruit-erp.vercel.app`만 허용합니다. wildcard Origin은 사용하지 않습니다.
+- Preview용 `ERP-Bridge-Preview.exe`는 지정 Preview Origin만, Production용 `ERP-Bridge.exe`는 `https://recruit-erp.vercel.app`만 허용합니다. wildcard Origin은 사용하지 않습니다.
 - Bridge는 `127.0.0.1:17840`에서만 대기하며, 지정한 루트 아래 `ERP_DATA/erp-data.json`과 `ERP_DATA/backup`만 관리합니다. 브라우저가 Windows 경로를 전달하지 않습니다.
 - 공용 저장소가 비어 있으면 자동 업로드하지 않습니다. `저장소·속도`에서 현재 건수를 확인하고 `현재 데이터로 공용 저장소 시작`을 직접 눌러야 합니다.
 - `erp-data.json`이 한 번 생성되면 초기화 버튼은 다시 표시되지 않습니다. 정상 운영에서는 업무 변경 뒤 자동 저장되므로 수동 저장 버튼을 반복해서 누르지 않습니다.
@@ -80,7 +81,7 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 - `residentNumber` 필드는 제거하고 최종 snapshot 전체에서도 주민등록번호 형태의 13자리 값이 발견되면 저장을 차단합니다.
 - Bridge가 꺼져 있거나 공용폴더 저장에 실패해도 현재 브라우저 cache는 삭제하지 않으며, 화면에 공용 저장 실패를 명확히 표시합니다.
 
-자세한 실행·복구·보안 기준은 `docs/SHARED_FOLDER_STORAGE_PREVIEW.md`를 확인하세요. 이 기능은 현재 Draft PR Preview 전용이며 `main`과 Production에는 반영되지 않았습니다.
+자세한 실행·복구·보안 기준은 `docs/SHARED_FOLDER_STORAGE_PREVIEW.md`를 확인하세요.
 
 ## 안전한 업데이트 순서
 
@@ -90,7 +91,17 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
 
-## v11.1.0 학교별 인력분석·명단 XLSX 최신화 — 개발 후보
+## v11.2.0 입사대기 업무 자동화
+
+- 선택한 입사월 전체의 입사예정자를 생년월일순으로 정리해 빈 사번을 `SYYMM001` 형식으로 자동작성합니다.
+- 기존 수기 사번·비고를 보존하고, 사원명부와 모든 입사대기 프로필의 사용 번호를 피해 가장 작은 빈 번호를 사용합니다.
+- 경력직 경력사항과 신입 키·체중 비고는 적용 전 미리보기에서 확인하며 취소 시 어떤 데이터도 바뀌지 않습니다.
+- 완전한 생년월일만 채번에 사용하고 주민등록번호는 자동채번에 사용하지 않습니다.
+- 적용 시에만 기존 입사대기 저장과 공용폴더 저장 흐름을 사용하며 저장 실패는 전체 변경을 중단합니다.
+
+자세한 변경 내역은 `CHANGELOG_v11.2.0.md`를 확인하세요.
+
+## v11.1.0 학교별 인력분석·명단 XLSX 최신화
 
 - 최신 기준 `인사DB_(260728).xlsx` 원본을 수정하지 않고 허용된 재직·휴직·퇴직 시트만 읽어 안전한 변경 미리보기를 만듭니다.
 - 빈 셀 다음 값 누락을 막고 수식 캐시값·오류·빈 셀을 구분하며, 워크북 내부 `오늘날짜`를 기준일로 확인합니다.
