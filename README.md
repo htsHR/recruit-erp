@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v11.2.0**입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v11.2.1**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -60,7 +60,7 @@ npm run check
 npm run test:ui-layout
 ```
 
-로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.2.0`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
+로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.2.1`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
 
 ### GitHub CI 테스트
 
@@ -90,6 +90,15 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 3. GitHub 변경 요청에서 자동 검사와 Vercel 미리보기를 확인합니다.
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
+
+## v11.2.1 입사대기 명단 가독성·입력 편의 개선
+
+- 회사 양식의 23개 열 순서는 유지하면서 사원번호·성명·비고와 긴 학교·학과·이메일 값을 읽기 쉽게 정리했습니다.
+- 데스크톱에서는 NO·사원번호·성명을 고정하고, 모바일에서는 NO·성명만 고정해 입력 공간을 확보합니다.
+- 입력 중인 셀과 행을 함께 표시하고, 자동작성으로 새로 채운 사번·비고만 4초간 강조합니다. 강조 상태는 저장하지 않습니다.
+- 팝업 내부 스크롤과 390px 모바일·1366px·125% 확대 화면을 가상 데이터로 자동 검사합니다.
+
+자세한 변경 내역은 `CHANGELOG_v11.2.1.md`를 확인하세요.
 
 ## v11.2.0 입사대기 업무 자동화
 

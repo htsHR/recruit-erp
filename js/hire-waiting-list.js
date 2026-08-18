@@ -36,6 +36,35 @@ let hireWaitingCurrentDate='';
 let hireWaitingDirty=false;
 let hireWaitingAutomationState=null;
 let hireWaitingAutomationDrafts={};
+const HIRE_WAITING_AUTO_HIGHLIGHT_MS=4000;
+let hireWaitingAutoHighlightCells=new Set();
+let hireWaitingAutoHighlightTimer=null;
+
+function hireWaitingColumnClass(key){return `hire-waiting-col-${String(key||'').replace(/[^A-Za-z0-9_-]/g,'')}`;}
+function ensureHireWaitingColumnSemantics(){
+  document.querySelectorAll('#hireWaitingTable thead th').forEach((th,index)=>{
+    const column=HIRE_WAITING_COLUMNS[index];
+    if(!column)return;
+    th.dataset.colKey=column.key;
+    th.dataset.colIndex=String(index);
+    th.classList.add(hireWaitingColumnClass(column.key));
+  });
+}
+function hireWaitingHighlightKey(applicantId,field){return `${String(applicantId)}:${String(field)}`;}
+function setHireWaitingAutomationHighlights(plan){
+  if(hireWaitingAutoHighlightTimer){clearTimeout(hireWaitingAutoHighlightTimer);hireWaitingAutoHighlightTimer=null;}
+  hireWaitingAutoHighlightCells=new Set();
+  (plan?.rows||[]).forEach(row=>{
+    if(row.willAssignNumber)hireWaitingAutoHighlightCells.add(hireWaitingHighlightKey(row.applicantId,'employeeNo'));
+    if(row.autoRemarks)hireWaitingAutoHighlightCells.add(hireWaitingHighlightKey(row.applicantId,'remarks'));
+  });
+  if(!hireWaitingAutoHighlightCells.size)return;
+  hireWaitingAutoHighlightTimer=setTimeout(()=>{
+    hireWaitingAutoHighlightCells.clear();
+    document.querySelectorAll('#hireWaitingBody td.is-auto-filled').forEach(cell=>cell.classList.remove('is-auto-filled'));
+    hireWaitingAutoHighlightTimer=null;
+  },HIRE_WAITING_AUTO_HIGHLIGHT_MS);
+}
 
 function normalizeHireWaitingProfile(raw){
   const p=raw&&typeof raw==='object'?raw:{};
@@ -164,8 +193,8 @@ function hireWaitingRowData(a,index){
 function hireWaitingCellValue(row,key){ return row[key]==null?'':String(row[key]); }
 function hireWaitingInputHtml(row,rowIndex,col,colIndex){
   const value=hireWaitingCellValue(row,col.key);
-  const common=`data-hire-row="${rowIndex}" data-hire-field="${col.key}" data-hire-col="${colIndex}" autocomplete="off"`;
-  if(col.sensitive&&window.erpPermissions&&!window.erpPermissions.has('sensitive.read'))return `<input class="hire-waiting-sensitive-input" type="password" value="" placeholder="관리자만 조회" ${common} disabled aria-label="관리자만 조회 가능"/>`;
+  const common=`data-hire-row="${rowIndex}" data-hire-field="${col.key}" data-hire-col="${colIndex}" autocomplete="off" aria-label="${esc(col.label)}"`;
+  if(col.sensitive&&window.erpPermissions&&!window.erpPermissions.has('sensitive.read'))return `<input class="hire-waiting-sensitive-input" type="password" value="" placeholder="관리자만 조회" ${common} disabled/>`;
   if(col.key==='pmtc') return `<select ${common}><option value="" ${value?'':'selected'}>-</option><option value="O" ${value==='O'?'selected':''}>O</option></select>`;
   if(col.key==='commuteMethod') return `<select ${common}><option value="" ${value?'':'selected'}>선택</option><option value="출퇴근" ${value==='출퇴근'?'selected':''}>출퇴근</option><option value="기숙사" ${value==='기숙사'?'selected':''}>기숙사</option></select>`;
   const cls=col.sensitive?' hire-waiting-sensitive-input':'';
@@ -174,6 +203,7 @@ function hireWaitingInputHtml(row,rowIndex,col,colIndex){
 }
 function renderHireWaitingTable(){
   const body=$('hireWaitingBody'); if(!body) return;
+  ensureHireWaitingColumnSemantics();
   const rows=hireWaitingApplicantsForDate(hireWaitingCurrentDate).map(hireWaitingRowData);
   setText('hireWaitingDateLabel',calendarDateLabel(hireWaitingCurrentDate||today()));
   if($('hireWaitingDateInput')) $('hireWaitingDateInput').value=hireWaitingCurrentDate||today();
@@ -183,7 +213,8 @@ function renderHireWaitingTable(){
     updateHireWaitingSummary(); return;
   }
   body.innerHTML=rows.map((row,rowIndex)=>`<tr data-applicant-id="${esc(row.applicantId)}">${HIRE_WAITING_COLUMNS.map((col,colIndex)=>{
-    const cls=[col.editable?'hire-waiting-editable':'hire-waiting-readonly',col.key==='name'?'hire-waiting-name-cell':'',col.key==='phone'?'hire-waiting-phone-cell':'',col.key==='residentNumber'?'hire-waiting-resident-cell':'',col.key==='remarks'?'hire-waiting-remarks-cell':''].filter(Boolean).join(' ');
+    const highlighted=hireWaitingAutoHighlightCells.has(hireWaitingHighlightKey(row.applicantId,col.key));
+    const cls=[hireWaitingColumnClass(col.key),col.editable?'hire-waiting-editable':'hire-waiting-readonly',col.key==='name'?'hire-waiting-name-cell':'',col.key==='phone'?'hire-waiting-phone-cell':'',col.key==='residentNumber'?'hire-waiting-resident-cell':'',col.key==='remarks'?'hire-waiting-remarks-cell':'',highlighted?'is-auto-filled':''].filter(Boolean).join(' ');
     return `<td class="${cls}" data-col-key="${col.key}" data-col-index="${colIndex}" ${col.editable?'':'tabindex="-1"'}>${col.editable?hireWaitingInputHtml(row,rowIndex,col,colIndex):`<span>${esc(hireWaitingCellValue(row,col.key)||'-')}</span>`}</td>`;
   }).join('')}</tr>`).join('');
   hireWaitingBindSensitiveInputs();
@@ -218,13 +249,13 @@ function hireWaitingEmployeeNoDuplicates(rows){
 }
 function validateHireWaitingGrid(){
   const rows=hireWaitingGridRows(); const duplicateNos=hireWaitingEmployeeNoDuplicates(rows); let invalid=0;
-  document.querySelectorAll('#hireWaitingBody [data-hire-field]').forEach(el=>{el.classList.remove('is-invalid','is-missing');el.removeAttribute('title');});
+  document.querySelectorAll('#hireWaitingBody [data-hire-field]').forEach(el=>{el.classList.remove('is-invalid','is-missing');el.removeAttribute('title');el.removeAttribute('aria-invalid');});
   rows.forEach((row,rowIndex)=>{
     const tr=document.querySelectorAll('#hireWaitingBody tr[data-applicant-id]')[rowIndex];
     ['birthDate','age'].forEach(field=>{const span=tr?.querySelector(`td[data-col-key="${field}"] span`);if(span)span.textContent=String(row[field]||'-');});
-    HIRE_WAITING_REQUIRED_FIELDS.forEach(field=>{ const el=document.querySelector(`#hireWaitingBody [data-hire-row="${rowIndex}"][data-hire-field="${field}"]`); if(el&&!String(row[field]||'').trim()){el.classList.add('is-missing');el.title='출력 전 입력 권장 항목';} });
+    HIRE_WAITING_REQUIRED_FIELDS.forEach(field=>{ const el=document.querySelector(`#hireWaitingBody [data-hire-row="${rowIndex}"][data-hire-field="${field}"]`); if(el&&!String(row[field]||'').trim()){el.classList.add('is-missing');el.setAttribute('aria-invalid','true');if(field!=='residentNumber')el.title='출력 전 입력 권장 항목';} });
     const resident=document.querySelector(`#hireWaitingBody [data-hire-row="${rowIndex}"][data-hire-field="residentNumber"]`);
-    if(resident&&row.residentNumber&&!hireWaitingResidentValid(row.residentNumber)){resident.classList.add('is-invalid');resident.title='주민등록번호 13자리를 확인하세요.';invalid++;}
+    if(resident&&row.residentNumber&&!hireWaitingResidentValid(row.residentNumber)){resident.classList.add('is-invalid');resident.setAttribute('aria-invalid','true');invalid++;}
     const emp=document.querySelector(`#hireWaitingBody [data-hire-row="${rowIndex}"][data-hire-field="employeeNo"]`);
     if(emp&&row.employeeNo&&duplicateNos.has(String(row.employeeNo).trim().toUpperCase())){emp.classList.add('is-invalid');emp.title='중복 사원번호입니다.';invalid++;}
   });
@@ -399,9 +430,11 @@ function applyHireWaitingAutomation(){
   });
   if(!result.ok){alert(result.message||'자동작성 내용을 저장하지 못했습니다. 변경 전 상태를 유지합니다.');return false;}
   if(!result.persisted){closeHireWaitingAutomation();return true;}
+  const appliedPlan=hireWaitingAutomationState;
   hireWaitingProfiles=persistedProfiles;
   hireWaitingDirty=false;
   const numberChanges=result.numberChanges,remarkChanges=result.remarkChanges;
+  setHireWaitingAutomationHighlights(appliedPlan);
   closeHireWaitingAutomation();
   renderHireWaitingTable();
   if(document.body.dataset.activePage==='onboarding')window.erpOnboarding?.render?.();
@@ -566,6 +599,7 @@ function hireWaitingExportExcel(){
   if(typeof uxToast==='function')uxToast(`${rows.length}명의 입사대기자 XLSX 출력을 요청했습니다.`);
 }
 function initHireWaitingListBindings(){
+  ensureHireWaitingColumnSemantics();
   ensureHireWaitingAutomationUi();
   bind('btnCalendarHireWaiting','click',()=>openHireWaitingList(selectedCalendarDate));
   bind('btnHireWaitingClose','click',()=>closeHireWaitingList());
