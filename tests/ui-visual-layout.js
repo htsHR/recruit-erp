@@ -245,7 +245,7 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   assert.equal(panelState.bodyOverflow,'hidden');assert.ok(!panelState.html.includes('residentNumber')&&!/\d{6}-?\d{7}/.test(panelState.text),'빠른 보기 DOM에 주민등록번호 필드나 형태가 있으면 안 됩니다.');
   await page.keyboard.press('Shift+Tab');assert.ok(await page.evaluate(()=>document.getElementById('applicantQuickDetail').contains(document.activeElement)),'Shift+Tab 포커스가 빠른 보기 안에 있어야 합니다.');
   await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail.png`),fullPage:false});
-  await page.keyboard.press('Escape');await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>document.activeElement?.dataset?.applicantId),denseApplicants[0].id,'Escape 후 실행한 행으로 포커스가 돌아가야 합니다.');
+  await page.keyboard.press('Escape');await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});await page.waitForFunction(expected=>document.activeElement?.dataset?.applicantId===expected,denseApplicants[0].id);assert.equal(await page.evaluate(()=>document.activeElement?.dataset?.applicantId),denseApplicants[0].id,'Escape 후 실행한 행으로 포커스가 돌아가야 합니다.');
 
   if(exercise){
     await page.evaluate(()=>{currentApplicantPage=1;renderTable();const wrap=document.querySelector('#applicants .table-wrap');wrap.scrollLeft=Math.min(180,Math.max(0,wrap.scrollWidth-wrap.clientWidth));window.scrollTo(0,Math.min(120,document.documentElement.scrollHeight-innerHeight));});
