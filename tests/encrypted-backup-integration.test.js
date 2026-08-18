@@ -14,8 +14,8 @@ assert.match(security,/function validateBackupPayload/);assert.match(security,/a
 assert.match(ui,/erpPermissions\.require\('backup\.manage'\)/);assert.match(ui,/clearSensitive/);assert.match(ui,/endSession/);assert.match(ui,/비밀번호가 맞지 않거나 파일이 손상되었습니다/);assert.doesNotMatch(ui,/localStorage\.setItem|sessionStorage\.setItem|indexedDB/i);
 assert.match(audit,/<option value="export">백업·내보내기<\/option>/);
 assert.ok(!/recruiter:\[[^\]]*backup\./.test(permissions),'채용담당자에게 백업 권한을 추가하면 안 됩니다.');assert.ok(!/viewer:\[[^\]]*backup\./.test(permissions),'조회 전용에게 백업 권한을 추가하면 안 됩니다.');
-assert.ok(index.indexOf('js/encrypted-backup.js')<index.indexOf('js/backup-center.js'));assert.ok(index.indexOf('js/backup-center.js')<index.indexOf('js/encrypted-backup-ui.js'));assert.match(index,/accept="\.erpbackup,\.json,application\/json"/);assert.match(index,/css\/encrypted-backup\.css\?v=11\.2\.1/);
-assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v11\.2\.1/);assert.match(workflow,/path: artifacts\/ui-v11\.2\.1/);
+assert.ok(index.indexOf('js/encrypted-backup.js')<index.indexOf('js/backup-center.js'));assert.ok(index.indexOf('js/backup-center.js')<index.indexOf('js/encrypted-backup-ui.js'));assert.match(index,/accept="\.erpbackup,\.json,application\/json"/);assert.match(index,/css\/encrypted-backup\.css\?v=11\.3\.0/);
+assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v11\.3\.0/);assert.match(workflow,/path: artifacts\/ui-v11\.3\.0/);
 const supabaseFiles=fs.readdirSync(path.join(root,'supabase'),{recursive:true}).map(String);assert.ok(supabaseFiles.some(file=>file.includes('production_readiness_security_hardening_v11_0_0')),'v11.0.0 Supabase 보안 migration이 필요합니다.');
 assert.ok(fs.existsSync(path.join(root,'docs','ENCRYPTED_BACKUP_v10.60.0.md')));assert.ok(fs.existsSync(path.join(root,'CHANGELOG_v11.0.0.md')));
 

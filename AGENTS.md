@@ -1,7 +1,8 @@
 # Recruit ERP — Codex 작업 규칙
 
 이 파일은 `htsHR/recruit-erp` 저장소에서 Codex가 작업할 때 항상 지켜야 하는 공통 운영 규칙입니다.
-개별 작업 요구사항은 `codex-tasks/*.md`에 둡니다.
+개별 작업 요구사항의 공식 원본은 Google Drive의 `Recruit ERP 개발관리/01_CODEX_TASKS`에 둡니다.
+저장소의 `codex-tasks/*.md`는 과거 작업 기록과 참고 자료이며, Drive의 최신 task 문서를 대체하지 않습니다.
 
 ## 작업 기본 규칙
 - 작업 전 원격 `main` 최신 커밋을 확인하고 동기화합니다.
@@ -61,11 +62,13 @@
 `AUTO_DEPLOY: YES`는 코드 배포 승인일 뿐 실제 운영 데이터를 자동 수정할 권한은 아닙니다.
 
 ## task 문서
-사용자가 `codex-tasks/<파일>.md` 실행을 지시하면:
+사용자가 Google Drive `Recruit ERP 개발관리/01_CODEX_TASKS/<파일>` 실행을 지시하면:
 1. 이 `AGENTS.md`를 적용합니다.
-2. 지정된 task 문서를 처음부터 끝까지 읽습니다.
+2. Google Drive의 `00_ERP_MASTER/ERP_COMMON_RULES`와 지정된 task 문서를 처음부터 끝까지 읽습니다.
 3. task 문서의 범위/PASS/중단 조건을 그대로 따릅니다.
 4. 개인정보·운영 데이터·DB·Bridge 안전 규칙은 항상 우선합니다.
+
+저장소 `codex-tasks`의 같은 이름 문서는 Drive 문서에 접근할 수 없을 때 맥락을 파악하기 위한 참고용으로만 사용합니다.
 
 ## 기본 완료 보고
 - 최종 판정: PASS / FAIL

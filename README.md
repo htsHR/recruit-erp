@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v11.2.1**입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v11.3.0**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -60,7 +60,7 @@ npm run check
 npm run test:ui-layout
 ```
 
-로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.2.1`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
+로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.3.0`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
 
 ### GitHub CI 테스트
 
@@ -90,6 +90,16 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 3. GitHub 변경 요청에서 자동 검사와 Vercel 미리보기를 확인합니다.
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
+
+## v11.3.0 지원자 워크시트 1단계
+
+- 지원자 목록에서 기존 일반보기와 별도의 워크시트 보기를 선택할 수 있습니다. 일반보기의 행 클릭·상세·수정·삭제 동작은 그대로 유지됩니다.
+- 현재 필터와 현재 페이지의 지원자만 NO·성명 고정 열과 9개 편집 열로 표시하며, 셀 이동·편집·직사각형 복사/붙여넣기를 지원합니다.
+- 편집과 붙여넣기는 저장 전 메모리 변경목록에만 쌓입니다. 오류가 없을 때 명시적 저장을 누르면 기존 지원자 저장 흐름을 정확히 한 번 사용하고, 실패 시 전체를 원상복구합니다.
+- 조회 전용 사용자는 편집·붙여넣기·저장을 사용할 수 없습니다. 보기 설정에는 검색어나 지원자 정보 없이 허용된 6개 UI 항목만 저장합니다.
+- Supabase schema·DB·권한·ERP Bridge·공용저장 schemaVersion은 변경하지 않았습니다.
+
+자세한 변경 내역은 `CHANGELOG_v11.3.0.md`를 확인하세요.
 
 ## v11.2.1 입사대기 명단 가독성·입력 편의 개선
 
