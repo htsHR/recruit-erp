@@ -318,7 +318,7 @@ body.form-dirty #submitBtn:after{content:' · 변경됨';font-size:10px;}
 :root{--ap-line:#dbe5f0;--ap-text:#17243a;--ap-muted:#66758b;--ap-blue:#1769e8}
 #applicants .compact-list-controls{display:grid!important;grid-template-columns:auto minmax(320px,1fr) 150px auto auto!important;gap:8px!important;align-items:center!important}
 #applicants .advanced-filter-inline{height:38px!important;padding:0 14px!important;white-space:nowrap!important}
-#applicants .email-head,#applicants .region-head,#applicants .commute-head,#applicants tbody td:nth-child(6),#applicants tbody td:nth-child(8),#applicants tbody td:nth-child(10){display:none!important}
+#applicants .email-head,#applicants .region-head,#applicants .commute-head,#applicants .applicant-table tbody td:nth-child(6),#applicants .applicant-table tbody td:nth-child(8),#applicants .applicant-table tbody td:nth-child(10){display:none!important}
 #applicants .applicant-table{table-layout:fixed!important;width:100%!important}
 #applicants .applicant-table th:nth-child(1){width:46px}#applicants .applicant-table th:nth-child(2){width:92px}#applicants .applicant-table th:nth-child(3){width:92px}#applicants .applicant-table th:nth-child(4){width:150px}#applicants .applicant-table th:nth-child(5){width:140px}#applicants .applicant-table th:nth-child(7){width:95px}#applicants .applicant-table th:nth-child(9){width:140px}#applicants .applicant-table th:nth-child(11){width:150px}#applicants .applicant-table th:nth-child(12){width:76px}
 #applicants .applicant-table td{overflow:hidden;text-overflow:ellipsis}
