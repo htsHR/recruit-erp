@@ -1,4 +1,4 @@
-/* Recruit ERP v11.3.2 — 지원자 읽기 전용 빠른 보기 */
+/* Recruit ERP v11.4.0 — 지원자 읽기 전용 빠른 보기 */
 .applicant-quick-detail{position:fixed;inset:0;z-index:240;display:none}
 .applicant-quick-detail.is-open{display:block}
 .applicant-quick-detail-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.34);backdrop-filter:blur(1px)}

@@ -19,7 +19,7 @@ const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
 const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.3.2');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.4.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -53,6 +53,10 @@ const denseApplicants=Array.from({length:60},(_,index)=>{
     createdAt:`2026-08-${day}T01:00:00.000Z`,updatedAt:`2026-08-${day}T01:00:00.000Z`
   };
 });
+const worksheetApplicants=[...fakeApplicants.map(row=>({...row})),...denseApplicants.slice(0,57).map((row,index)=>{
+  const copy={...row,id:`80000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,createdAt:`2026-07-${String((index%27)+1).padStart(2,'0')}T01:00:00.000Z`,updatedAt:''};
+  delete copy.residentNumber;return copy;
+})];
 const fakeHireWaitingProfiles=[
   {applicantId:'33333333-3333-4333-8333-333333333333',employeeNo:'V-1003',groupName:'가상부서',product:'가상제품',part:'가상파트',rank:'사원',commuteMethod:'출퇴근',remarks:'가상 업무 확인용으로 충분히 긴 비고이며 실제 개인정보나 운영 내용은 포함하지 않습니다.',documentsRequestedAt:'2026-08-02T00:00:00.000Z',submittedDocuments:['신분증 사본','통장 사본','졸업증명서'],trainingDate:'2026-08-05',residentNumber:'000000-0000000'}
 ];
@@ -277,46 +281,103 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   assert.equal(bridgeSaveRequests,0,`${label} 빠른 보기 동작은 Bridge 저장 PUT을 호출하면 안 됩니다.`);
 }
 async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
+  await page.evaluate(rows=>{
+    window.__worksheetUiOriginalApplicants=applicants;
+    window.__worksheetUiOriginalStorage=localStorage.getItem('recruit_erp_applicants_stable');
+    applicants=rows.map(row=>({...row}));resetListFiltersToAll();applicantPageSize=30;currentApplicantPage=1;renderAll();
+  },worksheetApplicants);
+  const restoreFixture=()=>page.evaluate(()=>{
+    applicants=window.__worksheetUiOriginalApplicants;
+    if(window.__worksheetUiOriginalStorage===null)localStorage.removeItem('recruit_erp_applicants_stable');else localStorage.setItem('recruit_erp_applicants_stable',window.__worksheetUiOriginalStorage);
+    delete window.__worksheetUiOriginalApplicants;delete window.__worksheetUiOriginalStorage;resetListFiltersToAll();renderAll();setPage('applicants');
+  });
   await page.evaluate(()=>window.setPage?.('applicants'));await page.locator('#btnApplicantWorksheetView').click();await page.locator('#applicantWorksheet:not([hidden])').waitFor();
   const layout=await page.evaluate(()=>{
     const section=document.querySelector('#applicants'),wrap=document.querySelector('.applicant-worksheet-scroll'),table=document.querySelector('.applicant-worksheet-table'),first=document.querySelector('#applicantWorksheet tbody tr[data-applicant-id]');
     const no=first?.querySelector('[data-field="no"]'),name=first?.querySelector('[data-field="name"]');
-    return {fields:[...document.querySelectorAll('.applicant-worksheet-table thead [data-field]')].map(node=>node.dataset.field),firstValues:Object.fromEntries([...first.querySelectorAll('[data-field]')].map(cell=>[cell.dataset.field,cell.innerText.trim()])),normalHidden:document.querySelector('#applicantTbody').closest('.table-wrap').hidden,bodyOverflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,internalScroll:wrap.scrollWidth>wrap.clientWidth,noPosition:getComputedStyle(no).position,namePosition:getComputedStyle(name).position,noLeft:no.getBoundingClientRect().left-wrap.getBoundingClientRect().left,nameLeft:name.getBoundingClientRect().left-no.getBoundingClientRect().right,sectionWidth:section.clientWidth,tableWidth:table.getBoundingClientRect().width};
+    const headers=[...document.querySelectorAll('.applicant-worksheet-table thead [data-field]')],alignments=headers.map(header=>{const cell=first.querySelector('[data-field="'+header.dataset.field+'"]'),headRect=header.getBoundingClientRect(),cellRect=cell.getBoundingClientRect();return{field:header.dataset.field,left:Math.abs(headRect.left-cellRect.left),right:Math.abs(headRect.right-cellRect.right)};});
+    return {fields:headers.map(node=>node.dataset.field),firstValues:Object.fromEntries([...first.querySelectorAll('[data-field]')].map(cell=>[cell.dataset.field,cell.innerText.trim()])),normalHidden:document.querySelector('#applicantTbody').closest('.table-wrap').hidden,bodyOverflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,internalScroll:wrap.scrollWidth>wrap.clientWidth,noPosition:getComputedStyle(no).position,namePosition:getComputedStyle(name).position,noLeft:no.getBoundingClientRect().left-wrap.getBoundingClientRect().left,nameLeft:name.getBoundingClientRect().left-no.getBoundingClientRect().right,sectionWidth:section.clientWidth,tableWidth:table.getBoundingClientRect().width,visibleRows:document.querySelectorAll('#applicantWorksheet tbody tr[data-applicant-id]').length,totalApplicants:applicants.length,alignments};
   });
-  assert.deepEqual(layout.fields,['no','name','phone','workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo'],`${label} 워크시트 열 순서가 달라졌습니다.`);
+  assert.deepEqual(layout.fields,['no','name','phone','email','region','workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo'],label+' 워크시트 열 순서가 달라졌습니다.');
   assert.equal(layout.firstValues.interviewDate,'2026-08-02');assert.equal(layout.firstValues.interviewTime,'10:00','면접일과 면접시간이 서로 다른 열에 유지되어야 합니다.');
-  assert.equal(layout.normalHidden,true);assert.equal(layout.noPosition,'sticky');assert.equal(layout.namePosition,'sticky');assert.ok(Math.abs(layout.noLeft)<=1&&Math.abs(layout.nameLeft)<=1,`${label} NO·성명 고정 열 위치가 맞지 않습니다: ${JSON.stringify(layout)}`);
-  assert.ok((layout.internalScroll||layout.tableWidth<=layout.sectionWidth)&&layout.bodyOverflow<=1,`${label} 워크시트는 필요한 경우 표 내부에서만 가로 스크롤되어야 합니다: ${JSON.stringify(layout)}`);
-  await page.screenshot({path:path.join(outputDir,`${label}-applicant-worksheet.png`),fullPage:false});
-  if(!exercise)return;
-  const id=fakeApplicants[0].id,storageBefore=await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable'));
-  const nameCell=page.locator(`#applicantWorksheet tr[data-applicant-id="${id}"] [data-field="name"]`);await nameCell.click();await page.keyboard.press('Enter');assert.equal(await nameCell.locator('.worksheet-editor').count(),0,'성명은 워크시트에서 편집할 수 없어야 합니다.');
-  const workplace=page.locator(`#applicantWorksheet tr[data-applicant-id="${id}"] [data-field="workplace"]`);await workplace.click();await page.keyboard.press('Enter');await workplace.locator('select').selectOption('평택');
-  const staged=await page.evaluate(id=>({memory:applicants.find(row=>row.id===id).workplace,storage:localStorage.getItem('recruit_erp_applicants_stable'),dirty:window.erpApplicantWorksheet.state.dirty.size}),id);
-  assert.equal(staged.memory,'천안');assert.equal(staged.storage,storageBefore);assert.equal(staged.dirty,1,'편집은 저장 전 메모리 변경목록에만 남아야 합니다.');
-  const sourceCell=page.locator(`#applicantWorksheet tr[data-applicant-id="${id}"] [data-field="source"]`);await sourceCell.click();
-  await sourceCell.evaluate(cell=>{const data=new DataTransfer();data.setData('text/plain','가상워크시트\t경력\t출퇴근\t가상 메모');cell.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));});
-  assert.equal(await page.evaluate(()=>window.erpApplicantWorksheet.state.dirty.size),5,'직사각형 붙여넣기는 4개 셀을 추가 변경해야 합니다.');
-  page.once('dialog',dialog=>dialog.accept());
-  await page.locator(`#applicantWorksheet tr[data-applicant-id="${id}"] [data-field="memo"]`).evaluate(cell=>{const data=new DataTransfer();data.setData('text/plain','범위초과\t금지');cell.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));});
-  assert.equal(await page.evaluate(()=>window.erpApplicantWorksheet.state.dirty.size),5,'범위 밖 붙여넣기는 부분 적용 없이 전체 취소되어야 합니다.');
-  const settingState=await page.evaluate(()=>{const raw=localStorage.getItem('recruit_erp_applicant_worksheet_view_v1'),parsed=JSON.parse(raw);return {keys:Object.keys(parsed),raw};});
-  assert.deepEqual(settingState.keys,['viewMode','currentWorkplace','currentFilter','currentSort','hideFinished','applicantPageSize']);assert.ok(!settingState.raw.includes('가상지원자1')&&!settingState.raw.includes('010-0000-0001'),'워크시트 UI 설정에 검색어나 지원자 정보가 들어가면 안 됩니다.');
+  assert.deepEqual({visibleRows:layout.visibleRows,totalApplicants:layout.totalApplicants},{visibleRows:30,totalApplicants:60},'합성 지원자 60명에서 현재 페이지 30행을 표시해야 합니다.');
+  assert.ok(layout.alignments.every(item=>item.left<=1&&item.right<=1),'워크시트 헤더와 데이터 셀 경계가 맞아야 합니다: '+JSON.stringify(layout.alignments));
+  assert.equal(layout.normalHidden,true);assert.equal(layout.noPosition,'sticky');assert.equal(layout.namePosition,'sticky');assert.ok(Math.abs(layout.noLeft)<=1&&Math.abs(layout.nameLeft)<=1,label+' NO·성명 고정 열 위치가 맞지 않습니다: '+JSON.stringify(layout));
+  assert.ok((layout.internalScroll||layout.tableWidth<=layout.sectionWidth)&&layout.bodyOverflow<=1,label+' 워크시트는 필요한 경우 표 내부에서만 가로 스크롤되어야 합니다: '+JSON.stringify(layout));
+  assert.equal(await page.locator('#applicantWorksheet [data-field="residentNumber"]').count(),0,'주민등록번호는 워크시트 열에 없어야 합니다.');
+  await page.screenshot({path:path.join(outputDir,label+'-applicant-worksheet.png'),fullPage:false});
+  if(!exercise){await restoreFixture();return;}
+
+  const id=fakeApplicants[0].id,otherId=fakeApplicants[1].id;
+  let bridgePuts=0;
+  const bridgeListener=request=>{if(request.method()==='PUT'&&request.url()==='http://127.0.0.1:17840/storage/snapshot')bridgePuts++;};
+  page.on('request',bridgeListener);
+  const before=await page.evaluate(()=>({applicants:JSON.stringify(applicants),employees:JSON.stringify(employees),schools:JSON.stringify(schools),events:typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents),storage:localStorage.getItem('recruit_erp_applicants_stable')}));
+
+  const nameCell=page.locator('#applicantWorksheet tr[data-applicant-id="'+id+'"] [data-field="name"]');
+  await nameCell.click();await page.keyboard.press('Enter');await nameCell.locator('.worksheet-editor').fill('  가상워크시트수정  ');await page.keyboard.press('Enter');
+  const phoneCell=page.locator('#applicantWorksheet tr[data-applicant-id="'+id+'"] [data-field="phone"]');
+  await phoneCell.click();await page.keyboard.press('Enter');await phoneCell.locator('.worksheet-editor').fill('010 7777 0001');await page.keyboard.press('Enter');
+  const emailCell=page.locator('#applicantWorksheet tr[data-applicant-id="'+id+'"] [data-field="email"]');
+  await emailCell.click();await emailCell.evaluate(cell=>{const data=new DataTransfer();data.setData('text/plain','worksheet@example.invalid\t 가상지역 ');cell.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));});
+  let staged=await page.evaluate(id=>({row:applicants.find(item=>item.id===id),storage:localStorage.getItem('recruit_erp_applicants_stable'),dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length,redo:window.erpApplicantWorksheet.state.history.redo.length}),id);
+  assert.equal(staged.row.name,'테스트지원자1');assert.equal(staged.storage,before.storage);assert.deepEqual({dirty:staged.dirty,undo:staged.undo,redo:staged.redo},{dirty:4,undo:3,redo:0});
+  assert.equal(bridgePuts,0,'저장 전에는 Bridge PUT을 호출하면 안 됩니다.');
+
+  await emailCell.click();await page.keyboard.press('Control+z');
+  assert.deepEqual(await page.evaluate(()=>({dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length,redo:window.erpApplicantWorksheet.state.history.redo.length})),{dirty:2,undo:2,redo:1},'붙여넣기 전체가 한 번에 실행 취소되어야 합니다.');
+  await page.keyboard.press('Control+y');
+  assert.deepEqual(await page.evaluate(()=>({dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length,redo:window.erpApplicantWorksheet.state.history.redo.length})),{dirty:4,undo:3,redo:0},'붙여넣기 전체가 한 번에 다시 실행되어야 합니다.');
+
+  const memoCell=page.locator('#applicantWorksheet tr[data-applicant-id="'+id+'"] [data-field="memo"]');
+  await memoCell.click();await page.keyboard.press('Enter');await memoCell.locator('.worksheet-editor').fill('가상 입력 중');const historyBeforeNative=await page.evaluate(()=>window.erpApplicantWorksheet.state.history.undo.length);await page.keyboard.press('Control+z');
+  assert.equal(await page.evaluate(()=>window.erpApplicantWorksheet.state.history.undo.length),historyBeforeNative,'편집기 내부 Ctrl+Z는 전역 undo로 처리하면 안 됩니다.');await page.keyboard.press('Escape');
+
+  await page.evaluate(id=>window.erpApplicantWorksheet.setDirty(id,'phone','010-12'),id);
+  assert.equal(await page.locator('.worksheet-review-block.is-error').isVisible(),true);assert.equal(await page.locator('#btnWorksheetSave').isDisabled(),true);
+  assert.equal(await page.locator('#applicantWorksheet img').count(),0);await page.screenshot({path:path.join(outputDir,label+'-applicant-worksheet-errors.png'),fullPage:false});
+  await page.locator('.worksheet-review-item.is-error').first().click();assert.equal(await page.evaluate(()=>document.activeElement?.dataset?.field),'phone');
+  await page.locator('#btnWorksheetUndo').click();
+
+  const otherPhone=await page.evaluate(otherId=>applicants.find(item=>item.id===otherId).phone,otherId);
+  await page.evaluate(({id,phone})=>window.erpApplicantWorksheet.setDirty(id,'phone',phone),{id,phone:otherPhone});
+  assert.ok(await page.locator('.worksheet-review-block.is-duplicate').count()>0,'기존 지원자와 같은 연락처는 중복 후보여야 합니다.');
+  assert.equal(await page.locator('#btnWorksheetSave').isDisabled(),true,'중복 확인 전에는 저장을 차단해야 합니다.');
+  await page.screenshot({path:path.join(outputDir,label+'-applicant-worksheet-duplicates.png'),fullPage:false});
+  await page.locator('#btnWorksheetConfirmDuplicates').click();assert.equal(await page.locator('#btnWorksheetSave').isEnabled(),true);
+
+  const stateBeforeReview=await page.evaluate(()=>({dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length}));
+  await page.locator('#btnWorksheetSave').click();await page.locator('#applicantWorksheetReview:not([hidden])').waitFor();await page.screenshot({path:path.join(outputDir,label+'-applicant-worksheet-final-review.png'),fullPage:false});
+  await page.locator('#btnWorksheetReviewCancel').click();
+  assert.deepEqual(await page.evaluate(()=>({dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length})),stateBeforeReview,'최종 확인 취소는 dirty와 히스토리를 유지해야 합니다.');
+
   await page.evaluate(()=>{window.__worksheetRealSave=window.save;window.__worksheetSaveCalls=0;window.save=function(){window.__worksheetSaveCalls++;return window.__worksheetRealSave();};});
-  page.once('dialog',dialog=>dialog.accept());await page.locator('#btnWorksheetSave').click();await page.waitForFunction(()=>window.erpApplicantWorksheet.state.dirty.size===0);
-  const saved=await page.evaluate(id=>{const result={calls:window.__worksheetSaveCalls,row:applicants.find(item=>item.id===id),stored:JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')).find(item=>item.id===id)};window.save=window.__worksheetRealSave;delete window.__worksheetRealSave;return result;},id);
-  assert.equal(saved.calls,1,'워크시트 저장은 기존 save를 정확히 한 번만 호출해야 합니다.');assert.equal(saved.row.workplace,'평택');assert.equal(saved.stored.memo,'가상 메모');assert.equal(saved.row.name,'테스트지원자1');assert.equal(saved.row.phone,'010-0000-0001');
-  await page.evaluate(id=>{window.erpApplicantWorksheet.setDirty(id,'workplace','천안');window.__worksheetFailureBefore=JSON.stringify(applicants);window.__worksheetFailureStorage=localStorage.getItem('recruit_erp_applicants_stable');window.__worksheetRealSave=window.save;window.__worksheetSaveCalls=0;window.save=()=>{window.__worksheetSaveCalls++;return false;};},id);
-  page.once('dialog',dialog=>dialog.accept());await page.locator('#btnWorksheetSave').click();
-  const failed=await page.evaluate(()=>{const result={calls:window.__worksheetSaveCalls,memory:JSON.stringify(applicants)===window.__worksheetFailureBefore,storage:localStorage.getItem('recruit_erp_applicants_stable')===window.__worksheetFailureStorage,dirty:window.erpApplicantWorksheet.state.dirty.size};window.save=window.__worksheetRealSave;delete window.__worksheetRealSave;return result;});
-  assert.deepEqual(failed,{calls:1,memory:true,storage:true,dirty:1},'저장 실패는 전체 원상복구하고 변경목록을 유지해야 합니다.');
+  await page.locator('#btnWorksheetSave').click();await page.locator('#applicantWorksheetReview:not([hidden])').waitFor();await page.locator('#btnWorksheetReviewConfirm').click();await page.waitForFunction(()=>window.erpApplicantWorksheet.state.dirty.size===0);
+  const saved=await page.evaluate(id=>{const result={calls:window.__worksheetSaveCalls,row:applicants.find(item=>item.id===id),stored:JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')).find(item=>item.id===id),undo:window.erpApplicantWorksheet.state.history.undo.length,redo:window.erpApplicantWorksheet.state.history.redo.length};window.save=window.__worksheetRealSave;delete window.__worksheetRealSave;return result;},id);
+  assert.equal(saved.calls,1,'워크시트 저장은 기존 save를 정확히 한 번만 호출해야 합니다.');assert.equal(saved.row.name,'가상워크시트수정');assert.equal(saved.row.phone,otherPhone);assert.equal(saved.row.email,'worksheet@example.invalid');assert.equal(saved.row.region,'가상지역');assert.equal(saved.stored.name,'가상워크시트수정');assert.deepEqual({undo:saved.undo,redo:saved.redo},{undo:0,redo:0});
+  const bridgePutsAfterSuccess=bridgePuts;
+
+  await page.evaluate(id=>{window.erpApplicantWorksheet.setDirty(id,'region','가상실패지역');window.__worksheetFailureBefore=JSON.stringify(applicants);window.__worksheetFailureStorage=localStorage.getItem('recruit_erp_applicants_stable');window.__worksheetHistoryBefore=window.erpApplicantWorksheet.state.history.undo.length;window.__worksheetRealSave=window.save;window.__worksheetSaveCalls=0;window.save=()=>{window.__worksheetSaveCalls++;return false;};},id);
+  await page.locator('#btnWorksheetSave').click();await page.locator('#btnWorksheetReviewConfirm').click();
+  const failed=await page.evaluate(()=>{const result={calls:window.__worksheetSaveCalls,memory:JSON.stringify(applicants)===window.__worksheetFailureBefore,storage:localStorage.getItem('recruit_erp_applicants_stable')===window.__worksheetFailureStorage,dirty:window.erpApplicantWorksheet.state.dirty.size,history:window.erpApplicantWorksheet.state.history.undo.length===window.__worksheetHistoryBefore};window.save=window.__worksheetRealSave;delete window.__worksheetRealSave;return result;});
+  assert.deepEqual(failed,{calls:1,memory:true,storage:true,dirty:1,history:true},'저장 실패는 전체 원상복구하고 dirty·히스토리를 유지해야 합니다.');
+  assert.equal(bridgePuts,bridgePutsAfterSuccess,'저장 실패 중 추가 Bridge PUT이 발생하면 안 됩니다.');
+
+  await page.evaluate(id=>window.erpApplicantWorksheet.setDirty(id,'name','<img src=x onerror=alert(1)>'),id);
+  assert.equal(await page.locator('#applicantWorksheet img').count(),0,'사용자 문자열이 HTML 요소로 실행되면 안 됩니다.');
+  assert.ok((await page.locator('#applicantWorksheet tr[data-applicant-id="'+id+'"] [data-field="name"]').innerText()).includes('<img src=x onerror=alert(1)>'));
+
   await page.locator('#btnApplicantNormalView').click();await page.locator('#applicantWorksheetGuard:not([hidden])').waitFor();await page.locator('#btnWorksheetGuardStay').click();assert.equal(await page.locator('#applicantWorksheet').isVisible(),true,'계속 편집은 워크시트와 변경목록을 유지해야 합니다.');
   await page.locator('#btnApplicantNormalView').click();await page.locator('#btnWorksheetGuardDiscard').click();await page.waitForFunction(()=>window.erpApplicantWorksheet.state.dirty.size===0);assert.equal(await page.locator('#applicantTbody').isVisible(),true,'변경 취소 뒤 일반보기를 열어야 합니다.');
-  await page.locator(`#applicantTbody tr[data-applicant-id="${id}"] .name-button`).click();await page.locator('#detailModal.show').waitFor();await page.locator('#btnCloseDetail').click();
   await page.locator('#btnApplicantWorksheetView').click();
-  const viewer=await page.evaluate(id=>{window.__worksheetRealHas=window.erpPermissions.has;window.erpPermissions.has=permission=>permission==='applicant.write'?false:window.__worksheetRealHas(permission);document.dispatchEvent(new CustomEvent('erp:permission-change'));return {changed:window.erpApplicantWorksheet.setDirty(id,'memo','금지'),dirty:window.erpApplicantWorksheet.state.dirty.size};},id);
-  assert.deepEqual(viewer,{changed:false,dirty:0});assert.equal(await page.locator('#btnWorksheetSave').isDisabled(),true,'조회 전용은 워크시트 저장을 사용할 수 없어야 합니다.');
+  const viewer=await page.evaluate(id=>{window.__worksheetRealHas=window.erpPermissions.has;window.erpPermissions.has=permission=>permission==='applicant.write'?false:window.__worksheetRealHas(permission);document.dispatchEvent(new CustomEvent('erp:permission-change'));return {changed:window.erpApplicantWorksheet.setDirty(id,'memo','금지'),undo:window.erpApplicantWorksheet.undo(),redo:window.erpApplicantWorksheet.redo(),duplicate:window.erpApplicantWorksheet.confirmDuplicates(),save:window.erpApplicantWorksheet.save(),dirty:window.erpApplicantWorksheet.state.dirty.size};},id);
+  assert.deepEqual(viewer,{changed:false,undo:false,redo:false,duplicate:false,save:false,dirty:0});assert.equal(await page.locator('#btnWorksheetSave').isDisabled(),true,'조회 전용은 워크시트 저장을 사용할 수 없어야 합니다.');assert.equal(await page.locator('#btnWorksheetUndo').isDisabled(),true);assert.equal(await page.locator('#btnWorksheetRedo').isDisabled(),true);
   await page.evaluate(()=>{window.erpPermissions.has=window.__worksheetRealHas;delete window.__worksheetRealHas;document.dispatchEvent(new CustomEvent('erp:permission-change'));});
+
+  const unchanged=await page.evaluate(baseline=>({employees:JSON.stringify(employees)===baseline.employees,schools:JSON.stringify(schools)===baseline.schools,events:(typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents))===baseline.events}),before);
+  assert.deepEqual(unchanged,{employees:true,schools:true,events:true});
+  page.off('request',bridgeListener);
+  await restoreFixture();
 }
 async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
   await page.evaluate(()=>window.openHireWaitingList?.('2026-08-06'));
@@ -377,7 +438,7 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v11.3.2');
+      assert.equal(await page.title(),'채용관리 시스템 v11.4.0');
       const queue=page.locator('#homeTodayGrid .queue-card');assert.equal(await queue.count(),5);for(let i=0;i<5;i++)assert.notEqual(await queue.nth(i).evaluate(el=>getComputedStyle(el).display),'none');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
