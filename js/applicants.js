@@ -307,24 +307,10 @@ function renderScheduleReminder(){
 }
 function dismissScheduleReminder(){ localStorage.setItem(REMINDER_DISMISS_KEY, today()); renderScheduleReminder(); }
 function renderHomeLists(){
-  const todayStr=today();
-  // v10.48.1.2: 필터·정렬 둘 다 면접일=오늘만 보고 있어 서류합격에 남은 과거(오늘 포함) 면접일이
-  // "오늘 우선 처리" 최상단에 잘못 노출됐다. 다른 오늘 면접 집계와 동일하게 서류합격을 명시 제외.
-  const priority = applicants.filter(a=>
-    (isInterviewScheduleActive(a) && a.interviewDate===todayStr) ||
-    ['서류검토','부재중'].includes(a.status) ||
-    isDormPending(a) ||
-    isHireSoon(a) ||
-    (a.interviewDate && daysUntil(a.interviewDate)<0 && ['면접예정','다음면접'].includes(a.status)) ||
-    (a.hireDate && daysUntil(a.hireDate)<0 && a.status==='입사예정') ||
-    (a.status==='면접완료' && !a.finalDecision)
-  ).sort((a,b)=>{
-    const ap = (isInterviewScheduleActive(a) && a.interviewDate===todayStr) ? 0 : isHireSoon(a) ? 1 : ['서류검토','부재중'].includes(a.status) ? 2 : isDormPending(a) ? 3 : 4;
-    const bp = (isInterviewScheduleActive(b) && b.interviewDate===todayStr) ? 0 : isHireSoon(b) ? 1 : ['서류검토','부재중'].includes(b.status) ? 2 : isDormPending(b) ? 3 : 4;
-    return ap-bp;
-  }).slice(0,6);
+  const selection=window.dailyWorkflowSelection?.();
+  const priority=(selection?.rows||[]).slice(0,4);
   const recent=[...applicants].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')).slice(0,6);
-  $('priorityList').innerHTML=priority.length?priority.map(card).join(''):`<div class="empty">오늘 우선 처리할 지원자가 없습니다.</div>`;
+  $('priorityList').innerHTML=priority.length?priority.map(row=>window.dailyHomeWorkflowCard?.(row)||card(row.applicant)).join(''):`<div class="empty home-daily-empty"><strong>지금 바로 처리할 업무가 없습니다.</strong><button class="ghost" type="button" data-go="applicants">지원자 목록 보기</button></div>`;
   $('recentList').innerHTML=recent.length?recent.map(card).join(''):`<div class="empty">등록된 지원자가 없습니다.</div>`;
 }
 function duplicatePhoneSet(){
@@ -337,6 +323,7 @@ function duplicatePhoneSet(){
 }
 function filtered(){
   const dupSet = currentFilter==='duplicate' ? duplicatePhoneSet() : null;
+  const todayActionIds=currentFilter==='todayAction'?new Set((window.dailyWorkflowSelection?.().rows||[]).map(row=>String(row.applicant.id))):null;
   let rows = applicants.filter(a=>{
     const workplaceOk=currentWorkplace==='all'||(currentWorkplace==='기타'?!['천안','평택'].includes(a.workplace):a.workplace===currentWorkplace);
     const text=Object.values(a).join(' ').toLowerCase();
@@ -355,6 +342,7 @@ function filtered(){
     if(currentFilter==='finished') filterOk=isFinished(a);
     if(currentFilter==='rejected') filterOk=a.status==='서류탈락';
     if(currentFilter==='duplicate') filterOk=dupSet.has(normalizePhone(a.phone));
+    if(currentFilter==='todayAction') filterOk=todayActionIds.has(String(a.id));
     return workplaceOk && searchOk && schoolOk && filterOk;
   });
   if(hideFinished) rows = rows.filter(isActive);
@@ -398,12 +386,17 @@ function updateApplicantListFilterCounts(){
     decision:applicants.filter(isDecisionNeeded).length,
     duplicate:applicants.filter(a=>duplicateSet.has(normalizePhone(a.phone))).length
   };
+  filterCounts.todayAction=window.dailyWorkflowSelection?.()?.rows?.length||0;
   document.querySelectorAll('#quickFilters [data-filter]').forEach(button=>{
     const count=filterCounts[button.dataset.filter] ?? 0;
     const target=button.querySelector('[data-filter-count]');
     if(target) target.textContent=String(count);
     button.setAttribute('aria-pressed', button.classList.contains('active') ? 'true' : 'false');
   });
+  const auxiliary=['contact','decision','duplicate'];
+  const selectedAuxiliary=auxiliary.includes(currentFilter)?1:0;
+  const summary=document.getElementById('applicantAuxiliaryFilterSummary');
+  if(summary)summary.textContent=selectedAuxiliary?`보조 조건 · ${selectedAuxiliary}개 적용`:'보조 조건 · 선택 없음';
   setText('applicantHeaderTotalCount', filterCounts.all);
   setText('applicantHeaderActiveCount', filterCounts.active);
   setText('applicantHeaderInterviewCount', filterCounts.interview);
@@ -512,6 +505,16 @@ function openApplicantQuickDetail(id,trigger=null){
   requestAnimationFrame(()=>document.getElementById('btnApplicantQuickDetailClose')?.focus({preventScroll:true}));
   return true;
 }
+function openApplicantQuickDetailFromWorkflow(id,trigger=null){
+  if(!applicantQuickDetailCanRead()||!applicants.some(row=>String(row.id)===String(id)))return false;
+  if(!filtered().some(row=>String(row.id)===String(id))){
+    resetListFiltersToAll();
+    if(Array.isArray(window.__erpAdvancedFilterIds))window.__erpAdvancedFilterIds=null;
+  }
+  setPage('applicants');
+  renderTable();
+  return openApplicantQuickDetail(id,trigger);
+}
 function closeApplicantQuickDetail(options={}){
   const shell=document.getElementById('applicantQuickDetail');if(!shell?.classList.contains('is-open'))return false;
   const restoreFocus=options.restoreFocus!==false,restoreScroll=options.restoreScroll!==false,context=applicantQuickDetailState.context,trigger=applicantQuickDetailState.trigger,currentId=applicantQuickDetailState.id;
@@ -553,6 +556,7 @@ function applicantQuickDetailAfterListRender(allRows){
   if(!allRows.some(row=>String(row.id)===String(applicantQuickDetailState.id)))closeApplicantQuickDetail({restoreFocus:false});else applicantQuickDetailMarkSelected();
 }
 window.openApplicantQuickDetail=openApplicantQuickDetail;
+window.openApplicantQuickDetailFromWorkflow=openApplicantQuickDetailFromWorkflow;
 window.closeApplicantQuickDetail=closeApplicantQuickDetail;
 window.moveApplicantQuickDetail=moveApplicantQuickDetail;
 window.erpApplicantQuickDetail={isOpen:applicantQuickDetailIsOpen,state:applicantQuickDetailState,render:renderApplicantQuickDetail};

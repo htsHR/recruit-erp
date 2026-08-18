@@ -19,7 +19,7 @@ const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
 const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.4.1');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.5.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -167,7 +167,7 @@ async function verifyUiDensity(page,label){
   assert.ok(density.bodyOverflow<=1,`${label} 본문 가로 넘침: ${density.bodyOverflow}`);
   assert.ok(density.internalScroll&&density.tableOverflow!=='visible',`${label} 넓은 지원자 표는 table-wrap 안에서만 스크롤되어야 합니다.`);
   assert.equal(density.controlIds,true,'지원자 검색·정렬·상세조건·선택·초기화 제어가 유지되어야 합니다.');
-  assert.deepEqual(density.statusFilters,['all','active','docpass','interview','hire','finished','contact','decision','duplicate']);
+  assert.deepEqual(density.statusFilters,['all','todayAction','interview','contact','active','docpass','hire','finished','decision','duplicate']);
   assert.deepEqual(density.statusCounts,density.statusFilters);
   assert.deepEqual(density.workplaceFilters,['all','천안','평택','기타']);
   assert.deepEqual(density.workplaceCounts,density.workplaceFilters);
@@ -240,7 +240,7 @@ async function verifyUsabilityPolish(page,label){
     nav.scrollTop=0;localStorage.setItem('recruit_erp_ui_operation_environment','company');updateStorageNote();return result;
   });
   assert.ok(sidebar.lastBottom<=sidebar.navBottom+1&&sidebar.navBottom<=sidebar.statusTop+1&&sidebar.statusBottom<=sidebar.sidebarBottom+1,`${label} 사이드바 메뉴 끝과 상태 영역이 겹치거나 가려지면 안 됩니다: ${JSON.stringify(sidebar)}`);
-  assert.equal(sidebar.badge,'집 · CLOUD',`${label} 상단 모드 표시는 동기화 상태 문구를 중복하면 안 됩니다.`);assert.ok(sidebar.status.length>0&&sidebar.status!==sidebar.badge,`${label} 모드 표시와 저장 상태를 분리해야 합니다.`);
+  assert.equal(sidebar.badge,'집 운영',`${label} 상단에는 운영 환경만 표시해야 합니다.`);assert.ok(sidebar.status.length>0&&sidebar.status!==sidebar.badge,`${label} 모드 표시와 저장 상태를 분리해야 합니다.`);
 }
 async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   let bridgeSaveRequests=0;
@@ -474,6 +474,75 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
   await page.evaluate(()=>closeHireWaitingList(true));
 }
 
+async function verifyRecruiterDailyUsability(page,label,{exerciseQuick=false}={}){
+  await page.evaluate(rows=>{window.__v115OriginalApplicants=applicants;applicants=rows.map(row=>({...row}));resetListFiltersToAll();renderAll();},denseApplicants);
+  const shared=await page.evaluate(()=>{
+    const selection=window.dailyWorkflowSelection();
+    window.setPage('home');
+    const homeFirst=document.querySelector('#priorityList [data-home-applicant-id]')?.dataset.homeApplicantId||'';
+    window.setPage('today');
+    const todayFirst=document.querySelector('#dailyWorkflowList [data-applicant-id]')?.dataset.applicantId||'';
+    const panel=document.querySelector('.daily-workflow-panel').getBoundingClientRect(),summary=document.querySelector('.daily-automation-summary').getBoundingClientRect();
+    const first=document.querySelector('#dailyWorkflowList .daily-work-item');
+    return {selectorFirst:selection.rows[0]?.applicant.id||'',homeFirst,todayFirst,panelTop:panel.top,summaryTop:summary.top,rowText:first?.innerText||'',rows:document.querySelectorAll('#dailyWorkflowList .daily-work-item').length,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth};
+  });
+  assert.ok(shared.selectorFirst&&shared.homeFirst===shared.selectorFirst&&shared.todayFirst===shared.selectorFirst,`${label} 홈과 오늘 업무의 첫 대상이 공통 선택기와 같아야 합니다: ${JSON.stringify(shared)}`);
+  assert.ok(shared.panelTop<shared.summaryTop&&shared.rows>0,`${label} 오늘 실행 목록이 숫자 요약보다 먼저 보여야 합니다: ${JSON.stringify(shared)}`);
+  assert.ok(shared.rowText.includes('추천 다음 작업')&&shared.overflow<=1,`${label} 오늘 실행 행의 다음 작업 또는 화면 폭이 잘못되었습니다: ${JSON.stringify(shared)}`);
+  await page.screenshot({path:path.join(outputDir,`${label}-daily-workflow-v115.png`),fullPage:false});
+
+  await page.evaluate(()=>window.setPage('applicants'));
+  await page.locator('#searchInput').fill('가상');await page.locator('#sortSelect').selectOption('nameAsc');await page.locator('#workplaceTabs [data-workplace="천안"]').click();
+  const beforeToggle=await page.evaluate(()=>({search:currentSearch,sort:currentSort,workplace:currentWorkplace,filter:currentFilter,page:currentApplicantPage}));
+  await page.locator('.applicant-auxiliary-filters summary').click();
+  const afterToggle=await page.evaluate(()=>({search:currentSearch,sort:currentSort,workplace:currentWorkplace,filter:currentFilter,page:currentApplicantPage}));
+  assert.deepEqual(afterToggle,beforeToggle,`${label} 보조 조건 접기는 조회 상태를 바꾸면 안 됩니다.`);
+  await page.locator('.applicant-auxiliary-filters summary').click();
+  await page.locator('#quickFilters [data-filter="todayAction"]').click();
+  assert.equal(await page.evaluate(()=>currentFilter),'todayAction',`${label} 오늘 조치 고정 프리셋이 적용되어야 합니다.`);
+
+  await page.evaluate(()=>window.setPage('form'));await page.waitForTimeout(30);
+  const formSizing=await page.evaluate(()=>({
+    labels:[...document.querySelectorAll('#form .resume-input-grid label')].filter(node=>node.getClientRects().length).map(node=>parseFloat(getComputedStyle(node).fontSize)),
+    controls:[...document.querySelectorAll('#form .resume-input-grid input,#form .resume-input-grid select,#form .resume-input-grid textarea')].filter(node=>node.getClientRects().length).map(node=>node.getBoundingClientRect().height),
+    optionalCollapsed:document.querySelector('[data-form-step="2"]')?.classList.contains('is-collapsed'),
+    statusVisible:!!document.querySelector('[data-form-step="2"] [data-form-step-status]')?.getClientRects().length
+  }));
+  const minimumLabel=innerWidthForLabel(label)<=700?13:12,minimumControl=innerWidthForLabel(label)<=700?44:40;
+  assert.ok(formSizing.labels.length&&formSizing.labels.every(size=>size>=minimumLabel),`${label} 상세 폼 라벨 크기 부족: ${JSON.stringify(formSizing)}`);
+  assert.ok(formSizing.controls.length&&formSizing.controls.every(size=>size>=minimumControl),`${label} 상세 폼 컨트롤 높이 부족: ${JSON.stringify(formSizing)}`);
+  assert.ok(formSizing.optionalCollapsed&&formSizing.statusVisible,`${label} 선택 입력 영역은 접혀도 상태 배지가 보여야 합니다.`);
+
+  await page.evaluate(()=>window.setPage('home'));await page.locator('#btnQuickApplicantEntry').click();
+  const quickBounds=await page.locator('.applicant-quick-entry-card').evaluate(card=>{const rect=card.getBoundingClientRect();return{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:innerWidth,height:innerHeight,active:document.activeElement?.id};});
+  assert.ok(quickBounds.left>=-1&&quickBounds.right<=quickBounds.width+1&&quickBounds.top>=-1&&quickBounds.bottom<=quickBounds.height+1&&quickBounds.active==='quickEntryName',`${label} 빠른 등록 팝업 잘림 또는 최초 포커스 오류: ${JSON.stringify(quickBounds)}`);
+  await page.screenshot({path:path.join(outputDir,`${label}-quick-entry.png`),fullPage:false});await page.locator('[data-quick-entry-close]').last().click();
+
+  if(exerciseQuick){
+    await page.evaluate(()=>{window.setPage('home');window.__v115RealSave=window.save;window.__v115SaveCalls=0;window.save=function(){window.__v115SaveCalls++;return true;};});
+    await page.locator('#btnQuickApplicantEntry').click();await page.locator('#quickEntryName').fill('');await page.locator('#btnQuickEntrySave').click();
+    assert.equal(await page.evaluate(()=>window.__v115SaveCalls),0,'필수값 오류는 저장을 호출하면 안 됩니다.');
+    await page.locator('#quickEntryName').fill('가상중복확인');await page.locator('#quickEntryPhone').fill(denseApplicants[0].phone);await page.locator('#btnQuickEntrySave').click();
+    assert.ok((await page.locator('#quickEntryDuplicate').innerText()).includes('중복 가능성'));assert.equal(await page.evaluate(()=>window.__v115SaveCalls),0,'중복 미확인은 저장을 호출하면 안 됩니다.');
+    await page.locator('[data-quick-entry-close]').last().click();
+
+    await page.locator('#btnQuickApplicantEntry').click();await page.locator('#quickEntryName').fill('가상빠른등록성공');await page.locator('#quickEntryPhone').fill('010-7777-7777');
+    page.once('dialog',dialog=>dialog.accept());await page.locator('#btnQuickEntrySave').click();await page.locator('#applicantQuickDetail.is-open').waitFor();
+    assert.equal(await page.evaluate(()=>window.__v115SaveCalls),1,'빠른 등록 성공은 기존 save()를 정확히 한 번 호출해야 합니다.');await page.keyboard.press('Escape');
+
+    const failureBaseline=await page.evaluate(()=>{window.__v115FailureApplicants=JSON.stringify(applicants);window.__v115FailureStorage=localStorage.getItem(STORAGE_KEY);window.save=function(){window.__v115SaveCalls++;localStorage.setItem(STORAGE_KEY,'synthetic-corrupt');return false;};return{count:applicants.length,storage:window.__v115FailureStorage};});
+    await page.locator('#btnQuickApplicantEntry').click();await page.locator('#quickEntryName').fill('가상저장실패');await page.locator('#quickEntryMemo').fill('실패 후 유지할 입력');page.once('dialog',dialog=>dialog.accept());await page.locator('#btnQuickEntrySave').click();
+    const failed=await page.evaluate(()=>({count:applicants.length,memory:JSON.stringify(applicants)===window.__v115FailureApplicants,storage:localStorage.getItem(STORAGE_KEY),name:document.getElementById('quickEntryName').value,memo:document.getElementById('quickEntryMemo').value,open:window.erpApplicantQuickEntry.state.open}));
+    assert.deepEqual({count:failed.count,memory:failed.memory,storage:failed.storage},{count:failureBaseline.count,memory:true,storage:failureBaseline.storage},'저장 실패 시 메모리와 브라우저 저장값을 원상복구해야 합니다.');
+    assert.ok(failed.open&&failed.name==='가상저장실패'&&failed.memo==='실패 후 유지할 입력','저장 실패 뒤 입력과 오류 화면을 유지해야 합니다.');
+    await page.locator('[data-quick-entry-close]').last().click();
+    const viewerBlocked=await page.evaluate(()=>{const real=window.erpPermissions.has;window.erpPermissions.has=permission=>permission==='applicant.write'?false:real(permission);const result=window.erpApplicantQuickEntry.open();window.erpPermissions.has=real;return result;});
+    assert.equal(viewerBlocked,false,'조회 전용의 빠른 등록 직접 호출을 차단해야 합니다.');
+    await page.evaluate(()=>{window.save=window.__v115RealSave;delete window.__v115RealSave;delete window.__v115SaveCalls;applicants=window.__v115OriginalApplicants;delete window.__v115OriginalApplicants;delete window.__v115FailureApplicants;delete window.__v115FailureStorage;resetListFiltersToAll();renderAll();});
+  }else await page.evaluate(()=>{applicants=window.__v115OriginalApplicants;delete window.__v115OriginalApplicants;resetListFiltersToAll();renderAll();});
+}
+function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.test(label)?768:1366;}
+
 (async()=>{
   await new Promise((resolve,reject)=>{bridgeServer.once('error',reject);bridgeServer.listen(bridgePort,bridgeHost,resolve);});
   await waitForServer();
@@ -491,18 +560,19 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v11.4.1');
-      const queue=page.locator('#homeTodayGrid .queue-card');assert.equal(await queue.count(),5);for(let i=0;i<5;i++)assert.notEqual(await queue.nth(i).evaluate(el=>getComputedStyle(el).display),'none');
+      assert.equal(await page.title(),'채용관리 시스템 v11.5.0');
+      assert.equal(await page.locator('#homeTodayGrid').count(),0,'홈의 중복 숫자 업무 카드는 제거되어야 합니다.');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
         const layout=await page.evaluate(()=>({active:document.querySelector('.page.active')?.id,body:document.body.scrollWidth,html:document.documentElement.scrollWidth,width:innerWidth}));
         assert.equal(layout.active,screen,`${viewport.name} ${screen} 화면 전환 실패`);
         assert.ok(layout.body<=layout.width+1&&layout.html<=layout.width+1,`${viewport.name} ${screen} 본문 가로 넘침: ${layout.body}/${layout.html}/${layout.width}`);
       }
+      await verifyRecruiterDailyUsability(page,viewport.name,{exerciseQuick:viewport.width===1366});
       if(viewport.width===390||viewport.width===1366){
         await verifyHireWaitingGrid(page,viewport.name,{mobile:viewport.width===390});
         await page.evaluate(()=>window.setPage?.('today'));await page.waitForTimeout(80);
-        const todayState=await page.evaluate(()=>({summary:document.querySelectorAll('.daily-automation-summary>div').length,hireLabel:document.querySelector('[data-daily-filter="hireUpcoming"]')?.innerText||'',rows:document.querySelectorAll('#dailyWorkflowList .daily-work-item').length,overflow:document.querySelector('#today').scrollWidth-document.querySelector('#today').clientWidth}));
+        const todayState=await page.evaluate(()=>({summary:document.querySelectorAll('.daily-automation-summary>div').length,hireLabel:document.querySelector('[data-daily-filter="hireUpcoming"]')?.textContent||'',rows:document.querySelectorAll('#dailyWorkflowList .daily-work-item').length,overflow:document.querySelector('#today').scrollWidth-document.querySelector('#today').clientWidth}));
         assert.equal(todayState.summary,4);assert.ok(todayState.hireLabel.includes('3일 내 입사')&&todayState.hireLabel.includes('D-3'));assert.ok(todayState.rows>=3);assert.ok(todayState.overflow<=1,`${viewport.name} 오늘 할 일 화면 가로 넘침: ${JSON.stringify(todayState)}`);
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-today-automation.png`),fullPage:true});
         await page.evaluate(()=>window.setPage?.('onboarding'));await page.waitForTimeout(80);
@@ -601,7 +671,9 @@ async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
         await page.screenshot({path:path.join(outputDir,'390x844-form.png'),fullPage:true});
       }
       if([1366,1440,1920].includes(viewport.width))await verifyApplicantWorksheet(page,viewport.name,{exercise:viewport.width===1366});
-      await page.evaluate(()=>window.setPage?.('home'));await queue.first().focus();await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'today');await page.evaluate(()=>window.setPage?.('home'));await queue.nth(4).focus();await page.keyboard.press('Space');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'today');
+      await page.evaluate(()=>window.setPage?.('home'));
+      const homeFirst=page.locator('#priorityList .home-daily-work-item').first();
+      if(await homeFirst.count()){await homeFirst.focus();await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'applicants');assert.equal(await page.locator('#applicantQuickDetail.is-open').count(),1);await page.keyboard.press('Escape');}
       if(viewport.width===390||viewport.width===1366){
         await page.evaluate(()=>{window.setPage?.('home');window.scrollTo(0,0);});await page.waitForTimeout(30);
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-home.png`),fullPage:true});

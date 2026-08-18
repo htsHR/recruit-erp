@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='11.4.1';
+const UX_VERSION='11.5.0';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -533,8 +533,8 @@ updateStorageNote=function(){
   const cloudOk=authenticated&&typeof cloudSyncStatus!=='undefined'&&cloudSyncStatus==='ok';
   const cloudSyncing=authenticated&&!cloudOk&&!cloudFailed;
   const loggedOut=!isCompany&&hasCloud&&!authenticated;
-  const modeTitle=isCompany?'회사 로컬 모드':cloudFailed?'클라우드 동기화 실패':cloudOk?'클라우드 동기화 정상':cloudSyncing?'클라우드 동기화 중':loggedOut?'클라우드 로그아웃':'로컬 전용';
-  const modeDescription=isCompany?'이 브라우저에만 저장하며 클라우드로 보내지 않습니다.':cloudFailed?'로컬 저장은 완료됐지만 클라우드 반영에 실패했습니다.':cloudOk?'로컬과 클라우드 저장이 정상 작동합니다.':cloudSyncing?'클라우드 상태를 확인하고 있습니다.':loggedOut?'로컬 저장만 사용 중입니다. 로그인하면 동기화를 다시 시작합니다.':'클라우드 설정이 없어 이 브라우저에만 저장합니다.';
+  const modeTitle=isCompany?'로컬 저장 사용 중':cloudFailed?'클라우드 동기화 실패':cloudOk?'클라우드 동기화 정상':cloudSyncing?'클라우드 동기화 중':loggedOut?'로컬 저장 사용 중':'로컬 저장 사용 중';
+  const modeDescription=isCompany?'회사 모드의 브라우저 보조 저장을 사용합니다. 공용 저장소 상태는 연결 시 함께 표시됩니다.':cloudFailed?'로컬 저장은 완료됐지만 클라우드 반영에 실패했습니다.':cloudOk?'로컬과 클라우드 저장이 정상 작동합니다.':cloudSyncing?'클라우드 상태를 확인하고 있습니다.':loggedOut?'로컬 저장은 정상입니다. 로그인하면 클라우드 동기화를 다시 시작합니다.':'클라우드 설정이 없어 이 브라우저에 저장합니다.';
   const lastLabel=typeof cloudLastSuccessLabel==='function'?cloudLastSuccessLabel():'아직 성공 기록 없음';
   const statusClass=cloudFailed?'sync-warn-note':cloudOk?'sync-ok-note':cloudSyncing?'sync-progress-note':loggedOut?'sync-logged-out-note':'sync-local-note';
   const sharedNote=isCompany&&window.erpSharedStorage?.statusNote?.();
@@ -556,12 +556,11 @@ updateStorageNote=function(){
   el.querySelectorAll('[data-operation-mode]').forEach(btn=>btn.addEventListener('click',()=>uxSetOperationEnvironment(btn.dataset.operationMode)));
   const badge=document.querySelector('.local-mode-badge');
   if(badge){
-    badge.textContent=isCompany?'회사 · LOCAL':'집 · CLOUD';
-    badge.title=isCompany?'회사 로컬 운영 모드':'집 클라우드 운영 모드';
+    badge.textContent=isCompany?'회사 운영':'집 운영';
+    badge.title=isCompany?'현재 회사 운영 환경':'현재 집 운영 환경';
     badge.classList.toggle('company',isCompany);
     badge.classList.toggle('home',!isCompany);
-    badge.classList.toggle('cloud-ready',cloudOk);
-    badge.classList.toggle('cloud-error',cloudFailed);
+    badge.classList.remove('cloud-ready','cloud-error');
   }
 };
 window.updateStorageNote=updateStorageNote;

@@ -1,5 +1,5 @@
 /* =========================================================
-   Recruit ERP v11.0.0 TODAY WORK OPERATIONS
+   Recruit ERP v11.5.0 TODAY WORK OPERATIONS
    - 오늘 할 일을 서류검토 → 전화 → 재연락 → 면접 → 결과 → 입사 순으로 분리
    - 각 지원자 행에서 기존 워크벤치/전화 인터뷰/일정/수정 화면으로 바로 이동
    - 새 데이터 필드·새 저장 구조 없이 기존 applicants 상태/일정/이력만 사용
@@ -123,15 +123,13 @@ function dailyWorkflowGroups(){
   };
 }
 
-const DAILY_REASON_META={
-  screening:{label:'서류검토 필요',tone:'info',priority:2},
-  phone:{label:'전화 인터뷰 필요',tone:'contact',priority:2},
-  recall:{label:'재연락 필요',tone:'danger',priority:1},
+const DAILY_REASON_META=window.erpTodayAutomation?.WORKFLOW_REASON_META||{
+  overdue:{label:'기한 경과',tone:'danger',priority:0},
   interviewToday:{label:'오늘 면접',tone:'primary',priority:1},
-  resultPending:{label:'면접 결과 미입력',tone:'danger',priority:1},
-  hireUpcoming:{label:'3일 내 입사',tone:'good',priority:3},
-  attendancePending:{label:'출근 확인 지연',tone:'danger',priority:1},
-  stagnant:{label:`${DAILY_WORKFLOW_STALE_DAYS}일 이상 미처리`,tone:'muted',priority:4}
+  recall:{label:'재연락 필요',tone:'contact',priority:2},
+  resultPending:{label:'면접 결과 미입력',tone:'danger',priority:3},
+  hireUpcoming:{label:'3일 내 입사',tone:'good',priority:4},
+  stagnant:{label:`${DAILY_WORKFLOW_STALE_DAYS}일 이상 미처리`,tone:'muted',priority:5}
 };
 
 function dailyWorkflowRows(groups){
@@ -154,11 +152,21 @@ function dailyWorkflowRows(groups){
     return ax.localeCompare(ay)||String(x.applicant.name||'').localeCompare(String(y.applicant.name||''),'ko');
   });
 }
+function dailyWorkflowSelection(){
+  if(window.erpTodayAutomation?.buildWorkflowRows){
+    return window.erpTodayAutomation.buildWorkflowRows(applicants,{
+      today:today(),isActive,normalizeStatus,isInterviewScheduleActive,hasFinalDecision
+    });
+  }
+  const groups=dailyWorkflowGroups();
+  const rows=dailyWorkflowRows(groups);
+  return {groups,rows,summary:window.erpTodayAutomation?.summary(groups)||{dueToday:0,overdue:groups.overdue.length,changedToday:0,urgent:groups.overdue.length+groups.interviewToday.length}};
+}
+window.dailyWorkflowSelection=dailyWorkflowSelection;
 function dailyFilterRows(allRows,groups){
   let rows=allRows;
   if(dailyWorkflowFilter!=='all'){
-    const ids=new Set((groups[dailyWorkflowFilter]||[]).map(a=>String(a.id)));
-    rows=rows.filter(r=>ids.has(String(r.applicant.id)));
+    rows=rows.filter(row=>row.reasons.some(reason=>reason.key===dailyWorkflowFilter));
   }
   const q=dailyWorkflowSearch.trim().toLowerCase();
   if(q) rows=rows.filter(({applicant:a})=>[
@@ -180,21 +188,19 @@ function dailyApplicantMeta(a){
   if(elapsed!==null) parts.push(`마지막 변경 ${elapsed===0?'오늘':`${elapsed}일 전`}`);
   return parts.join(' · ')||'등록된 일정 없음';
 }
-const DAILY_ACTION_RANK={recall:1,interviewToday:2,resultPending:3,screening:4,phone:5,attendancePending:6,hireUpcoming:7,stagnant:8};
+const DAILY_ACTION_RANK={overdue:1,interviewToday:2,recall:3,resultPending:4,hireUpcoming:5,stagnant:6};
 function dailyPrimaryReason(row){
   return [...row.reasons].sort((a,b)=>a.priority-b.priority || (DAILY_ACTION_RANK[a.key]||99)-(DAILY_ACTION_RANK[b.key]||99))[0]||null;
 }
 function dailyActionDescriptor(row){
   const r=dailyPrimaryReason(row);
   if(!r) return {kind:'detail',label:'상세 확인'};
+  if(r.key==='overdue')return normalizeStatus(row.applicant.status)==='입사예정'?{kind:'attendance',label:'출근 확인'}:{kind:'recall',label:'재연락'};
   const map={
-    screening:{kind:'screening',label:'서류검토'},
-    phone:{kind:'phone',label:'전화 시작'},
     recall:{kind:'recall',label:'재연락'},
     interviewToday:{kind:'calendar',label:'일정 보기'},
     resultPending:{kind:'decision',label:'결과 입력'},
     hireUpcoming:{kind:'hire',label:'입사 확인'},
-    attendancePending:{kind:'attendance',label:'출근 확인'},
     stagnant:{kind:'detail',label:'상세 확인'}
   };
   return map[r.key]||{kind:'detail',label:'상세 확인'};
@@ -233,8 +239,9 @@ function dailyRunApplicantAction(kind,applicantId){
 }
 window.dailyRunApplicantAction=dailyRunApplicantAction;
 function dailyStartFirstWork(){
-  const groups=dailyWorkflowGroups();
-  const allRows=dailyWorkflowRows(groups);
+  const selection=dailyWorkflowSelection();
+  const groups=selection.groups;
+  const allRows=selection.rows;
   const visible=dailyFilterRows(allRows,groups);
   const row=visible[0];
   if(!row){ if(typeof uxToast==='function') uxToast('현재 조건에서 처리할 업무가 없습니다.'); else alert('현재 조건에서 처리할 업무가 없습니다.'); return; }
@@ -242,30 +249,38 @@ function dailyStartFirstWork(){
   dailyRunApplicantAction(action.kind,row.applicant.id);
 }
 window.dailyStartFirstWork=dailyStartFirstWork;
+function openDailyApplicantDetail(applicantId,trigger){
+  if(!applicants.some(applicant=>String(applicant.id)===String(applicantId)))return false;
+  setPage('applicants');
+  requestAnimationFrame(()=>window.openApplicantQuickDetailFromWorkflow?.(applicantId,trigger));
+  return true;
+}
+window.openDailyApplicantDetail=openDailyApplicantDetail;
 function dailyWorkflowCard(row){
   const a=row.applicant;
   const reasonHtml=row.reasons
     .sort((x,y)=>x.priority-y.priority)
     .map(r=>`<span class="daily-reason-chip ${r.tone}">${esc(r.label)}</span>`).join('');
   const action=dailyActionDescriptor(row);
-  return `<article class="daily-work-item" data-applicant-id="${esc(a.id)}">
+  return `<article class="daily-work-item" data-applicant-id="${esc(a.id)}" role="button" tabindex="0" aria-label="${esc(a.name||'이름없음')} 지원자 빠른 보기">
     <div class="daily-work-main">
       <div class="daily-work-reasons">${reasonHtml}</div>
       <div class="daily-work-person">
         <strong><span class="person-name ${genderClass(a)}">${esc(a.name||'이름없음')}</span><span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong>
-        <span>${esc(a.workplace||'근무지 미입력')} · ${esc(formatPhoneDisplay(a.phone)||'연락처 미입력')} · ${esc(a.school||'학교 미입력')}</span>
+        <span>${esc(a.workplace||'근무지 미입력')}</span>
       </div>
       <div class="daily-work-meta">${esc(dailyApplicantMeta(a))}</div>
+      <div class="daily-work-recommendation">추천 다음 작업 · <strong>${esc(action.label)}</strong></div>
     </div>
     <div class="daily-work-actions">
-      <button class="mini" type="button" data-erp-handler="viewApplicant('${a.id}')">상세</button>
+      <button class="mini" type="button" data-erp-handler="openDailyApplicantDetail('${a.id}',this)">빠른 보기</button>
       <button class="primary mini" type="button" ${['screening','phone','recall','decision','attendance'].includes(action.kind)?'data-required-permission="applicant.write" ':''}data-erp-handler="dailyRunApplicantAction('${action.kind}','${a.id}')">${esc(action.label)}</button>
     </div>
   </article>`;
 }
 function updateDailyFilterChips(groups,allRows){
   const counts={all:allRows.length};
-  Object.keys(groups).forEach(key=>{counts[key]=(groups[key]||[]).length;});
+  Object.keys(DAILY_REASON_META).forEach(key=>{counts[key]=allRows.filter(row=>row.reasons.some(reason=>reason.key===key)).length;});
   document.querySelectorAll('[data-daily-filter]').forEach(btn=>{
     const key=btn.dataset.dailyFilter;
     btn.classList.toggle('active',key===dailyWorkflowFilter);
@@ -273,11 +288,28 @@ function updateDailyFilterChips(groups,allRows){
     if(count) count.textContent=counts[key]||0;
   });
 }
+function dailyHomeWorkflowCard(row){
+  const applicant=row.applicant;
+  const action=dailyActionDescriptor(row);
+  const reasons=row.reasons.map(reason=>`<span class="daily-reason-chip ${reason.tone}">${esc(reason.label)}</span>`).join('');
+  return `<article class="home-daily-work-item" data-home-applicant-id="${esc(applicant.id)}" role="button" tabindex="0" aria-label="${esc(applicant.name||'이름없음')} 지원자 빠른 보기">
+    <div class="home-daily-work-copy"><div class="daily-work-reasons">${reasons}</div><strong>${esc(applicant.name||'이름없음')}</strong><span>${esc(applicant.workplace||'근무지 미입력')} · ${esc(applicant.status||'상태 미입력')} · ${esc(dailyApplicantMeta(applicant))}</span></div>
+    <button class="mini" type="button" data-erp-handler="openDailyApplicantDetail('${applicant.id}',this)">${esc(action.label)}</button>
+  </article>`;
+}
+window.dailyHomeWorkflowCard=dailyHomeWorkflowCard;
+function homeStartFirstDailyWork(){
+  const row=dailyWorkflowSelection().rows[0];
+  if(!row){setPage('today');return false;}
+  return openDailyApplicantDetail(row.applicant.id,document.getElementById('btnHomeStartFirstDaily'));
+}
+window.homeStartFirstDailyWork=homeStartFirstDailyWork;
 function renderToday(){
-  const groups=dailyWorkflowGroups();
-  const allRows=dailyWorkflowRows(groups);
+  const selection=dailyWorkflowSelection();
+  const groups=selection.groups;
+  const allRows=selection.rows;
   const visible=dailyFilterRows(allRows,groups);
-  const summary=window.erpTodayAutomation?.summary(groups)||{dueToday:0,overdue:groups.overdue.length,changedToday:0,urgent:groups.overdue.length+groups.interviewToday.length};
+  const summary=selection.summary;
   const metricMap={
     dailyScreeningCount:groups.screening.length,
     dailyPhoneCount:groups.phone.length,
@@ -296,7 +328,7 @@ function renderToday(){
   setText('dailyWorkflowVisibleCount',`${visible.length}명`);
   setText('dailyWorkflowTotalCount',`전체 ${allRows.length}명`);
   const list=$('dailyWorkflowList');
-  if(list) list.innerHTML=visible.length?visible.map(dailyWorkflowCard).join(''):'<div class="empty daily-work-empty">현재 조건에서 처리할 지원자가 없습니다.</div>';
+  if(list) list.innerHTML=visible.length?visible.map(dailyWorkflowCard).join(''):'<div class="empty daily-work-empty"><strong>현재 조건에서 처리할 지원자가 없습니다.</strong><button class="ghost" type="button" data-go="applicants">지원자 목록 보기</button></div>';
   updateDailyFilterChips(groups,allRows);
 }
 
@@ -312,6 +344,12 @@ window.setDailyWorkflowFilter=setDailyWorkflowFilter;
     if(filterButton){setDailyWorkflowFilter(filterButton.dataset.dailyFilter);return;}
     if(e.target.closest('#btnDailyStartFirst')){dailyStartFirstWork();return;}
     if(e.target.closest('#btnDailyWorkflowRefresh')){renderToday();renderEmployeeLinkTask();}
+    const row=e.target.closest('.daily-work-item[data-applicant-id]');
+    if(row&&!e.target.closest('button,a,input,select,textarea'))openDailyApplicantDetail(row.dataset.applicantId,row);
+  });
+  document.addEventListener('keydown',e=>{
+    const row=e.target.closest?.('.daily-work-item[data-applicant-id]');
+    if(row&&['Enter',' '].includes(e.key)&&!e.target.closest('button,a,input,select,textarea')){e.preventDefault();openDailyApplicantDetail(row.dataset.applicantId,row);}
   });
   const search=$('dailyWorkflowSearch');
   if(search) search.addEventListener('input',e=>{dailyWorkflowSearch=e.target.value||'';renderToday();});

@@ -25,13 +25,13 @@ const applicantWorksheetCss=read('css/applicant-worksheet.css');
 const densityCss=read('css/ui-density-navigation.css');
 const quickDetailCss=read('css/applicant-quick-detail.css');
 
-const queue=index.match(/<div class="home-work-queue"[^>]*>([\s\S]*?)<\/div>/)?.[1]||'';
-const queueTargets=[...queue.matchAll(/class="queue-card[^\"]*" data-task-target="([^"]+)"/g)].map(match=>match[1]);
-assert.deepEqual(queueTargets,['today','overdue','contact','decision','hire'],'홈 업무 카드가 정확히 5개여야 합니다.');
+assert.doesNotMatch(index,/id="homeTodayGrid"/,'홈에 오늘 업무 숫자 카드가 중복되면 안 됩니다.');
+assert.match(index,/id="btnHomeStartFirstDaily"/);
+assert.match(index,/id="priorityList"/);
 const kpiBlock=enhancements.match(/const kpis=\[([\s\S]*?)\];/)?.[1]||'';
 const kpiKeys=[...kpiBlock.matchAll(/\['[^']+',\s*[^,]+,\s*'([^']+)'/g)].map(match=>match[1]);
 assert.deepEqual(kpiKeys,['applicants','active','monthApplications','hirePlanned'],'홈 누적 KPI가 정확히 4개여야 합니다.');
-assert.equal(kpiKeys.some(key=>queueTargets.includes(key)),false,'누적 KPI와 오늘 업무 키가 중복되면 안 됩니다.');
+assert.deepEqual(kpiKeys,['applicants','active','monthApplications','hirePlanned'],'홈 KPI는 네 개만 유지해야 합니다.');
 assert.doesNotMatch(uiLayout,/queue-card[^\n{}]*nth-child[^{}]*display\s*:\s*none/i);
 assert.match(enhancements,/today:'interviewToday',overdue:'overdue',contact:'contact',decision:'resultPending',hire:'hireUpcoming'/);
 assert.match(enhancements,/function uxConsolidateSidebarStatus\(\)/);assert.match(enhancements,/dataset\.sidebarStatusArea/);assert.match(enhancements,/authUserMark/);
@@ -40,7 +40,7 @@ assert.match(densityCss,/grid-template-columns:minmax\(0,1fr\) auto/);assert.mat
 ['searchInput','sortSelect','hideFinished','btnOpenApplicantFilter','bulkModeButton','btnResetFilters'].forEach(id=>assert.match(index,new RegExp(`id="${id}"`)));
 const accessibleNames={searchInput:'지원자 검색',sortSelect:'지원자 정렬',calendarWorkplaceFilter:'일정 근무지 필터',dailyWorkflowSearch:'오늘 할 일 검색',rosterDate:'면접 명단 날짜'};
 Object.entries(accessibleNames).forEach(([id,label])=>assert.match(index,new RegExp(`aria-label="${label}"[^>]*id="${id}"|id="${id}"[^>]*aria-label="${label}"`),`${id} 접근 가능한 이름이 없습니다.`));
-assert.deepEqual([...index.matchAll(/data-filter="([^"]+)"/g)].map(match=>match[1]).slice(0,9),['all','active','docpass','interview','hire','finished','contact','decision','duplicate']);
+assert.deepEqual([...index.matchAll(/data-filter="([^"]+)"/g)].map(match=>match[1]).slice(0,10),['all','todayAction','interview','contact','active','docpass','hire','finished','decision','duplicate']);
 assert.deepEqual([...index.matchAll(/data-workplace="([^"]+)"/g)].map(match=>match[1]).slice(0,4),['all','천안','평택','기타']);
 assert.match(applicants,/applicant-list-empty-state/);assert.match(applicants,/applicant-empty-register/);assert.match(applicants,/applicant-empty-reset/);assert.match(applicants,/erpPermissions\.has\('applicant\.write'\)/);
 
@@ -67,14 +67,14 @@ const visualTest=read('tests/ui-visual-layout.js');
 assert.match(visualTest,/formWorkflowBanner/);assert.match(visualTest,/formActions\.overlaps,false/);
 assert.match(visualTest,/390x844-status-modal\.png'\),fullPage:false/);
 assert.match(visualTest,/390x844-sync-conflict\.png'\),fullPage:false/);
-assert.match(index,/css\/applicant-worksheet\.css\?v=11\.4\.1/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.4\.1/);assert.match(index,/css\/ui-density-navigation\.css\?v=11\.4\.1/);
+assert.match(index,/css\/applicant-worksheet\.css\?v=11\.5\.0/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.5\.0/);assert.match(index,/css\/ui-density-navigation\.css\?v=11\.5\.0/);
 assert.match(applicantWorksheet,/일반보기/);assert.match(applicantWorksheet,/워크시트 보기/);assert.match(applicantWorksheet,/변경 \$\{entries\.length\}건/);
 assert.match(applicantWorksheet,/root\.save\(\)/);assert.match(applicantWorksheet,/applicants=snapshot/);assert.match(applicantWorksheet,/beforeunload/);
 assert.match(applicantWorksheetCss,/nth-child\(2\).*position:sticky/);assert.match(applicantWorksheetCss,/nth-child\(3\).*position:sticky/);assert.match(applicantWorksheetCss,/--worksheet-phone-left/);assert.match(applicantWorksheet,/syncStickyOffsets/);assert.match(applicantWorksheet,/getBoundingClientRect\(\)\.width/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-dirty/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-error/);
 assert.match(densityCss,/overflow:visible!important;[\s\S]*flex-wrap:wrap!important/);assert.match(densityCss,/#applicants #quickFilters \.chip\{[^}]*height:36px!important;min-height:36px!important/);assert.match(densityCss,/#calendar \.calendar-today-dot\{[^}]*color:#fff!important/);assert.match(densityCss,/\.sidebar \.nav\{[^}]*overflow-y:auto/);
 assert.match(visualTest,/1440x900/);assert.match(visualTest,/verifyApplicantWorksheet/);assert.match(visualTest,/__worksheetSaveCalls/);
 assert.match(visualTest,/const denseApplicants=Array\.from\(\{length:60\}/);assert.match(visualTest,/visibleRows>=3/);assert.match(visualTest,/390x844-mobile-menu\.png/);assert.match(visualTest,/\$\{label\}-sidebar\.png/);
-assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.4\.1/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
+assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.5\.0/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
 assert.match(applicants,/window\.viewApplicant\?\.\(id\)/);assert.match(applicants,/window\.editApplicant\?\.\(id\)/);assert.match(applicants,/applicantQuickDetailCanWrite/);assert.doesNotMatch(applicants.match(/function renderApplicantQuickDetail\(\)[\s\S]*?function openApplicantQuickDetail\(/)?.[0]||'',/residentNumber|Object\.values/);
 assert.match(quickDetailCss,/width:clamp\(420px,34vw,480px\)/);assert.match(quickDetailCss,/@media\(max-width:900px\)[\s\S]*width:100%/);assert.match(visualTest,/verifyApplicantQuickDetail/);assert.match(visualTest,/bridgeSaveRequests,0/);assert.match(visualTest,/applicant-quick-detail-long-memo\.png/);
 
@@ -98,4 +98,4 @@ assert.match(hireWaitingCss,/data-col-key="employeeNo"\]\{position:sticky;left:v
 assert.match(hireWaitingCss,/text-overflow:clip/);assert.match(hireWaitingCss,/tbody tr:focus-within td/);assert.match(hireWaitingCss,/td:focus-within/);
 assert.match(hireWaitingList,/HIRE_WAITING_AUTO_HIGHLIGHT_MS=4000/);assert.match(hireWaitingList,/td\.is-auto-filled/);assert.doesNotMatch(hireWaitingList,/localStorage\.setItem\([^\n]*highlight/i,'자동입력 강조 상태를 저장하면 안 됩니다.');
 
-console.log('ui-layout.test.js: 5개 업무 카드·입사대기 23열·고정 열·모바일 권한/감사·상태 팝업 확인 완료');
+console.log('ui-layout.test.js: 공통 오늘 실행목록·입사대기 23열·고정 열·모바일 권한/감사·상태 팝업 확인 완료');

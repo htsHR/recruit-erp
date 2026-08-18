@@ -30,7 +30,7 @@ const rows=[
 
 const groups=automation.buildGroups(rows,{today:TODAY});
 const ids=group=>groups[group].map(item=>item.id);
-assert.equal(automation.VERSION,'11.0.0');
+assert.equal(automation.VERSION,'11.5.0');
 assert.equal(automation.STALE_DAYS,14);
 assert.equal(automation.HIRE_SOON_DAYS,3);
 assert.deepEqual(ids('contactToday'),['recall-today']);
@@ -52,12 +52,12 @@ const bulkGroups=automation.buildGroups(bulk,{today:TODAY});
 assert.equal(bulkGroups.screening.length,5000);
 assert.ok(Date.now()-started<3000,'지원자 5,000명 분류는 3초 안에 끝나야 합니다.');
 
-assert.match(index,/js\/today-automation\.js\?v=11\.4\.1/);
+assert.match(index,/js\/today-automation\.js\?v=11\.5\.0/);
 assert.match(index,/오늘부터 D-3까지/);
-assert.match(index,/입사 임박[\s\S]*D-3 이내/);
+assert.match(index,/3일 내 입사/);
 assert.match(index,/dailySummaryUrgent/);
-assert.match(index,/data-required-permission="applicant\.write" id="btnDailyStartFirst"/);
-assert.match(source,/erpTodayAutomation\.buildGroups/);
+assert.match(index,/data-required-permission="applicant\.write"[\s\S]{0,160}id="btnDailyStartFirst"|id="btnDailyStartFirst"[\s\S]{0,160}data-required-permission="applicant\.write"/);
+assert.match(source,/erpTodayAutomation\.buildWorkflowRows/);
 assert.match(source,/updateApplicantStatus\(a\.id,'출근'\)/);
 assert.match(source,/\$\('detailQuickStatus'\)/);
 assert.match(source,/data-required-permission="applicant\.write"/);

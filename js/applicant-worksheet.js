@@ -10,7 +10,7 @@
   const SETTINGS_KEY='recruit_erp_applicant_worksheet_view_v1';
   const VIEW_MODES=['normal','worksheet'];
   const WORKPLACES=['all','천안','평택','기타'];
-  const FILTERS=['all','active','docpass','interview','hire','finished','contact','decision','duplicate','priority','hold','rejected'];
+  const FILTERS=['all','todayAction','active','docpass','interview','hire','finished','contact','decision','duplicate','priority','hold','rejected'];
   const SORTS=['recent','applyDesc','applyAsc','interviewAsc','scoreDesc','nameAsc'];
   const PAGE_SIZES=[30,50,100];
   const EDITABLE_FIELDS=['name','phone','email','region','workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo'];

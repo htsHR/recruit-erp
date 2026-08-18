@@ -1,4 +1,4 @@
-/* Recruit ERP v11.0.0 TODAY AUTOMATION CLASSIFIER
+/* Recruit ERP v11.5.0 TODAY AUTOMATION CLASSIFIER
  * Pure task classification: no storage writes, no personal-data logging.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpTodayAutomation=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const VERSION='11.0.0';
+  const VERSION='11.5.0';
   const STALE_DAYS=14;
   const HIRE_SOON_DAYS=3;
   const FINISHED_STATUSES=new Set(['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절']);
@@ -88,5 +88,65 @@
       urgent:unique([...(groups?.interviewToday||[]),...(groups?.overdue||[])]).length
     };
   }
-  return {VERSION,STALE_DAYS,HIRE_SOON_DAYS,dateOnly,dateDistance,latestActivity,unique,buildGroups,summary};
+  const WORKFLOW_REASON_ORDER=['overdue','interviewToday','recall','resultPending','hireUpcoming','stagnant'];
+  const WORKFLOW_REASON_META={
+    overdue:{label:'기한 경과',tone:'danger',priority:0},
+    interviewToday:{label:'오늘 면접',tone:'primary',priority:1},
+    recall:{label:'재연락 필요',tone:'contact',priority:2},
+    resultPending:{label:'면접 결과 미입력',tone:'danger',priority:3},
+    hireUpcoming:{label:'3일 내 입사',tone:'good',priority:4},
+    stagnant:{label:`${STALE_DAYS}일 이상 미처리`,tone:'muted',priority:5}
+  };
+  function workflowReasonDate(reason,row,current){
+    if(reason==='overdue')return dateOnly(row?.nextContactDate)||dateOnly(row?.hireDate)||current;
+    if(reason==='interviewToday'||reason==='resultPending')return dateOnly(row?.interviewDate)||current;
+    if(reason==='recall')return dateOnly(row?.nextContactDate)||current;
+    if(reason==='hireUpcoming')return dateOnly(row?.hireDate)||current;
+    return latestActivity(row)||current;
+  }
+  function buildWorkflowRows(rows,options={}){
+    const source=Array.isArray(rows)?rows:[];
+    const current=dateOnly(options.today||new Date());
+    const groups=buildGroups(source,options);
+    const overdue=unique([...(groups.contactOverdue||[]),...(groups.attendancePending||[])]);
+    const reasonGroups={
+      overdue,
+      interviewToday:groups.interviewToday||[],
+      recall:groups.recall||[],
+      resultPending:groups.resultPending||[],
+      hireUpcoming:groups.hireUpcoming||[],
+      stagnant:groups.stagnant||[]
+    };
+    const sourceOrder=new Map(source.map((row,index)=>[String(row?.id||''),index]));
+    const map=new Map();
+    WORKFLOW_REASON_ORDER.forEach(key=>{
+      const meta=WORKFLOW_REASON_META[key];
+      (reasonGroups[key]||[]).forEach(applicant=>{
+        const id=String(applicant?.id||'');
+        if(!id)return;
+        if(!map.has(id))map.set(id,{applicant,reasons:[],priority:99,sourceIndex:sourceOrder.get(id)??Number.MAX_SAFE_INTEGER});
+        const target=map.get(id);
+        if(!target.reasons.some(reason=>reason.key===key)){
+          target.reasons.push({key,...meta,date:workflowReasonDate(key,applicant,current)});
+          target.priority=Math.min(target.priority,meta.priority);
+        }
+      });
+    });
+    const result=[...map.values()];
+    result.forEach(row=>row.reasons.sort((a,b)=>a.priority-b.priority));
+    result.sort((a,b)=>{
+      if(a.priority!==b.priority)return a.priority-b.priority;
+      const aLast=latestActivity(a.applicant)||'0000-00-00';
+      const bLast=latestActivity(b.applicant)||'0000-00-00';
+      return aLast.localeCompare(bLast)||a.sourceIndex-b.sourceIndex;
+    });
+    const workflowSummary={
+      dueToday:(groups.dueToday||[]).length,
+      overdue:overdue.length,
+      changedToday:(groups.changedToday||[]).length,
+      urgent:unique([...overdue,...(groups.interviewToday||[])]).length
+    };
+    return {groups,rows:result,summary:workflowSummary};
+  }
+  return {VERSION,STALE_DAYS,HIRE_SOON_DAYS,WORKFLOW_REASON_ORDER,WORKFLOW_REASON_META,dateOnly,dateDistance,latestActivity,unique,buildGroups,buildWorkflowRows,summary};
 });
