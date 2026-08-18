@@ -1,0 +1,33 @@
+/* Recruit ERP v11.3.0 — 지원자 워크시트 1단계 */
+.worksheet-view-toggle{display:flex;align-items:center;gap:4px;padding:4px;border:1px solid #d9e2ef;border-radius:10px;background:#f7f9fc;white-space:nowrap}
+.worksheet-view-toggle button{min-height:34px;padding:0 13px;border:0;border-radius:7px;background:transparent;color:#526174;font-weight:700;cursor:pointer}
+.worksheet-view-toggle button.active{background:#fff;color:#174ea6;box-shadow:0 1px 5px rgba(26,58,103,.14)}
+.applicant-worksheet-shell{margin-top:12px;border:1px solid #dbe3ef;border-radius:12px;background:#fff;overflow:hidden}
+.applicant-worksheet-shell[hidden],#applicants .table-wrap[hidden]{display:none!important}
+.worksheet-guide{display:flex;align-items:center;gap:10px;min-height:46px;padding:9px 14px;border-bottom:1px solid #e3e9f2;background:#f8faff;color:#536277;font-size:12px}
+.worksheet-guide strong{color:#223149;font-size:13px}.worksheet-guide em{margin-left:auto;color:#a33c2f;font-style:normal;font-weight:700}
+.applicant-worksheet-scroll{width:100%;max-height:calc(100vh - 360px);min-height:250px;overflow:auto;overscroll-behavior:contain;background:#fff}
+.applicant-worksheet-table{width:1514px;min-width:1514px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:12px;color:#26364d}
+.applicant-worksheet-table th,.applicant-worksheet-table td{height:40px;padding:0 8px;border-right:1px solid #e6ebf2;border-bottom:1px solid #e6ebf2;vertical-align:middle;white-space:nowrap;overflow:hidden;text-overflow:clip}
+.applicant-worksheet-table th{position:sticky;top:0;z-index:4;height:38px;background:#edf2f9;color:#44556d;text-align:left;font-size:11px;letter-spacing:.01em}
+.applicant-worksheet-table th:first-child,.applicant-worksheet-table td:first-child{position:sticky;left:0;z-index:3;text-align:center;background:#f8fafc}
+.applicant-worksheet-table th:nth-child(2),.applicant-worksheet-table td:nth-child(2){position:sticky;left:58px;z-index:3;background:#fff}
+.applicant-worksheet-table th:first-child,.applicant-worksheet-table th:nth-child(2){z-index:7;background:#e8eef7}
+.applicant-worksheet-table tr.is-current-row td{background-color:#f5f9ff}.applicant-worksheet-table tr.is-current-row td:nth-child(2){background:#f5f9ff}
+.applicant-worksheet-table tr.is-dirty-row td{box-shadow:inset 0 1px 0 rgba(214,155,35,.16),inset 0 -1px 0 rgba(214,155,35,.16)}
+.worksheet-cell{outline:0;cursor:cell}.worksheet-cell.is-readonly{color:#657389;background-color:#f8fafc;cursor:default}
+.worksheet-cell.is-selected{background-color:#eaf2ff!important}.worksheet-cell.is-current{position:relative;box-shadow:inset 0 0 0 2px #3975d2!important;z-index:2}
+.worksheet-cell.is-dirty{background-color:#fff7dc!important}.worksheet-cell.is-error{background-color:#fff0ef!important;box-shadow:inset 0 0 0 2px #c94a3f!important}
+.worksheet-cell span{display:block;overflow:hidden;text-overflow:ellipsis}.worksheet-cell[data-field="memo"] span{white-space:nowrap}
+.worksheet-editor{width:calc(100% + 10px);height:32px;margin:0 -5px;padding:0 6px;border:1px solid #3975d2;border-radius:4px;background:#fff;color:#152238;font:inherit;outline:0}
+.worksheet-savebar{position:sticky;bottom:0;z-index:8;display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:62px;padding:10px 14px;border-top:1px solid #d7e0ec;background:rgba(255,255,255,.98);box-shadow:0 -5px 14px rgba(26,50,83,.07)}
+.worksheet-savebar>div:first-child{display:flex;align-items:center;gap:9px;min-width:0}.worksheet-savebar strong{color:#26364d}.worksheet-savebar span{color:#68768a;font-size:12px}.worksheet-savebar em{color:#b23d32;font-size:12px;font-style:normal;font-weight:700}
+.worksheet-savebar>div:last-child{display:flex;gap:7px;flex:0 0 auto}.worksheet-savebar button{min-width:74px}.worksheet-empty{height:150px!important;text-align:center;color:#748197}
+.is-worksheet-mode #applicantPagination{margin-top:10px}.is-worksheet-mode .list-summary-side .list-interaction-hint{display:none}
+.applicant-worksheet-guard[hidden]{display:none!important}.applicant-worksheet-guard{position:fixed;inset:0;z-index:20000;display:grid;place-items:center;padding:20px}
+.applicant-worksheet-guard-backdrop{position:absolute;inset:0;background:rgba(19,30,46,.54)}
+.applicant-worksheet-guard-card{position:relative;width:min(480px,100%);padding:22px;border-radius:14px;background:#fff;box-shadow:0 24px 70px rgba(5,20,43,.28)}
+.applicant-worksheet-guard-card h3{margin:0 0 8px;color:#1e2d43}.applicant-worksheet-guard-card p{margin:0 0 18px;color:#66758a;line-height:1.55}
+.applicant-worksheet-guard-card>div{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+@media(max-width:1100px){.applicant-list-header-row{flex-wrap:wrap}.worksheet-view-toggle{order:3}.applicant-worksheet-scroll{max-height:calc(100vh - 400px)}}
+@media(max-width:640px){.worksheet-view-toggle{width:100%;order:3}.worksheet-view-toggle button{flex:1}.worksheet-guide{align-items:flex-start;flex-direction:column;gap:3px}.worksheet-guide em{margin-left:0}.applicant-worksheet-scroll{max-height:calc(100vh - 460px);min-height:220px}.worksheet-savebar{align-items:flex-start;flex-direction:column;gap:8px}.worksheet-savebar>div:first-child{align-items:flex-start;flex-direction:column;gap:2px}.worksheet-savebar>div:last-child{align-self:stretch}.worksheet-savebar button{flex:1}.applicant-worksheet-guard-card>div{flex-direction:column}.applicant-worksheet-guard-card button{width:100%}}

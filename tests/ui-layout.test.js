@@ -20,6 +20,8 @@ const readiness=read('css/production-readiness.css');
 const hireWaitingList=read('js/hire-waiting-list.js');
 const hireWaitingCss=read('css/hire-waiting-list.css');
 const dailyOperationsCss=read('css/daily-operations-polish.css');
+const applicantWorksheet=read('js/applicant-worksheet.js');
+const applicantWorksheetCss=read('css/applicant-worksheet.css');
 
 const queue=index.match(/<div class="home-work-queue"[^>]*>([\s\S]*?)<\/div>/)?.[1]||'';
 const queueTargets=[...queue.matchAll(/class="queue-card[^\"]*" data-task-target="([^"]+)"/g)].map(match=>match[1]);
@@ -50,6 +52,11 @@ const visualTest=read('tests/ui-visual-layout.js');
 assert.match(visualTest,/formWorkflowBanner/);assert.match(visualTest,/formActions\.overlaps,false/);
 assert.match(visualTest,/390x844-status-modal\.png'\),fullPage:false/);
 assert.match(visualTest,/390x844-sync-conflict\.png'\),fullPage:false/);
+assert.match(index,/css\/applicant-worksheet\.css\?v=11\.3\.0/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.3\.0/);
+assert.match(applicantWorksheet,/일반보기/);assert.match(applicantWorksheet,/워크시트 보기/);assert.match(applicantWorksheet,/변경 \$\{entries\.length\}건/);
+assert.match(applicantWorksheet,/root\.save\(\)/);assert.match(applicantWorksheet,/applicants=snapshot/);assert.match(applicantWorksheet,/beforeunload/);
+assert.match(applicantWorksheetCss,/nth-child\(2\).*position:sticky/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-dirty/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-error/);
+assert.match(visualTest,/1440x900/);assert.match(visualTest,/verifyApplicantWorksheet/);assert.match(visualTest,/__worksheetSaveCalls/);
 
 const emptyTopbarButtons=[...index.matchAll(/<button[^>]*class="[^"]*topbar-icon-btn[^"]*"[^>]*>[\s\S]*?<\/button>/g)];
 assert.equal(emptyTopbarButtons.length,0,'기능 없는 상단 아이콘 버튼이 남아 있습니다.');
