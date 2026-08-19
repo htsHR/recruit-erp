@@ -5,7 +5,7 @@
 (function(){
 'use strict';
 
-const UX_VERSION='11.5.0';
+const UX_VERSION=window.erpAppVersion?.VERSION||'';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
 const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
 const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
@@ -205,7 +205,25 @@ function uxConsolidateSidebarStatus(){
     area.dataset.sidebarStatusArea='';
     area.setAttribute('aria-label','저장 및 로그인 상태');
     storage.parentNode.insertBefore(area,storage);
-    area.append(storage,auth);
+  }
+  let details=area.querySelector('.sidebar-status-details');
+  if(!details){
+    const toggle=document.createElement('button');
+    toggle.className='sidebar-status-toggle';
+    toggle.type='button';
+    toggle.setAttribute('aria-expanded','false');
+    toggle.setAttribute('aria-controls','sidebarStatusDetails');
+    toggle.innerHTML='<span id="sidebarStatusSummaryText">저장 상태</span><span aria-hidden="true">⌃</span>';
+    details=document.createElement('div');
+    details.className='sidebar-status-details';
+    details.id='sidebarStatusDetails';
+    details.append(storage,auth);
+    area.append(toggle,details);
+    toggle.addEventListener('click',()=>{
+      const expanded=toggle.getAttribute('aria-expanded')==='true';
+      toggle.setAttribute('aria-expanded',String(!expanded));
+      area.classList.toggle('is-details-open',!expanded);
+    });
   }
   auth.querySelector('#authLoggedIn small')?.remove();
   auth.querySelector('#authUserMark')?.remove();
@@ -554,6 +572,8 @@ updateStorageNote=function(){
       <button type="button" data-operation-mode="home" class="${!isCompany?'active':''}" aria-pressed="${!isCompany}">집</button>
     </div>`;
   el.querySelectorAll('[data-operation-mode]').forEach(btn=>btn.addEventListener('click',()=>uxSetOperationEnvironment(btn.dataset.operationMode)));
+  const sidebarSummary=document.getElementById('sidebarStatusSummaryText');
+  if(sidebarSummary)sidebarSummary.textContent=displayTitle;
   const badge=document.querySelector('.local-mode-badge');
   if(badge){
     badge.textContent=isCompany?'회사 운영':'집 운영';

@@ -1,0 +1,96 @@
+/* Recruit ERP v11.5.1 — production gate and responsive UI polish only. */
+
+/* 통계의 근무지 선택은 무거운 작업 배너가 아닌 작은 도구막대로 표시합니다. */
+#stats > .stats-filter-panel{
+  padding:9px 12px!important;
+  color:#26364d!important;
+  background:#fff!important;
+  border:1px solid #dce3ec!important;
+  box-shadow:none!important;
+}
+#stats > .stats-filter-panel .stats-filter-row{gap:8px!important;}
+#stats > .stats-filter-panel .stats-filter-title{color:#34445b!important;}
+#stats > .stats-filter-panel .stats-filter-note{color:#6b7788!important;line-height:1.35;}
+#stats > .stats-filter-panel #statsWorkplaceFilter{
+  min-height:36px!important;
+  height:36px!important;
+  color:#26364d!important;
+  background:#f8fafc!important;
+  border-color:#cfd9e6!important;
+}
+
+/* 학교관리의 앞 4개 핵심지표를 같은 너비로 먼저 읽게 합니다. */
+#schools #schoolManageKpiGrid{display:grid!important;grid-template-columns:repeat(12,minmax(0,1fr))!important;}
+#schools #schoolManageKpiGrid>.school-kpi-card:nth-child(-n+4){grid-column:span 3!important;}
+#schools #schoolManageKpiGrid>.school-kpi-card:nth-child(n+5){grid-column:span 4!important;}
+
+/* 빈 온보딩 화면은 다음 이동 경로를 함께 제공합니다. */
+#onboarding .onboarding-empty-state{display:grid;justify-items:center;gap:12px;padding:28px 18px;}
+#onboarding .onboarding-empty-state strong{color:#334155;font-size:14px;line-height:1.5;}
+#onboarding .onboarding-empty-state button{min-height:40px;}
+
+/* 결과 요약은 항목 자체로 감싸져 줄 시작에 구분점이 남지 않습니다. */
+#applicants .list-summary-main{display:flex;align-items:center;flex-wrap:wrap;gap:5px 14px;}
+#applicants .list-summary-main>span{white-space:nowrap;}
+
+/* 오늘 업무 설명은 확대 화면에서도 한글 단어 가운데서 끊지 않습니다. */
+#today .daily-automation-summary span,
+#today .daily-automation-summary small{word-break:keep-all;overflow-wrap:normal;}
+
+/* 모바일 사이드바는 평소 한 줄 상태만 보이고 사용자가 상세를 펼칩니다. */
+.sidebar-status-toggle{
+  display:none;
+  width:100%;
+  min-height:40px;
+  padding:7px 9px;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  border:0;
+  color:#e5edf9;
+  background:transparent;
+  font:inherit;
+  font-size:12px;
+  font-weight:700;
+  text-align:left;
+  cursor:pointer;
+}
+.sidebar-status-toggle>span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sidebar-status-toggle>span:last-child{transition:transform .15s ease;}
+.sidebar-status-area.is-details-open .sidebar-status-toggle>span:last-child{transform:rotate(180deg);}
+
+@media (max-width:1020px){
+  .sidebar-status-toggle{display:flex;}
+  .sidebar-status-details{display:none;}
+  .sidebar-status-area.is-details-open .sidebar-status-details{display:block;}
+  .sidebar-status-area{max-height:none!important;overflow:visible!important;}
+}
+
+/* 768px 태블릿 상단바는 제목·화면잠금·회사 배지를 한 줄에서 분리합니다. */
+@media (min-width:761px) and (max-width:900px){
+  .topbar{gap:8px!important;padding:0 12px!important;}
+  .topbar-left{flex:1 1 auto!important;min-width:0!important;}
+  .topbar-title-wrap{max-width:none!important;min-width:0!important;}
+  .topbar h2{max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap!important;}
+  .topbar-breadcrumb{display:none!important;}
+  .topbar-actions-shell{flex:0 0 auto!important;min-width:0!important;gap:7px!important;}
+  .topbar-actions-shell>.top-actions{display:flex!important;gap:5px!important;}
+  .topbar-actions-shell>.top-actions>.ghost{display:none!important;}
+  .topbar-actions-shell>.top-actions>.primary{height:38px!important;min-height:38px!important;padding:0 10px!important;font-size:11.5px!important;white-space:nowrap;}
+  .topbar-utils{min-width:0!important;gap:5px!important;padding-left:0!important;border-left:0!important;}
+  .topbar-user{display:none!important;}
+  .local-mode-badge{display:inline-flex!important;flex:0 0 auto;}
+  #btnPrivacyShield{display:grid!important;flex:0 0 37px;}
+}
+
+@media (max-width:900px){
+  #schools #schoolManageKpiGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  body #schools #schoolManageKpiGrid>.school-kpi-card:nth-child(n){grid-column:span 1!important;}
+}
+
+@media (max-width:520px){
+  #schools #schoolManageKpiGrid{grid-template-columns:minmax(0,1fr)!important;}
+  #applicants.ui-system-v20 #quickFilters>.applicant-fixed-presets,
+  #applicants.ui-system-v20 #quickFilters>.applicant-core-status-filters{justify-content:flex-start!important;scroll-padding-inline:1px;padding-inline:1px;}
+  #applicants #quickFilters .chip span:first-child{white-space:nowrap;}
+}

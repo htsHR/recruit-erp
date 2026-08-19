@@ -67,14 +67,14 @@ const visualTest=read('tests/ui-visual-layout.js');
 assert.match(visualTest,/formWorkflowBanner/);assert.match(visualTest,/formActions\.overlaps,false/);
 assert.match(visualTest,/390x844-status-modal\.png'\),fullPage:false/);
 assert.match(visualTest,/390x844-sync-conflict\.png'\),fullPage:false/);
-assert.match(index,/css\/applicant-worksheet\.css\?v=11\.5\.0/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.5\.0/);assert.match(index,/css\/ui-density-navigation\.css\?v=11\.5\.0/);
+assert.match(index,/css\/applicant-worksheet\.css\?v=11\.5\.1/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.5\.1/);assert.match(index,/css\/ui-density-navigation\.css\?v=11\.5\.1/);
 assert.match(applicantWorksheet,/일반보기/);assert.match(applicantWorksheet,/워크시트 보기/);assert.match(applicantWorksheet,/변경 \$\{entries\.length\}건/);
 assert.match(applicantWorksheet,/root\.save\(\)/);assert.match(applicantWorksheet,/applicants=snapshot/);assert.match(applicantWorksheet,/beforeunload/);
 assert.match(applicantWorksheetCss,/nth-child\(2\).*position:sticky/);assert.match(applicantWorksheetCss,/nth-child\(3\).*position:sticky/);assert.match(applicantWorksheetCss,/--worksheet-phone-left/);assert.match(applicantWorksheet,/syncStickyOffsets/);assert.match(applicantWorksheet,/getBoundingClientRect\(\)\.width/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-dirty/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-error/);
 assert.match(densityCss,/overflow:visible!important;[\s\S]*flex-wrap:wrap!important/);assert.match(densityCss,/#applicants #quickFilters \.chip\{[^}]*height:36px!important;min-height:36px!important/);assert.match(densityCss,/#calendar \.calendar-today-dot\{[^}]*color:#fff!important/);assert.match(densityCss,/\.sidebar \.nav\{[^}]*overflow-y:auto/);
 assert.match(visualTest,/1440x900/);assert.match(visualTest,/verifyApplicantWorksheet/);assert.match(visualTest,/__worksheetSaveCalls/);
 assert.match(visualTest,/const denseApplicants=Array\.from\(\{length:60\}/);assert.match(visualTest,/visibleRows>=3/);assert.match(visualTest,/390x844-mobile-menu\.png/);assert.match(visualTest,/\$\{label\}-sidebar\.png/);
-assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.5\.0/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
+assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.5\.1/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
 assert.match(applicants,/window\.viewApplicant\?\.\(id\)/);assert.match(applicants,/window\.editApplicant\?\.\(id\)/);assert.match(applicants,/applicantQuickDetailCanWrite/);assert.doesNotMatch(applicants.match(/function renderApplicantQuickDetail\(\)[\s\S]*?function openApplicantQuickDetail\(/)?.[0]||'',/residentNumber|Object\.values/);
 assert.match(quickDetailCss,/width:clamp\(420px,34vw,480px\)/);assert.match(quickDetailCss,/@media\(max-width:900px\)[\s\S]*width:100%/);assert.match(visualTest,/verifyApplicantQuickDetail/);assert.match(visualTest,/bridgeSaveRequests,0/);assert.match(visualTest,/applicant-quick-detail-long-memo\.png/);
 

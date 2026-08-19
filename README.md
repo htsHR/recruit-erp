@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v11.5.0**입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v11.5.1**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -62,7 +62,7 @@ npm run check
 npm run test:ui-layout
 ```
 
-로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.5.0`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
+로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.5.1`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
 
 ### GitHub CI 테스트
 
@@ -92,6 +92,17 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 3. GitHub 변경 요청에서 자동 검사와 Vercel 미리보기를 확인합니다.
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
+
+## v11.5.1 운영 점검 복구·반응형 UI 마감
+
+- 단일 현재 버전 소스를 운영 준비 점검과 화면 검사에서 사용하며, 제목·브랜드·정적 파일 중 하나라도 다르면 이유와 함께 실패합니다.
+- 기능 화면의 예전 버전형 배지를 업무 의미 중심 한국어 표시로 바꿨습니다.
+- 태블릿 상단바, 모바일 지원자 필터·요약, 사이드바 상태 상세 토글을 화면 폭에 맞게 정리했습니다.
+- 입사·온보딩 빈 화면에 지원자 목록 이동 경로를 제공하고, 안내문 복사 문구를 실제 업무 동작에 맞췄습니다.
+- 통계 근무지 도구막대, 학교 KPI 배치, 워크시트 최종 확인과 오늘 업무 확대 화면 가독성을 보완했습니다.
+- 업무 데이터, localStorage 키, Supabase, 권한, ERP Bridge와 공용 저장 구조는 변경하지 않았습니다.
+
+자세한 변경 내역은 `CHANGELOG_v11.5.1.md`를 확인하세요.
 
 ## v11.5.0 채용담당자 데일리 업무속도 개선
 
