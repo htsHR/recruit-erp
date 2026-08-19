@@ -245,22 +245,14 @@
   #applicants .applicant-table .actions-head,
   #applicants .applicant-table .applicant-actions{width:164px!important;min-width:164px!important;max-width:164px!important;}
 
-  #applicants .applicant-table .actions-head,
-  #applicants .applicant-table .applicant-actions{
-    position:sticky!important;
-    right:0!important;
-  }
-  #applicants .applicant-table .actions-head{z-index:10!important;background:#f7f8fa!important;}
-  #applicants .applicant-table .applicant-actions{z-index:6!important;}
   #applicants .applicant-table .no-head,#applicants .applicant-table .no-cell{position:sticky!important;left:0!important;}
   #applicants .applicant-table .name-head,#applicants .applicant-table .applicant-name-cell{position:sticky!important;left:52px!important;}
-  #applicants .applicant-table .workplace-head,#applicants .applicant-table .workplace-cell{position:sticky!important;left:230px!important;}
-  #applicants .applicant-table .status-head,#applicants .applicant-table .status-cell{position:sticky!important;left:320px!important;box-shadow:3px 0 0 rgba(221,227,234,.72)!important;}
-  #applicants .applicant-table .no-head,#applicants .applicant-table .name-head,#applicants .applicant-table .workplace-head,#applicants .applicant-table .status-head{z-index:11!important;background:#f7f8fa!important;}
-  #applicants .applicant-table tbody .sticky-app-col,#applicants .applicant-table tbody .sticky-app-actions{z-index:5!important;background:#fff!important;}
-  #applicants .applicant-row.is-finished .sticky-app-col,#applicants .applicant-row.is-finished .sticky-app-actions{background:#fafbfc!important;}
-  #applicants .applicant-row.is-finished:nth-child(even) .sticky-app-col,#applicants .applicant-row.is-finished:nth-child(even) .sticky-app-actions{background:#f8f9fa!important;}
-  #applicants .applicant-row.is-finished:hover .sticky-app-col,#applicants .applicant-row.is-finished:hover .sticky-app-actions{background:#f4f6f8!important;}
+  #applicants .applicant-table .phone-head,#applicants .applicant-table .phone-cell{position:sticky!important;left:230px!important;box-shadow:3px 0 0 rgba(221,227,234,.72)!important;}
+  #applicants .applicant-table .no-head,#applicants .applicant-table .name-head,#applicants .applicant-table .phone-head{z-index:11!important;background:#f7f8fa!important;}
+  #applicants .applicant-table tbody .sticky-app-col{z-index:5!important;background:#fff!important;}
+  #applicants .applicant-row.is-finished .sticky-app-col{background:#fafbfc!important;}
+  #applicants .applicant-row.is-finished:nth-child(even) .sticky-app-col{background:#f8f9fa!important;}
+  #applicants .applicant-row.is-finished:hover .sticky-app-col{background:#f4f6f8!important;}
 }
 
 @media(max-width:1700px) and (min-width:761px){

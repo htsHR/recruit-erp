@@ -24,6 +24,8 @@ const applicantWorksheet=read('js/applicant-worksheet.js');
 const applicantWorksheetCss=read('css/applicant-worksheet.css');
 const densityCss=read('css/ui-density-navigation.css');
 const quickDetailCss=read('css/applicant-quick-detail.css');
+const stabilityCss=read('css/recruiter-ui-stability.css');
+const advancedBulk=read('js/advanced-bulk.js');
 
 assert.doesNotMatch(index,/id="homeTodayGrid"/,'홈에 오늘 업무 숫자 카드가 중복되면 안 됩니다.');
 assert.match(index,/id="btnHomeStartFirstDaily"/);
@@ -44,12 +46,14 @@ assert.deepEqual([...index.matchAll(/data-filter="([^"]+)"/g)].map(match=>match[
 assert.deepEqual([...index.matchAll(/data-workplace="([^"]+)"/g)].map(match=>match[1]).slice(0,4),['all','천안','평택','기타']);
 assert.match(applicants,/applicant-list-empty-state/);assert.match(applicants,/applicant-empty-register/);assert.match(applicants,/applicant-empty-reset/);assert.match(applicants,/erpPermissions\.has\('applicant\.write'\)/);
 
-['no-head','name-head','workplace-head','status-head','actions-head'].forEach(className=>assert.match(index,new RegExp(`class="${className}"`)));
-['sticky-app-no','sticky-app-name','sticky-app-workplace','sticky-app-status','sticky-app-actions'].forEach(className=>assert.match(applicants,new RegExp(className)));
+['no-head','name-head','phone-head','workplace-head','status-head','actions-head'].forEach(className=>assert.match(index,new RegExp(`class="${className}"`)));
+['sticky-app-no','sticky-app-name','sticky-app-phone'].forEach(className=>assert.match(applicants,new RegExp(className)));
+['sticky-app-workplace','sticky-app-status','sticky-app-actions'].forEach(className=>assert.doesNotMatch(applicants,new RegExp(className)));
 assert.doesNotMatch(listLayout,/applicant-table[^\n{]*nth-child/,'지원자 열 소유권은 applicant-clearview.css에만 있어야 합니다.');
 assert.doesNotMatch(clearview,/applicant-table\s+(?:thead\s+)?th:nth-child/,'지원자 고정 열은 의미 클래스를 사용해야 합니다.');
 assert.doesNotMatch(calm,/applicant-table\s+thead\s+th:nth-child/,'최종 디자인도 지원자 열 번호에 의존하면 안 됩니다.');
-assert.match(clearview,/\.workplace-head[\s\S]*\.workplace-cell/);assert.match(clearview,/\.actions-head[\s\S]*\.applicant-actions[\s\S]*right:0/);
+assert.match(clearview,/\.workplace-head[\s\S]*\.workplace-cell/);assert.doesNotMatch(clearview,/\.applicant-actions[\s\S]{0,120}right:0/);
+assert.match(stabilityCss,/\.applicant-col-phone/);assert.match(stabilityCss,/\.phone-head,.phone-cell\)\{position:sticky!important;left:230px/);assert.match(stabilityCss,/\.status-head,.status-cell\)/);assert.match(stabilityCss,/\.decision-head,.decision-cell\)/);assert.doesNotMatch(stabilityCss,/^\s*(?:table|th|td)\s*\{/m,'v11.5.2 표 보정은 지원자 화면 밖 전역 table CSS를 만들면 안 됩니다.');
 
 const statusWorkflow=enhancements.match(/\/\* ---------- Status workflow ---------- \*\/[\s\S]*?\/\* ---------- Shared task cards ---------- \*\//)?.[0]||'';
 assert.match(statusWorkflow,/applicantStatusModal/);assert.match(statusWorkflow,/aria-modal/);assert.match(statusWorkflow,/event\.key==='Escape'/);assert.match(statusWorkflow,/event\.key==='Tab'/);assert.doesNotMatch(statusWorkflow,/\bprompt\s*\(/);
@@ -67,16 +71,17 @@ const visualTest=read('tests/ui-visual-layout.js');
 assert.match(visualTest,/formWorkflowBanner/);assert.match(visualTest,/formActions\.overlaps,false/);
 assert.match(visualTest,/390x844-status-modal\.png'\),fullPage:false/);
 assert.match(visualTest,/390x844-sync-conflict\.png'\),fullPage:false/);
-assert.match(index,/css\/applicant-worksheet\.css\?v=11\.5\.1/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.5\.1/);assert.match(index,/css\/ui-density-navigation\.css\?v=11\.5\.1/);
+assert.match(index,/css\/applicant-worksheet\.css\?v=11\.5\.2/);assert.match(index,/js\/applicant-worksheet\.js\?v=11\.5\.2/);assert.match(index,/css\/ui-density-navigation\.css\?v=11\.5\.2/);assert.match(index,/css\/recruiter-ui-stability\.css\?v=11\.5\.2/);
 assert.match(applicantWorksheet,/일반보기/);assert.match(applicantWorksheet,/워크시트 보기/);assert.match(applicantWorksheet,/변경 \$\{entries\.length\}건/);
 assert.match(applicantWorksheet,/root\.save\(\)/);assert.match(applicantWorksheet,/applicants=snapshot/);assert.match(applicantWorksheet,/beforeunload/);
 assert.match(applicantWorksheetCss,/nth-child\(2\).*position:sticky/);assert.match(applicantWorksheetCss,/nth-child\(3\).*position:sticky/);assert.match(applicantWorksheetCss,/--worksheet-phone-left/);assert.match(applicantWorksheet,/syncStickyOffsets/);assert.match(applicantWorksheet,/getBoundingClientRect\(\)\.width/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-dirty/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-error/);
 assert.match(densityCss,/overflow:visible!important;[\s\S]*flex-wrap:wrap!important/);assert.match(densityCss,/#applicants #quickFilters \.chip\{[^}]*height:36px!important;min-height:36px!important/);assert.match(densityCss,/#calendar \.calendar-today-dot\{[^}]*color:#fff!important/);assert.match(densityCss,/\.sidebar \.nav\{[^}]*overflow-y:auto/);
 assert.match(visualTest,/1440x900/);assert.match(visualTest,/verifyApplicantWorksheet/);assert.match(visualTest,/__worksheetSaveCalls/);
 assert.match(visualTest,/const denseApplicants=Array\.from\(\{length:60\}/);assert.match(visualTest,/visibleRows>=3/);assert.match(visualTest,/390x844-mobile-menu\.png/);assert.match(visualTest,/\$\{label\}-sidebar\.png/);
-assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.5\.1/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
+assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.5\.2/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
 assert.match(applicants,/window\.viewApplicant\?\.\(id\)/);assert.match(applicants,/window\.editApplicant\?\.\(id\)/);assert.match(applicants,/applicantQuickDetailCanWrite/);assert.doesNotMatch(applicants.match(/function renderApplicantQuickDetail\(\)[\s\S]*?function openApplicantQuickDetail\(/)?.[0]||'',/residentNumber|Object\.values/);
 assert.match(quickDetailCss,/width:clamp\(420px,34vw,480px\)/);assert.match(quickDetailCss,/@media\(max-width:900px\)[\s\S]*width:100%/);assert.match(visualTest,/verifyApplicantQuickDetail/);assert.match(visualTest,/bridgeSaveRequests,0/);assert.match(visualTest,/applicant-quick-detail-long-memo\.png/);
+assert.match(applicants,/applicantQuickDetailNextAction/);assert.match(applicants,/progressHistory/);assert.match(stabilityCss,/applicant-quick-detail-next-action/);assert.match(index,/id="applicantMyViews"/);assert.match(advancedBulk,/recruit_erp_saved_advanced_searches/);assert.match(advancedBulk,/window\.erpSavedAdvancedSearches/);assert.match(visualTest,/verifyApplicantNormalTableGeometry/);assert.match(visualTest,/verifyApplicantMyViews/);
 
 const emptyTopbarButtons=[...index.matchAll(/<button[^>]*class="[^"]*topbar-icon-btn[^"]*"[^>]*>[\s\S]*?<\/button>/g)];
 assert.equal(emptyTopbarButtons.length,0,'기능 없는 상단 아이콘 버튼이 남아 있습니다.');

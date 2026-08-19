@@ -19,7 +19,7 @@ const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
 const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.5.1');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.5.2');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -49,6 +49,8 @@ const denseApplicants=Array.from({length:60},(_,index)=>{
     education:index%4?'대학교':'',school:index%4?'가상밀도대학교':'',major:index%5?'가상설비전공':'',region:index%3?'가상지역':'',
     career:index===29?'가상 장비 유지보수와 현장 대응 경험을 여러 단계에 걸쳐 검토하기 위한 긴 경력 설명입니다. '.repeat(7):'',
     certs:index===29?'가상설비자격 · 가상안전자격 · 가상전기자격':'',memo:index===1?'':index===12?'<img src=x onerror=alert(1)>':index===29?'긴 메모의 줄바꿈과 스크롤을 확인합니다.\n'.repeat(18):'UI 밀도 자동검사용 가상 메모',
+    ...(index===0?{lastContactDate:'2026-08-18',nextContactDate:'2099-08-20',progressHistory:[{id:'synthetic-history-1',type:'contact',createdAt:'2026-08-18T09:30:00.000Z',summary:'가상 후속 연락 안내 완료',title:'전화 기록',detail:'가상 후속 연락 안내 완료'}]}:{}),
+    ...(index===1?{nextContactDate:'2000-01-01'}:{}),
     ...(index===10?{residentNumber:'991231-1234567'}:{}),
     createdAt:`2026-08-${day}T01:00:00.000Z`,updatedAt:`2026-08-${day}T01:00:00.000Z`
   };
@@ -76,6 +78,9 @@ const viewports=[
   {name:'768x1024',width:768,height:1024},
   {name:'412x915',width:412,height:915},
   {name:'390x844',width:390,height:844}
+];
+const savedAdvancedSearchFixture=[
+  {name:'천안 채용 <보기> & "A"',criteria:{ApplyFrom:'',ApplyTo:'',InterviewFrom:'',InterviewTo:'',HireFrom:'',HireTo:'',Status:'all',Workplace:'천안',School:'all',Manager:'all',Contact:'all',Dorm:'all',Keyword:'가상'},createdAt:'2026-08-19T00:00:00.000Z'}
 ];
 const hireWaitingKeys=['no','employeeNo','contactStatus','hireDate','workplace','pmtc','gender','groupName','product','part','name','rank','residentNumber','birthDate','age','email','education','school','major','phone','region','commuteMethod','remarks'];
 const hireWaitingWidths={no:52,employeeNo:124,contactStatus:88,hireDate:104,workplace:90,pmtc:108,gender:64,groupName:112,product:112,part:112,name:118,rank:88,residentNumber:150,birthDate:112,age:60,email:230,education:100,school:210,major:210,phone:136,region:120,commuteMethod:108,remarks:420};
@@ -242,6 +247,51 @@ async function verifyUsabilityPolish(page,label){
   assert.ok(sidebar.lastBottom<=sidebar.navBottom+1&&sidebar.navBottom<=sidebar.statusTop+1&&sidebar.statusBottom<=sidebar.sidebarBottom+1,`${label} 사이드바 메뉴 끝과 상태 영역이 겹치거나 가려지면 안 됩니다: ${JSON.stringify(sidebar)}`);
   assert.equal(sidebar.badge,'집 운영',`${label} 상단에는 운영 환경만 표시해야 합니다.`);assert.ok(sidebar.status.length>0&&sidebar.status!==sidebar.badge,`${label} 모드 표시와 저장 상태를 분리해야 합니다.`);
 }
+const applicantTableGeometryMetrics=[];
+async function verifyApplicantNormalTableGeometry(page,label){
+  await page.evaluate(()=>{window.setPage('applicants');window.erpApplicantWorksheet?.setViewMode?.('normal');resetListFiltersToAll();renderTable();});
+  const positions=await page.locator('#applicants .table-wrap').evaluate(wrap=>{const max=Math.max(0,wrap.scrollWidth-wrap.clientWidth);return[0,Math.round(max/2),max];});
+  for(const [index,target] of positions.entries()){
+    await page.locator('#applicants .table-wrap').evaluate((wrap,left)=>{wrap.scrollLeft=left;},target);await page.waitForTimeout(30);
+    const state=await page.evaluate(()=>{
+      const wrap=document.querySelector('#applicants .table-wrap'),row=document.querySelector('#applicantTbody .applicant-row');
+      const pairs=[['no-head','no-cell'],['name-head','applicant-name-cell'],['phone-head','phone-cell'],['workplace-head','workplace-cell'],['status-head','status-cell'],['apply-date-head','apply-date-cell'],['schedule-head','schedule-cell'],['hire-date-head','hire-date-cell'],['commute-head','commute-cell'],['decision-head','decision-cell'],['actions-head','applicant-actions']];
+      const box=(headClass,cellClass)=>{const head=document.querySelector(`#applicants .${headClass}`),cell=row.querySelector(`.${cellClass}`),hr=head.getBoundingClientRect(),cr=cell.getBoundingClientRect(),hs=getComputedStyle(head),cs=getComputedStyle(cell);return{key:headClass.replace('-head',''),head:{left:hr.left,right:hr.right,width:hr.width,position:hs.position,background:hs.backgroundColor,z:hs.zIndex},cell:{left:cr.left,right:cr.right,width:cr.width,position:cs.position,background:cs.backgroundColor,z:cs.zIndex}};};
+      const columns=pairs.map(pair=>box(...pair)),byKey=Object.fromEntries(columns.map(column=>[column.key,column]));
+      return{viewport:innerWidth,clientWidth:wrap.clientWidth,scrollWidth:wrap.scrollWidth,scrollLeft:wrap.scrollLeft,globalOverflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,columns,sticky:['no','name','phone'].map(key=>byKey[key]),statusApply:[byKey.status.head,byKey['apply-date'].head],decisionActions:[byKey.decision.head,byKey.actions.head],nonSticky:['workplace','status','apply-date','schedule','hire-date','commute','decision','actions'].map(key=>byKey[key].head)};
+    });
+    assert.ok(state.columns.every(column=>Math.abs(column.head.left-column.cell.left)<=1&&Math.abs(column.head.right-column.cell.right)<=1),`${label} ${target}px 헤더/본문 열 경계 오차: ${JSON.stringify(state.columns)}`);
+    assert.ok(Math.abs(state.sticky[1].head.left-state.sticky[0].head.right)<=1&&Math.abs(state.sticky[2].head.left-state.sticky[1].head.right)<=1,`${label} ${target}px NO·성명·연락처 누적 고정 위치 오류`);
+    assert.ok(state.sticky.every(column=>column.head.position==='sticky'&&column.cell.position==='sticky'&&column.head.background!=='rgba(0, 0, 0, 0)'&&column.cell.background!=='rgba(0, 0, 0, 0)'),`${label} ${target}px 고정 열 배경/position 오류`);
+    assert.ok(state.statusApply[0].right<=state.statusApply[1].left+1,`${label} ${target}px 상태/지원일 겹침: ${JSON.stringify(state.statusApply)}`);
+    assert.ok(state.decisionActions[0].right<=state.decisionActions[1].left+1,`${label} ${target}px 판정/관리 겹침: ${JSON.stringify(state.decisionActions)}`);
+    for(let column=1;column<state.nonSticky.length;column++)assert.ok(state.nonSticky[column-1].right<=state.nonSticky[column].left+1,`${label} ${target}px 일반 열 겹침: ${JSON.stringify(state.nonSticky)}`);
+    assert.ok(state.globalOverflow<=1,`${label} ${target}px 전역 가로 넘침: ${state.globalOverflow}`);
+    applicantTableGeometryMetrics.push({label,position:['scroll-0','scroll-mid','scroll-max'][index],clientWidth:state.clientWidth,scrollWidth:state.scrollWidth,scrollLeft:state.scrollLeft,maxHeaderBodyError:Math.max(...state.columns.flatMap(column=>[Math.abs(column.head.left-column.cell.left),Math.abs(column.head.right-column.cell.right)])),stickyWidths:state.sticky.map(column=>Math.round(column.head.width))});
+    await page.screenshot({path:path.join(outputDir,`${label}-applicant-list-${['scroll-0','scroll-mid','scroll-max'][index]}.png`),fullPage:false});
+  }
+}
+async function verifyApplicantMyViews(page,label,{exercise=false}={}){
+  await page.evaluate(()=>{window.setPage('applicants');window.erpApplicantWorksheet?.setViewMode?.('normal');window.erpSavedAdvancedSearches?.render();});
+  await page.locator('#applicantMyViews').evaluate(host=>host.scrollIntoView({block:'center'}));
+  const layout=await page.locator('#applicantMyViews').evaluate(host=>{const rect=host.getBoundingClientRect();return{left:rect.left,right:rect.right,width:rect.width,viewport:innerWidth,overflow:host.scrollWidth-host.clientWidth,text:host.innerText,images:host.querySelectorAll('img').length,controls:[...host.querySelectorAll('select,button')].map(node=>{const box=node.getBoundingClientRect();return{left:box.left,right:box.right,top:box.top,bottom:box.bottom};})};});
+  assert.ok(layout.left>=-1&&layout.right<=layout.viewport+1&&layout.overflow<=1&&layout.controls.every(control=>control.left>=-1&&control.right<=layout.viewport+1),`${label} 내 보기 툴바가 겹치거나 잘렸습니다: ${JSON.stringify(layout)}`);
+  assert.equal(layout.images,0);assert.ok(layout.text.includes('천안 채용 <보기> & "A"'),'저장 보기의 특수문자는 실행되지 않고 글자로 보여야 합니다.');
+  await page.screenshot({path:path.join(outputDir,`${label}-applicant-my-view.png`),fullPage:false});
+  if(!exercise)return;
+  let bridgePuts=0;const requestListener=request=>{if(request.method()==='PUT'&&request.url()==='http://127.0.0.1:17840/storage/snapshot')bridgePuts++;};page.on('request',requestListener);
+  const before=await page.evaluate(()=>({arrays:JSON.stringify(applicants),storage:{...localStorage},saved:localStorage.getItem('recruit_erp_saved_advanced_searches'),filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId}}));
+  await page.locator('#applicantMyViewSelect').selectOption('0');await page.locator('#btnApplyApplicantMyView').click();
+  const loaded=await page.evaluate(()=>({ids:[...window.__erpAdvancedFilterIds],visible:[...document.querySelectorAll('#applicantTbody .applicant-row')].map(row=>row.dataset.applicantId),criteria:{status:document.getElementById('asStatus').value,workplace:document.getElementById('asWorkplace').value,keyword:document.getElementById('asKeyword').value},arrays:JSON.stringify(applicants),storage:{...localStorage},saved:localStorage.getItem('recruit_erp_saved_advanced_searches')}));
+  const expected=await page.evaluate(()=>applicants.filter(row=>row.workplace==='천안'&&[row.name,row.phone,row.school,row.workplace,row.status].join(' ').toLowerCase().includes('가상')).map(row=>row.id));
+  assert.deepEqual(loaded.ids,expected);assert.deepEqual(loaded.visible,expected);assert.deepEqual(loaded.criteria,{status:'all',workplace:'천안',keyword:'가상'});assert.equal(loaded.arrays,before.arrays);assert.deepEqual(loaded.storage,before.storage);assert.equal(loaded.saved,before.saved,'내 보기 불러오기는 기존 저장 검색조건을 다시 쓰면 안 됩니다.');
+  const viewer=await page.evaluate(()=>{const original=window.erpPermissions.has;window.erpPermissions.has=permission=>permission==='applicant.write'?false:original(permission);const result=window.erpSavedAdvancedSearches.load(0);window.erpPermissions.has=original;return{result,ids:[...window.__erpAdvancedFilterIds],saved:localStorage.getItem('recruit_erp_saved_advanced_searches')};});
+  assert.equal(viewer.result,true);assert.deepEqual(viewer.ids,expected);assert.equal(viewer.saved,before.saved,'조회 전용 내 보기 불러오기도 저장값을 바꾸면 안 됩니다.');
+  const emptyStates=await page.evaluate(original=>{localStorage.setItem('recruit_erp_saved_advanced_searches','{}');window.erpSavedAdvancedSearches.render();const legacy=document.getElementById('applicantMyViews').innerText;localStorage.setItem('recruit_erp_saved_advanced_searches','[]');window.erpSavedAdvancedSearches.render();const empty=document.getElementById('applicantMyViews').innerText;localStorage.setItem('recruit_erp_saved_advanced_searches',original);window.erpSavedAdvancedSearches.render();return{legacy,empty};},before.saved);
+  assert.deepEqual(emptyStates,{legacy:'내 보기 없음',empty:'내 보기 없음'});
+  assert.equal(bridgePuts,0,'내 보기 조회는 Bridge 저장을 호출하면 안 됩니다.');page.off('request',requestListener);
+  await page.evaluate(filters=>{currentWorkplace=filters.currentWorkplace;currentFilter=filters.currentFilter;currentSearch=filters.currentSearch;currentSort=filters.currentSort;hideFinished=filters.hideFinished;currentSchoolFilterId=filters.currentSchoolFilterId;window.__erpAdvancedFilterIds=null;renderTable();},before.filters);
+}
 async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   const closeQuickDetail=async()=>{
     await page.waitForFunction(()=>document.getElementById('applicantQuickDetail')?.contains(document.activeElement));
@@ -275,6 +325,8 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   const firstRow=page.locator('#applicantTbody .applicant-row').first();
   await firstRow.focus();await page.keyboard.press('Enter');await page.locator('#applicantQuickDetail.is-open').waitFor();await page.waitForFunction(()=>document.activeElement?.id==='btnApplicantQuickDetailClose');
   assert.ok((await page.locator('#applicantQuickDetailPosition').innerText()).includes('1 / 60'));
+  const nextActionText=await page.locator('.applicant-quick-detail-next-action').innerText();
+  assert.ok(nextActionText.includes('2026-08-18')&&nextActionText.includes('2099-08-20')&&nextActionText.includes('D-')&&nextActionText.includes('2026-08-18 · 연락')&&nextActionText.includes('가상 후속 연락 안내 완료'),`${label} 다음 액션 날짜·상태·최근 이력이 정확하지 않습니다: ${nextActionText}`);
   const panelState=await page.evaluate(()=>{
     const shell=document.getElementById('applicantQuickDetail'),panel=shell.querySelector('.applicant-quick-detail-panel'),header=shell.querySelector('.applicant-quick-detail-header'),footer=shell.querySelector('.applicant-quick-detail-footer'),pr=panel.getBoundingClientRect(),hr=header.getBoundingClientRect(),fr=footer.getBoundingClientRect();
     return {panel:{left:pr.left,right:pr.right,top:pr.top,bottom:pr.bottom,width:pr.width,height:pr.height},header:{top:hr.top,bottom:hr.bottom},footer:{top:fr.top,bottom:fr.bottom},viewport:{width:innerWidth,height:innerHeight},bodyOverflow:getComputedStyle(document.body).overflow,buttons:[...shell.querySelectorAll('button:not([hidden])')].map(button=>{const rect=button.getBoundingClientRect();return{id:button.id,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};}),text:shell.innerText,html:shell.innerHTML};
@@ -285,7 +337,7 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   assert.ok(panelState.buttons.every(button=>button.left>=-1&&button.right<=panelState.viewport.width+1&&button.top>=-1&&button.bottom<=panelState.viewport.height+1),`${label} 빠른 보기 버튼 잘림: ${JSON.stringify(panelState.buttons)}`);
   assert.equal(panelState.bodyOverflow,'hidden');assert.ok(!panelState.html.includes('residentNumber')&&!/\d{6}-?\d{7}/.test(panelState.text),'빠른 보기 DOM에 주민등록번호 필드나 형태가 있으면 안 됩니다.');
   await page.keyboard.press('Shift+Tab');assert.ok(await page.evaluate(()=>document.getElementById('applicantQuickDetail').contains(document.activeElement)),'Shift+Tab 포커스가 빠른 보기 안에 있어야 합니다.');
-  await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail.png`),fullPage:false});
+  await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail-next-action.png`),fullPage:false});
   await page.keyboard.press('Escape');await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});await page.waitForFunction(expected=>document.activeElement?.dataset?.applicantId===expected,denseApplicants[0].id);assert.equal(await page.evaluate(()=>document.activeElement?.dataset?.applicantId),denseApplicants[0].id,'Escape 후 실행한 행으로 포커스가 돌아가야 합니다.');
 
   if(exercise){
@@ -298,7 +350,8 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
     assert.equal(crossPage.page,2);assert.deepEqual(crossPage.filters,contextBefore.filters,'이전·다음은 검색·필터·정렬·페이지 크기를 바꾸면 안 됩니다.');assert.equal(crossPage.windowY,contextBefore.windowY);assert.equal(crossPage.tableLeft,contextBefore.tableLeft,'페이지 경계 이동이 원래 표 가로 위치를 잃으면 안 됩니다.');
     await page.locator('#btnApplicantQuickDetailPrevious').click();await page.waitForFunction(()=>currentApplicantPage===1&&document.querySelector('#applicantQuickDetailPosition')?.textContent.includes('30 / 60'));await closeQuickDetail();
 
-    await page.evaluate(()=>{currentApplicantPage=1;renderTable();});await page.locator('#applicantTbody .applicant-row').nth(1).locator('.apply-date-cell').click();assert.ok(await page.locator('#applicantQuickDetailBody .is-empty').count()>=8,'빈 핵심정보는 미입력으로 일관되게 표시해야 합니다.');await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail-empty.png`),fullPage:false});await closeQuickDetail();
+    await page.evaluate(()=>{currentApplicantPage=1;renderTable();});await page.locator('#applicantTbody .applicant-row').nth(1).locator('.apply-date-cell').click();assert.ok((await page.locator('.applicant-quick-detail-next-action').innerText()).includes('경과 · 확인 필요'),'기한 경과는 색상뿐 아니라 텍스트로 표시해야 합니다.');await closeQuickDetail();
+    await page.locator('#applicantTbody .applicant-row').nth(2).locator('.apply-date-cell').click();const emptyAction=await page.locator('.applicant-quick-detail-next-action').innerText();assert.ok(emptyAction.includes('기록 없음')&&emptyAction.includes('미정'),'빈 다음 액션은 기록 없음·미정으로 표시해야 합니다.');assert.ok(await page.locator('#applicantQuickDetailBody .is-empty').count()>=6,'빈 핵심정보는 미입력으로 일관되게 표시해야 합니다.');await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail-empty.png`),fullPage:false});await closeQuickDetail();
     await page.evaluate(id=>window.openApplicantQuickDetail(id),denseApplicants[12].id);assert.equal(await page.locator('#applicantQuickDetailBody img').count(),0,'지원자 입력값이 HTML로 실행되면 안 됩니다.');assert.ok((await page.locator('#applicantQuickDetailBody').innerText()).includes('<img src=x onerror=alert(1)>'));await closeQuickDetail();
     await page.locator('#applicantTbody .applicant-row').first().locator('.apply-date-cell').click();assert.equal(await page.locator('#btnApplicantQuickDetailPrevious').isDisabled(),true);await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail-first.png`),fullPage:false});await closeQuickDetail();
     await page.evaluate(()=>{currentApplicantPage=2;renderTable();});await page.locator('#applicantTbody .applicant-row').last().locator('.apply-date-cell').click();assert.equal(await page.locator('#btnApplicantQuickDetailNext').isDisabled(),true);await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-detail-last.png`),fullPage:false});await closeQuickDetail();
@@ -406,7 +459,8 @@ async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
 
   const stateBeforeReview=await page.evaluate(()=>({dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length}));
   await page.locator('#btnWorksheetSave').click();await page.locator('#applicantWorksheetReview:not([hidden])').waitFor();await page.screenshot({path:path.join(outputDir,label+'-applicant-worksheet-final-review.png'),fullPage:false});
-  assert.match(await page.locator('#applicantWorksheetReviewSummary>div').nth(3).innerText(),/중복 후보 1건 · 확인 완료/,'최종 확인의 네 번째 카드는 중복 후보 건수와 확인 상태를 함께 보여야 합니다.');
+  const duplicateReview=await page.locator('#applicantWorksheetReviewSummary>div').nth(3).evaluate(card=>{const strong=card.querySelector('strong'),children=[...strong.children].map(node=>{const rect=node.getBoundingClientRect();return{text:node.textContent.trim(),top:Math.round(rect.top),width:rect.width,scrollWidth:node.scrollWidth};});return{text:strong.innerText.replace(/\s+/g,' ').trim(),lines:new Set(children.map(child=>child.top)).size,children};});
+  assert.equal(duplicateReview.text,'중복 후보 1건 · 확인 완료','최종 확인의 네 번째 카드는 중복 후보 건수와 확인 상태를 함께 보여야 합니다.');assert.ok(duplicateReview.lines<=2&&duplicateReview.children.every(child=>child.scrollWidth<=child.width+1),`${label} 중복 확인 문구가 낱말 단위로 3줄 이상 갈라졌습니다: ${JSON.stringify(duplicateReview)}`);
   await page.locator('#btnWorksheetReviewCancel').click();
   assert.deepEqual(await page.evaluate(()=>({dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length})),stateBeforeReview,'최종 확인 취소는 dirty와 히스토리를 유지해야 합니다.');
 
@@ -488,14 +542,14 @@ async function verifyRecruiterDailyUsability(page,label,{exerciseQuick=false}={}
     const homeFirst=document.querySelector('#priorityList [data-home-applicant-id]')?.dataset.homeApplicantId||'';
     window.setPage('today');
     const todayFirst=document.querySelector('#dailyWorkflowList [data-applicant-id]')?.dataset.applicantId||'';
-    const panel=document.querySelector('.daily-workflow-panel').getBoundingClientRect(),summary=document.querySelector('.daily-automation-summary').getBoundingClientRect();
+    const panel=document.querySelector('.daily-workflow-panel').getBoundingClientRect(),summary=document.querySelector('.daily-automation-summary').getBoundingClientRect(),metrics=document.querySelector('.daily-workflow-metrics').getBoundingClientRect();
     const first=document.querySelector('#dailyWorkflowList .daily-work-item');
-    return {selectorFirst:selection.rows[0]?.applicant.id||'',homeFirst,todayFirst,panelTop:panel.top,summaryTop:summary.top,rowText:first?.innerText||'',rows:document.querySelectorAll('#dailyWorkflowList .daily-work-item').length,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth};
+    return {selectorFirst:selection.rows[0]?.applicant.id||'',homeFirst,todayFirst,panelTop:panel.top,summaryTop:summary.top,metricsTop:metrics.top,summaryVisible:summary.top<innerHeight,metricsVisible:metrics.top<innerHeight,rowText:first?.innerText||'',rows:document.querySelectorAll('#dailyWorkflowList .daily-work-item').length,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth};
   });
   assert.ok(shared.selectorFirst&&shared.homeFirst===shared.selectorFirst&&shared.todayFirst===shared.selectorFirst,`${label} 홈과 오늘 업무의 첫 대상이 공통 선택기와 같아야 합니다: ${JSON.stringify(shared)}`);
-  assert.ok(shared.panelTop<shared.summaryTop&&shared.rows>0,`${label} 오늘 실행 목록이 숫자 요약보다 먼저 보여야 합니다: ${JSON.stringify(shared)}`);
+  assert.ok(shared.summaryTop<shared.metricsTop&&shared.metricsTop<shared.panelTop&&shared.summaryVisible&&shared.metricsVisible&&shared.rows>0,`${label} 오늘 요약·KPI가 처리 목록보다 먼저 보여야 합니다: ${JSON.stringify(shared)}`);
   assert.ok(shared.rowText.includes('추천 다음 작업')&&shared.overflow<=1,`${label} 오늘 실행 행의 다음 작업 또는 화면 폭이 잘못되었습니다: ${JSON.stringify(shared)}`);
-  await page.screenshot({path:path.join(outputDir,`${label}-daily-workflow-v115.png`),fullPage:false});
+  await page.screenshot({path:path.join(outputDir,`${label}-today-first-screen.png`),fullPage:false});
 
   await page.evaluate(()=>window.setPage('applicants'));
   await page.locator('#searchInput').fill('가상');await page.locator('#sortSelect').selectOption('nameAsc');await page.locator('#workplaceTabs [data-workplace="천안"]').click();
@@ -594,11 +648,12 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
       await page.addInitScript(fixture=>{
         localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));
         localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));
+        localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
-      },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
+      },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v11.5.1');
-      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'11.5.1','화면은 단일 현재 버전 소스를 사용해야 합니다.');
+      assert.equal(await page.title(),'채용관리 시스템 v11.5.2');
+      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'11.5.2','화면은 단일 현재 버전 소스를 사용해야 합니다.');
       assert.equal(await page.locator('#homeTodayGrid').count(),0,'홈의 중복 숫자 업무 카드는 제거되어야 합니다.');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
@@ -685,7 +740,7 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
         await page.evaluate(()=>window.setPage?.('productionReadiness'));await page.waitForTimeout(120);
         const readinessState=await page.evaluate(()=>({automatic:document.querySelectorAll('#productionReadiness .readiness-check').length,manual:document.querySelectorAll('#productionReadiness [data-readiness-manual]').length,text:document.querySelector('#productionReadiness')?.innerText||'',overflow:document.querySelector('#productionReadiness').scrollWidth-document.querySelector('#productionReadiness').clientWidth}));
         assert.deepEqual({automatic:readinessState.automatic,manual:readinessState.manual},{automatic:8,manual:7});assert.ok(readinessState.overflow<=1,`${viewport.name} 운영 준비 화면 가로 넘침: ${JSON.stringify(readinessState)}`);assert.ok(!/000000-0000000|010-0000-0001/.test(readinessState.text),'운영 준비 화면에 가상 개인정보 원문도 표시하면 안 됩니다.');
-        assert.ok(readinessState.text.includes('v11.5.1 화면·브랜드·정적 파일 버전이 일치합니다.'),'운영 준비 화면이 v11.5.1 일치 결과를 보여야 합니다.');
+        assert.ok(readinessState.text.includes('v11.5.2 화면·브랜드·정적 파일 버전이 일치합니다.'),'운영 준비 화면이 v11.5.2 일치 결과를 보여야 합니다.');
         assert.equal(readinessState.text.split('Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용.').length-1,1,'유출 비밀번호 요금제 제한 설명은 같은 화면에 한 번만 표시해야 합니다.');
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-production-readiness.png`),fullPage:true});
       }
@@ -699,6 +754,8 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
       assert.ok(introState.required.every(item=>item.safety&&item.display!=='none'),`안전 화면 안내 카드 누락: ${JSON.stringify(introState.required)}`);
       await page.evaluate(()=>window.setPage?.('applicants'));await page.waitForTimeout(30);
       await verifyApplicantQuickDetail(page,viewport.name,{exercise:viewport.width===1366});
+      if(viewport.width===390||viewport.width===1366)await verifyApplicantMyViews(page,viewport.name,{exercise:viewport.width===1366});
+      if([1366,1440,1920].includes(viewport.width))await verifyApplicantNormalTableGeometry(page,viewport.name);
       if(viewport.width===390||viewport.width===412){
         await page.evaluate(()=>{resetListFiltersToAll();renderTable();const scroller=document.querySelector('.applicant-fixed-presets');if(scroller)scroller.scrollLeft=0;});
         const quickFilter=await page.evaluate(()=>{
@@ -712,8 +769,8 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-applicant-filters.png`),fullPage:false});
       }
       if(viewport.width>760){
-        const columns=await page.locator('#applicants .no-head,#applicants .name-head,#applicants .workplace-head,#applicants .status-head').evaluateAll(elements=>elements.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,position:getComputedStyle(el).position}}));
-        assert.equal(columns.length,4);assert.ok(columns.every(column=>column.position==='sticky'));for(let i=1;i<columns.length;i++)assert.ok(columns[i].left>=columns[i-1].right-1,`${viewport.name} 지원자 고정 열 겹침: ${JSON.stringify(columns)}`);
+        const columns=await page.locator('#applicants .no-head,#applicants .name-head,#applicants .phone-head').evaluateAll(elements=>elements.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,position:getComputedStyle(el).position}}));
+        assert.equal(columns.length,3);assert.ok(columns.every(column=>column.position==='sticky'));for(let i=1;i<columns.length;i++)assert.ok(Math.abs(columns[i].left-columns[i-1].right)<=1,`${viewport.name} 지원자 NO·성명·연락처 고정 열 겹침: ${JSON.stringify(columns)}`);
         if(viewport.width<=1024){const tableScroll=await page.locator('#applicants .table-wrap').evaluate(el=>({client:el.clientWidth,scroll:el.scrollWidth,overflow:getComputedStyle(el).overflowX}));assert.ok(tableScroll.scroll>tableScroll.client&&tableScroll.overflow!=='visible','1024 목록은 표 내부에서 가로 스크롤되어야 합니다.');}
       }else{
         assert.notEqual(await page.locator('#applicants .applicant-row').first().evaluate(el=>getComputedStyle(el).display),'table-row','760 이하 지원자 목록은 카드형이어야 합니다.');
@@ -785,11 +842,12 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
     const zoomContext=await browser.newContext({viewport:{width:1093,height:614},deviceScaleFactor:1.25}),zoomPage=await zoomContext.newPage();
     zoomPage.on('pageerror',error=>consoleErrors.push(`1366x768-zoom125: ${error.message}`));
     zoomPage.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`1366x768-zoom125: ${message.text()}`);});
-    await zoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
+    await zoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
     await zoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await zoomPage.waitForTimeout(700);
     await verifyApplicantQuickDetail(zoomPage,'1366x768-zoom125');
     await verifyHireWaitingGrid(zoomPage,'1366x768-zoom125');
-    await verifyApplicantWorksheet(zoomPage,'1366x768-zoom125');
+    await verifyApplicantWorksheet(zoomPage,'1366x768-zoom125',{exercise:true});
+    await verifyApplicantMyViews(zoomPage,'1366x768-zoom125',{exercise:true});
     await verifyUsabilityPolish(zoomPage,'1366x768-zoom125');
     for(const screen of ['home','applicants','form','today','onboarding','storagePerformance','productionReadiness']){
       await zoomPage.evaluate(id=>window.setPage?.(id),screen);await zoomPage.waitForTimeout(50);
@@ -811,7 +869,7 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
     await zoomContext.close();
 
     const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
-    await page.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(700);
+    await page.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(700);
     await page.evaluate(()=>window.setPage?.('form'));
     assert.equal(await page.locator('[data-form-step="2"] [data-form-step-status]').innerText(),'선택 입력');
     assert.equal(await page.locator('#formProgressText').innerText(),'필수 0/1 단계 완료');
@@ -858,6 +916,8 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
       assert.equal(quickPermission.editVisible,role!=='viewer',`${role} 빠른 보기 수정 권한 표시가 잘못되었습니다.`);assert.equal(quickPermission.deleteButtons,0,'빠른 보기에는 삭제 동작이 없어야 합니다.');assert.ok(!/000000-0000000|\d{6}-\d{7}/.test(quickPermission.text),'역할별 빠른 보기에 주민등록번호가 표시되면 안 됩니다.');
       if(role==='viewer'){await page.locator('#btnApplicantQuickDetailEdit').evaluate(button=>button.click());assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'applicants','조회 전용은 숨은 수정 버튼을 실행해도 편집 화면으로 이동하면 안 됩니다.');}
       await page.evaluate(()=>window.closeApplicantQuickDetail());
+      const roleView=await page.evaluate(()=>{const before=localStorage.getItem('recruit_erp_saved_advanced_searches'),result=window.erpSavedAdvancedSearches.load(0),after=localStorage.getItem('recruit_erp_saved_advanced_searches'),count=window.__erpAdvancedFilterIds.length;window.__erpAdvancedFilterIds=null;renderTable();return{result,before,after,count};});
+      assert.ok(roleView.result&&roleView.count>=1&&roleView.before===roleView.after,`${role} 내 보기 불러오기는 허용되고 저장 검색조건은 변경하지 않아야 합니다.`);
       const state=await page.evaluate(()=>{window.setPage('onboarding');window.erpOnboarding.openModal('33333333-3333-4333-8333-333333333333');const value={role:window.erpPermissions.current().role,formHidden:document.querySelector('[data-page="form"]')?.classList.contains('erp-permission-hidden'),backupHidden:document.querySelector('[data-page="backup"]')?.classList.contains('erp-permission-hidden'),auditHidden:document.querySelector('[data-page="auditHistory"]')?.classList.contains('erp-permission-hidden'),readinessHidden:document.querySelector('[data-page="productionReadiness"]')?.classList.contains('erp-permission-hidden'),dailyStartHidden:document.querySelector('#btnDailyStartFirst')?.classList.contains('erp-permission-hidden'),onboardingVisible:document.querySelector('[data-page="onboarding"]')&&!document.querySelector('[data-page="onboarding"]').classList.contains('erp-permission-hidden'),saveVisible:!document.querySelector('#btnOnboardingSave').hidden,convertVisible:!document.querySelector('#btnOnboardingConvert').hidden};window.erpOnboarding.closeModal();return value;});assert.equal(state.role,role);assert.ok(state.onboardingVisible);if(role==='admin')assert.ok(!state.formHidden&&!state.backupHidden&&!state.auditHidden&&!state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&state.convertVisible);if(role==='recruiter')assert.ok(!state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&!state.convertVisible);if(role==='viewer')assert.ok(state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&state.dailyStartHidden&&!state.saveVisible&&!state.convertVisible);
       await openSchoolWorkforceFixture(page);const workforcePermission=await page.evaluate(()=>({privacy:!!document.querySelector('#schoolWorkforceRoster .school-workforce-privacy'),rows:document.querySelectorAll('#schoolWorkforceRoster tbody tr').length,exportDisabled:document.querySelector('#btnSchoolWorkforceExport').disabled,text:document.querySelector('#schoolWorkforceRoster').innerText}));if(role==='viewer'){assert.equal(workforcePermission.privacy,true);assert.equal(workforcePermission.rows,0);assert.equal(workforcePermission.exportDisabled,true);assert.ok(!workforcePermission.text.includes('가상재직자'));}else{assert.equal(workforcePermission.privacy,false);assert.ok(workforcePermission.rows>=3);assert.equal(workforcePermission.exportDisabled,false);}await restoreSchoolWorkforceFixture(page);
     }
@@ -929,7 +989,8 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
     await page.evaluate(()=>{closeHireWaitingList(true);applicants=window.__hireAutomationFixture.applicants;hireWaitingProfiles=window.__hireAutomationFixture.hireWaitingProfiles;delete window.__hireAutomationFixture;delete window.__hireAutomationBefore;});
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
-    console.log(`ui-visual-layout.js: 8개 화면 조건(6개 뷰포트+125% 확대)·17개 화면·지원자 빠른 보기/워크시트·학교 인력분석·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
+    console.log(`지원자 일반목록 geometry: ${JSON.stringify(applicantTableGeometryMetrics)}`);
+    console.log(`ui-visual-layout.js: 8개 화면 조건(6개 뷰포트+125% 확대)·17개 화면·지원자 일반목록 3개 scroll 위치/빠른 보기 다음 액션/내 보기/워크시트·학교 인력분석·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
   }finally{
     await browser.close();server.kill();await new Promise(resolve=>bridgeServer.close(resolve));
     const resolved=fs.realpathSync(bridgeTempParent);

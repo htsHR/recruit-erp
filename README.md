@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v11.5.1**입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v11.5.2**입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -62,7 +62,7 @@ npm run check
 npm run test:ui-layout
 ```
 
-로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.5.1`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
+로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v11.5.2`에 저장됩니다. 테스트 데이터는 이름·연락처·학교가 모두 가상인 전용 자료만 사용합니다.
 
 ### GitHub CI 테스트
 
@@ -92,6 +92,17 @@ Pull Request와 `main` 변경에서는 GitHub Actions가 의존성을 설치하�
 3. GitHub 변경 요청에서 자동 검사와 Vercel 미리보기를 확인합니다.
 4. 문제가 없을 때만 `main`에 병합합니다.
 5. 운영 홈페이지의 화면 버전과 주요 기능을 확인합니다.
+
+## v11.5.2 채용담당자 UI 안정화 마감
+
+- 지원자 일반목록의 헤더와 본문을 같은 의미 기반 폭 체계로 맞추고 NO·성명·연락처만 고정해 상태/지원일과 판정/관리 겹침을 제거했습니다.
+- 워크시트 최종 확인의 중복 후보 건수와 확인 상태가 확대 화면에서도 의미 단위로 읽히도록 정리했습니다.
+- 오늘 업무의 기존 자동 요약과 KPI를 처리 목록보다 먼저 배치하되 분류·우선순위 계산은 변경하지 않았습니다.
+- 지원자 빠른 보기에 마지막 연락일, 다음 연락 예정일, D-day/기한 경과, 최근 진행 이력 1건을 읽기 전용으로 표시합니다.
+- 기존 `recruit_erp_saved_advanced_searches`를 그대로 읽는 `내 보기`를 목록 툴바에 추가했으며 불러오기는 저장값을 다시 쓰지 않습니다.
+- 신규 업무 필드·localStorage 키, Supabase/DB/RLS, 권한, ERP Bridge와 공용 저장 구조는 변경하지 않았습니다.
+
+자세한 변경 내역은 `CHANGELOG_v11.5.2.md`를 확인하세요.
 
 ## v11.5.1 운영 점검 복구·반응형 UI 마감
 

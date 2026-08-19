@@ -5,6 +5,6 @@
   root.erpAppVersion=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const VERSION='11.5.1';
+  const VERSION='11.5.2';
   return Object.freeze({VERSION,tag:`v${VERSION}`});
 });
