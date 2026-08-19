@@ -24,9 +24,10 @@ assert.ok(fs.existsSync(path.join(root,`CHANGELOG_v${version}.md`)),'현재 버�
 assert.match(workflow,/npm run check/);
 assert.match(workflow,/npm ci/);
 assert.match(workflow,/npm run test:ui-layout/);
-assert.match(workflow,/fonts-noto-cjk/);
+assert.match(workflow,/NotoSansKR%5Bwght%5D\.ttf/);
+assert.match(workflow,/curl --fail --location --retry 3 --connect-timeout 15 --max-time 120/);
 assert.match(workflow,/fc-cache -f/);
-assert.match(workflow,/fc-match "Noto Sans CJK KR"/);
+assert.match(workflow,/fc-match "Noto Sans KR"/);
 assert.match(workflow,/timeout-minutes: 10/);
 assert.match(workflow,/actions\/upload-artifact@v4/);
 assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v11\.5\.2/);

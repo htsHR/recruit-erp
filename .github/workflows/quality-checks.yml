@@ -30,10 +30,12 @@ jobs:
         run: npm ci
       - name: 한글 화면검사 글꼴 준비
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends fonts-noto-cjk fontconfig
-          fc-cache -f
-          fc-match "Noto Sans CJK KR"
+          mkdir -p "$HOME/.local/share/fonts"
+          curl --fail --location --retry 3 --connect-timeout 15 --max-time 120 \
+            --output "$HOME/.local/share/fonts/NotoSansKR.ttf" \
+            "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf"
+          fc-cache -f "$HOME/.local/share/fonts"
+          fc-match "Noto Sans KR"
       - name: 전체 자동 검사
         run: npm run check
       - name: Playwright UI 화면 검사
