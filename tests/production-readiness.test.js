@@ -5,6 +5,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 
 const root=path.resolve(__dirname,'..');
+const appVersion=require(path.join(root,'js','app-version.js'));
 const readiness=require(path.join(root,'js','production-readiness.js'));
 const encrypted=require(path.join(root,'js','encrypted-backup.js'));
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
@@ -40,7 +41,8 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
 }
 
 (async()=>{
-  assert.equal(readiness.VERSION,'11.0.0');
+  assert.equal(appVersion.VERSION,'11.5.1');
+  assert.equal(readiness.VERSION,appVersion.VERSION);
   assert.equal(readiness.STATE_KEY,'recruit_erp_production_readiness_v1100');
   assert.equal(readiness.STATE_SCHEMA_VERSION,2);
   assert.equal(readiness.MANUAL_CHECKS.length,7);
@@ -80,7 +82,7 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
 
   const passingEvidence={
     verificationSource:'cloud',operationEnvironment:'home',cloudAdminEligible:true,
-    versionReady:true,securityModuleReady:true,privacyModuleReady:true,encryptedBackupModuleReady:true,encryptionRoundTripReady:true,
+    versionReady:true,versionDetail:`v${appVersion.VERSION} 화면·브랜드·정적 파일 버전이 일치합니다.`,securityModuleReady:true,privacyModuleReady:true,encryptedBackupModuleReady:true,encryptionRoundTripReady:true,
     permissionsModuleReady:true,permissionsReady:true,auditModuleReady:true,syncModuleReady:true,syncProbeReady:true,
     storageModuleReady:true,storageProbeReady:true,savePending:0,deletePending:0,conflicts:0,storageWarning:false,
     capacityPassed:true,capacityFresh:true,capacityDurationMs:synthetic.durationMs
@@ -96,6 +98,11 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   assert.equal(readiness.buildAutomaticChecks({...passingEvidence,storageProbeReady:false}).find(item=>item.id==='storage').status,'fail');
   assert.equal(readiness.buildAutomaticChecks({...passingEvidence,encryptionRoundTripReady:false}).find(item=>item.id==='encrypted_backup').status,'fail');
 
+  const matchingVersion=readiness.evaluateVersionEvidence({title:`채용관리 시스템 v${appVersion.VERSION}`,brand:`VERSION 2.0 · v${appVersion.VERSION}`,assets:[{resource:'css/base.css',version:appVersion.VERSION},{resource:'js/core.js',version:appVersion.VERSION}]});
+  assert.equal(matchingVersion.ready,true);
+  const mismatchedVersion=readiness.evaluateVersionEvidence({title:'채용관리 시스템 v11.5.0',brand:`VERSION 2.0 · v${appVersion.VERSION}`,assets:[{resource:'css/base.css',version:'11.5.0'}]});
+  assert.equal(mismatchedVersion.ready,false);assert.match(mismatchedVersion.detail,/버전 불일치/);assert.match(mismatchedVersion.detail,/화면 제목/);assert.match(mismatchedVersion.detail,/css\/base\.css/);
+
   for(const key of ['erpSyncSafety','erpStoragePerformance','erpEncryptedBackup','erpAudit','erpPrivacySecurity','erpSecurity'])delete globalThis[key];
   const missingEvidence=await readiness.collectRuntimeEvidence(readiness.emptyState());
   assert.equal(missingEvidence.syncModuleReady,false);assert.equal(missingEvidence.storageModuleReady,false);assert.equal(missingEvidence.encryptedBackupModuleReady,false);assert.equal(missingEvidence.auditModuleReady,false);assert.equal(missingEvidence.privacyModuleReady,false);
@@ -105,11 +112,12 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   assert.equal(await readiness.runEncryptionRoundTrip(true),true,'가상 문자열 AES-GCM round-trip이 통과해야 합니다.');
 
   const completedAt='2026-08-04T11:30:00.000Z';
-  const completeState={schemaVersion:2,version:'11.0.0',updatedAt:completedAt,manual:Object.fromEntries(readiness.MANUAL_CHECKS.map(item=>[item.id,{completedAt,role:'admin',source:'cloud'}])),capacity:{...synthetic,phone:'010-1234-5678',memo:'보고서에 들어가면 안 되는 값'}};
+  const completeState={schemaVersion:2,version:appVersion.VERSION,updatedAt:completedAt,manual:Object.fromEntries(readiness.MANUAL_CHECKS.map(item=>[item.id,{completedAt,role:'admin',source:'cloud'}])),capacity:{...synthetic,phone:'010-1234-5678',memo:'보고서에 들어가면 안 되는 값'}};
   const cloudManual=readiness.manualStatus(completeState,now,cloudContext);
   assert.equal(cloudManual.ready,true);
   assert.equal(cloudManual.completed,6);assert.equal(cloudManual.total,6);assert.equal(cloudManual.knownLimitations,1);
   const leakedLimit=cloudManual.rows.find(item=>item.id==='leaked_credential_protection');assert.equal(leakedLimit.knownLimitation,true);assert.equal(leakedLimit.complete,false);assert.equal(leakedLimit.locked,true);
+  assert.equal(leakedLimit.lockMessage,'','알려진 요금제 제한 설명은 같은 항목에 중복 표시하지 않습니다.');
   const cloudSummary=readiness.summarize(automatic,cloudManual,cloudContext);
   assert.equal(cloudSummary.ready,true);assert.equal(cloudSummary.cloudVerified,true);
 
@@ -122,7 +130,7 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
 
   const cloudReport=readiness.buildPrivacySafeReport({state:completeState,automatic,context:cloudContext,manual:cloudManual,summary:cloudSummary});
   assert.equal(cloudReport.overall,'ready');assert.equal(cloudReport.verificationSource,'cloud');assert.equal(cloudReport.operationEnvironment,'home');
-  assert.equal(cloudReport.migrationVerified,true);assert.equal(cloudReport.securityAdvisorVerified,true);assert.equal(cloudReport.roleMatrixVerified,true);assert.equal(cloudReport.appVersion,'11.0.0');
+  assert.equal(cloudReport.migrationVerified,true);assert.equal(cloudReport.securityAdvisorVerified,true);assert.equal(cloudReport.roleMatrixVerified,true);assert.equal(cloudReport.appVersion,appVersion.VERSION);
   assert.equal(cloudReport.knownLimitations.length,1);assert.equal(cloudReport.knownLimitations[0].description,readiness.FREE_PLAN_LIMITATION_TEXT);
   assert.equal(cloudReport.manual.find(item=>item.id==='leaked_credential_protection').knownLimitation,true);
   const localReport=readiness.buildPrivacySafeReport({state:completeState,automatic,context:localContext,manual:localManual,summary:localSummary});
@@ -131,8 +139,9 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   const reportText=JSON.stringify(cloudReport);
   for(const forbidden of ['가상지원자홍길동','010-1234-5678','900101-1234567','residentNumber','phone','address','memo','password','ciphertext'])assert.ok(!reportText.includes(forbidden),`점검 보고서에 금지된 개인정보 필드가 포함됨: ${forbidden}`);
 
-  assert.match(index,/css\/production-readiness\.css\?v=11\.5\.0/);assert.match(index,/js\/production-readiness\.js\?v=11\.5\.0/);assert.match(permissions,/readiness\.manage/);
+  assert.match(index,/js\/app-version\.js\?v=11\.5\.1/);assert.match(index,/css\/production-readiness\.css\?v=11\.5\.1/);assert.match(index,/js\/production-readiness\.js\?v=11\.5\.1/);assert.match(permissions,/readiness\.manage/);
   assert.match(source,/CLOUD_ADMIN_MESSAGE/);assert.match(source,/runEncryptionRoundTrip/);assert.match(source,/verificationSource/);assert.doesNotMatch(source,/localStorage[^\n]*(?:name|phone|residentNumber|address|memo)/i);
+  assert.doesNotMatch(source,/v11\.0\.0 파일과 화면|화면 또는 파일 버전이 v11\.0\.0/,'v11.0.0을 현재 기대 버전으로 사용하면 안 됩니다.');
 
   for(const documentPath of ['docs/OPERATOR_GUIDE_v11.0.0.md','docs/INCIDENT_RECOVERY_v11.0.0.md','docs/RELEASE_READINESS_v11.0.0.md'])assert.ok(fs.existsSync(path.join(root,documentPath)),`${documentPath} 누락`);
   const releaseDocument=read('docs/RELEASE_READINESS_v11.0.0.md');assert.match(releaseDocument,/알려진 요금제 제한/);assert.match(releaseDocument,/Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용\.[\s\S]*해당 제한을 인지한 상태로 운영한다\./);assert.match(releaseDocument,/전자서명된 증명서/);assert.match(releaseDocument,/Rollback 제한[\s\S]*관리자 승인/);

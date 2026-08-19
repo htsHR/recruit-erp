@@ -593,11 +593,11 @@ function renderTable(){
     <div class="list-summary-main">
       <strong>${allRows.length}명</strong>
       <span>검색 결과</span>
-      <span>· 정렬 ${esc(sortName)}</span>
-      <span>· 연락 필요 ${contactCount}명</span>
-      <span>· 면접/예정 ${interviewCount}명</span>
-      ${hideFinished ? '<span>· 종료 숨김 적용</span>' : ''}
-      ${schoolFilterName ? `<span class="school-filter-inline">· 학교 ${esc(schoolFilterName)} <button type="button" data-erp-handler="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}
+      <span>정렬 ${esc(sortName)}</span>
+      <span>연락 필요 ${contactCount}명</span>
+      <span>면접/예정 ${interviewCount}명</span>
+      ${hideFinished ? '<span>종료 숨김 적용</span>' : ''}
+      ${schoolFilterName ? `<span class="school-filter-inline">학교 ${esc(schoolFilterName)} <button type="button" data-erp-handler="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}
     </div>
     <div class="list-summary-side">
       <span>${pageText}</span>

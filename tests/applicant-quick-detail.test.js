@@ -13,7 +13,7 @@ const feature=applicants.match(/const APPLICANT_QUICK_DETAIL_EMPTY=[\s\S]*?funct
 const renderer=applicants.match(/function renderApplicantQuickDetail\(\)[\s\S]*?function openApplicantQuickDetail\(/)?.[0]||'';
 
 assert.ok(feature,'지원자 빠른 보기 구현을 찾지 못했습니다.');
-assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.5\.0/);
+assert.match(index,/css\/applicant-quick-detail\.css\?v=11\.5\.1/);
 assert.match(feature,/if\(document\.getElementById\('applicantQuickDetail'\)\)return/,'빠른 보기 패널은 한 번만 만들어야 합니다.');
 assert.equal((feature.match(/shell\.id='applicantQuickDetail'/g)||[]).length,1,'빠른 보기 패널 생성 지점은 하나여야 합니다.');
 assert.match(feature,/role="dialog"/);assert.match(feature,/aria-modal="true"/);assert.match(feature,/aria-labelledby="applicantQuickDetailTitle"/);

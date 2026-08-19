@@ -61,7 +61,7 @@ function saveMessageTemplateFromEditor(){
 }
 async function copyMessageTemplate(){
   const body=String(messageTemplateEl('messageTemplateBody')?.value||'');if(!body.trim()){alert('복사할 문구가 없습니다.');return;}
-  try{await navigator.clipboard.writeText(body);if(typeof uxToast==='function')uxToast('문구를 복사했습니다. 알리고에 붙여넣으세요.');}
+  try{await navigator.clipboard.writeText(body);if(typeof uxToast==='function')uxToast('복사됨 · 알리고에서 붙여넣으세요');}
   catch{messageTemplateEl('messageTemplateBody')?.select();document.execCommand?.('copy');if(typeof uxToast==='function')uxToast('문구를 선택했습니다. Ctrl+C로 복사해주세요.','warn');}
 }
 function deleteMessageTemplate(){

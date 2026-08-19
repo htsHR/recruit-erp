@@ -19,7 +19,7 @@ const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
 const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.5.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v11.5.1');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -406,6 +406,7 @@ async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
 
   const stateBeforeReview=await page.evaluate(()=>({dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length}));
   await page.locator('#btnWorksheetSave').click();await page.locator('#applicantWorksheetReview:not([hidden])').waitFor();await page.screenshot({path:path.join(outputDir,label+'-applicant-worksheet-final-review.png'),fullPage:false});
+  assert.match(await page.locator('#applicantWorksheetReviewSummary>div').nth(3).innerText(),/중복 후보 1건 · 확인 완료/,'최종 확인의 네 번째 카드는 중복 후보 건수와 확인 상태를 함께 보여야 합니다.');
   await page.locator('#btnWorksheetReviewCancel').click();
   assert.deepEqual(await page.evaluate(()=>({dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length})),stateBeforeReview,'최종 확인 취소는 dirty와 히스토리를 유지해야 합니다.');
 
@@ -546,6 +547,37 @@ async function verifyRecruiterDailyUsability(page,label,{exerciseQuick=false}={}
     await page.evaluate(()=>{window.save=window.__v115RealSave;delete window.__v115RealSave;delete window.__v115SaveCalls;applicants=window.__v115OriginalApplicants;delete window.__v115OriginalApplicants;delete window.__v115FailureApplicants;delete window.__v115FailureStorage;resetListFiltersToAll();renderAll();});
   }else await page.evaluate(()=>{applicants=window.__v115OriginalApplicants;delete window.__v115OriginalApplicants;resetListFiltersToAll();renderAll();});
 }
+async function verifyProductionGateContentSafety(page,label){
+  await page.evaluate(()=>{
+    window.__v1151Snapshot={
+      applicants,employees,profiles:hireWaitingProfiles,save:window.save,fetch:window.fetch,
+      applicantStorage:localStorage.getItem('recruit_erp_applicants_stable'),employeeStorage:localStorage.getItem('recruit_erp_employees'),profileStorage:localStorage.getItem('recruit_erp_hire_waiting_profiles')
+    };
+    window.__v1151SaveCalls=0;window.__v1151FetchCalls=0;window.__v1151Copied='';
+    window.save=function(){window.__v1151SaveCalls++;return true;};
+    window.fetch=function(...args){window.__v1151FetchCalls++;return window.__v1151Snapshot.fetch(...args);};
+    applicants=[];employees=[];hireWaitingProfiles=[];window.setPage('onboarding');window.erpOnboarding.render();
+  });
+  const empty=page.locator('#onboarding .onboarding-empty-state');await empty.waitFor();
+  assert.ok((await empty.innerText()).includes('최종합격 처리된 지원자가 여기에 표시됩니다.'));
+  const move=empty.locator('[data-onboarding-go-applicants]');assert.equal(await move.innerText(),'지원자 목록으로 이동');await move.focus();await page.keyboard.press('Enter');
+  assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'applicants','온보딩 빈 상태 버튼은 기존 지원자 목록 경로로 이동해야 합니다.');
+  const emptySafety=await page.evaluate(snapshot=>({saveCalls:window.__v1151SaveCalls,applicantStorage:localStorage.getItem('recruit_erp_applicants_stable')===snapshot.applicantStorage,employeeStorage:localStorage.getItem('recruit_erp_employees')===snapshot.employeeStorage,profileStorage:localStorage.getItem('recruit_erp_hire_waiting_profiles')===snapshot.profileStorage}),await page.evaluate(()=>window.__v1151Snapshot));
+  assert.deepEqual(emptySafety,{saveCalls:0,applicantStorage:true,employeeStorage:true,profileStorage:true},'빈 상태 이동은 업무 저장소나 save를 호출하면 안 됩니다.');
+
+  await page.evaluate(()=>{
+    window.setPage('templates');
+    const clipboard={writeText:async value=>{window.__v1151Copied=String(value);}};
+    try{Object.defineProperty(navigator,'clipboard',{configurable:true,value:clipboard});}catch{navigator.clipboard.writeText=clipboard.writeText;}
+    document.getElementById('messageTemplateBody').value='가상 안내문 전용 문장';
+  });
+  assert.equal(await page.locator('#btnCopyMessageTemplate').innerText(),'문자 내용 복사');await page.locator('#btnCopyMessageTemplate').click();
+  await page.waitForFunction(()=>document.body.innerText.includes('복사됨 · 알리고에서 붙여넣으세요'));
+  const copySafety=await page.evaluate(snapshot=>({copied:window.__v1151Copied,saveCalls:window.__v1151SaveCalls,fetchCalls:window.__v1151FetchCalls,applicantStorage:localStorage.getItem('recruit_erp_applicants_stable')===snapshot.applicantStorage,employeeStorage:localStorage.getItem('recruit_erp_employees')===snapshot.employeeStorage,profileStorage:localStorage.getItem('recruit_erp_hire_waiting_profiles')===snapshot.profileStorage}),await page.evaluate(()=>window.__v1151Snapshot));
+  assert.deepEqual(copySafety,{copied:'가상 안내문 전용 문장',saveCalls:0,fetchCalls:0,applicantStorage:true,employeeStorage:true,profileStorage:true},'문자 복사는 clipboard 외 네트워크·Bridge·업무 저장을 호출하면 안 됩니다.');
+  await page.screenshot({path:path.join(outputDir,`${label}-template-copy.png`),fullPage:false});
+  await page.evaluate(()=>{const snapshot=window.__v1151Snapshot;applicants=snapshot.applicants;employees=snapshot.employees;hireWaitingProfiles=snapshot.profiles;window.save=snapshot.save;window.fetch=snapshot.fetch;delete window.__v1151Snapshot;delete window.__v1151SaveCalls;delete window.__v1151FetchCalls;delete window.__v1151Copied;renderAll();});
+}
 function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.test(label)?768:1366;}
 
 (async()=>{
@@ -565,7 +597,8 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v11.5.0');
+      assert.equal(await page.title(),'채용관리 시스템 v11.5.1');
+      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'11.5.1','화면은 단일 현재 버전 소스를 사용해야 합니다.');
       assert.equal(await page.locator('#homeTodayGrid').count(),0,'홈의 중복 숫자 업무 카드는 제거되어야 합니다.');
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
@@ -573,7 +606,33 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
         assert.equal(layout.active,screen,`${viewport.name} ${screen} 화면 전환 실패`);
         assert.ok(layout.body<=layout.width+1&&layout.html<=layout.width+1,`${viewport.name} ${screen} 본문 가로 넘침: ${layout.body}/${layout.html}/${layout.width}`);
       }
+      const semanticBadges=await page.evaluate(()=>document.body.innerText);
+      for(const oldBadge of ['v11.0.0 ONBOARDING','v11.0.0 ENCRYPTED','v11.0.0 STORAGE','v11.0.0 PRODUCTION','SCHOOL WORKFORCE · v11.1.0'])assert.ok(!semanticBadges.includes(oldBadge),`${viewport.name} 화면에 예전 제품형 배지가 남아 있습니다: ${oldBadge}`);
+      if(viewport.width===768){
+        await page.evaluate(()=>{window.setPage('home');window.scrollTo(0,0);});
+        const topbar=await page.evaluate(()=>{
+          const box=selector=>{const node=document.querySelector(selector),rect=node.getBoundingClientRect();return{selector,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,visible:!!node.getClientRects().length};};
+          const items=[box('#page-title'),box('#btnPrivacyShield'),box('.local-mode-badge')];
+          const overlap=(a,b)=>!(a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom);
+          return{items,width:innerWidth,overlaps:[[0,1],[0,2],[1,2]].filter(([a,b])=>overlap(items[a],items[b]))};
+        });
+        assert.ok(topbar.items.every(item=>item.visible&&item.left>=-1&&item.right<=topbar.width+1),`768 상단 제목·잠금·회사 배지가 잘렸습니다: ${JSON.stringify(topbar)}`);
+        assert.deepEqual(topbar.overlaps,[],`768 상단 제목·잠금·회사 배지가 겹쳤습니다: ${JSON.stringify(topbar)}`);
+        await page.screenshot({path:path.join(outputDir,'768x1024-topbar.png'),fullPage:false});
+      }
+      await page.evaluate(()=>window.setPage('schools'));await page.locator('#schoolSubTabs [data-schooltab="manage"]').click();await page.waitForTimeout(30);
+      const schoolKpis=await page.locator('#schoolManageKpiGrid>.school-kpi-card').evaluateAll(cards=>cards.slice(0,4).map(card=>{const rect=card.getBoundingClientRect();return{left:Math.round(rect.left),top:Math.round(rect.top),width:Math.round(rect.width)};}));
+      if(viewport.width>=1366){assert.equal(new Set(schoolKpis.map(card=>card.top)).size,1,`${viewport.name} 학교 앞 4개 KPI는 한 행이어야 합니다.`);assert.ok(Math.max(...schoolKpis.map(card=>card.width))-Math.min(...schoolKpis.map(card=>card.width))<=1,`${viewport.name} 학교 앞 4개 KPI 너비가 같아야 합니다.`);}
+      if(viewport.width===768)assert.equal(new Set(schoolKpis.map(card=>card.top)).size,2,`768 학교 앞 4개 KPI는 2×2여야 합니다: ${JSON.stringify(schoolKpis)}`);
+      if(viewport.width<=412)assert.equal(new Set(schoolKpis.map(card=>card.top)).size,4,`${viewport.name} 학교 KPI는 한 열이어야 합니다.`);
+      if(viewport.width===1366){
+        await page.evaluate(()=>window.setPage('stats'));await page.waitForTimeout(30);
+        const statsToolbar=await page.locator('#stats>.stats-filter-panel').evaluate(panel=>{const style=getComputedStyle(panel),select=panel.querySelector('select').getBoundingClientRect(),note=panel.querySelector('.stats-filter-note').getBoundingClientRect();return{background:style.backgroundColor,height:panel.getBoundingClientRect().height,selectTop:select.top,noteTop:note.top};});
+        assert.notEqual(statsToolbar.background,'rgb(10, 50, 117)','통계 근무지 도구막대는 진한 파란 배너가 아니어야 합니다.');assert.ok(statsToolbar.height<=70&&Math.abs(statsToolbar.selectTop-statsToolbar.noteTop)<=12,`통계 도구막대는 작고 설명이 선택 옆에 있어야 합니다: ${JSON.stringify(statsToolbar)}`);
+        await page.screenshot({path:path.join(outputDir,'1366x768-stats-toolbar.png'),fullPage:false});
+      }
       await verifyRecruiterDailyUsability(page,viewport.name,{exerciseQuick:viewport.width===1366});
+      if(viewport.width===1366)await verifyProductionGateContentSafety(page,viewport.name);
       if(viewport.width===390||viewport.width===1366){
         await verifyHireWaitingGrid(page,viewport.name,{mobile:viewport.width===390});
         await page.evaluate(()=>window.setPage?.('today'));await page.waitForTimeout(80);
@@ -626,6 +685,8 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
         await page.evaluate(()=>window.setPage?.('productionReadiness'));await page.waitForTimeout(120);
         const readinessState=await page.evaluate(()=>({automatic:document.querySelectorAll('#productionReadiness .readiness-check').length,manual:document.querySelectorAll('#productionReadiness [data-readiness-manual]').length,text:document.querySelector('#productionReadiness')?.innerText||'',overflow:document.querySelector('#productionReadiness').scrollWidth-document.querySelector('#productionReadiness').clientWidth}));
         assert.deepEqual({automatic:readinessState.automatic,manual:readinessState.manual},{automatic:8,manual:7});assert.ok(readinessState.overflow<=1,`${viewport.name} 운영 준비 화면 가로 넘침: ${JSON.stringify(readinessState)}`);assert.ok(!/000000-0000000|010-0000-0001/.test(readinessState.text),'운영 준비 화면에 가상 개인정보 원문도 표시하면 안 됩니다.');
+        assert.ok(readinessState.text.includes('v11.5.1 화면·브랜드·정적 파일 버전이 일치합니다.'),'운영 준비 화면이 v11.5.1 일치 결과를 보여야 합니다.');
+        assert.equal(readinessState.text.split('Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용.').length-1,1,'유출 비밀번호 요금제 제한 설명은 같은 화면에 한 번만 표시해야 합니다.');
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-production-readiness.png`),fullPage:true});
       }
       const introState=await page.evaluate(()=>({
@@ -638,6 +699,18 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
       assert.ok(introState.required.every(item=>item.safety&&item.display!=='none'),`안전 화면 안내 카드 누락: ${JSON.stringify(introState.required)}`);
       await page.evaluate(()=>window.setPage?.('applicants'));await page.waitForTimeout(30);
       await verifyApplicantQuickDetail(page,viewport.name,{exercise:viewport.width===1366});
+      if(viewport.width===390||viewport.width===412){
+        await page.evaluate(()=>{resetListFiltersToAll();renderTable();const scroller=document.querySelector('.applicant-fixed-presets');if(scroller)scroller.scrollLeft=0;});
+        const quickFilter=await page.evaluate(()=>{
+          const button=document.querySelector('#quickFilters [data-filter="all"]'),label=button.querySelector('span:first-child'),container=document.querySelector('.applicant-fixed-presets');
+          const b=button.getBoundingClientRect(),l=label.getBoundingClientRect(),c=container.getBoundingClientRect();
+          const bs=getComputedStyle(button),cs=getComputedStyle(container);
+          return{button:{left:b.left,right:b.right,width:b.width,marginLeft:bs.marginLeft,transform:bs.transform},label:{left:l.left,right:l.right,width:l.width},container:{left:c.left,right:c.right,width:c.width,scrollLeft:container.scrollLeft,scrollWidth:container.scrollWidth,justifyContent:cs.justifyContent,direction:cs.direction,transform:cs.transform},summaryStarts:[...document.querySelectorAll('#listSummary span')].map(node=>node.textContent.trim()).filter(text=>text.startsWith('·')),width:innerWidth};
+        });
+        assert.ok(quickFilter.button.left>=quickFilter.container.left-1&&quickFilter.button.right<=quickFilter.container.right+1&&quickFilter.label.width>0&&quickFilter.label.left>=quickFilter.button.left&&quickFilter.label.right<=quickFilter.button.right,`${viewport.name} 빠른필터 전체가 잘렸습니다: ${JSON.stringify(quickFilter)}`);
+        assert.deepEqual(quickFilter.summaryStarts,[],`${viewport.name} 목록 요약의 새 줄이 ·로 시작하면 안 됩니다.`);
+        await page.screenshot({path:path.join(outputDir,`${viewport.name}-applicant-filters.png`),fullPage:false});
+      }
       if(viewport.width>760){
         const columns=await page.locator('#applicants .no-head,#applicants .name-head,#applicants .workplace-head,#applicants .status-head').evaluateAll(elements=>elements.map(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,position:getComputedStyle(el).position}}));
         assert.equal(columns.length,4);assert.ok(columns.every(column=>column.position==='sticky'));for(let i=1;i<columns.length;i++)assert.ok(columns[i].left>=columns[i-1].right-1,`${viewport.name} 지원자 고정 열 겹침: ${JSON.stringify(columns)}`);
@@ -661,8 +734,14 @@ function innerWidthForLabel(label){return /^390x|^412x/.test(label)?390:/^768x/.
         const mobileHomeBounds=await page.evaluate(()=>{const action=document.querySelector('.top-actions .primary').getBoundingClientRect(),kpi=document.querySelector('#statsGrid .stat').getBoundingClientRect();return{action:{left:action.left,right:action.right,top:action.top,bottom:action.bottom},kpi:{left:kpi.left,right:kpi.right,top:kpi.top,bottom:kpi.bottom},width:innerWidth,overlaps:!(action.right<=kpi.left||action.left>=kpi.right||action.bottom<=kpi.top||action.top>=kpi.bottom)};});
         assert.ok(mobileHomeBounds.action.left>=-1&&mobileHomeBounds.action.right<=mobileHomeBounds.width+1&&!mobileHomeBounds.overlaps,`390 홈 등록 버튼이 KPI와 겹치거나 잘리면 안 됩니다: ${JSON.stringify(mobileHomeBounds)}`);
         await page.locator('#sidebarToggle').click();assert.ok(await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')));await page.waitForFunction(()=>document.querySelector('.sidebar').getBoundingClientRect().left>=-1);
-        const mobileNav=await page.evaluate(()=>{const sidebar=document.querySelector('.sidebar').getBoundingClientRect();return{heights:[...document.querySelectorAll('.nav-btn')].filter(node=>node.getClientRects().length).map(node=>node.getBoundingClientRect().height),stateAreas:document.querySelectorAll('[data-sidebar-status-area]').length,sidebar:{left:sidebar.left,right:sidebar.right,top:sidebar.top,bottom:sidebar.bottom},width:innerWidth,height:innerHeight};});
-        assert.ok(mobileNav.heights.length&&mobileNav.heights.every(height=>height>=44),'모바일 메뉴 버튼은 44px 이상이어야 합니다.');assert.equal(mobileNav.stateAreas,1);assert.ok(mobileNav.sidebar.left>=-1&&mobileNav.sidebar.right<=mobileNav.width+1&&mobileNav.sidebar.top>=-1&&mobileNav.sidebar.bottom<=mobileNav.height+1,`모바일 메뉴가 화면 안에 보여야 합니다: ${JSON.stringify(mobileNav)}`);
+        const mobileNav=await page.evaluate(()=>{const sidebar=document.querySelector('.sidebar').getBoundingClientRect(),toggle=document.querySelector('.sidebar-status-toggle'),details=document.querySelector('.sidebar-status-details');return{heights:[...document.querySelectorAll('.nav-btn')].filter(node=>node.getClientRects().length).map(node=>node.getBoundingClientRect().height),stateAreas:document.querySelectorAll('[data-sidebar-status-area]').length,toggleVisible:!!toggle?.getClientRects().length,expanded:toggle?.getAttribute('aria-expanded'),detailsVisible:!!details?.getClientRects().length,sidebar:{left:sidebar.left,right:sidebar.right,top:sidebar.top,bottom:sidebar.bottom},width:innerWidth,height:innerHeight};});
+        assert.ok(mobileNav.heights.length&&mobileNav.heights.every(height=>height>=44),'모바일 메뉴 버튼은 44px 이상이어야 합니다.');assert.equal(mobileNav.stateAreas,1);assert.deepEqual({toggleVisible:mobileNav.toggleVisible,expanded:mobileNav.expanded,detailsVisible:mobileNav.detailsVisible},{toggleVisible:true,expanded:'false',detailsVisible:false},'모바일 사이드바는 기본적으로 한 줄 상태 요약만 보여야 합니다.');assert.ok(mobileNav.sidebar.left>=-1&&mobileNav.sidebar.right<=mobileNav.width+1&&mobileNav.sidebar.top>=-1&&mobileNav.sidebar.bottom<=mobileNav.height+1,`모바일 메뉴가 화면 안에 보여야 합니다: ${JSON.stringify(mobileNav)}`);
+        await page.locator('.sidebar-status-toggle').focus();await page.keyboard.press('Enter');assert.equal(await page.locator('.sidebar-status-toggle').getAttribute('aria-expanded'),'true','상태 상세 토글은 키보드로 펼쳐져야 합니다.');
+        const systemAccessible=await page.evaluate(()=>{const nav=document.querySelector('.sidebar .nav'),button=document.querySelector('[data-page="storagePerformance"]');nav.scrollTop=nav.scrollHeight;const rect=button.getBoundingClientRect(),bounds=nav.getBoundingClientRect();return{visible:!!button.getClientRects().length,top:rect.top,bottom:rect.bottom,navTop:bounds.top,navBottom:bounds.bottom};});
+        assert.ok(systemAccessible.visible&&systemAccessible.bottom<=systemAccessible.navBottom+1&&systemAccessible.top>=systemAccessible.navTop-1,`모바일 사이드바의 시스템 하단 메뉴에 접근할 수 있어야 합니다: ${JSON.stringify(systemAccessible)}`);
+        await page.locator('.sidebar-status-toggle').focus();await page.keyboard.press('Enter');
+        const homeStorageLabel=await page.evaluate(()=>{localStorage.setItem('recruit_erp_ui_operation_environment','home');document.documentElement.dataset.operationEnvironment='home';updateStorageNote();const text=document.querySelector('[data-sidebar-status-area]').innerText;localStorage.setItem('recruit_erp_ui_operation_environment','company');document.documentElement.dataset.operationEnvironment='company';updateStorageNote();return text;});
+        assert.ok(!homeStorageLabel.includes('공용 ERP 저장소 확인 중'),'집 운영 모드에서 공용 저장소 확인 중으로 표시하면 안 됩니다.');
         await page.screenshot({path:path.join(outputDir,'390x844-mobile-menu.png'),fullPage:false});
         await page.locator('[data-page="today"]').click();assert.ok(!await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')),'모바일 메뉴가 화면 이동 뒤 닫혀야 합니다.');
         await page.evaluate(()=>window.setPage?.('permissions'));const permissionWidth=await page.locator('#permissions').evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth,widest:[...el.querySelectorAll('*')].map(node=>({name:node.className||node.tagName,scroll:node.scrollWidth,client:node.clientWidth})).sort((a,b)=>b.scroll-a.scroll).slice(0,4)}));assert.ok(permissionWidth.scroll<=permissionWidth.client+1,`390 권한 화면 넘침: ${JSON.stringify(permissionWidth)}`);

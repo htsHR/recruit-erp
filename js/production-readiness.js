@@ -2,13 +2,15 @@
  * Stores only checklist identifiers, timestamps, roles, and synthetic test totals.
  */
 (function(root,factory){
-  const api=factory(root);
+  const versionSource=typeof module==='object'&&module.exports?require('./app-version.js'):root.erpAppVersion;
+  const api=factory(root,versionSource);
   if(typeof module==='object'&&module.exports)module.exports=api;
   root.erpProductionReadiness=api;
-})(typeof window!=='undefined'?window:globalThis,function(root){
+})(typeof window!=='undefined'?window:globalThis,function(root,versionSource){
   'use strict';
 
-  const VERSION='11.0.0';
+  const VERSION=String(versionSource?.VERSION||'').trim();
+  if(!/^\d+\.\d+\.\d+$/.test(VERSION))throw new Error('Recruit ERP 현재 버전 소스를 확인할 수 없습니다.');
   const STATE_KEY='recruit_erp_production_readiness_v1100';
   const STATE_SCHEMA_VERSION=2;
   const MAX_CHECK_AGE_MS=30*24*60*60*1000;
@@ -121,7 +123,7 @@
       const locked=knownLimitation||(!!check.requiresCloudAdmin&&!context.cloudAdminEligible);
       const validCloudRecord=!check.requiresCloudAdmin||(record?.role==='admin'&&record?.source==='cloud'&&context.cloudAdminEligible);
       const complete=!knownLimitation&&!!record&&isFresh(record.completedAt,now)&&validCloudRecord;
-      const lockMessage=knownLimitation?FREE_PLAN_LIMITATION_TEXT:locked?CLOUD_ADMIN_MESSAGE:'';
+      const lockMessage=knownLimitation?'':locked?CLOUD_ADMIN_MESSAGE:'';
       return {...check,knownLimitation,locked,lockMessage,complete,completedAt:complete?record.completedAt:'',role:complete?record.role:''};
     });
     const requiredRows=rows.filter(row=>!row.knownLimitation);
@@ -163,10 +165,40 @@
     return writeState({...before,capacity:result});
   }
 
+  function evaluateVersionEvidence(evidence={},expectedVersion=VERSION){
+    const expected=String(expectedVersion||'').trim(),tag=`v${expected}`,mismatches=[];
+    const title=String(evidence.title||''),brand=String(evidence.brand||'');
+    if(!title.includes(tag))mismatches.push(`화면 제목이 ${tag}이 아닙니다.`);
+    if(!brand.includes(tag))mismatches.push(`브랜드 표기가 ${tag}이 아닙니다.`);
+    const assets=Array.isArray(evidence.assets)?evidence.assets:[];
+    for(const asset of assets){
+      const resource=String(asset?.resource||'정적 파일'),version=String(asset?.version||'');
+      if(version!==expected)mismatches.push(`${resource} 버전이 ${version||'없음'}입니다.`);
+    }
+    if(!assets.length)mismatches.push('검사할 정적 파일 버전이 없습니다.');
+    return {
+      ready:mismatches.length===0,
+      detail:mismatches.length?`버전 불일치: ${mismatches.join(' ')}`:`${tag} 화면·브랜드·정적 파일 버전이 일치합니다.`,
+      mismatches
+    };
+  }
+
+  function collectStaticVersionEvidence(doc=root.document){
+    if(!doc)return {title:'',brand:'',assets:[]};
+    const assets=[...doc.querySelectorAll('script[src],link[rel="stylesheet"][href]')].flatMap(node=>{
+      const resource=node.getAttribute('src')||node.getAttribute('href')||'';
+      if(!resource||/^(?:https?:)?\/\//i.test(resource))return [];
+      let version='';
+      try{version=new URL(resource,'http://127.0.0.1/').searchParams.get('v')||'';}catch{}
+      return [{resource:resource.split('?')[0],version}];
+    });
+    return {title:doc.title||'',brand:doc.querySelector('.brand-copy p')?.textContent||'',assets};
+  }
+
   function buildAutomaticChecks(evidence={}){
     const queues=Number(evidence.savePending||0)+Number(evidence.deletePending||0)+Number(evidence.conflicts||0);
     return [
-      {id:'version',testType:'기능 시험',label:'화면·파일 버전',status:evidence.versionReady?'pass':'fail',detail:evidence.versionReady?'v11.0.0 파일과 화면 표기가 일치합니다.':'화면 또는 파일 버전이 v11.0.0과 다릅니다.'},
+      {id:'version',testType:'기능 시험',label:'화면·파일 버전',status:evidence.versionReady?'pass':'fail',detail:evidence.versionDetail||`${VERSION} 버전 일치 여부를 확인할 수 없습니다.`},
       {id:'security',testType:'모듈 확인',label:'입력·화면 보안',status:evidence.securityModuleReady&&evidence.privacyModuleReady?'pass':'fail',detail:evidence.securityModuleReady&&evidence.privacyModuleReady?'안전 트리·ID·화면 잠금 모듈이 모두 있습니다.':'erpPrivacySecurity 또는 필수 입력 보안 모듈이 없습니다.'},
       {id:'encrypted_backup',testType:'기능 시험',label:'암호화 백업',status:evidence.encryptedBackupModuleReady&&evidence.encryptionRoundTripReady?'pass':'fail',detail:evidence.encryptedBackupModuleReady&&evidence.encryptionRoundTripReady?'가상 문자열 AES-GCM 암호화·복호화 round-trip을 통과했습니다.':evidence.encryptedBackupModuleReady?'AES-GCM 실제 기능 시험에 실패했습니다.':'erpEncryptedBackup 모듈이 없습니다.'},
       {id:'permissions',testType:'기능 시험',label:'화면 권한 엔진',status:evidence.permissionsModuleReady&&evidence.permissionsReady?'pass':'fail',detail:evidence.permissionsModuleReady&&evidence.permissionsReady?'Supabase cloud admin 계정과 화면 보호를 확인했습니다.':evidence.permissionsModuleReady?'현재 계정은 cloud admin 운영 조건을 충족하지 않습니다.':'erpPermissions 모듈이 없습니다.'},
@@ -220,11 +252,10 @@
     const auditModuleReady=typeof root.erpAudit?.recordEvent==='function'&&typeof root.erpAudit?.scrubText==='function';
     const securityModuleReady=typeof root.erpSecurity?.assertSafeTree==='function'&&typeof root.erpSecurity?.validateRowIds==='function';
     const capacity=state.capacity;
-    const title=root.document?.title||'';
-    const brand=root.document?.querySelector('.brand-copy p')?.textContent||'';
+    const versionResult=evaluateVersionEvidence(collectStaticVersionEvidence());
     return {
       ...context,
-      versionReady:title.includes(`v${VERSION}`)&&brand.includes(`v${VERSION}`),
+      versionReady:versionResult.ready,versionDetail:versionResult.detail,
       securityModuleReady,privacyModuleReady,encryptedBackupModuleReady,encryptionRoundTripReady,
       permissionsReady:context.cloudAdminEligible,auditModuleReady,syncModuleReady,syncProbeReady,
       storageModuleReady,storageProbeReady,savePending,deletePending,conflicts,storageWarning,
@@ -278,7 +309,7 @@
     const overallClass=summary.ready?'is-ready':'is-not-ready';
     const overallTitle=summary.ready?'운영 준비 완료':'아직 운영 확인이 필요합니다';
     const sourceLabel=evidence.verificationSource==='cloud'?'클라우드 검증':'로컬 참고용';
-    host.innerHTML=`<section class="readiness-overall ${overallClass}"><div><p class="eyebrow">PRODUCTION GATE · ${sourceLabel}</p><h3>${overallTitle}</h3><p>자동 통과 ${summary.automaticPassed}/${summary.automaticTotal} · 운영 확인 ${summary.manualCompleted}/${summary.manualTotal} · 환경 ${escapeHtml(evidence.operationEnvironment)}</p></div><span>${summary.ready?'READY':'CHECK'}</span></section><div class="readiness-actions"><button class="ghost" id="btnReadinessRefresh" type="button">다시 확인</button><button class="ghost" id="btnReadinessCapacity" type="button">가상 6,500건 검사</button><button class="primary" id="btnReadinessExport" type="button">점검 결과 저장</button></div><section class="panel readiness-section"><div class="panel-head"><div><h3>자동 안전 점검</h3><small>모듈 존재 확인과 가상 자료를 사용한 실제 기능 시험을 구분합니다. 개인정보 원문은 읽거나 표시하지 않습니다.</small></div></div><div class="readiness-check-grid">${automatic.map(check=>`<article class="readiness-check is-${check.status}"><div class="readiness-check-badges"><span>${statusLabel(check.status)}</span><em>${escapeHtml(check.testType)}</em></div><strong>${escapeHtml(check.label)}</strong><p>${escapeHtml(check.detail)}</p></article>`).join('')}</div></section><section class="panel readiness-section"><div class="panel-head"><div><h3>운영자 확인</h3><small>필수 확인은 30일 동안 유효합니다. 알려진 요금제 제한은 READY 차단 항목에서 제외합니다.</small></div></div><div class="readiness-manual-list">${manual.rows.map(row=>`<label class="readiness-manual ${row.complete?'is-complete':''} ${row.locked?'is-locked':''} ${row.knownLimitation?'is-known-limitation':''}"><input type="checkbox" data-readiness-manual="${row.id}" ${row.complete?'checked':''} ${row.locked?'disabled':''}><span><strong>${escapeHtml(row.label)}</strong><small>${escapeHtml(row.description)}</small>${row.locked?`<em class="readiness-lock-message">${escapeHtml(row.lockMessage)}</em>`:row.complete?`<em>${escapeHtml(formatTime(row.completedAt))} · ${escapeHtml(row.role)}</em>`:''}</span></label>`).join('')}</div></section><section class="panel readiness-docs"><div><h3>운영 문서</h3><p>업무 시작·종료부터 장애 복구와 릴리스 판정까지 순서대로 확인할 수 있습니다.</p></div><div><a class="ghost button-link" href="docs/OPERATOR_GUIDE_v11.0.0.md" target="_blank" rel="noopener">운영자 설명서</a><a class="ghost button-link" href="docs/INCIDENT_RECOVERY_v11.0.0.md" target="_blank" rel="noopener">장애 복구 절차</a><a class="ghost button-link" href="docs/RELEASE_READINESS_v11.0.0.md" target="_blank" rel="noopener">릴리스 점검표</a></div></section><p class="readiness-limit">브라우저 자동 점검은 실제 Supabase 계정별 RLS, 외부 백업 보관, 다른 PC의 삭제 동기화를 대신하지 않습니다. 점검 JSON은 사용자가 수정 가능한 참고 자료이며 전자서명된 증명서가 아닙니다.</p>`;
+    host.innerHTML=`<section class="readiness-overall ${overallClass}"><div><p class="eyebrow">PRODUCTION GATE · ${sourceLabel}</p><h3>${overallTitle}</h3><p>자동 통과 ${summary.automaticPassed}/${summary.automaticTotal} · 운영 확인 ${summary.manualCompleted}/${summary.manualTotal} · 환경 ${escapeHtml(evidence.operationEnvironment)}</p></div><span>${summary.ready?'READY':'CHECK'}</span></section><div class="readiness-actions"><button class="ghost" id="btnReadinessRefresh" type="button">다시 확인</button><button class="ghost" id="btnReadinessCapacity" type="button">가상 6,500건 검사</button><button class="primary" id="btnReadinessExport" type="button">점검 결과 저장</button></div><section class="panel readiness-section"><div class="panel-head"><div><h3>자동 안전 점검</h3><small>모듈 존재 확인과 가상 자료를 사용한 실제 기능 시험을 구분합니다. 개인정보 원문은 읽거나 표시하지 않습니다.</small></div></div><div class="readiness-check-grid">${automatic.map(check=>`<article class="readiness-check is-${check.status}"><div class="readiness-check-badges"><span>${statusLabel(check.status)}</span><em>${escapeHtml(check.testType)}</em></div><strong>${escapeHtml(check.label)}</strong><p>${escapeHtml(check.detail)}</p></article>`).join('')}</div></section><section class="panel readiness-section"><div class="panel-head"><div><h3>운영자 확인</h3><small>필수 확인은 30일 동안 유효합니다. 알려진 요금제 제한은 READY 차단 항목에서 제외합니다.</small></div></div><div class="readiness-manual-list">${manual.rows.map(row=>`<label class="readiness-manual ${row.complete?'is-complete':''} ${row.locked?'is-locked':''} ${row.knownLimitation?'is-known-limitation':''}"><input type="checkbox" data-readiness-manual="${row.id}" ${row.complete?'checked':''} ${row.locked?'disabled':''}><span><strong>${escapeHtml(row.label)}</strong><small>${escapeHtml(row.description)}</small>${row.locked&&row.lockMessage?`<em class="readiness-lock-message">${escapeHtml(row.lockMessage)}</em>`:row.complete?`<em>${escapeHtml(formatTime(row.completedAt))} · ${escapeHtml(row.role)}</em>`:''}</span></label>`).join('')}</div></section><section class="panel readiness-docs"><div><h3>운영 문서</h3><p>업무 시작·종료부터 장애 복구와 릴리스 판정까지 순서대로 확인할 수 있습니다.</p></div><div><a class="ghost button-link" href="docs/OPERATOR_GUIDE_v11.0.0.md" target="_blank" rel="noopener">운영자 설명서</a><a class="ghost button-link" href="docs/INCIDENT_RECOVERY_v11.0.0.md" target="_blank" rel="noopener">장애 복구 절차</a><a class="ghost button-link" href="docs/RELEASE_READINESS_v11.0.0.md" target="_blank" rel="noopener">릴리스 점검표</a></div></section><p class="readiness-limit">브라우저 자동 점검은 실제 Supabase 계정별 RLS, 외부 백업 보관, 다른 PC의 삭제 동기화를 대신하지 않습니다. 점검 JSON은 사용자가 수정 가능한 참고 자료이며 전자서명된 증명서가 아닙니다.</p>`;
     host.querySelector('#btnReadinessRefresh')?.addEventListener('click',()=>render());
     host.querySelector('#btnReadinessCapacity')?.addEventListener('click',event=>{
       const button=event.currentTarget;button.disabled=true;button.textContent='가상 자료 검사 중…';
@@ -300,7 +331,7 @@
     }
     const main=root.document.querySelector('main.main');
     if(main&&!root.document.getElementById('productionReadiness')){
-      const section=root.document.createElement('section');section.className='page production-readiness-page';section.id='productionReadiness';section.dataset.requiredPermission='readiness.manage';section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>실제 운영 준비 점검</h3><p>자동 안전장치와 사람이 직접 확인해야 하는 운영 훈련을 한 화면에서 구분합니다.</p></div><span class="page-intro-badge">v11.0.0 PRODUCTION</span></div><div id="productionReadinessBody"></div>';main.appendChild(section);
+      const section=root.document.createElement('section');section.className='page production-readiness-page';section.id='productionReadiness';section.dataset.requiredPermission='readiness.manage';section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>실제 운영 준비 점검</h3><p>자동 안전장치와 사람이 직접 확인해야 하는 운영 훈련을 한 화면에서 구분합니다.</p></div><span class="page-intro-badge">운영 준비</span></div><div id="productionReadinessBody"></div>';main.appendChild(section);
     }
   }
   function init(){
@@ -323,7 +354,7 @@
     root.setTimeout?.(()=>render(),0);
   }
 
-  const api={VERSION,STATE_KEY,STATE_SCHEMA_VERSION,MAX_CHECK_AGE_MS,OPERATION_ENV_KEY,CLOUD_ADMIN_MESSAGE,FREE_PLAN_LIMITATION_TEXT,KNOWN_LIMITATIONS,CLOUD_ADMIN_CHECKS,MANUAL_CHECKS,emptyState,isFresh,sanitizeState,readState,operationEnvironment,runtimeContext,requireReadinessPermission,setManual,clearState,manualStatus,runSyntheticCapacityCheck,saveCapacityResult,buildAutomaticChecks,summarize,runEncryptionRoundTrip,collectRuntimeEvidence,buildPrivacySafeReport,downloadReport,render,ensureUi,init};
+  const api={VERSION,STATE_KEY,STATE_SCHEMA_VERSION,MAX_CHECK_AGE_MS,OPERATION_ENV_KEY,CLOUD_ADMIN_MESSAGE,FREE_PLAN_LIMITATION_TEXT,KNOWN_LIMITATIONS,CLOUD_ADMIN_CHECKS,MANUAL_CHECKS,emptyState,isFresh,sanitizeState,readState,operationEnvironment,runtimeContext,requireReadinessPermission,setManual,clearState,manualStatus,runSyntheticCapacityCheck,saveCapacityResult,evaluateVersionEvidence,collectStaticVersionEvidence,buildAutomaticChecks,summarize,runEncryptionRoundTrip,collectRuntimeEvidence,buildPrivacySafeReport,downloadReport,render,ensureUi,init};
   if(root.document)init();
   return api;
 });

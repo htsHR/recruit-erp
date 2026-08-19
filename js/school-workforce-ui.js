@@ -28,7 +28,7 @@
     if(byId('schoolWorkforceModal'))return;
     const modal=root.document.createElement('div');modal.className='modal school-workforce-modal';modal.id='schoolWorkforceModal';modal.setAttribute('aria-hidden','true');
     modal.innerHTML=`<div class="modal-backdrop" id="schoolWorkforceBackdrop"></div><div class="modal-card school-workforce-card" role="dialog" aria-modal="true" aria-labelledby="schoolWorkforceTitle">
-      <div class="modal-head school-workforce-head"><div><p class="eyebrow">SCHOOL WORKFORCE · v11.1.0</p><h3 id="schoolWorkforceTitle">학교별 인력분석</h3><p>실제 입사자와 아직 사원으로 전환되지 않은 입사예정자를 분리해 집계합니다.</p></div><div class="school-workforce-head-actions"><button class="primary" id="btnSchoolWorkforceExport" type="button">현재 결과 XLSX</button><button class="ghost" id="btnCloseSchoolWorkforce" type="button">닫기</button></div></div>
+      <div class="modal-head school-workforce-head"><div><p class="eyebrow">학교 인력관리</p><h3 id="schoolWorkforceTitle">학교별 인력분석</h3><p>실제 입사자와 아직 사원으로 전환되지 않은 입사예정자를 분리해 집계합니다.</p></div><div class="school-workforce-head-actions"><button class="primary" id="btnSchoolWorkforceExport" type="button">현재 결과 XLSX</button><button class="ghost" id="btnCloseSchoolWorkforce" type="button">닫기</button></div></div>
       <div class="school-workforce-body">
         <section class="school-workforce-filter-card"><div class="school-workforce-filter-main">
           <label>학교<select id="schoolWorkforceSchool"></select></label><label>검색<input id="schoolWorkforceSearch" type="search" placeholder="사번·성명·조직·전공"/></label>

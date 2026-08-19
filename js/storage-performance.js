@@ -302,7 +302,9 @@
   function formatTime(value){if(!value)return '아직 없음';const date=new Date(value);return Number.isNaN(date.getTime())?'확인 불가':date.toLocaleString('ko-KR');}
   function loadSharedStorageScript(){
     if(!root.document||root.erpSharedStorage||root.document.querySelector('script[data-erp-shared-storage]'))return;
-    const script=root.document.createElement('script');script.src='js/shared-storage.js?v=11.5.0';script.dataset.erpSharedStorage='true';script.addEventListener('load',()=>render());root.document.head.appendChild(script);
+    const appVersion=String(root.erpAppVersion?.VERSION||'').trim();
+    if(!/^\d+\.\d+\.\d+$/.test(appVersion))return;
+    const script=root.document.createElement('script');script.src=`js/shared-storage.js?v=${encodeURIComponent(appVersion)}`;script.dataset.erpSharedStorage='true';script.addEventListener('load',()=>render());root.document.head.appendChild(script);
   }
   function sharedStoragePanelHtml(){
     const shared=root.erpSharedStorage;const status=shared?.publicState?.()||{phase:'connecting',datasetCounts:{}};
@@ -352,7 +354,7 @@
     }
     const main=root.document.querySelector('main.main');
     if(main&&!root.document.getElementById('storagePerformance')){
-      const section=root.document.createElement('section');section.className='page storage-performance-page';section.id='storagePerformance';section.dataset.requiredPermission='storage.manage';section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>저장소·속도 관리</h3><p>대용량 데이터의 안전 복사 상태와 브라우저 저장공간을 개인정보 노출 없이 확인합니다.</p></div><span class="page-intro-badge">v11.0.0 STORAGE</span></div><div id="storagePerformanceBody"></div>';main.appendChild(section);
+      const section=root.document.createElement('section');section.className='page storage-performance-page';section.id='storagePerformance';section.dataset.requiredPermission='storage.manage';section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>저장소·속도 관리</h3><p>대용량 데이터의 안전 복사 상태와 브라우저 저장공간을 개인정보 노출 없이 확인합니다.</p></div><span class="page-intro-badge">저장소 상태</span></div><div id="storagePerformanceBody"></div>';main.appendChild(section);
     }
   }
   function scheduleMirror(event){

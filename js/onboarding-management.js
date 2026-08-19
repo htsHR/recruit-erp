@@ -149,7 +149,7 @@
     const main=root.document.querySelector('main.main');
     if(main&&!root.document.getElementById('onboarding')){
       const section=root.document.createElement('section');section.className='page onboarding-page';section.id='onboarding';
-      section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>입사·온보딩 관리</h3><p>최종합격부터 서류·사번·부서·교육·출근과 사원명부 전환까지 한 번씩 확인합니다.</p></div><span class="page-intro-badge">v11.0.0 ONBOARDING</span></div><div id="onboardingBody"></div>';
+      section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>입사·온보딩 관리</h3><p>최종합격부터 서류·사번·부서·교육·출근과 사원명부 전환까지 한 번씩 확인합니다.</p></div><span class="page-intro-badge">입사·온보딩 관리</span></div><div id="onboardingBody"></div>';
       main.appendChild(section);
     }
     if(!root.document.getElementById('onboardingModal')){
@@ -174,10 +174,13 @@
   function render(){
     const host=root.document?.getElementById('onboardingBody');if(!host)return;
     const allRows=buildRows(currentApplicants(),currentProfiles(),currentEmployees()),counts=summary(allRows),rows=visibleRows();
-    host.innerHTML=`<div class="onboarding-summary"><article><span>입사대기</span><strong>${counts.total}</strong></article><article><span>서류 미완료</span><strong>${counts.missingDocs}</strong></article><article><span>사번 미발급</span><strong>${counts.missingNo}</strong></article><article><span>출근 확인 필요</span><strong>${counts.attendance}</strong></article><article><span>전환 완료</span><strong>${counts.complete}</strong></article></div><div class="onboarding-controls"><div class="quick-filters"><button class="chip ${filter==='active'?'active':''}" type="button" data-onboarding-filter="active">진행 중</button><button class="chip ${filter==='complete'?'active':''}" type="button" data-onboarding-filter="complete">전환 완료</button><button class="chip ${filter==='cancelled'?'active':''}" type="button" data-onboarding-filter="cancelled">입사 취소</button><button class="chip ${filter==='all'?'active':''}" type="button" data-onboarding-filter="all">전체</button></div><input id="onboardingSearch" class="search" placeholder="이름·근무지·사번·부서 검색" value="${escapeHtml(search)}"></div><div class="onboarding-list">${rows.length?rows.map(row=>rowHtml(row)).join(''):'<div class="empty">현재 조건에 해당하는 입사·온보딩 대상이 없습니다.</div>'}</div>`;
+    const emptyText=allRows.length?'현재 조건에 맞는 대상이 없습니다. 필터를 바꾸거나 지원자 목록을 확인하세요.':'최종합격 처리된 지원자가 여기에 표시됩니다.';
+    const emptyState=`<div class="empty onboarding-empty-state"><strong>${emptyText}</strong><button class="ghost" type="button" data-onboarding-go-applicants>지원자 목록으로 이동</button></div>`;
+    host.innerHTML=`<div class="onboarding-summary"><article><span>입사대기</span><strong>${counts.total}</strong></article><article><span>서류 미완료</span><strong>${counts.missingDocs}</strong></article><article><span>사번 미발급</span><strong>${counts.missingNo}</strong></article><article><span>출근 확인 필요</span><strong>${counts.attendance}</strong></article><article><span>전환 완료</span><strong>${counts.complete}</strong></article></div><div class="onboarding-controls"><div class="quick-filters"><button class="chip ${filter==='active'?'active':''}" type="button" data-onboarding-filter="active">진행 중</button><button class="chip ${filter==='complete'?'active':''}" type="button" data-onboarding-filter="complete">전환 완료</button><button class="chip ${filter==='cancelled'?'active':''}" type="button" data-onboarding-filter="cancelled">입사 취소</button><button class="chip ${filter==='all'?'active':''}" type="button" data-onboarding-filter="all">전체</button></div><input id="onboardingSearch" class="search" placeholder="이름·근무지·사번·부서 검색" value="${escapeHtml(search)}"></div><div class="onboarding-list">${rows.length?rows.map(row=>rowHtml(row)).join(''):emptyState}</div>`;
     host.querySelectorAll('[data-onboarding-filter]').forEach(button=>button.addEventListener('click',()=>{filter=button.dataset.onboardingFilter;render();}));
     host.querySelector('#onboardingSearch')?.addEventListener('input',event=>{search=event.target.value;render();});
     host.querySelectorAll('[data-onboarding-open]').forEach(button=>button.addEventListener('click',()=>openModal(button.dataset.onboardingOpen)));
+    host.querySelector('[data-onboarding-go-applicants]')?.addEventListener('click',()=>root.setPage?.('applicants'));
     root.erpPermissions?.applyUi?.();
   }
   function rowHtml(row){
