@@ -1,0 +1,111 @@
+/* Recruit ERP v11.5.2 — recruiter UI stability polish */
+
+/* 지원자 일반목록: 열 의미 클래스와 colgroup을 하나의 폭 체계로 사용한다. */
+@media (min-width:761px){
+  #applicants.applicant-list-clarity .table-wrap{overflow:auto!important;}
+  #applicants.applicant-list-clarity .applicant-table{
+    width:1365px!important;
+    min-width:1365px!important;
+    max-width:1365px!important;
+    table-layout:fixed!important;
+  }
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-no,
+  #applicants.applicant-list-clarity .applicant-table :is(.no-head,.no-cell){width:52px!important;min-width:52px!important;max-width:52px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-name,
+  #applicants.applicant-list-clarity .applicant-table :is(.name-head,.applicant-name-cell){width:178px!important;min-width:178px!important;max-width:178px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-phone,
+  #applicants.applicant-list-clarity .applicant-table :is(.phone-head,.phone-cell){width:136px!important;min-width:136px!important;max-width:136px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-workplace,
+  #applicants.applicant-list-clarity .applicant-table :is(.workplace-head,.workplace-cell){width:90px!important;min-width:90px!important;max-width:90px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-status,
+  #applicants.applicant-list-clarity .applicant-table :is(.status-head,.status-cell){width:128px!important;min-width:128px!important;max-width:128px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-apply-date,
+  #applicants.applicant-list-clarity .applicant-table :is(.apply-date-head,.apply-date-cell){width:112px!important;min-width:112px!important;max-width:112px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-schedule,
+  #applicants.applicant-list-clarity .applicant-table :is(.schedule-head,.schedule-cell){width:150px!important;min-width:150px!important;max-width:150px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-hire-date,
+  #applicants.applicant-list-clarity .applicant-table :is(.hire-date-head,.hire-date-cell){width:112px!important;min-width:112px!important;max-width:112px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-commute,
+  #applicants.applicant-list-clarity .applicant-table :is(.commute-head,.commute-cell){width:105px!important;min-width:105px!important;max-width:105px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-decision,
+  #applicants.applicant-list-clarity .applicant-table :is(.decision-head,.decision-cell){width:128px!important;min-width:128px!important;max-width:128px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-actions,
+  #applicants.applicant-list-clarity .applicant-table :is(.actions-head,.applicant-actions){width:174px!important;min-width:174px!important;max-width:174px!important;}
+  #applicants.applicant-list-clarity .applicant-table :is(th,td){box-sizing:border-box!important;}
+  #applicants.applicant-list-clarity .applicant-table tbody td:is(.no-cell,.applicant-name-cell,.phone-cell,.workplace-cell,.status-cell,.apply-date-cell,.schedule-cell,.hire-date-cell,.commute-cell,.decision-cell,.applicant-actions){display:table-cell!important;}
+  #applicants.applicant-list-clarity .applicant-table :is(.workplace-head,.status-head,.actions-head){left:auto!important;right:auto!important;box-shadow:none!important;}
+  #applicants.applicant-list-clarity .applicant-table tbody :is(.workplace-cell,.status-cell,.applicant-actions){position:relative!important;left:auto!important;right:auto!important;z-index:auto!important;box-shadow:none!important;}
+  #applicants.applicant-list-clarity .applicant-table :is(.no-head,.no-cell){position:sticky!important;left:0!important;}
+  #applicants.applicant-list-clarity .applicant-table :is(.name-head,.applicant-name-cell){position:sticky!important;left:52px!important;}
+  #applicants.applicant-list-clarity .applicant-table :is(.phone-head,.phone-cell){position:sticky!important;left:230px!important;box-shadow:3px 0 0 rgba(221,227,234,.82)!important;}
+  #applicants.applicant-list-clarity .applicant-table :is(.no-head,.name-head,.phone-head){z-index:13!important;background:#f7f8fa!important;}
+  #applicants.applicant-list-clarity .applicant-table tbody :is(.no-cell,.applicant-name-cell,.phone-cell){z-index:7!important;background:#fff!important;}
+  #applicants.applicant-list-clarity .applicant-table tbody tr:nth-child(even) :is(.no-cell,.applicant-name-cell,.phone-cell){background:#fbfcfd!important;}
+  #applicants.applicant-list-clarity .applicant-table tbody tr:hover :is(.no-cell,.applicant-name-cell,.phone-cell){background:#f5f8fb!important;}
+  #applicants.applicant-list-clarity .applicant-table tbody tr.is-finished :is(.no-cell,.applicant-name-cell,.phone-cell){background:#fafbfc!important;}
+  #applicants.applicant-list-clarity .applicant-table tbody tr.is-finished:nth-child(even) :is(.no-cell,.applicant-name-cell,.phone-cell){background:#f8f9fa!important;}
+  #applicants.applicant-list-clarity .applicant-table .status-inline{width:104px!important;min-width:104px!important;max-width:104px!important;box-sizing:border-box!important;}
+}
+
+@media (max-width:1700px) and (min-width:761px){
+  #applicants.applicant-list-clarity .applicant-table col:is(.applicant-col-email,.applicant-col-region){visibility:collapse!important;width:0!important;}
+  #applicants.applicant-list-clarity .applicant-table :is(.email-head,.email-cell,.region-head,.region-cell){display:table-cell!important;visibility:collapse!important;width:0!important;min-width:0!important;max-width:0!important;padding:0!important;}
+}
+
+@media (min-width:1701px){
+  #applicants.applicant-list-clarity .applicant-table{width:1637px!important;min-width:1637px!important;max-width:1637px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-email{display:table-column!important;visibility:visible!important;width:176px!important;}
+  #applicants.applicant-list-clarity .applicant-table :is(.email-head,.email-cell){display:table-cell!important;visibility:visible!important;width:176px!important;min-width:176px!important;max-width:176px!important;}
+  #applicants.applicant-list-clarity .applicant-table col.applicant-col-region{display:table-column!important;visibility:visible!important;width:96px!important;}
+  #applicants.applicant-list-clarity .applicant-table :is(.region-head,.region-cell){display:table-cell!important;visibility:visible!important;width:96px!important;min-width:96px!important;max-width:96px!important;}
+}
+
+/* 기존 상세검색 저장값을 쓰지 않고 읽기만 하는 목록 툴바 내 보기. */
+#applicants .applicant-my-views{display:flex;align-items:center;gap:6px;flex:0 1 250px;min-width:240px;white-space:nowrap;}
+#applicants .applicant-my-views-label{font-size:11px;font-weight:800;color:#475569;}
+#applicants .applicant-my-views select{flex:1 1 120px;width:auto;min-width:0;height:36px;min-height:36px;padding:6px 28px 6px 9px;border-radius:8px;font-size:12px;}
+#applicants .applicant-my-views button{height:36px!important;min-height:36px!important;min-width:66px!important;padding:6px 9px!important;}
+#applicants .applicant-my-views-empty{display:inline-flex;align-items:center;min-height:34px;padding:0 9px;border:1px dashed #cbd5e1;border-radius:8px;color:#64748b;font-size:11px;font-weight:700;}
+#applicants .applicant-list-tool-row,#applicants.ui-system-v20 .applicant-list-tool-row{display:flex!important;align-items:center!important;flex-wrap:nowrap!important;}
+#applicants .applicant-list-tool-row .search{flex:1 1 230px!important;min-width:180px!important;}
+#applicants .applicant-list-tool-row .sort-select{flex:0 0 140px!important;min-width:130px!important;}
+#applicants .applicant-list-button-row{margin-left:auto!important;}
+
+/* 오늘 업무는 공통 선택기의 요약과 KPI를 처리 목록보다 먼저 보여준다. */
+#today .daily-automation-summary{order:1!important;}
+#today .daily-workflow-metrics{order:2!important;}
+#today .daily-workflow-panel{order:3!important;}
+#today .daily-workflow-secondary{order:4!important;}
+
+/* 워크시트 최종 확인의 중복 상태를 의미 단위로 유지한다. */
+.applicant-worksheet-review-grid .worksheet-review-duplicate-card>strong{display:flex!important;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;word-break:keep-all;overflow-wrap:normal;font-size:14px;line-height:1.3;}
+.applicant-worksheet-review-grid .worksheet-review-duplicate-card>strong>span{white-space:nowrap;}
+
+/* 빠른 보기 상단의 읽기 전용 다음 액션. */
+.applicant-quick-detail-next-action{border-color:#bfdbfe;background:#f8fbff;}
+.applicant-quick-detail-action-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+.applicant-quick-detail-action-grid>div,.applicant-quick-detail-latest-history{padding:10px;border:1px solid #dbe5f2;border-radius:10px;background:#fff;min-width:0;}
+.applicant-quick-detail-action-grid span,.applicant-quick-detail-latest-history>span{display:block;margin-bottom:4px;color:#64748b;font-size:10px;font-weight:800;}
+.applicant-quick-detail-action-grid strong,.applicant-quick-detail-latest-history strong{display:block;color:#1e293b;font-size:12px;line-height:1.4;word-break:keep-all;}
+.applicant-quick-detail-action-grid .is-empty strong,.applicant-quick-detail-action-grid strong.is-empty{color:#64748b;}
+.applicant-quick-detail-action-grid .is-overdue{border-color:#fecaca;background:#fff7f7;}
+.applicant-quick-detail-action-grid .is-overdue strong{color:#b91c1c;}
+.applicant-quick-detail-action-grid .is-today{border-color:#fed7aa;background:#fffaf2;}
+.applicant-quick-detail-latest-history{margin-top:8px;}
+.applicant-quick-detail-latest-history p{margin:4px 0 0;color:#475569;font-size:11px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere;}
+
+@media (max-width:1100px) and (min-width:761px){
+  #applicants .applicant-list-tool-row,#applicants.ui-system-v20 .applicant-list-tool-row{flex-wrap:wrap!important;}
+  #applicants .applicant-list-tool-row .search{flex-basis:calc(100% - 150px)!important;}
+  #applicants .applicant-my-views,#applicants.ui-system-v20 .applicant-my-views{order:4!important;flex:1 1 100%!important;width:100%!important;min-width:0;}
+  #applicants .applicant-list-button-row{order:5;margin-left:0!important;}
+}
+
+@media (max-width:760px){
+  #applicants .applicant-list-tool-row,#applicants.ui-system-v20 .applicant-list-tool-row{display:grid!important;grid-template-columns:1fr 1fr!important;}
+  #applicants .applicant-list-tool-row .search,#applicants .applicant-list-tool-row .check-inline,#applicants .applicant-my-views,#applicants .applicant-list-button-row{grid-column:1/-1!important;}
+  #applicants .applicant-my-views{display:grid;grid-template-columns:auto minmax(0,1fr) auto;width:100%;}
+  #applicants .applicant-my-views select{width:100%;}
+  #applicants .applicant-list-button-row{margin-left:0!important;}
+  .applicant-quick-detail-action-grid{grid-template-columns:1fr;}
+}

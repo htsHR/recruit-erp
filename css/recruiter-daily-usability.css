@@ -1,19 +1,19 @@
 /* Recruit ERP v11.5.0 — recruiter daily workflow usability */
 
-/* 오늘 업무: 실제 실행 목록을 숫자 요약보다 먼저 보여준다. */
+/* 오늘 업무: 공통 선택기의 요약과 KPI를 실제 실행 목록보다 먼저 보여준다. */
 #today.active{display:flex;flex-direction:column;gap:12px}
 #today .daily-workflow-intro{order:0;margin-bottom:0}
-#today .daily-workflow-panel{order:1;margin:0}
-#today .daily-automation-summary{order:2;margin:0;display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+#today .daily-automation-summary{order:1;margin:0;display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
 #today .daily-automation-summary>div{flex:1 0 160px;min-height:62px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}
 #today .daily-automation-summary strong{font-size:20px}
 #today .daily-automation-summary small{grid-column:1/-1}
-#today .daily-workflow-metrics{order:3;margin:0;display:flex;gap:6px;overflow-x:auto;padding:1px 0 3px}
+#today .daily-workflow-metrics{order:2;margin:0;display:flex;gap:6px;overflow-x:auto;padding:1px 0 3px}
 #today .daily-workflow-metrics .daily-metric{flex:0 0 auto;min-width:118px;min-height:48px;padding:8px 10px;display:grid;grid-template-columns:1fr auto;gap:2px 8px}
 #today .daily-workflow-metrics .daily-metric small{display:none}
 #today .daily-workflow-metrics [data-daily-filter="screening"],
 #today .daily-workflow-metrics [data-daily-filter="phone"],
 #today .daily-workflow-metrics [data-daily-filter="attendancePending"]{display:none}
+#today .daily-workflow-panel{order:3;margin:0}
 #today .daily-workflow-secondary{order:4;margin-top:0}
 #today .daily-filter-chips [data-daily-filter="screening"],
 #today .daily-filter-chips [data-daily-filter="phone"],

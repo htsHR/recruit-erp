@@ -519,7 +519,7 @@
     const entries=currentEntries(),people=dirtyPeople();
     const summary=modal.querySelector('#applicantWorksheetReviewSummary');
     const duplicateStatus=state.duplicates.length?(state.duplicatesConfirmed?'확인 완료':'확인 필요'):'확인 완료';
-    if(summary)summary.innerHTML='<div><strong>'+people+'</strong><span>변경 인원</span></div><div><strong>'+entries.length+'</strong><span>변경 필드</span></div><div><strong>0</strong><span>오류</span></div><div><strong>중복 후보 '+state.duplicates.length+'건 · '+duplicateStatus+'</strong><span>중복 확인 상태</span></div>';
+    if(summary)summary.innerHTML='<div><strong>'+people+'</strong><span>변경 인원</span></div><div><strong>'+entries.length+'</strong><span>변경 필드</span></div><div><strong>0</strong><span>오류</span></div><div class="worksheet-review-duplicate-card"><strong><span>중복 후보 '+state.duplicates.length+'건</span><span aria-hidden="true">·</span><span>'+duplicateStatus+'</span></strong><span>중복 확인 상태</span></div>';
     modal.hidden=false;state.reviewOpen=true;modal.querySelector('#btnWorksheetReviewConfirm')?.focus();return true;
   }
   function restoreStorage(key,value){try{if(value==null)root.localStorage.removeItem(key);else root.localStorage.setItem(key,value);}catch{}}

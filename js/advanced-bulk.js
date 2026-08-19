@@ -28,8 +28,14 @@ function runSearch(){
  .filter(a=>!kw||[a.name,a.phone,a.school,a.workplace,a.status,ms[a.id]].join(' ').toLowerCase().includes(kw)); window.__erpAdvancedFilterIds=advancedResults.map(a=>a.id); renderAdvanced(); if(typeof renderTable==='function')renderTable();
 }
 function renderAdvanced(){const ms=managers();const summary=el('asSummary'),list=el('asResultList');if(!summary||!list){updateBulkDock();return;}summary.textContent=`총 ${advancedResults.length}명 · 선택 ${[...selected].filter(id=>advancedResults.some(a=>a.id===id)).length}명`;list.innerHTML=advancedResults.length?advancedResults.map(a=>`<label class="advanced-result-item ${selected.has(a.id)?'selected':''}"><input type="checkbox" data-advanced-id="${a.id}" ${selected.has(a.id)?'checked':''}><span class="advanced-result-copy"><strong>${safe(a.name||'이름없음')} · ${safe(a.status||'')}</strong><small>${safe(a.phone||'연락처 없음')} · ${safe(a.school||'학교 미입력')} · ${safe(a.workplace||'근무지 미입력')}</small></span><span class="advanced-result-meta">지원 ${safe(a.applyDate||'-')}<br>면접 ${safe(a.interviewDate||'-')}<br>${ms[a.id]?`담당 ${safe(ms[a.id])}`:'담당자 미지정'}</span></label>`).join(''):'<div class="empty">조건에 맞는 지원자가 없습니다.</div>';updateBulkDock()}
-function saved(){try{return JSON.parse(localStorage.getItem(SAVED_KEY)||'[]')}catch{return []}}
-function renderSaved(){const target=el('asSavedList');if(!target)return;target.innerHTML=saved().map((x,i)=>`<span class="saved-search-chip"><button data-load-search="${i}">${safe(x.name)}</button><button title="삭제" data-delete-search="${i}">×</button></span>`).join('')||'<span class="muted">저장된 검색조건이 없습니다.</span>'}
+function saved(){try{const parsed=JSON.parse(localStorage.getItem(SAVED_KEY)||'[]');return Array.isArray(parsed)?parsed.filter(item=>item&&typeof item==='object'&&item.criteria&&typeof item.criteria==='object').map(item=>({...item,name:String(item.name||'이름 없는 보기')})):[]}catch{return []}}
+function renderMyViews(){
+ const target=el('applicantMyViews');if(!target)return;
+ const rows=saved();
+ target.innerHTML=rows.length?`<span class="applicant-my-views-label">내 보기</span><select aria-label="저장된 내 보기 선택" id="applicantMyViewSelect"><option value="">선택</option>${rows.map((item,index)=>`<option value="${index}">${safe(item.name)}</option>`).join('')}</select><button class="ghost" disabled id="btnApplyApplicantMyView" type="button">불러오기</button>`:'<span class="applicant-my-views-empty">내 보기 없음</span>';
+}
+function applySavedSearch(index){const rows=saved(),item=rows[Number(index)];if(!item)return false;setCriteria(item.criteria);runSearch();return true;}
+function renderSaved(){const target=el('asSavedList');if(target)target.innerHTML=saved().map((x,i)=>`<span class="saved-search-chip"><button data-load-search="${i}">${safe(x.name)}</button><button title="삭제" data-delete-search="${i}">×</button></span>`).join('')||'<span class="muted">저장된 검색조건이 없습니다.</span>';renderMyViews()}
 function saveCurrent(){const name=el('asSavedName').value.trim();if(!name)return alert('검색조건 이름을 입력해주세요.');const arr=saved();arr.unshift({name,criteria:criteria(),createdAt:new Date().toISOString()});const value=JSON.stringify(arr.slice(0,20));if(typeof safeLocalStorageSet==='function')safeLocalStorageSet(SAVED_KEY,value);else localStorage.setItem(SAVED_KEY,value);el('asSavedName').value='';renderSaved()}
 function selectedApplicants(){return applicants.filter(a=>selected.has(a.id))}
 function updateBulkDock(){const rows=selectedApplicants(),dock=el('bulkDock');el('bulkSelectedCount').textContent=rows.length;el('bulkSelectedNames').textContent=rows.slice(0,5).map(a=>a.name||'이름없음').join(', ')+(rows.length>5?` 외 ${rows.length-5}명`:'');dock.classList.toggle('show',rows.length>0);dock.setAttribute('aria-hidden',rows.length?'false':'true');decorateRows()}
@@ -85,6 +91,7 @@ function bind(){
  hydrateOptions();renderSaved();ensureBulkToggle();updateConditionCount(); el('bulkModeButton')?.addEventListener('click',toggleBulkMode);
  qa('#advancedSearch input,#advancedSearch select').forEach(x=>x.addEventListener('change',updateConditionCount)); const asRun=el('asRun'),asReset=el('asReset'),asSave=el('asSave');if(asRun)asRun.onclick=runSearch;if(asReset)asReset.onclick=()=>{setCriteria({});advancedResults=[];window.__erpAdvancedFilterIds=null;renderAdvanced();if(typeof renderTable==='function')renderTable()};if(asSave)asSave.onclick=saveCurrent;
  el('asSavedList').onclick=e=>{const l=e.target.closest('[data-load-search]'),d=e.target.closest('[data-delete-search]');const arr=saved();if(l){setCriteria(arr[+l.dataset.loadSearch].criteria);runSearch()}if(d){arr.splice(+d.dataset.deleteSearch,1);const value=JSON.stringify(arr);if(typeof safeLocalStorageSet==='function')safeLocalStorageSet(SAVED_KEY,value);else localStorage.setItem(SAVED_KEY,value);renderSaved()}};
+ const myViews=el('applicantMyViews');if(myViews){myViews.onchange=e=>{if(e.target.id!=='applicantMyViewSelect')return;const button=el('btnApplyApplicantMyView');if(button)button.disabled=e.target.value==='';};myViews.onclick=e=>{if(!e.target.closest('#btnApplyApplicantMyView'))return;const select=el('applicantMyViewSelect');if(select&&applySavedSearch(select.value))renderMyViews();};}
  const asResultList=el('asResultList');
  if(asResultList)asResultList.onchange=e=>{const c=e.target.closest('[data-advanced-id]');if(!c)return;c.checked?selected.add(c.dataset.advancedId):selected.delete(c.dataset.advancedId);renderAdvanced()};
  const asSelectAll=el('asSelectAll');if(asSelectAll)asSelectAll.onclick=()=>{advancedResults.forEach(a=>selected.add(a.id));renderAdvanced()};
@@ -100,6 +107,7 @@ function bind(){
  const oldSet=window.setPage;window.setPage=function(page){oldSet(page);if(page==='advancedSearch'){hydrateOptions();renderSaved();runSearch()}};
  setTimeout(()=>{ensureBulkToggle();decorateRows()},100);
 }
+window.erpSavedAdvancedSearches={key:SAVED_KEY,list:saved,load:applySavedSearch,render:renderMyViews};
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',bind):bind();
 })();
 
