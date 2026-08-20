@@ -196,14 +196,14 @@ window.card=card;
 
 /* ---------- Sidebar status density ---------- */
 function uxConsolidateSidebarStatus(){
-  const storage=uxEl('storageNote'),auth=uxEl('authNote');
-  if(!storage||!auth)return null;
+  const storage=uxEl('storageNote');
+  if(!storage)return null;
   let area=document.querySelector('.sidebar-status-area');
   if(!area){
     area=document.createElement('div');
     area.className='sidebar-status-area';
     area.dataset.sidebarStatusArea='';
-    area.setAttribute('aria-label','저장 및 로그인 상태');
+    area.setAttribute('aria-label','저장 상태');
     storage.parentNode.insertBefore(area,storage);
   }
   let details=area.querySelector('.sidebar-status-details');
@@ -217,21 +217,13 @@ function uxConsolidateSidebarStatus(){
     details=document.createElement('div');
     details.className='sidebar-status-details';
     details.id='sidebarStatusDetails';
-    details.append(storage,auth);
+    details.append(storage);
     area.append(toggle,details);
     toggle.addEventListener('click',()=>{
       const expanded=toggle.getAttribute('aria-expanded')==='true';
       toggle.setAttribute('aria-expanded',String(!expanded));
       area.classList.toggle('is-details-open',!expanded);
     });
-  }
-  auth.querySelector('#authLoggedIn small')?.remove();
-  auth.querySelector('#authUserMark')?.remove();
-  const loggedOut=auth.querySelector('#authLoggedOut');
-  if(loggedOut){
-    [...loggedOut.children].forEach(child=>{if(child.id!=='btnOpenLogin')child.remove();});
-    const login=loggedOut.querySelector('#btnOpenLogin');
-    if(login){login.textContent='로그인';login.title='Supabase 로그인';}
   }
   return area;
 }
@@ -538,23 +530,16 @@ function uxSetOperationEnvironment(mode){
   document.dispatchEvent(new CustomEvent('erp:operation-environment-change',{detail:{mode:next}}));
   updateStorageNote();
   if(typeof window.erpHandleOperationEnvironmentChange==='function') window.erpHandleOperationEnvironmentChange(next);
-  uxToast(next==='company'?'회사 운영 모드로 전환했습니다. Supabase 연결을 중단했습니다.':'집 개발 모드로 전환했습니다. 로그인 후에만 Supabase를 사용합니다.');
+  uxToast(next==='company'?'회사 운영 모드로 전환했습니다.':'이 브라우저 저장 모드로 전환했습니다.');
 }
 updateStorageNote=function(){
   const el=uxEl('storageNote'); if(!el) return;
   const mode=uxGetOperationEnvironment();
   const isCompany=mode==='company';
   document.documentElement.dataset.operationEnvironment=mode;
-  const hasCloud=!!window.sb;
-  const authenticated=!isCompany&&hasCloud&&typeof cloudAuthenticated!=='undefined'&&cloudAuthenticated;
-  const cloudFailed=!isCompany&&typeof cloudSyncStatus!=='undefined'&&cloudSyncStatus==='error';
-  const cloudOk=authenticated&&typeof cloudSyncStatus!=='undefined'&&cloudSyncStatus==='ok';
-  const cloudSyncing=authenticated&&!cloudOk&&!cloudFailed;
-  const loggedOut=!isCompany&&hasCloud&&!authenticated;
-  const modeTitle=isCompany?'로컬 저장 사용 중':cloudFailed?'클라우드 동기화 실패':cloudOk?'클라우드 동기화 정상':cloudSyncing?'클라우드 동기화 중':loggedOut?'로컬 저장 사용 중':'로컬 저장 사용 중';
-  const modeDescription=isCompany?'회사 모드의 브라우저 보조 저장을 사용합니다. 공용 저장소 상태는 연결 시 함께 표시됩니다.':cloudFailed?'로컬 저장은 완료됐지만 클라우드 반영에 실패했습니다.':cloudOk?'로컬과 클라우드 저장이 정상 작동합니다.':cloudSyncing?'클라우드 상태를 확인하고 있습니다.':loggedOut?'로컬 저장은 정상입니다. 로그인하면 클라우드 동기화를 다시 시작합니다.':'클라우드 설정이 없어 이 브라우저에 저장합니다.';
-  const lastLabel=typeof cloudLastSuccessLabel==='function'?cloudLastSuccessLabel():'아직 성공 기록 없음';
-  const statusClass=cloudFailed?'sync-warn-note':cloudOk?'sync-ok-note':cloudSyncing?'sync-progress-note':loggedOut?'sync-logged-out-note':'sync-local-note';
+  const modeTitle='LOCAL ONLY';
+  const modeDescription=isCompany?'회사 모드의 브라우저 보조 저장을 사용합니다. 공용 저장소 상태는 연결 시 함께 표시됩니다.':'이 브라우저 저장을 기본으로 사용합니다.';
+  const statusClass='sync-local-note';
   const sharedNote=isCompany&&window.erpSharedStorage?.statusNote?.();
   const displayTitle=sharedNote?.title||modeTitle;
   const displayDescription=sharedNote?.description||modeDescription;
@@ -565,7 +550,6 @@ updateStorageNote=function(){
     <div class="operation-mode-copy">
       <strong>${displayTitle}</strong>
       <span>${displayDescription}</span>
-      ${!isCompany&&hasCloud?`<small>마지막 성공: ${lastLabel}</small>`:''}
     </div>
     <div class="operation-mode-switch" role="group" aria-label="운영 환경 선택">
       <button type="button" data-operation-mode="company" class="${isCompany?'active':''}" aria-pressed="${isCompany}">회사</button>
@@ -576,8 +560,8 @@ updateStorageNote=function(){
   if(sidebarSummary)sidebarSummary.textContent=displayTitle;
   const badge=document.querySelector('.local-mode-badge');
   if(badge){
-    badge.textContent=isCompany?'회사 운영':'집 운영';
-    badge.title=isCompany?'현재 회사 운영 환경':'현재 집 운영 환경';
+    badge.textContent='LOCAL ONLY';
+    badge.title=isCompany?'회사 환경 · 로컬 전용':'이 브라우저 저장 · 로컬 전용';
     badge.classList.toggle('company',isCompany);
     badge.classList.toggle('home',!isCompany);
     badge.classList.remove('cloud-ready','cloud-error');

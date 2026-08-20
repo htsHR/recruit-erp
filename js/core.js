@@ -153,7 +153,8 @@ let cloudAuthenticated = false;
 const OPERATION_ENV_STORAGE_KEY = 'recruit_erp_ui_operation_environment';
 const CLOUD_LAST_SUCCESS_KEY = 'recruit_erp_cloud_last_success_at';
 function isCompanyLocalMode(){ return localStorage.getItem(OPERATION_ENV_STORAGE_KEY) === 'company'; }
-function canUseCloud(){ return !!window.sb && !isCompanyLocalMode() && cloudAuthenticated; }
+function isLocalOnlyRuntime(){ return window.erpAppVersion?.LOCAL_ONLY === true; }
+function canUseCloud(){ return !isLocalOnlyRuntime() && !!window.sb && !isCompanyLocalMode() && cloudAuthenticated; }
 function cloudLastSuccessAt(){ return localStorage.getItem(CLOUD_LAST_SUCCESS_KEY)||''; }
 function cloudLastSuccessLabel(){
   const value=cloudLastSuccessAt();if(!value)return '아직 성공 기록 없음';
@@ -170,7 +171,10 @@ function updateStorageNote(){
   el.setAttribute('aria-live','polite');
   el.className='security-note';
   const last='<small>마지막 성공: '+esc(cloudLastSuccessLabel())+'</small>';
-  if(isCompanyLocalMode()){
+  if(isLocalOnlyRuntime()){
+    el.className='security-note sync-local-note';
+    el.innerHTML='<strong>LOCAL ONLY</strong><span>이 브라우저 저장을 기본으로 사용합니다.</span>';
+  } else if(isCompanyLocalMode()){
     el.className='security-note sync-local-note';
     el.innerHTML='<strong>회사 로컬 모드</strong><span>이 브라우저에만 저장하며 클라우드로 보내지 않습니다.</span>';
   } else if(!window.sb){
@@ -191,6 +195,7 @@ function updateStorageNote(){
   }
   if(window.erpSyncSafety&&typeof window.erpSyncSafety.decorateStatus==='function')window.erpSyncSafety.decorateStatus(el);
 }
+window.isLocalOnlyRuntime=isLocalOnlyRuntime;
 function save(){
   if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return false;
   const auditBefore=window.erpAudit?.capture('applicant');

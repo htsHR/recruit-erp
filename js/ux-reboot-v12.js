@@ -408,6 +408,10 @@
     root.erpUx12={managerAssignments,postingOf,managerOf,nextActionOf,scheduleOf,renderStageOverview,renderHomeSummary,updateTodaySummary,router:root.erpUx12Router};
     installRouting();
     root.renderStats?.();root.renderHomeLists?.();root.renderToday?.();root.renderTable?.();updateActiveNavigation();
+    root.__erpUx12FirstShownAt=root.performance?.now?.()||Date.now();
+    root.performance?.mark?.('erp-ux12-first-shown');
+    root.document.documentElement.classList.remove('ux12-booting');
+    root.document.dispatchEvent(new CustomEvent('erp:ux12-ready',{detail:{shownAt:root.__erpUx12FirstShownAt}}));
   }
 
   if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',init,{once:true});else init();

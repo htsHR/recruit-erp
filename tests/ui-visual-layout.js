@@ -19,7 +19,7 @@ const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt
 fs.mkdirSync(bridgeSharedFolder);
 fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
 const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.0.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.0.1');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -89,6 +89,83 @@ const hireWaitingWidths={no:52,employeeNo:124,contactStatus:88,hireDate:104,work
 const screens=['home','applicants','form','today','calendar','templates','advancedSearch','stats','schools','employees','onboarding','backup','dataHealth','duplicates','permissions','auditHistory','storagePerformance','productionReadiness'];
 const server=spawn(process.execPath,[path.join(__dirname,'serve-static.js')],{cwd:root,env:{...process.env,ERP_TEST_PORT:String(port)},stdio:['ignore','pipe','pipe']});
 const waitForServer=()=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('로컬 UI 서버 시작 시간 초과')),5000);server.stdout.on('data',data=>{if(String(data).includes(baseUrl)){clearTimeout(timer);resolve();}});server.once('exit',code=>{clearTimeout(timer);reject(new Error(`로컬 UI 서버 종료: ${code}`));});});
+async function installInitialBootProbe(page){
+  await page.addInitScript(fixture=>{
+    localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture));
+    window.__ux12BootFrames=[];
+    let readyFrames=0;
+    const visible=node=>{
+      if(!node)return false;
+      const rect=node.getBoundingClientRect(),style=getComputedStyle(node);
+      return rect.width>0&&rect.height>0&&style.display!=='none'&&style.visibility!=='hidden'&&style.opacity!=='0';
+    };
+    const sample=()=>{
+      const html=document.documentElement,body=document.body;
+      if(body){
+        const sidebar=document.querySelector('.sidebar'),main=document.querySelector('.main'),roster=document.querySelector('#applicantTbody');
+        const ready=body.classList.contains('ux12-ready'),shellVisible=visible(sidebar)&&visible(main);
+        window.__ux12BootFrames.push({
+          at:performance.now(),ready,booting:html.classList.contains('ux12-booting'),shellVisible,
+          oldShellVisible:!ready&&shellVisible,
+          dataVisible:!ready&&Boolean(roster?.textContent.includes('테스트지원자1'))&&visible(roster),
+          sidebarWidth:shellVisible?sidebar.getBoundingClientRect().width:0,
+          bodyBackground:getComputedStyle(body).backgroundColor
+        });
+        if(ready)readyFrames++;
+      }
+      if(readyFrames<3&&window.__ux12BootFrames.length<240)requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  },fakeApplicants);
+}
+async function assertInitialBoot(page,label,expectedPage){
+  await page.waitForFunction(()=>document.body?.classList.contains('ux12-ready')&&window.__ux12BootFrames?.filter(frame=>frame.ready).length>=3);
+  const result=await page.evaluate(()=>{
+    const frames=window.__ux12BootFrames||[],visible=frames.map(frame=>frame.shellVisible);
+    const transitions=visible.reduce((count,value,index)=>count+(value&&!visible[index-1]?1:0),0);
+    const readyWidths=frames.filter(frame=>frame.ready&&frame.shellVisible).map(frame=>Math.round(frame.sidebarWidth));
+    return {
+      active:document.querySelector('.page.active')?.id,
+      booting:document.documentElement.classList.contains('ux12-booting'),
+      preReady:frames.filter(frame=>!frame.ready).length,
+      oldShell:frames.filter(frame=>frame.oldShellVisible).length,
+      dataBeforeReady:frames.filter(frame=>frame.dataVisible).length,
+      darkPreReady:frames.filter(frame=>!frame.ready&&frame.bodyBackground!=='rgb(245, 246, 248)').length,
+      transitions,readyWidths,shownAt:window.__erpUx12FirstShownAt||0
+    };
+  });
+  assert.equal(result.active,expectedPage,`${label} 직접 라우트 복원 실패`);
+  assert.equal(result.booting,false,`${label} v12 준비 뒤 부트 가드가 남아 있습니다.`);
+  assert.ok(result.preReady>0,`${label} 지연된 초기 자산 구간을 프레임으로 검사하지 못했습니다.`);
+  assert.equal(result.oldShell,0,`${label} 구형 셸이 중간 프레임에 노출되었습니다.`);
+  assert.equal(result.dataBeforeReady,0,`${label} v12 준비 전에 지원자 이름이 노출되었습니다.`);
+  assert.equal(result.darkPreReady,0,`${label} 준비 중 배경이 밝은 중립색이 아닙니다.`);
+  assert.equal(result.transitions,1,`${label} 앱 셸은 준비 후 한 번만 표시되어야 합니다.`);
+  assert.ok(result.readyWidths.length>=3&&new Set(result.readyWidths).size===1,`${label} 첫 표시 뒤 메뉴 폭이 급변했습니다: ${result.readyWidths}`);
+  assert.ok(result.shownAt>0,`${label} 첫 v12 표시 시점이 기록되지 않았습니다.`);
+}
+async function verifyInitialBootLifecycle(browser){
+  const cases=[
+    {label:'1366x768-zoom100',viewport:{width:1366,height:768},screen:{width:1366,height:768},scale:1},
+    {label:'1366x768-zoom125',viewport:{width:1093,height:614},screen:{width:1366,height:768},scale:1.25},
+    {label:'1280x720-zoom100',viewport:{width:1280,height:720},screen:{width:1280,height:720},scale:1},
+    {label:'1280x720-zoom125',viewport:{width:1024,height:576},screen:{width:1280,height:720},scale:1.25}
+  ];
+  for(const testCase of cases){
+    const context=await browser.newContext({viewport:testCase.viewport,screen:testCase.screen,deviceScaleFactor:testCase.scale});
+    const page=await context.newPage();
+    await page.route('**/js/ux-reboot-v12.js*',async route=>{await new Promise(resolve=>setTimeout(resolve,140));await route.continue();});
+    await installInitialBootProbe(page);
+    const neutralCapture=(async()=>{await page.waitForTimeout(60);if(testCase.label==='1366x768-zoom100')await page.screenshot({path:path.join(outputDir,'initial-boot-neutral-frame.png'),fullPage:false});})();
+    await Promise.all([page.goto(baseUrl,{waitUntil:'domcontentloaded'}),neutralCapture]);await assertInitialBoot(page,`${testCase.label} 첫 진입`,'home');
+    await page.reload({waitUntil:'domcontentloaded'});await assertInitialBoot(page,`${testCase.label} 새로고침`,'home');
+    const cdp=await context.newCDPSession(page);await cdp.send('Network.enable');await cdp.send('Network.setCacheDisabled',{cacheDisabled:true});
+    await page.reload({waitUntil:'domcontentloaded'});await assertInitialBoot(page,`${testCase.label} 강력 새로고침`,'home');
+    await cdp.send('Network.setCacheDisabled',{cacheDisabled:false});
+    await page.goto(`${baseUrl}/#/applicants`,{waitUntil:'domcontentloaded'});await assertInitialBoot(page,`${testCase.label} 직접 라우트`,'applicants');
+    await context.close();
+  }
+}
 async function submitStatusChange(page,id,status,{date='2026-08-03',memo=''}={}){
   await page.evaluate(()=>window.setPage?.('applicants'));
   const select=page.locator(`#applicantTbody tr[data-applicant-id="${id}"] .status-inline`);
@@ -134,7 +211,7 @@ async function verifyUiDensity(page,label){
     const header=document.querySelector('#applicants .applicant-table thead').getBoundingClientRect();
     const rows=[...document.querySelectorAll('#applicantTbody tr.applicant-row')].map(row=>row.getBoundingClientRect());
     const regions=['.applicant-list-header-row','.applicant-list-tool-row','.applicant-list-filter-stack'].map(selector=>{const rect=document.querySelector(`#applicants ${selector}`).getBoundingClientRect();return{selector,top:Math.round(rect.top),height:rect.height};});
-    const storage=document.querySelector('#storageNote'),auth=document.querySelector('#authNote'),sidebar=document.querySelector('.sidebar'),nav=document.querySelector('.nav'),stateArea=document.querySelector('[data-sidebar-status-area]');
+    const storage=document.querySelector('#storageNote'),sidebar=document.querySelector('.sidebar'),nav=document.querySelector('.nav'),stateArea=document.querySelector('[data-sidebar-status-area]');
     const sidebarRect=sidebar.getBoundingClientRect(),navRect=nav.getBoundingClientRect(),stateRect=stateArea.getBoundingClientRect();
     const kpiKeys=[...document.querySelectorAll('#statsGrid [data-home-target]')].map(node=>node.dataset.homeTarget);
     const taskKeys=[...document.querySelectorAll('#homeTodayGrid [data-task-target]')].map(node=>node.dataset.taskTarget);
@@ -143,10 +220,8 @@ async function verifyUiDensity(page,label){
       sidebarBounds:{top:sidebarRect.top,bottom:sidebarRect.bottom,stateTop:stateRect.top,stateBottom:stateRect.bottom,navTop:navRect.top,navBottom:navRect.bottom},
       navHeights:[...document.querySelectorAll('.nav-btn')].filter(node=>getComputedStyle(node).display!=='none').map(node=>node.getBoundingClientRect().height),
       stateAreas:document.querySelectorAll('[data-sidebar-status-area]').length,
-      stateChildren:!!storage?.closest('[data-sidebar-status-area]')&&!!auth?.closest('[data-sidebar-status-area]'),
-      authDescriptions:document.querySelectorAll('#authLoggedOut>strong,#authLoggedOut>span,#authLoggedIn small,#authUserMark').length,
-      authActions:document.querySelectorAll('#btnOpenLogin,#btnLogout').length,
-      visibleAuthActions:[...document.querySelectorAll('#btnOpenLogin,#btnLogout')].filter(node=>node.getClientRects().length>0).length,
+      stateChildren:!!storage?.closest('[data-sidebar-status-area]'),
+      authNodes:document.querySelectorAll('#authNote,#loginOverlay,#loginEmail,#loginPassword,#btnLogin,#btnLoginSkip,#btnOpenLogin,#btnLogout,#topbarUser').length,
       kpiKeys,taskKeys,
       regions,visualRows:new Set(regions.map(region=>region.top)).size,
       visibleRows:rows.filter(rect=>rect.top>=header.bottom-1&&rect.bottom<=Math.min(wrapRect.bottom,innerHeight)+1).length,
@@ -164,7 +239,7 @@ async function verifyUiDensity(page,label){
   assert.ok(Math.abs(density.sidebarWidth-216)<=1,`${label} 데스크톱 사이드바는 216px이어야 합니다: ${density.sidebarWidth}`);
   assert.ok(density.navHeights.length&&density.navHeights.every(height=>height>=36),`${label} 데스크톱 메뉴 버튼은 36px 이상이어야 합니다.`);
   assert.ok(density.sidebarBounds.stateBottom<=density.sidebarBounds.bottom+1&&density.sidebarBounds.navBottom<=density.sidebarBounds.stateTop+1,`${label} 메뉴와 하단 상태 영역이 잘리거나 겹치면 안 됩니다: ${JSON.stringify(density.sidebarBounds)}`);
-  assert.deepEqual({areas:density.stateAreas,children:density.stateChildren,descriptions:density.authDescriptions,actions:density.authActions,visibleActions:density.visibleAuthActions},{areas:1,children:true,descriptions:0,actions:2,visibleActions:1},`${label} 사이드바 상태 설명과 로그인 동작이 중복되었습니다.`);
+  assert.deepEqual({areas:density.stateAreas,children:density.stateChildren,authNodes:density.authNodes},{areas:1,children:true,authNodes:0},`${label} 사이드바에 인증 UI가 남아 있습니다.`);
   assert.deepEqual(density.kpiKeys,['all','today','review','interview','overdue']);
   assert.equal(density.kpiKeys.some(key=>density.taskKeys.includes(key)),false,'홈 누적 KPI와 오늘 업무 키가 겹치면 안 됩니다.');
   assert.equal(density.visualRows,3,`${label} 지원자 상단 제어영역은 3개 시각 행이어야 합니다: ${JSON.stringify(density.regions)}`);
@@ -297,7 +372,7 @@ async function verifyUsabilityPolish(page,label){
     nav.scrollTop=0;localStorage.setItem('recruit_erp_ui_operation_environment','company');updateStorageNote();return result;
   });
   assert.ok(sidebar.lastBottom<=sidebar.navBottom+1&&sidebar.navBottom<=sidebar.statusTop+1&&sidebar.statusBottom<=sidebar.sidebarBottom+1,`${label} 사이드바 메뉴 끝과 상태 영역이 겹치거나 가려지면 안 됩니다: ${JSON.stringify(sidebar)}`);
-  assert.equal(sidebar.badge,'집 운영',`${label} 상단에는 운영 환경만 표시해야 합니다.`);assert.ok(sidebar.status.length>0&&sidebar.status!==sidebar.badge,`${label} 모드 표시와 저장 상태를 분리해야 합니다.`);
+  assert.equal(sidebar.badge,'LOCAL ONLY',`${label} 상단은 로그인 상태 대신 LOCAL ONLY를 표시해야 합니다.`);assert.equal(sidebar.status,'LOCAL ONLY',`${label} 사이드바 저장 안내도 LOCAL ONLY 상태를 명확히 표시해야 합니다.`);
 }
 const applicantTableGeometryMetrics=[];
 async function verifyApplicantNormalTableGeometry(page,label){
@@ -355,7 +430,7 @@ async function verifyOwnerVisualDesktopShell(page,label){
   assert.equal(expanded.desktop,true,`${label} 125% 확대에서도 v12 PC 셸을 유지해야 합니다.`);
   assert.ok(Math.abs(expanded.sidebar.width-216)<=1&&Math.abs(expanded.main.left-216)<=1,`${label} 확장 메뉴와 본문 위치 오류: ${JSON.stringify(expanded)}`);
   assert.equal(expanded.sidebar.background,'rgb(255, 255, 255)',`${label} 밝은 PC 메뉴가 어두운 레거시 메뉴로 바뀌면 안 됩니다.`);
-  assert.deepEqual(expanded.brand,['Recruit ERP','v12.0.0 Preview'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
+  assert.deepEqual(expanded.brand,['Recruit ERP','v12.0.1'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
   assert.equal(expanded.oldLabels,false,`${label} 중복 영문 업무 라벨이 남아 있습니다.`);
   assert.ok(expanded.overflow<=1,`${label} 확장 메뉴에서 전역 가로 넘침이 있습니다: ${expanded.overflow}`);
   if(expanded.storage.className.includes('sync-shared-idle-note'))assert.ok(expanded.storage.background!=='rgba(179, 53, 46, 0.14)'&&expanded.storage.height<=100,`${label} 비차단 공용저장 안내는 중립색의 작은 상태 영역이어야 합니다: ${JSON.stringify(expanded.storage)}`);
@@ -740,20 +815,32 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
   const browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox']});
   const consoleErrors=[];
   try{
+    await verifyInitialBootLifecycle(browser);
     for(const viewport of viewports){
       const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height}});
       const page=await context.newPage();
       page.on('pageerror',error=>consoleErrors.push(`${viewport.name}: ${error.message}`));
-      page.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`${viewport.name}: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
+      page.on('console',message=>{const source=`${message.text()} ${message.location().url||''}`;if(message.type()==='error'&&!/favicon/i.test(source))consoleErrors.push(`${viewport.name}: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
       await page.addInitScript(fixture=>{
         localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));
         localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));
         localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
+        localStorage.setItem('sb-yqijxkdmcpmvifkbamnr-auth-token',JSON.stringify({access_token:'synthetic-old-session',user:{id:'synthetic-user'}}));
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v12.0.0');
-      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.0.0','화면은 단일 현재 버전 소스를 사용해야 합니다.');
+      assert.equal(await page.title(),'채용관리 시스템 v12.0.1');
+      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.0.1','화면은 단일 현재 버전 소스를 사용해야 합니다.');
+      const localOnlyState=await page.evaluate(()=>({
+        active:document.querySelector('.page.active')?.id,
+        localOnly:window.erpAppVersion?.LOCAL_ONLY===true&&window.erpLocalOnlyRuntime?.enabled===true,
+        cloud:typeof window.canUseCloud==='function'&&window.canUseCloud(),
+        supabaseClient:!!window.sb,
+        authNodes:document.querySelectorAll('#loginOverlay,#loginEmail,#loginPassword,#btnLogin,#btnLoginSkip,#btnOpenLogin,#btnLogout,#authNote,#topbarUser').length,
+        loginAutocomplete:document.querySelectorAll('[autocomplete="username"],[autocomplete="current-password"]').length,
+        badge:document.querySelector('.local-mode-badge')?.textContent.trim()
+      }));
+      assert.deepEqual(localOnlyState,{active:'home',localOnly:true,cloud:false,supabaseClient:false,authNodes:0,loginAutocomplete:0,badge:'LOCAL ONLY'},`${viewport.name} 초기 LOCAL ONLY 진입 실패`);
       assert.equal(await page.locator('#homeTodayGrid').count(),0,'홈의 중복 숫자 업무 카드는 제거되어야 합니다.');
       if([1280,1366].includes(viewport.width))await verifyOwnerVisualDesktopShell(page,`${viewport.name}-zoom100`);
       for(const screen of screens){
@@ -844,7 +931,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         await page.evaluate(()=>window.setPage?.('productionReadiness'));await page.waitForTimeout(120);
         const readinessState=await page.evaluate(()=>({automatic:document.querySelectorAll('#productionReadiness .readiness-check').length,manual:document.querySelectorAll('#productionReadiness [data-readiness-manual]').length,text:document.querySelector('#productionReadiness')?.innerText||'',overflow:document.querySelector('#productionReadiness').scrollWidth-document.querySelector('#productionReadiness').clientWidth}));
         assert.deepEqual({automatic:readinessState.automatic,manual:readinessState.manual},{automatic:8,manual:7});assert.ok(readinessState.overflow<=1,`${viewport.name} 운영 준비 화면 가로 넘침: ${JSON.stringify(readinessState)}`);assert.ok(!/000000-0000000|010-0000-0001/.test(readinessState.text),'운영 준비 화면에 가상 개인정보 원문도 표시하면 안 됩니다.');
-        assert.ok(readinessState.text.includes('v12.0.0 화면·브랜드·정적 파일 버전이 일치합니다.'),'운영 준비 화면이 v12.0.0 일치 결과를 보여야 합니다.');
+        assert.ok(readinessState.text.includes('v12.0.1 화면·브랜드·정적 파일 버전이 일치합니다.'),'운영 준비 화면이 v12.0.1 일치 결과를 보여야 합니다.');
         assert.equal(readinessState.text.split('Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용.').length-1,1,'유출 비밀번호 요금제 제한 설명은 같은 화면에 한 번만 표시해야 합니다.');
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-production-readiness.png`),fullPage:true});
       }
@@ -947,7 +1034,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
 
     const zoomContext=await browser.newContext({viewport:{width:1093,height:614},deviceScaleFactor:1.25}),zoomPage=await zoomContext.newPage();
     zoomPage.on('pageerror',error=>consoleErrors.push(`1366x768-zoom125: ${error.message}`));
-    zoomPage.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`1366x768-zoom125: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
+    zoomPage.on('console',message=>{const source=`${message.text()} ${message.location().url||''}`;if(message.type()==='error'&&!/favicon/i.test(source))consoleErrors.push(`1366x768-zoom125: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
     await zoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
     await zoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await zoomPage.waitForTimeout(700);
     await verifyOwnerVisualDesktopShell(zoomPage,'1366x768-zoom125');
@@ -977,7 +1064,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
 
     const owner1280ZoomContext=await browser.newContext({viewport:{width:1024,height:576},screen:{width:1280,height:720},deviceScaleFactor:1.25}),owner1280ZoomPage=await owner1280ZoomContext.newPage();
     owner1280ZoomPage.on('pageerror',error=>consoleErrors.push(`1280x720-zoom125: ${error.message}`));
-    owner1280ZoomPage.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`1280x720-zoom125: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
+    owner1280ZoomPage.on('console',message=>{const source=`${message.text()} ${message.location().url||''}`;if(message.type()==='error'&&!/favicon/i.test(source))consoleErrors.push(`1280x720-zoom125: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
     await owner1280ZoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
     await owner1280ZoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await owner1280ZoomPage.waitForTimeout(700);await verifyOwnerVisualDesktopShell(owner1280ZoomPage,'1280x720-zoom125');await owner1280ZoomContext.close();
 
@@ -991,7 +1078,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     await page.locator('#status').selectOption('면접예정');assert.equal(await page.locator('[data-form-step="3"] [data-form-step-status]').innerText(),'확인 필요');assert.equal(await page.locator('#formProgressText').innerText(),'필수 1/2 단계 완료');
     await page.locator('#interviewDate').fill('2026-08-03');assert.equal(await page.locator('#formProgressText').innerText(),'필수 2/2 단계 완료');await page.evaluate(()=>window.resetForm?.());
 
-    await page.evaluate(()=>{document.getElementById('loginOverlay').style.display='none';window.setPage?.('today');});await page.locator('[data-applicant-id="22222222-2222-4222-8222-222222222222"] [data-erp-handler*="decision"]').click();await page.locator('#detailModal.show').waitFor();assert.equal(await page.evaluate(()=>document.activeElement?.id),'detailQuickStatus','결과 입력은 상세 상태 선택으로 바로 이동해야 합니다.');await page.locator('#btnCloseDetail').click();
+    await page.evaluate(()=>window.setPage?.('today'));await page.locator('[data-applicant-id="22222222-2222-4222-8222-222222222222"] [data-erp-handler*="decision"]').click();await page.locator('#detailModal.show').waitFor();assert.equal(await page.evaluate(()=>document.activeElement?.id),'detailQuickStatus','결과 입력은 상세 상태 선택으로 바로 이동해야 합니다.');await page.locator('#btnCloseDetail').click();
     await page.evaluate(()=>{applicants=applicants.map(item=>item.id==='33333333-3333-4333-8333-333333333333'?{...item,hireDate:'2026-08-02'}:item);renderAll();setPage('today');});await page.locator('[data-applicant-id="33333333-3333-4333-8333-333333333333"] [data-erp-handler*="attendance"]').click();await page.locator('#applicantStatusModal.show').waitFor();assert.equal(await page.locator('#applicantStatusNext').innerText(),'출근');await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>applicants.find(item=>item.id==='33333333-3333-4333-8333-333333333333').status),'입사예정','출근 확인 취소는 상태를 바꾸면 안 됩니다.');await page.evaluate(()=>{applicants=applicants.map(item=>item.id==='33333333-3333-4333-8333-333333333333'?{...item,hireDate:'2026-08-06'}:item);renderAll();});
 
     const onboardingBaseline=await page.evaluate(()=>({applicants:localStorage.getItem('recruit_erp_applicants_stable'),employees:localStorage.getItem('recruit_erp_employees')||'[]',profiles:localStorage.getItem('recruit_erp_hire_waiting_profiles')}));
@@ -1034,7 +1121,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
       const state=await page.evaluate(()=>{window.setPage('onboarding');window.erpOnboarding.openModal('33333333-3333-4333-8333-333333333333');const value={role:window.erpPermissions.current().role,formHidden:document.querySelector('[data-page="form"]')?.classList.contains('erp-permission-hidden'),backupHidden:document.querySelector('[data-page="backup"]')?.classList.contains('erp-permission-hidden'),auditHidden:document.querySelector('[data-page="auditHistory"]')?.classList.contains('erp-permission-hidden'),readinessHidden:document.querySelector('[data-page="productionReadiness"]')?.classList.contains('erp-permission-hidden'),dailyStartHidden:document.querySelector('#btnDailyStartFirst')?.classList.contains('erp-permission-hidden'),onboardingVisible:document.querySelector('[data-page="onboarding"]')&&!document.querySelector('[data-page="onboarding"]').classList.contains('erp-permission-hidden'),saveVisible:!document.querySelector('#btnOnboardingSave').hidden,convertVisible:!document.querySelector('#btnOnboardingConvert').hidden};window.erpOnboarding.closeModal();return value;});assert.equal(state.role,role);assert.ok(state.onboardingVisible);if(role==='admin')assert.ok(!state.formHidden&&!state.backupHidden&&!state.auditHidden&&!state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&state.convertVisible);if(role==='recruiter')assert.ok(!state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&!state.convertVisible);if(role==='viewer')assert.ok(state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&state.dailyStartHidden&&!state.saveVisible&&!state.convertVisible);
       await openSchoolWorkforceFixture(page);const workforcePermission=await page.evaluate(()=>({privacy:!!document.querySelector('#schoolWorkforceRoster .school-workforce-privacy'),rows:document.querySelectorAll('#schoolWorkforceRoster tbody tr').length,exportDisabled:document.querySelector('#btnSchoolWorkforceExport').disabled,text:document.querySelector('#schoolWorkforceRoster').innerText}));if(role==='viewer'){assert.equal(workforcePermission.privacy,true);assert.equal(workforcePermission.rows,0);assert.equal(workforcePermission.exportDisabled,true);assert.ok(!workforcePermission.text.includes('가상재직자'));}else{assert.equal(workforcePermission.privacy,false);assert.ok(workforcePermission.rows>=3);assert.equal(workforcePermission.exportDisabled,false);}await restoreSchoolWorkforceFixture(page);
     }
-    await page.evaluate(()=>{window.erpPermissions.useLocal();document.getElementById('loginOverlay').style.display='none';localStorage.setItem('recruit_erp_ui_operation_environment','company');document.documentElement.dataset.operationEnvironment='company';window.setPage('productionReadiness');});await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('로컬 참고용'));const localRoles=page.locator('[data-readiness-manual="roles_rls"]');const leakedPlanLimit=page.locator('[data-readiness-manual="leaked_credential_protection"]');assert.equal(await localRoles.isDisabled(),true,'local_admin은 roles_rls를 체크할 수 없어야 합니다.');assert.equal(await leakedPlanLimit.isDisabled(),true,'알려진 요금제 제한은 수동 체크 항목이 아니어야 합니다.');const readinessText=await page.locator('#productionReadiness').innerText();assert.ok(readinessText.includes('Supabase 관리자 계정으로 로그인한 상태에서만 확인할 수 있습니다.'));assert.ok(readinessText.includes('알려진 요금제 제한'));assert.ok(readinessText.includes('Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용.'));await page.locator('#btnReadinessCapacity').click();await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('최근 검사'));const readinessCapacity=await page.evaluate(()=>JSON.parse(localStorage.getItem('recruit_erp_production_readiness_v1100'))?.capacity);assert.deepEqual(readinessCapacity.counts,{applicants:5000,employees:1000,schools:500});assert.equal(readinessCapacity.passed,true);const readinessStored=await page.evaluate(()=>localStorage.getItem('recruit_erp_production_readiness_v1100'));assert.ok(!JSON.parse(readinessStored).manual.roles_rls,'로컬 상태에서 roles_rls 기록을 만들면 안 됩니다.');for(const secret of ['테스트지원자1','010-0000-0001','000000-0000000'])assert.ok(!readinessStored.includes(secret),`운영 준비 상태에 개인정보가 남으면 안 됩니다: ${secret}`);const [readinessDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#btnReadinessExport').click()]);const readinessReport=JSON.parse(fs.readFileSync(await readinessDownload.path(),'utf8'));assert.equal(readinessReport.format,'recruit-erp-production-readiness');assert.equal(readinessReport.overall,'not-ready');assert.equal(readinessReport.verificationSource,'local');assert.equal(readinessReport.migrationVerified,false);assert.equal(readinessReport.knownLimitations.length,1);assert.match(readinessReport.limitation,/전자서명된 증명서가 아닙니다/);assert.ok(!JSON.stringify(readinessReport).includes('테스트지원자1'));
+    await page.evaluate(()=>{window.erpPermissions.useLocal();localStorage.setItem('recruit_erp_ui_operation_environment','company');document.documentElement.dataset.operationEnvironment='company';window.setPage('productionReadiness');});await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('로컬 참고용'));const localRoles=page.locator('[data-readiness-manual="roles_rls"]');const leakedPlanLimit=page.locator('[data-readiness-manual="leaked_credential_protection"]');assert.equal(await localRoles.isDisabled(),true,'local_admin은 roles_rls를 체크할 수 없어야 합니다.');assert.equal(await leakedPlanLimit.isDisabled(),true,'알려진 요금제 제한은 수동 체크 항목이 아니어야 합니다.');const readinessText=await page.locator('#productionReadiness').innerText();assert.ok(readinessText.includes('Supabase 관리자 계정으로 로그인한 상태에서만 확인할 수 있습니다.'));assert.ok(readinessText.includes('알려진 요금제 제한'));assert.ok(readinessText.includes('Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용.'));await page.locator('#btnReadinessCapacity').click();await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('최근 검사'));const readinessCapacity=await page.evaluate(()=>JSON.parse(localStorage.getItem('recruit_erp_production_readiness_v1100'))?.capacity);assert.deepEqual(readinessCapacity.counts,{applicants:5000,employees:1000,schools:500});assert.equal(readinessCapacity.passed,true);const readinessStored=await page.evaluate(()=>localStorage.getItem('recruit_erp_production_readiness_v1100'));assert.ok(!JSON.parse(readinessStored).manual.roles_rls,'로컬 상태에서 roles_rls 기록을 만들면 안 됩니다.');for(const secret of ['테스트지원자1','010-0000-0001','000000-0000000'])assert.ok(!readinessStored.includes(secret),`운영 준비 상태에 개인정보가 남으면 안 됩니다: ${secret}`);const [readinessDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#btnReadinessExport').click()]);const readinessReport=JSON.parse(fs.readFileSync(await readinessDownload.path(),'utf8'));assert.equal(readinessReport.format,'recruit-erp-production-readiness');assert.equal(readinessReport.overall,'not-ready');assert.equal(readinessReport.verificationSource,'local');assert.equal(readinessReport.migrationVerified,false);assert.equal(readinessReport.knownLimitations.length,1);assert.match(readinessReport.limitation,/전자서명된 증명서가 아닙니다/);assert.ok(!JSON.stringify(readinessReport).includes('테스트지원자1'));
     await page.evaluate(async()=>{window.__readinessOriginalSb=window.sb;window.__readinessOriginalCanUseCloud=window.canUseCloud;window.sb={auth:{getSession:async()=>({data:{session:{user:{id:'fake-cloud-admin'}}}})},from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:{user_id:'fake-cloud-admin',email:'admin@example.com',display_name:'가상 관리자',role:'admin'}})})};window.canUseCloud=()=>true;localStorage.setItem('recruit_erp_ui_operation_environment','home');document.documentElement.dataset.operationEnvironment='home';await window.erpPermissions.load({user:{id:'fake-cloud-admin',email:'admin@example.com'}});document.dispatchEvent(new CustomEvent('erp:operation-environment-change',{detail:{mode:'home'}}));window.setPage('productionReadiness');});await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('클라우드 검증'));assert.equal(await page.locator('[data-readiness-manual="roles_rls"]').isDisabled(),false,'cloud admin은 roles_rls를 체크할 수 있어야 합니다.');assert.equal(await page.locator('[data-readiness-manual="leaked_credential_protection"]').isDisabled(),true,'cloud admin에서도 알려진 요금제 제한은 체크하지 않아야 합니다.');await page.locator('[data-readiness-manual="roles_rls"]').check();const cloudReadinessStored=JSON.parse(await page.evaluate(()=>localStorage.getItem('recruit_erp_production_readiness_v1100')));assert.equal(cloudReadinessStored.manual.roles_rls.role,'admin');assert.equal(cloudReadinessStored.manual.roles_rls.source,'cloud');assert.equal(cloudReadinessStored.manual.leaked_credential_protection,undefined);await page.evaluate(()=>{window.erpPermissions.useLocal();window.sb=window.__readinessOriginalSb;window.canUseCloud=window.__readinessOriginalCanUseCloud;delete window.__readinessOriginalSb;delete window.__readinessOriginalCanUseCloud;});
     await page.locator('#btnPrivacyShield').click();assert.ok(await page.locator('#privacyShieldOverlay').isVisible());await page.locator('#btnPrivacyUnlock').click();
     await page.evaluate(()=>{localStorage.setItem('recruit_erp_ui_operation_environment','home');window.setPage('backup');});await page.locator('#bcEncryptedFull').click();await page.locator('#encryptedBackupPassword').fill('가상 내보내기 긴 비밀번호 2026');await page.locator('#encryptedBackupConfirm').fill('가상 내보내기 긴 비밀번호 2026');const [encryptedDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#encryptedBackupSubmit').click()]);assert.match(encryptedDownload.suggestedFilename(),/\.erpbackup$/);const downloadedEnvelope=JSON.parse(fs.readFileSync(await encryptedDownload.path(),'utf8'));assert.equal(downloadedEnvelope.format,'recruit-erp-encrypted-backup');assert.ok(!JSON.stringify(downloadedEnvelope).includes('테스트지원자1'),'암호화 다운로드 파일에 가상 이름도 평문으로 노출되면 안 됩니다.');const downloadedPackage=await page.evaluate(async({envelope,password})=>window.erpEncryptedBackup.decryptEnvelope(envelope,password),{envelope:downloadedEnvelope,password:'가상 내보내기 긴 비밀번호 2026'});assert.equal(downloadedPackage.format,'recruit-erp-backup');assert.equal(downloadedPackage.schemaVersion,2);assert.equal(downloadedPackage.data.applicants.length,3);assert.ok(!await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes('가상 내보내기 긴 비밀번호 2026')),'비밀번호는 브라우저 저장소에 남으면 안 됩니다.');await page.locator('#encryptedBackupDialog').waitFor({state:'hidden'});

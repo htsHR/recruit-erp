@@ -6,12 +6,12 @@ const path=require('node:path');
 const vm=require('node:vm');
 
 const root=path.resolve(__dirname,'..');
-const authSource=fs.readFileSync(path.join(root,'js','auth-init.js'),'utf8');
+const authSource=fs.readFileSync(path.join(root,'js','local-only-init.js'),'utf8');
 const applicantSource=fs.readFileSync(path.join(root,'js','school-relations.js'),'utf8');
 const employeeSource=fs.readFileSync(path.join(root,'js','employees.js'),'utf8');
 const schoolSource=fs.readFileSync(path.join(root,'js','schools.js'),'utf8');
 const bulkSource=fs.readFileSync(path.join(root,'js','bindings.js'),'utf8');
-assert.match(authSource,/retryDeletes\(\)[\s\S]*?finally\(startDataSync\)/,'로그인은 삭제 재시도 후 자료를 불러와야 합니다.');
+assert.doesNotMatch(authSource,/getSession|signInWithPassword|signOut|retryDeletes|supabaseSyncOnLoad/,'LOCAL ONLY 초기화가 인증·클라우드 동기화를 시작하면 안 됩니다.');
 assert.match(applicantSource,/supabaseDeleteOne\([\s\S]*?\{defer:true\}[\s\S]*?if\(!save\(\)\)[\s\S]*?cancelDelete/);
 assert.match(employeeSource,/supabaseDeleteEmployee\([\s\S]*?\{defer:true\}[\s\S]*?if\(!saveEmployees\(\)\)[\s\S]*?cancelDelete/);
 assert.match(schoolSource,/supabaseDeleteSchool\([\s\S]*?\{defer:true\}[\s\S]*?if\(!saveSchools\(\)\)[\s\S]*?cancelDelete/);
