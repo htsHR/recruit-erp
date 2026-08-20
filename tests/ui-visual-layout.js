@@ -10,7 +10,7 @@ const employeeXlsx=require('../js/employee-master-xlsx-import.js');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.0.2');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.0.3');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -450,7 +450,7 @@ async function verifyOwnerVisualDesktopShell(page,label){
   assert.equal(expanded.desktop,true,`${label} 125% 확대에서도 v12 PC 셸을 유지해야 합니다.`);
   assert.ok(Math.abs(expanded.sidebar.width-216)<=1&&Math.abs(expanded.main.left-216)<=1,`${label} 확장 메뉴와 본문 위치 오류: ${JSON.stringify(expanded)}`);
   assert.equal(expanded.sidebar.background,'rgb(255, 255, 255)',`${label} 밝은 PC 메뉴가 어두운 레거시 메뉴로 바뀌면 안 됩니다.`);
-  assert.deepEqual(expanded.brand,['Recruit ERP','v12.0.2'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
+  assert.deepEqual(expanded.brand,['Recruit ERP','v12.0.3'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
   assert.equal(expanded.oldLabels,false,`${label} 중복 영문 업무 라벨이 남아 있습니다.`);
   assert.ok(expanded.overflow<=1,`${label} 확장 메뉴에서 전역 가로 넘침이 있습니다: ${expanded.overflow}`);
   assert.ok(expanded.storage.height<=130,`${label} LOCAL ONLY 상태 안내가 과도한 공간을 차지하면 안 됩니다: ${JSON.stringify(expanded.storage)}`);
@@ -838,8 +838,8 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v12.0.2');
-      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.0.2','화면은 단일 현재 버전 소스를 사용해야 합니다.');
+      assert.equal(await page.title(),'채용관리 시스템 v12.0.3');
+      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.0.3','화면은 단일 현재 버전 소스를 사용해야 합니다.');
       const localOnlyState=await page.evaluate(()=>({
         active:document.querySelector('.page.active')?.id,
         localOnly:window.erpAppVersion?.LOCAL_ONLY===true&&window.erpLocalOnlyRuntime?.enabled===true,
@@ -918,7 +918,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         await page.evaluate(()=>window.setPage?.('productionReadiness'));await page.waitForTimeout(120);
         const readinessState=await page.evaluate(()=>({automatic:document.querySelectorAll('#productionReadiness .readiness-check').length,manual:document.querySelectorAll('#productionReadiness [data-readiness-manual]').length,text:document.querySelector('#productionReadiness')?.innerText||'',overflow:document.querySelector('#productionReadiness').scrollWidth-document.querySelector('#productionReadiness').clientWidth}));
         assert.deepEqual({automatic:readinessState.automatic,manual:readinessState.manual},{automatic:8,manual:7});assert.ok(readinessState.overflow<=1,`${viewport.name} 운영 준비 화면 가로 넘침: ${JSON.stringify(readinessState)}`);assert.ok(!/000000-0000000|010-0000-0001/.test(readinessState.text),'운영 준비 화면에 가상 개인정보 원문도 표시하면 안 됩니다.');
-        assert.ok(readinessState.text.includes('v12.0.2 화면·브랜드·정적 파일 버전이 일치합니다.'),'운영 준비 화면이 v12.0.2 일치 결과를 보여야 합니다.');
+        assert.ok(readinessState.text.includes('v12.0.3 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.'),'운영 준비 화면이 v12.0.3 선택적 캐시 일치 결과를 보여야 합니다.');
         assert.ok(readinessState.text.includes('LOCAL ONLY')&&!/Supabase|클라우드 검증/i.test(readinessState.text),'운영 준비 화면은 LOCAL ONLY 독립 상태만 보여야 합니다.');
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-production-readiness.png`),fullPage:true});
       }

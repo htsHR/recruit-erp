@@ -18,8 +18,8 @@ const readiness=require('../js/production-readiness.js');
 const source=fs.readFileSync(path.join(root,'js','production-readiness.js'),'utf8');
 const version=require('../js/app-version.js');
 
-assert.equal(readiness.VERSION,'12.0.2');
-assert.equal(version.VERSION,'12.0.2');
+assert.equal(readiness.VERSION,'12.0.3');
+assert.equal(version.VERSION,'12.0.3');
 assert.equal(readiness.MANUAL_CHECKS.length,7);
 assert.equal(readiness.context().verificationSource,'local');
 assert.equal(readiness.context().operationEnvironment,'local-only');
