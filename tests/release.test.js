@@ -30,7 +30,7 @@ assert.match(workflow,/fc-cache -f/);
 assert.match(workflow,/fc-match "Noto Sans KR"/);
 assert.match(workflow,/timeout-minutes: 10/);
 assert.match(workflow,/actions\/upload-artifact@v4/);
-assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v11\.5\.2/);
+assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v12\.0\.0/);
 assert.match(workflow,/if: always\(\)/);
 assert.match(workflow,/pull_request:/);
 assert.match(workflow,/branches: \[main\]/);

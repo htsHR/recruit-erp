@@ -339,13 +339,14 @@
     ensureUi();
     const baseSetPage=root.setPage;
     if(typeof baseSetPage==='function')root.setPage=function(page){
-      if(page==='productionReadiness'&&!root.erpPermissions?.has?.('readiness.manage')){root.erpPermissions?.require?.('readiness.manage');return;}
-      baseSetPage(page);
+      if(page==='productionReadiness'&&!root.erpPermissions?.has?.('readiness.manage')){root.erpPermissions?.require?.('readiness.manage');return false;}
+      const result=baseSetPage(page);if(result===false)return false;
       if(page==='productionReadiness'){
         const title=root.document.getElementById('page-title');if(title)title.textContent='운영 준비 점검';
         const breadcrumb=root.document.querySelector('.topbar-breadcrumb');if(breadcrumb)breadcrumb.textContent='자동검사와 운영 모의훈련을 모두 통과해야 READY가 됩니다.';
         render();
       }
+      return result;
     };
     root.document.addEventListener('erp:permission-change',()=>render());
     root.document.addEventListener('erp:operation-environment-change',()=>render());
