@@ -2,24 +2,15 @@
 
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const os=require('node:os');
 const path=require('node:path');
 const {spawn}=require('node:child_process');
 const {chromium}=require('playwright-core');
 const employeeXlsx=require('../js/employee-master-xlsx-import.js');
-const {createBridgeServer,HOST:bridgeHost,PORT:bridgePort}=require('../bridge/erp-bridge.js');
 
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const bridgeTempRoot=fs.realpathSync(os.tmpdir());
-const bridgeTempParent=fs.mkdtempSync(path.join(bridgeTempRoot,'erp-bridge-ui-'));
-const bridgeSharedFolder=path.join(bridgeTempParent,'RecruitERP');
-const bridgeExistingFile=path.join(bridgeSharedFolder,'existing-company-file.txt');
-fs.mkdirSync(bridgeSharedFolder);
-fs.writeFileSync(bridgeExistingFile,'existing file must not change','utf8');
-const bridgeServer=createBridgeServer({allowedOrigin:baseUrl,rootPath:bridgeSharedFolder,port:bridgePort});
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.0.1');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.0.2');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -89,8 +80,37 @@ const hireWaitingWidths={no:52,employeeNo:124,contactStatus:88,hireDate:104,work
 const screens=['home','applicants','form','today','calendar','templates','advancedSearch','stats','schools','employees','onboarding','backup','dataHealth','duplicates','permissions','auditHistory','storagePerformance','productionReadiness'];
 const server=spawn(process.execPath,[path.join(__dirname,'serve-static.js')],{cwd:root,env:{...process.env,ERP_TEST_PORT:String(port)},stdio:['ignore','pipe','pipe']});
 const waitForServer=()=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('로컬 UI 서버 시작 시간 초과')),5000);server.stdout.on('data',data=>{if(String(data).includes(baseUrl)){clearTimeout(timer);resolve();}});server.once('exit',code=>{clearTimeout(timer);reject(new Error(`로컬 UI 서버 종료: ${code}`));});});
+function watchForbiddenRemote(page,label,collector){
+  page.on('request',request=>{
+    const url=request.url();
+    if(/(?:supabase\.co|127\.0\.0\.1:17840|localhost:17840|\/storage\/(?:status|snapshot|initialize))/i.test(url))collector.push(`${label}: ${request.method()} ${url}`);
+  });
+}
+async function verifyFactoryResetLifecycle(browser){
+  const context=await browser.newContext({viewport:{width:1024,height:768}}),page=await context.newPage();
+  const forbidden=[];watchForbiddenRemote(page,'factory-reset',forbidden);
+  await page.addInitScript(()=>{if(!sessionStorage.getItem('factory-reset-reload'))localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');});
+  await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.erpRuntimeMode==='local-only');
+  await page.evaluate(async()=>{
+    for(const key of window.erpFactoryReset.APP_STORAGE_KEYS)localStorage.setItem(key,'synthetic-old-data');
+    localStorage.setItem(`${window.erpFactoryReset.PROJECT_AUTH_PREFIX}auth-token`,'synthetic-old-session');
+    localStorage.setItem('unrelated_web_app_data','must-stay');
+    await new Promise((resolve,reject)=>{const request=indexedDB.open(window.erpFactoryReset.DATABASE_NAME,1);request.onupgradeneeded=()=>request.result.createObjectStore('datasets').put('synthetic-old-record','legacy');request.onsuccess=()=>{request.result.close();resolve();};request.onerror=()=>reject(new Error('IDB_SEED_FAILED'));});
+    sessionStorage.setItem('factory-reset-reload','1');localStorage.removeItem(window.erpFactoryReset.EPOCH_KEY);
+  });
+  await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>window.erpFactoryResetReady&&window.erpRuntimeMode==='local-only');
+  const state=await page.evaluate(async()=>{
+    let legacyRecord=null;
+    if(typeof indexedDB.databases==='function'&&(await indexedDB.databases()).some(item=>item.name===window.erpFactoryReset.DATABASE_NAME))legacyRecord=await new Promise((resolve,reject)=>{const request=indexedDB.open(window.erpFactoryReset.DATABASE_NAME);request.onsuccess=()=>{const db=request.result;if(!db.objectStoreNames.contains('datasets')){db.close();resolve(null);return;}const get=db.transaction('datasets','readonly').objectStore('datasets').get('legacy');get.onsuccess=()=>{db.close();resolve(get.result??null);};get.onerror=()=>{db.close();reject(new Error('IDB_VERIFY_FAILED'));};};request.onerror=()=>reject(new Error('IDB_VERIFY_OPEN_FAILED'));});
+    return {oldValuesRemaining:window.erpFactoryReset.APP_STORAGE_KEYS.filter(key=>localStorage.getItem(key)==='synthetic-old-data'),authRemaining:Object.keys(localStorage).filter(key=>key.startsWith(window.erpFactoryReset.PROJECT_AUTH_PREFIX)),unrelated:localStorage.getItem('unrelated_web_app_data'),epoch:localStorage.getItem(window.erpFactoryReset.EPOCH_KEY),legacyRecord};
+  });
+  assert.deepEqual(state,{oldValuesRemaining:[],authRemaining:[],unrelated:'must-stay',epoch:'v12.0.2-reset-1',legacyRecord:null});
+  assert.deepEqual(forbidden,[],'공장초기화 중 외부 데이터 요청이 발생하면 안 됩니다.');
+  await context.close();
+}
 async function installInitialBootProbe(page){
   await page.addInitScript(fixture=>{
+    localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');
     localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture));
     window.__ux12BootFrames=[];
     let readyFrames=0;
@@ -154,6 +174,7 @@ async function verifyInitialBootLifecycle(browser){
   for(const testCase of cases){
     const context=await browser.newContext({viewport:testCase.viewport,screen:testCase.screen,deviceScaleFactor:testCase.scale});
     const page=await context.newPage();
+    const forbidden=[];watchForbiddenRemote(page,testCase.label,forbidden);
     await page.route('**/js/ux-reboot-v12.js*',async route=>{await new Promise(resolve=>setTimeout(resolve,140));await route.continue();});
     await installInitialBootProbe(page);
     const neutralCapture=(async()=>{await page.waitForTimeout(60);if(testCase.label==='1366x768-zoom100')await page.screenshot({path:path.join(outputDir,'initial-boot-neutral-frame.png'),fullPage:false});})();
@@ -163,6 +184,7 @@ async function verifyInitialBootLifecycle(browser){
     await page.reload({waitUntil:'domcontentloaded'});await assertInitialBoot(page,`${testCase.label} 강력 새로고침`,'home');
     await cdp.send('Network.setCacheDisabled',{cacheDisabled:false});
     await page.goto(`${baseUrl}/#/applicants`,{waitUntil:'domcontentloaded'});await assertInitialBoot(page,`${testCase.label} 직접 라우트`,'applicants');
+    assert.deepEqual(forbidden,[],`${testCase.label} 첫 진입 검사에서 원격 요청이 발생하면 안 됩니다.`);
     await context.close();
   }
 }
@@ -406,7 +428,6 @@ async function verifyApplicantMyViews(page,label,{exercise=false}={}){
   assert.equal(layout.images,0);assert.ok(layout.text.includes('천안 채용 <보기> & "A"'),'저장 보기의 특수문자는 실행되지 않고 글자로 보여야 합니다.');
   await page.screenshot({path:path.join(outputDir,`${label}-applicant-my-view.png`),fullPage:false});
   if(!exercise)return;
-  let bridgePuts=0;const requestListener=request=>{if(request.method()==='PUT'&&request.url()==='http://127.0.0.1:17840/storage/snapshot')bridgePuts++;};page.on('request',requestListener);
   const before=await page.evaluate(()=>({arrays:JSON.stringify(applicants),storage:{...localStorage},saved:localStorage.getItem('recruit_erp_saved_advanced_searches'),filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId}}));
   await page.locator('#applicantMyViewSelect').selectOption('0');await page.locator('#btnApplyApplicantMyView').click();
   const loaded=await page.evaluate(()=>({ids:[...window.__erpAdvancedFilterIds],visible:[...document.querySelectorAll('#applicantTbody .applicant-row')].map(row=>row.dataset.applicantId),criteria:{status:document.getElementById('asStatus').value,workplace:document.getElementById('asWorkplace').value,keyword:document.getElementById('asKeyword').value},arrays:JSON.stringify(applicants),storage:{...localStorage},saved:localStorage.getItem('recruit_erp_saved_advanced_searches')}));
@@ -416,7 +437,6 @@ async function verifyApplicantMyViews(page,label,{exercise=false}={}){
   assert.equal(viewer.result,true);assert.deepEqual(viewer.ids,expected);assert.equal(viewer.saved,before.saved,'조회 전용 내 보기 불러오기도 저장값을 바꾸면 안 됩니다.');
   const emptyStates=await page.evaluate(original=>{localStorage.setItem('recruit_erp_saved_advanced_searches','{}');window.erpSavedAdvancedSearches.render();const legacy=document.getElementById('applicantMyViews').innerText;localStorage.setItem('recruit_erp_saved_advanced_searches','[]');window.erpSavedAdvancedSearches.render();const empty=document.getElementById('applicantMyViews').innerText;localStorage.setItem('recruit_erp_saved_advanced_searches',original);window.erpSavedAdvancedSearches.render();return{legacy,empty};},before.saved);
   assert.deepEqual(emptyStates,{legacy:'내 보기 없음',empty:'내 보기 없음'});
-  assert.equal(bridgePuts,0,'내 보기 조회는 Bridge 저장을 호출하면 안 됩니다.');page.off('request',requestListener);
   await page.evaluate(filters=>{currentWorkplace=filters.currentWorkplace;currentFilter=filters.currentFilter;currentSearch=filters.currentSearch;currentSort=filters.currentSort;hideFinished=filters.hideFinished;currentSchoolFilterId=filters.currentSchoolFilterId;window.__erpAdvancedFilterIds=null;renderTable();},before.filters);
 }
 async function verifyOwnerVisualDesktopShell(page,label){
@@ -430,10 +450,10 @@ async function verifyOwnerVisualDesktopShell(page,label){
   assert.equal(expanded.desktop,true,`${label} 125% 확대에서도 v12 PC 셸을 유지해야 합니다.`);
   assert.ok(Math.abs(expanded.sidebar.width-216)<=1&&Math.abs(expanded.main.left-216)<=1,`${label} 확장 메뉴와 본문 위치 오류: ${JSON.stringify(expanded)}`);
   assert.equal(expanded.sidebar.background,'rgb(255, 255, 255)',`${label} 밝은 PC 메뉴가 어두운 레거시 메뉴로 바뀌면 안 됩니다.`);
-  assert.deepEqual(expanded.brand,['Recruit ERP','v12.0.1'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
+  assert.deepEqual(expanded.brand,['Recruit ERP','v12.0.2'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
   assert.equal(expanded.oldLabels,false,`${label} 중복 영문 업무 라벨이 남아 있습니다.`);
   assert.ok(expanded.overflow<=1,`${label} 확장 메뉴에서 전역 가로 넘침이 있습니다: ${expanded.overflow}`);
-  if(expanded.storage.className.includes('sync-shared-idle-note'))assert.ok(expanded.storage.background!=='rgba(179, 53, 46, 0.14)'&&expanded.storage.height<=100,`${label} 비차단 공용저장 안내는 중립색의 작은 상태 영역이어야 합니다: ${JSON.stringify(expanded.storage)}`);
+  assert.ok(expanded.storage.height<=130,`${label} LOCAL ONLY 상태 안내가 과도한 공간을 차지하면 안 됩니다: ${JSON.stringify(expanded.storage)}`);
   await page.screenshot({path:path.join(outputDir,`${label}-owner-shell-expanded.png`),fullPage:false});
 
   await page.evaluate(()=>{window.setPage('applicants');window.erpApplicantWorksheet?.setViewMode?.('normal');window.erpSavedAdvancedSearches?.render();});await page.waitForTimeout(40);
@@ -457,7 +477,7 @@ async function verifyOwnerVisualDesktopShell(page,label){
 
   await page.locator('#sidebarToggle').click();await page.waitForFunction(()=>document.body.classList.contains('sidebar-collapsed')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-72)<=1);
   const collapsed=await page.evaluate(()=>({sidebar:document.querySelector('.sidebar').getBoundingClientRect().width,main:document.querySelector('.main').getBoundingClientRect().left,statusVisible:!!document.querySelector('.sidebar-status-area')?.getClientRects().length,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth}));
-  assert.deepEqual({sidebar:Math.round(collapsed.sidebar),main:Math.round(collapsed.main),statusVisible:collapsed.statusVisible},{sidebar:72,main:72,statusVisible:false},`${label} 접힌 rail 또는 상태영역 오류: ${JSON.stringify(collapsed)}`);assert.ok(collapsed.overflow<=1);
+  assert.ok(Math.abs(collapsed.sidebar-72)<=1&&Math.abs(collapsed.main-72)<=1&&!collapsed.statusVisible,`${label} 접힌 rail 또는 상태영역 오류: ${JSON.stringify(collapsed)}`);assert.ok(collapsed.overflow<=1);
   await page.screenshot({path:path.join(outputDir,`${label}-owner-shell-collapsed.png`),fullPage:false});
   await page.locator('.sidebar').hover();await page.waitForFunction(()=>document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-216)<=1);
   const preview=await page.evaluate(()=>({sidebar:document.querySelector('.sidebar').getBoundingClientRect().width,main:document.querySelector('.main').getBoundingClientRect().left,labels:[...document.querySelectorAll('.nav-btn>span:last-child')].filter(node=>node.getClientRects().length).length}));
@@ -472,10 +492,7 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
     await page.keyboard.press('Escape');
     await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});
   };
-  let bridgeSaveRequests=0;
   let precheckedSafety=null;
-  const requestListener=request=>{if(request.method()==='PUT'&&request.url()==='http://127.0.0.1:17840/storage/snapshot')bridgeSaveRequests++;};
-  page.on('request',requestListener);
   await page.evaluate(rows=>{
     window.__quickDetailOriginalApplicants=applicants;
     applicants=rows.map(row=>({...row}));
@@ -541,9 +558,7 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
     const baseline=window.__quickDetailBaseline,keys=Object.keys(baseline.storage),result=prechecked||{saveCalls:window.__quickDetailSaveCalls,arrays:{applicants:JSON.stringify(applicants)===baseline.arrays.applicants,employees:JSON.stringify(employees)===baseline.arrays.employees,schools:JSON.stringify(schools)===baseline.arrays.schools,events:(typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents))===baseline.arrays.events},storage:keys.every(key=>localStorage.getItem(key)===baseline.storage[key])};
     window.save=window.__quickDetailRealSave;applicants=window.__quickDetailOriginalApplicants;delete window.__quickDetailRealSave;delete window.__quickDetailOriginalApplicants;delete window.__quickDetailBaseline;delete window.__quickDetailSaveCalls;resetListFiltersToAll();renderAll();setPage('applicants');return result;
   },precheckedSafety);
-  page.off('request',requestListener);
   assert.deepEqual(safety,{saveCalls:0,arrays:{applicants:true,employees:true,schools:true,events:true},storage:true},`${label} 빠른 보기 동작은 업무 배열·저장값·save를 변경하면 안 됩니다.`);
-  assert.equal(bridgeSaveRequests,0,`${label} 빠른 보기 동작은 Bridge 저장 PUT을 호출하면 안 됩니다.`);
 }
 async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
   await page.evaluate(rows=>{
@@ -595,9 +610,6 @@ async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
   if(!exercise){await restoreFixture();return;}
 
   const id=fakeApplicants[0].id,otherId=fakeApplicants[1].id;
-  let bridgePuts=0;
-  const bridgeListener=request=>{if(request.method()==='PUT'&&request.url()==='http://127.0.0.1:17840/storage/snapshot')bridgePuts++;};
-  page.on('request',bridgeListener);
   const before=await page.evaluate(()=>({applicants:JSON.stringify(applicants),employees:JSON.stringify(employees),schools:JSON.stringify(schools),events:typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents),storage:localStorage.getItem('recruit_erp_applicants_stable')}));
 
   const nameCell=page.locator('#applicantWorksheet tr[data-applicant-id="'+id+'"] [data-field="name"]');
@@ -608,7 +620,6 @@ async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
   await emailCell.click();await emailCell.evaluate(cell=>{const data=new DataTransfer();data.setData('text/plain','worksheet@example.invalid\t 가상지역 ');cell.dispatchEvent(new ClipboardEvent('paste',{bubbles:true,cancelable:true,clipboardData:data}));});
   let staged=await page.evaluate(id=>({row:applicants.find(item=>item.id===id),storage:localStorage.getItem('recruit_erp_applicants_stable'),dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length,redo:window.erpApplicantWorksheet.state.history.redo.length}),id);
   assert.equal(staged.row.name,'테스트지원자1');assert.equal(staged.storage,before.storage);assert.deepEqual({dirty:staged.dirty,undo:staged.undo,redo:staged.redo},{dirty:4,undo:3,redo:0});
-  assert.equal(bridgePuts,0,'저장 전에는 Bridge PUT을 호출하면 안 됩니다.');
 
   await emailCell.click();await page.keyboard.press('Control+z');
   assert.deepEqual(await page.evaluate(()=>({dirty:window.erpApplicantWorksheet.state.dirty.size,undo:window.erpApplicantWorksheet.state.history.undo.length,redo:window.erpApplicantWorksheet.state.history.redo.length})),{dirty:2,undo:2,redo:1},'붙여넣기 전체가 한 번에 실행 취소되어야 합니다.');
@@ -643,13 +654,11 @@ async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
   await page.locator('#btnWorksheetSave').click();await page.locator('#applicantWorksheetReview:not([hidden])').waitFor();await page.locator('#btnWorksheetReviewConfirm').click();await page.waitForFunction(()=>window.erpApplicantWorksheet.state.dirty.size===0);
   const saved=await page.evaluate(id=>{const result={calls:window.__worksheetSaveCalls,row:applicants.find(item=>item.id===id),stored:JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')).find(item=>item.id===id),undo:window.erpApplicantWorksheet.state.history.undo.length,redo:window.erpApplicantWorksheet.state.history.redo.length};window.save=window.__worksheetRealSave;delete window.__worksheetRealSave;return result;},id);
   assert.equal(saved.calls,1,'워크시트 저장은 기존 save를 정확히 한 번만 호출해야 합니다.');assert.equal(saved.row.name,'가상워크시트수정');assert.equal(saved.row.phone,otherPhone);assert.equal(saved.row.email,'worksheet@example.invalid');assert.equal(saved.row.region,'가상지역');assert.equal(saved.stored.name,'가상워크시트수정');assert.deepEqual({undo:saved.undo,redo:saved.redo},{undo:0,redo:0});
-  const bridgePutsAfterSuccess=bridgePuts;
 
   await page.evaluate(id=>{window.erpApplicantWorksheet.setDirty(id,'region','가상실패지역');window.__worksheetFailureBefore=JSON.stringify(applicants);window.__worksheetFailureStorage=localStorage.getItem('recruit_erp_applicants_stable');window.__worksheetHistoryBefore=window.erpApplicantWorksheet.state.history.undo.length;window.__worksheetRealSave=window.save;window.__worksheetSaveCalls=0;window.save=()=>{window.__worksheetSaveCalls++;return false;};},id);
   await page.locator('#btnWorksheetSave').click();await page.locator('#btnWorksheetReviewConfirm').click();
   const failed=await page.evaluate(()=>{const result={calls:window.__worksheetSaveCalls,memory:JSON.stringify(applicants)===window.__worksheetFailureBefore,storage:localStorage.getItem('recruit_erp_applicants_stable')===window.__worksheetFailureStorage,dirty:window.erpApplicantWorksheet.state.dirty.size,history:window.erpApplicantWorksheet.state.history.undo.length===window.__worksheetHistoryBefore};window.save=window.__worksheetRealSave;delete window.__worksheetRealSave;return result;});
   assert.deepEqual(failed,{calls:1,memory:true,storage:true,dirty:1,history:true},'저장 실패는 전체 원상복구하고 dirty·히스토리를 유지해야 합니다.');
-  assert.equal(bridgePuts,bridgePutsAfterSuccess,'저장 실패 중 추가 Bridge PUT이 발생하면 안 됩니다.');
 
   await page.evaluate(id=>window.erpApplicantWorksheet.setDirty(id,'name','<img src=x onerror=alert(1)>'),id);
   assert.equal(await page.locator('#applicantWorksheet img').count(),0,'사용자 문자열이 HTML 요소로 실행되면 안 됩니다.');
@@ -664,7 +673,6 @@ async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
 
   const unchanged=await page.evaluate(baseline=>({employees:JSON.stringify(employees)===baseline.employees,schools:JSON.stringify(schools)===baseline.schools,events:(typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents))===baseline.events}),before);
   assert.deepEqual(unchanged,{employees:true,schools:true,events:true});
-  page.off('request',bridgeListener);
   await restoreFixture();
 }
 async function verifyHireWaitingGrid(page,label,{mobile=false}={}){
@@ -810,27 +818,28 @@ async function verifyProductionGateContentSafety(page,label){
 function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(label)?390:/^768x/.test(label)?768:/^1024x/.test(label)?1024:/^1280x/.test(label)?1280:1366;}
 
 (async()=>{
-  await new Promise((resolve,reject)=>{bridgeServer.once('error',reject);bridgeServer.listen(bridgePort,bridgeHost,resolve);});
   await waitForServer();
   const browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox']});
   const consoleErrors=[];
   try{
+    await verifyFactoryResetLifecycle(browser);
     await verifyInitialBootLifecycle(browser);
     for(const viewport of viewports){
       const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height}});
       const page=await context.newPage();
+      const forbiddenRemoteRequests=[];watchForbiddenRemote(page,viewport.name,forbiddenRemoteRequests);
       page.on('pageerror',error=>consoleErrors.push(`${viewport.name}: ${error.message}`));
       page.on('console',message=>{const source=`${message.text()} ${message.location().url||''}`;if(message.type()==='error'&&!/favicon/i.test(source))consoleErrors.push(`${viewport.name}: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
       await page.addInitScript(fixture=>{
+        localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');
         localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));
         localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));
         localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
-        localStorage.setItem('sb-yqijxkdmcpmvifkbamnr-auth-token',JSON.stringify({access_token:'synthetic-old-session',user:{id:'synthetic-user'}}));
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v12.0.1');
-      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.0.1','화면은 단일 현재 버전 소스를 사용해야 합니다.');
+      assert.equal(await page.title(),'채용관리 시스템 v12.0.2');
+      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.0.2','화면은 단일 현재 버전 소스를 사용해야 합니다.');
       const localOnlyState=await page.evaluate(()=>({
         active:document.querySelector('.page.active')?.id,
         localOnly:window.erpAppVersion?.LOCAL_ONLY===true&&window.erpLocalOnlyRuntime?.enabled===true,
@@ -893,31 +902,9 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         await page.locator('#storagePerformanceBody .storage-metric-grid').waitFor();
         const storageState=await page.evaluate(()=>({active:document.querySelector('.page.active')?.id,count:document.querySelectorAll('#storagePerformanceBody .storage-metric-grid article').length,overflow:document.querySelector('#storagePerformance').scrollWidth-document.querySelector('#storagePerformance').clientWidth,mirror:document.querySelector('#storagePerformanceBody')?.innerText||''}));
         assert.equal(storageState.active,'storagePerformance');assert.equal(storageState.count,4);assert.ok(storageState.overflow<=1,`${viewport.name} 저장소 화면 가로 넘침: ${JSON.stringify(storageState)}`);assert.ok(storageState.mirror.includes('지원자')&&storageState.mirror.includes('3건'));
-        assert.ok(storageState.mirror.includes('로컬 Bridge 연결 테스트'),'로컬 Bridge 연결 진단 버튼이 보여야 합니다.');
-        assert.ok(storageState.mirror.includes('공용 ERP 저장소'),'공용 ERP 영구 저장 상태가 보여야 합니다.');
-        if(viewport.width===390){
-          const bridgeBefore=await page.evaluate(()=>{const values={...localStorage};delete values.recruit_erp_shared_storage_revision_meta_v1;return JSON.stringify(values);});
-          await page.locator('#btnLocalBridgeTest').click();
-          try{await page.locator('#bridgeTestResult.is-success').waitFor({timeout:7000});}
-          catch(error){
-            const diagnostic=await page.evaluate(async()=>{try{const response=await fetch('http://127.0.0.1:17840/health',{headers:{Accept:'application/json'}});return {status:response.status,text:await response.text(),result:document.querySelector('#bridgeTestResult')?.innerText||''};}catch(fetchError){return {error:String(fetchError),result:document.querySelector('#bridgeTestResult')?.innerText||''};}});
-            throw new Error(`Bridge 브라우저 연결 실패: ${JSON.stringify(diagnostic)} / ${error.message}`);
-          }
-          const bridgeState=await page.evaluate(()=>{const values={...localStorage};delete values.recruit_erp_shared_storage_revision_meta_v1;return {after:JSON.stringify(values),result:document.querySelector('#bridgeTestResult')?.innerText||''};});
-          assert.equal(bridgeState.after,bridgeBefore,'Bridge 연결 테스트는 localStorage를 변경하면 안 됩니다.');assert.ok(bridgeState.result.includes('ERP Bridge 연결 성공')&&bridgeState.result.includes('로컬 저장 프로그램과 ERP 통신이 가능합니다.'));
-          page.once('dialog',dialog=>dialog.accept());await page.locator('#btnSharedStorageInitialize').click();
-          await page.waitForFunction(()=>window.erpSharedStorage?.publicState?.().phase==='ready',null,{timeout:15000});
-          await page.waitForFunction(()=>document.querySelector('.shared-storage-panel')?.innerText.includes('공용 ERP 연결됨'));
-          const sharedState=await page.evaluate(()=>{const values={...localStorage};delete values.recruit_erp_shared_storage_revision_meta_v1;return {after:JSON.stringify(values),state:window.erpSharedStorage.publicState(),result:document.querySelector('.shared-storage-panel')?.innerText||''};});
-          assert.equal(sharedState.after,bridgeBefore,'공용 저장소 초기화는 기존 localStorage 내용을 바꾸면 안 됩니다.');
-          assert.ok(sharedState.result.includes('공용 ERP 연결됨')&&sharedState.state.revision===1);
-          assert.equal(await page.locator('#btnSharedStorageInitialize').count(),0,'master 생성 후 초기화 버튼이 다시 보이면 안 됩니다.');
-          assert.equal(await page.locator('#btnSharedStorageSave').count(),0,'정상 운영 화면에 반복 수동 저장 버튼을 표시하면 안 됩니다.');
-          assert.equal(fs.readFileSync(bridgeExistingFile,'utf8'),'existing file must not change','공용폴더 기존 파일을 바꾸면 안 됩니다.');
-          assert.deepEqual(fs.readdirSync(bridgeSharedFolder).sort(),['ERP_DATA','existing-company-file.txt']);
-          const sharedMaster=fs.readFileSync(path.join(bridgeSharedFolder,'ERP_DATA','erp-data.json'),'utf8');
-          assert.ok(!sharedMaster.includes('residentNumber')&&!/000000-?0000000/.test(sharedMaster),'공용 snapshot에 주민번호 필드와 값이 있으면 안 됩니다.');
-        }
+        assert.ok(storageState.mirror.includes('LOCAL ONLY'),'저장소 화면은 브라우저 전용 LOCAL ONLY 상태를 보여야 합니다.');
+        assert.ok(!/Bridge|공용 ERP|Supabase/i.test(storageState.mirror),'Production 저장소 화면에 폐기된 원격 저장 UI가 남으면 안 됩니다.');
+        assert.equal(await page.locator('#btnLocalBridgeTest,#btnSharedStorageInitialize,#btnSharedStorageSave,.shared-storage-panel').count(),0);
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-storage-performance.png`),fullPage:true});
         await page.evaluate(()=>window.setPage?.('backup'));await page.waitForTimeout(80);
         assert.ok(await page.locator('#bcEncryptedPanel').isVisible(),'암호화 백업이 기본 화면에 보여야 합니다.');
@@ -931,8 +918,8 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         await page.evaluate(()=>window.setPage?.('productionReadiness'));await page.waitForTimeout(120);
         const readinessState=await page.evaluate(()=>({automatic:document.querySelectorAll('#productionReadiness .readiness-check').length,manual:document.querySelectorAll('#productionReadiness [data-readiness-manual]').length,text:document.querySelector('#productionReadiness')?.innerText||'',overflow:document.querySelector('#productionReadiness').scrollWidth-document.querySelector('#productionReadiness').clientWidth}));
         assert.deepEqual({automatic:readinessState.automatic,manual:readinessState.manual},{automatic:8,manual:7});assert.ok(readinessState.overflow<=1,`${viewport.name} 운영 준비 화면 가로 넘침: ${JSON.stringify(readinessState)}`);assert.ok(!/000000-0000000|010-0000-0001/.test(readinessState.text),'운영 준비 화면에 가상 개인정보 원문도 표시하면 안 됩니다.');
-        assert.ok(readinessState.text.includes('v12.0.1 화면·브랜드·정적 파일 버전이 일치합니다.'),'운영 준비 화면이 v12.0.1 일치 결과를 보여야 합니다.');
-        assert.equal(readinessState.text.split('Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용.').length-1,1,'유출 비밀번호 요금제 제한 설명은 같은 화면에 한 번만 표시해야 합니다.');
+        assert.ok(readinessState.text.includes('v12.0.2 화면·브랜드·정적 파일 버전이 일치합니다.'),'운영 준비 화면이 v12.0.2 일치 결과를 보여야 합니다.');
+        assert.ok(readinessState.text.includes('LOCAL ONLY')&&!/Supabase|클라우드 검증/i.test(readinessState.text),'운영 준비 화면은 LOCAL ONLY 독립 상태만 보여야 합니다.');
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-production-readiness.png`),fullPage:true});
       }
       const introState=await page.evaluate(()=>({
@@ -1023,19 +1010,20 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         }
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-school-workforce.png`),fullPage:false});await restoreSchoolWorkforceFixture(page);
       }
+      assert.deepEqual(forbiddenRemoteRequests,[],`${viewport.name}에서 Supabase·Bridge 요청이 발생하면 안 됩니다.`);
       await context.close();
     }
 
-    const sidebarContext=await browser.newContext({viewport:{width:1363,height:936}}),sidebarPage=await sidebarContext.newPage();
+    const sidebarContext=await browser.newContext({viewport:{width:1363,height:936}}),sidebarPage=await sidebarContext.newPage();watchForbiddenRemote(sidebarPage,'1363x936-sidebar',consoleErrors);
     sidebarPage.on('pageerror',error=>consoleErrors.push(`1363x936-sidebar: ${error.message}`));
-    await sidebarPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_ui_operation_environment','company');}, {applicants:fakeApplicants});
+    await sidebarPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_ui_operation_environment','company');}, {applicants:fakeApplicants});
     await sidebarPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await sidebarPage.waitForTimeout(700);await verifyUsabilityPolish(sidebarPage,'1363x936-sidebar');
     await sidebarPage.locator('.sidebar').screenshot({path:path.join(outputDir,'1363x936-sidebar.png')});await sidebarContext.close();
 
-    const zoomContext=await browser.newContext({viewport:{width:1093,height:614},deviceScaleFactor:1.25}),zoomPage=await zoomContext.newPage();
+    const zoomContext=await browser.newContext({viewport:{width:1093,height:614},deviceScaleFactor:1.25}),zoomPage=await zoomContext.newPage();watchForbiddenRemote(zoomPage,'1366x768-zoom125',consoleErrors);
     zoomPage.on('pageerror',error=>consoleErrors.push(`1366x768-zoom125: ${error.message}`));
     zoomPage.on('console',message=>{const source=`${message.text()} ${message.location().url||''}`;if(message.type()==='error'&&!/favicon/i.test(source))consoleErrors.push(`1366x768-zoom125: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
-    await zoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
+    await zoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
     await zoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await zoomPage.waitForTimeout(700);
     await verifyOwnerVisualDesktopShell(zoomPage,'1366x768-zoom125');
     await verifyApplicantQuickDetail(zoomPage,'1366x768-zoom125');
@@ -1062,14 +1050,14 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     await openSchoolWorkforceFixture(zoomPage);const zoomWorkforce=await zoomPage.evaluate(()=>{const card=document.querySelector('.school-workforce-card').getBoundingClientRect(),topElement=document.elementFromPoint(card.right-24,card.top+24);return{left:card.left,right:card.right,top:card.top,bottom:card.bottom,width:innerWidth,height:innerHeight,modalOnTop:!!topElement?.closest('#schoolWorkforceModal')};});assert.ok(zoomWorkforce.left>=-1&&zoomWorkforce.right<=zoomWorkforce.width+1&&zoomWorkforce.top>=-1&&zoomWorkforce.bottom<=zoomWorkforce.height+1,`1366×768 125% 학교 인력분석 팝업 잘림: ${JSON.stringify(zoomWorkforce)}`);assert.equal(zoomWorkforce.modalOnTop,true,'1366×768 125% 학교 인력분석 팝업은 상단바보다 위에 보여야 합니다.');await zoomPage.screenshot({path:path.join(outputDir,'1366x768-zoom125-school-workforce.png'),fullPage:false});await restoreSchoolWorkforceFixture(zoomPage);
     await zoomContext.close();
 
-    const owner1280ZoomContext=await browser.newContext({viewport:{width:1024,height:576},screen:{width:1280,height:720},deviceScaleFactor:1.25}),owner1280ZoomPage=await owner1280ZoomContext.newPage();
+    const owner1280ZoomContext=await browser.newContext({viewport:{width:1024,height:576},screen:{width:1280,height:720},deviceScaleFactor:1.25}),owner1280ZoomPage=await owner1280ZoomContext.newPage();watchForbiddenRemote(owner1280ZoomPage,'1280x720-zoom125',consoleErrors);
     owner1280ZoomPage.on('pageerror',error=>consoleErrors.push(`1280x720-zoom125: ${error.message}`));
     owner1280ZoomPage.on('console',message=>{const source=`${message.text()} ${message.location().url||''}`;if(message.type()==='error'&&!/favicon/i.test(source))consoleErrors.push(`1280x720-zoom125: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
-    await owner1280ZoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
+    await owner1280ZoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
     await owner1280ZoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await owner1280ZoomPage.waitForTimeout(700);await verifyOwnerVisualDesktopShell(owner1280ZoomPage,'1280x720-zoom125');await owner1280ZoomContext.close();
 
-    const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
-    await page.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(700);
+    const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();watchForbiddenRemote(page,'390x844-final',consoleErrors);
+    await page.addInitScript(fixture=>{localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(700);
     await page.evaluate(()=>window.setPage?.('form'));
     assert.equal(await page.locator('[data-form-step="2"] [data-form-step-status]').innerText(),'선택 입력');
     assert.equal(await page.locator('#formProgressText').innerText(),'필수 0/1 단계 완료');
@@ -1110,7 +1098,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     const rollbackBefore=await page.evaluate(id=>{const a=applicants.find(item=>item.id===id);return {status:a.status,memo:a.memo};},existingId);await page.evaluate(()=>{window.__uiOriginalSave=window.save;window.save=()=>false;});await submitStatusChange(page,existingId,'입사예정',{memo:'저장되면 안 되는 메모'});await page.evaluate(()=>{window.save=window.__uiOriginalSave;delete window.__uiOriginalSave;});const rollbackAfter=await page.evaluate(id=>{const a=applicants.find(item=>item.id===id);return {status:a.status,memo:a.memo};},existingId);assert.deepEqual(rollbackAfter,rollbackBefore,'저장 실패 시 상태와 메모가 모두 원상복구되어야 합니다.');
     await page.evaluate(()=>{window.erpAudit.recordEvent({entityType:'applicant',entityId:'fake',entityLabel:'테*',action:'update',fields:['phone','memo'],before:{phone:'010-9999-9999',memo:'비밀메모'},after:{phone:'010-8888-8888',memo:'변경메모'},reason:'연락처 010-7777-7777 test@example.com'});window.setPage('auditHistory');window.erpAudit.renderPage();});assert.ok(!(await page.locator('#auditHistory').innerText()).includes('010-7777-7777'));assert.ok(!(await page.locator('#auditHistory').innerText()).includes('test@example.com'));
     for(const role of ['admin','recruiter','viewer']){
-      await page.evaluate(async role=>{window.sb={from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:{user_id:'fake-user',email:'fake@example.com',display_name:'가상 사용자',role}})})};await window.erpPermissions.load({user:{id:'fake-user',email:'fake@example.com'}});},role);
+      await page.evaluate(role=>window.erpPermissions.useLocal('',role),role);
       await page.evaluate(()=>{window.setPage('applicants');window.erpApplicantWorksheet?.setViewMode?.('normal');renderTable();window.openApplicantQuickDetail(applicants[0]?.id);});await page.locator('#applicantQuickDetail.is-open').waitFor();
       const quickPermission=await page.evaluate(()=>({editVisible:document.getElementById('btnApplicantQuickDetailEdit').getClientRects().length>0,deleteButtons:document.querySelectorAll('#applicantQuickDetail [data-erp-handler*="delete"],#applicantQuickDetail .delete').length,page:document.querySelector('.page.active')?.id,text:document.getElementById('applicantQuickDetail').innerText}));
       assert.equal(quickPermission.editVisible,role!=='viewer',`${role} 빠른 보기 수정 권한 표시가 잘못되었습니다.`);assert.equal(quickPermission.deleteButtons,0,'빠른 보기에는 삭제 동작이 없어야 합니다.');assert.ok(!/000000-0000000|\d{6}-\d{7}/.test(quickPermission.text),'역할별 빠른 보기에 주민등록번호가 표시되면 안 됩니다.');
@@ -1121,9 +1109,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
       const state=await page.evaluate(()=>{window.setPage('onboarding');window.erpOnboarding.openModal('33333333-3333-4333-8333-333333333333');const value={role:window.erpPermissions.current().role,formHidden:document.querySelector('[data-page="form"]')?.classList.contains('erp-permission-hidden'),backupHidden:document.querySelector('[data-page="backup"]')?.classList.contains('erp-permission-hidden'),auditHidden:document.querySelector('[data-page="auditHistory"]')?.classList.contains('erp-permission-hidden'),readinessHidden:document.querySelector('[data-page="productionReadiness"]')?.classList.contains('erp-permission-hidden'),dailyStartHidden:document.querySelector('#btnDailyStartFirst')?.classList.contains('erp-permission-hidden'),onboardingVisible:document.querySelector('[data-page="onboarding"]')&&!document.querySelector('[data-page="onboarding"]').classList.contains('erp-permission-hidden'),saveVisible:!document.querySelector('#btnOnboardingSave').hidden,convertVisible:!document.querySelector('#btnOnboardingConvert').hidden};window.erpOnboarding.closeModal();return value;});assert.equal(state.role,role);assert.ok(state.onboardingVisible);if(role==='admin')assert.ok(!state.formHidden&&!state.backupHidden&&!state.auditHidden&&!state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&state.convertVisible);if(role==='recruiter')assert.ok(!state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&!state.dailyStartHidden&&state.saveVisible&&!state.convertVisible);if(role==='viewer')assert.ok(state.formHidden&&state.backupHidden&&state.auditHidden&&state.readinessHidden&&state.dailyStartHidden&&!state.saveVisible&&!state.convertVisible);
       await openSchoolWorkforceFixture(page);const workforcePermission=await page.evaluate(()=>({privacy:!!document.querySelector('#schoolWorkforceRoster .school-workforce-privacy'),rows:document.querySelectorAll('#schoolWorkforceRoster tbody tr').length,exportDisabled:document.querySelector('#btnSchoolWorkforceExport').disabled,text:document.querySelector('#schoolWorkforceRoster').innerText}));if(role==='viewer'){assert.equal(workforcePermission.privacy,true);assert.equal(workforcePermission.rows,0);assert.equal(workforcePermission.exportDisabled,true);assert.ok(!workforcePermission.text.includes('가상재직자'));}else{assert.equal(workforcePermission.privacy,false);assert.ok(workforcePermission.rows>=3);assert.equal(workforcePermission.exportDisabled,false);}await restoreSchoolWorkforceFixture(page);
     }
-    await page.evaluate(()=>{window.erpPermissions.useLocal();localStorage.setItem('recruit_erp_ui_operation_environment','company');document.documentElement.dataset.operationEnvironment='company';window.setPage('productionReadiness');});await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('로컬 참고용'));const localRoles=page.locator('[data-readiness-manual="roles_rls"]');const leakedPlanLimit=page.locator('[data-readiness-manual="leaked_credential_protection"]');assert.equal(await localRoles.isDisabled(),true,'local_admin은 roles_rls를 체크할 수 없어야 합니다.');assert.equal(await leakedPlanLimit.isDisabled(),true,'알려진 요금제 제한은 수동 체크 항목이 아니어야 합니다.');const readinessText=await page.locator('#productionReadiness').innerText();assert.ok(readinessText.includes('Supabase 관리자 계정으로 로그인한 상태에서만 확인할 수 있습니다.'));assert.ok(readinessText.includes('알려진 요금제 제한'));assert.ok(readinessText.includes('Supabase Free 요금제 사용으로 Leaked Password Protection은 미사용.'));await page.locator('#btnReadinessCapacity').click();await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('최근 검사'));const readinessCapacity=await page.evaluate(()=>JSON.parse(localStorage.getItem('recruit_erp_production_readiness_v1100'))?.capacity);assert.deepEqual(readinessCapacity.counts,{applicants:5000,employees:1000,schools:500});assert.equal(readinessCapacity.passed,true);const readinessStored=await page.evaluate(()=>localStorage.getItem('recruit_erp_production_readiness_v1100'));assert.ok(!JSON.parse(readinessStored).manual.roles_rls,'로컬 상태에서 roles_rls 기록을 만들면 안 됩니다.');for(const secret of ['테스트지원자1','010-0000-0001','000000-0000000'])assert.ok(!readinessStored.includes(secret),`운영 준비 상태에 개인정보가 남으면 안 됩니다: ${secret}`);const [readinessDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#btnReadinessExport').click()]);const readinessReport=JSON.parse(fs.readFileSync(await readinessDownload.path(),'utf8'));assert.equal(readinessReport.format,'recruit-erp-production-readiness');assert.equal(readinessReport.overall,'not-ready');assert.equal(readinessReport.verificationSource,'local');assert.equal(readinessReport.migrationVerified,false);assert.equal(readinessReport.knownLimitations.length,1);assert.match(readinessReport.limitation,/전자서명된 증명서가 아닙니다/);assert.ok(!JSON.stringify(readinessReport).includes('테스트지원자1'));
-    await page.evaluate(async()=>{window.__readinessOriginalSb=window.sb;window.__readinessOriginalCanUseCloud=window.canUseCloud;window.sb={auth:{getSession:async()=>({data:{session:{user:{id:'fake-cloud-admin'}}}})},from:()=>({select(){return this},eq(){return this},maybeSingle:async()=>({data:{user_id:'fake-cloud-admin',email:'admin@example.com',display_name:'가상 관리자',role:'admin'}})})};window.canUseCloud=()=>true;localStorage.setItem('recruit_erp_ui_operation_environment','home');document.documentElement.dataset.operationEnvironment='home';await window.erpPermissions.load({user:{id:'fake-cloud-admin',email:'admin@example.com'}});document.dispatchEvent(new CustomEvent('erp:operation-environment-change',{detail:{mode:'home'}}));window.setPage('productionReadiness');});await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('클라우드 검증'));assert.equal(await page.locator('[data-readiness-manual="roles_rls"]').isDisabled(),false,'cloud admin은 roles_rls를 체크할 수 있어야 합니다.');assert.equal(await page.locator('[data-readiness-manual="leaked_credential_protection"]').isDisabled(),true,'cloud admin에서도 알려진 요금제 제한은 체크하지 않아야 합니다.');await page.locator('[data-readiness-manual="roles_rls"]').check();const cloudReadinessStored=JSON.parse(await page.evaluate(()=>localStorage.getItem('recruit_erp_production_readiness_v1100')));assert.equal(cloudReadinessStored.manual.roles_rls.role,'admin');assert.equal(cloudReadinessStored.manual.roles_rls.source,'cloud');assert.equal(cloudReadinessStored.manual.leaked_credential_protection,undefined);await page.evaluate(()=>{window.erpPermissions.useLocal();window.sb=window.__readinessOriginalSb;window.canUseCloud=window.__readinessOriginalCanUseCloud;delete window.__readinessOriginalSb;delete window.__readinessOriginalCanUseCloud;});
-    await page.locator('#btnPrivacyShield').click();assert.ok(await page.locator('#privacyShieldOverlay').isVisible());await page.locator('#btnPrivacyUnlock').click();
+    await page.evaluate(()=>window.erpPermissions.useLocal());await page.locator('#btnPrivacyShield').click();assert.ok(await page.locator('#privacyShieldOverlay').isVisible());await page.locator('#btnPrivacyUnlock').click();
     await page.evaluate(()=>{localStorage.setItem('recruit_erp_ui_operation_environment','home');window.setPage('backup');});await page.locator('#bcEncryptedFull').click();await page.locator('#encryptedBackupPassword').fill('가상 내보내기 긴 비밀번호 2026');await page.locator('#encryptedBackupConfirm').fill('가상 내보내기 긴 비밀번호 2026');const [encryptedDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#encryptedBackupSubmit').click()]);assert.match(encryptedDownload.suggestedFilename(),/\.erpbackup$/);const downloadedEnvelope=JSON.parse(fs.readFileSync(await encryptedDownload.path(),'utf8'));assert.equal(downloadedEnvelope.format,'recruit-erp-encrypted-backup');assert.ok(!JSON.stringify(downloadedEnvelope).includes('테스트지원자1'),'암호화 다운로드 파일에 가상 이름도 평문으로 노출되면 안 됩니다.');const downloadedPackage=await page.evaluate(async({envelope,password})=>window.erpEncryptedBackup.decryptEnvelope(envelope,password),{envelope:downloadedEnvelope,password:'가상 내보내기 긴 비밀번호 2026'});assert.equal(downloadedPackage.format,'recruit-erp-backup');assert.equal(downloadedPackage.schemaVersion,2);assert.equal(downloadedPackage.data.applicants.length,3);assert.ok(!await page.evaluate(()=>JSON.stringify({...localStorage,...sessionStorage}).includes('가상 내보내기 긴 비밀번호 2026')),'비밀번호는 브라우저 저장소에 남으면 안 됩니다.');await page.locator('#encryptedBackupDialog').waitFor({state:'hidden'});
     const normalizeLogs=await page.evaluate(()=>{const logs=[];const originalWarn=console.warn;const originalNormalize=window.normalize;console.warn=(...args)=>logs.push(args.map(String).join(' '));window.normalize=()=>{throw new Error('가상개인정보 010-9876-5432 000000-0000000');};try{window.erpBackupCenter.__test.normalizeRows('applicants',[{id:'safe-log-row',name:'가상개인정보',phone:'010-9876-5432',residentNumber:'000000-0000000'}]);}finally{window.normalize=originalNormalize;console.warn=originalWarn;}return logs;});assert.deepEqual(normalizeLogs,['백업 데이터 정규화 실패: applicants, 1번째 행']);for(const secret of ['가상개인정보','010-9876-5432','000000-0000000'])assert.ok(!normalizeLogs.join(' ').includes(secret),`정규화 로그에 개인정보가 남으면 안 됩니다: ${secret}`);
     const exportAuditBefore=await page.evaluate(()=>window.erpAudit.readLocal().filter(row=>row.reason==='암호화 백업 생성 실패').length);await page.evaluate(()=>{window.__realEncryptForAudit=window.erpEncryptedBackup.encryptObject;window.erpEncryptedBackup.encryptObject=async()=>{throw new Error('가상 내보내기 실패 010-9999-9999');};window.setPage('backup');});await page.locator('#bcEncryptedFull').click();await page.locator('#encryptedBackupPassword').fill('감사로그 시험용 긴 비밀번호 2026');await page.locator('#encryptedBackupConfirm').fill('감사로그 시험용 긴 비밀번호 2026');await page.locator('#encryptedBackupSubmit').click();await page.locator('#encryptedBackupHelp.error').waitFor();assert.equal(await page.locator('#encryptedBackupHelp').innerText(),'암호화 작업을 완료하지 못했습니다.');const exportAudit=await page.evaluate(before=>{window.erpEncryptedBackup.encryptObject=window.__realEncryptForAudit;delete window.__realEncryptForAudit;const rows=window.erpAudit.readLocal().filter(row=>row.reason==='암호화 백업 생성 실패');return {delta:rows.length-before,row:rows[0]};},exportAuditBefore);assert.equal(exportAudit.delta,1,'암호화 내보내기 실패 감사로그는 정확히 1건이어야 합니다.');assert.equal(exportAudit.row.action,'export');assert.equal(exportAudit.row.entity_type,'export');const auditText=JSON.stringify(exportAudit.row);assert.ok(!auditText.includes('감사로그 시험용 긴 비밀번호 2026'));assert.doesNotMatch(auditText,/"(?:salt|iv|ciphertext|payload)"/i);await page.keyboard.press('Escape');await page.evaluate(()=>{window.setPage('auditHistory');window.erpAudit.renderPage();});assert.equal(await page.locator('#auditTypeFilter option[value="export"]').innerText(),'백업·내보내기');await page.locator('#auditTypeFilter').selectOption('export');assert.ok((await page.locator('#auditHistory').innerText()).includes('암호화 백업 생성 실패'));await page.evaluate(()=>window.setPage('backup'));
@@ -1135,13 +1121,20 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     const restoreBaseline=await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable'));await page.locator('#encryptedBackupDialog:not([hidden])').waitFor();await page.locator('#encryptedBackupPassword').fill('틀린 가상 비밀번호 12345');await page.locator('#encryptedBackupSubmit').click();await page.locator('#encryptedBackupHelp.error').waitFor();assert.equal(await page.locator('#encryptedBackupHelp').innerText(),'비밀번호가 맞지 않거나 파일이 손상되었습니다.');assert.equal(await page.locator('#encryptedBackupPassword').inputValue(),'','실패 후 비밀번호 입력값을 지워야 합니다.');assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),restoreBaseline,'비밀번호 오류는 ERP 데이터를 바꾸면 안 됩니다.');await page.screenshot({path:path.join(outputDir,'390x844-encrypted-wrong-password.png'),fullPage:false});await page.keyboard.press('Escape');
     await page.evaluate(async()=>{const malicious=JSON.parse('{"format":"recruit-erp-backup","schemaVersion":2,"data":{"applicants":[{"id":"safe-app-9","constructor":{"polluted":true}}]}}');const envelope=await window.erpEncryptedBackup.encryptObject(malicious,'가상 복원 전용 긴 비밀번호 2026',{iterations:100000});await window.erpEncryptedBackupUI.inspectFile(new File([JSON.stringify(envelope)],'fake-malicious.erpbackup',{type:'application/json'}));});await page.locator('#encryptedBackupPassword').fill('가상 복원 전용 긴 비밀번호 2026');await page.locator('#encryptedBackupSubmit').click();await page.locator('#encryptedBackupHelp.error').waitFor();assert.equal(await page.locator('#encryptedBackupHelp').innerText(),'복호화된 백업의 안전 검사에 실패했습니다.');assert.equal(await page.evaluate(()=>window.erpBackupCenter.getStatus().inspection),null,'위험한 암호화 백업은 미리보기를 만들면 안 됩니다.');assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),restoreBaseline,'위험한 암호화 백업은 ERP 데이터를 바꾸면 안 됩니다.');await page.keyboard.press('Escape');
     await openEncryptedRestoreFixture(page);await page.evaluate(()=>window.setPage('home'));assert.equal(await page.evaluate(()=>window.erpBackupCenter.getStatus().inspection),null,'백업 화면을 떠나면 복호화 미리보기를 폐기해야 합니다.');
+    await page.evaluate(()=>{window.erpPermissions.useLocal();window.setPage('productionReadiness');});
+    await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('LOCAL ONLY'));
+    const localManualChecks=page.locator('[data-readiness-manual]');assert.equal(await localManualChecks.count(),7);
+    for(let index=0;index<7;index+=1)await localManualChecks.nth(index).check();
+    await page.locator('#btnReadinessCapacity').click();await page.waitForFunction(()=>document.querySelector('#productionReadinessBody')?.innerText.includes('최근 검사'));
+    const readinessStored=await page.evaluate(()=>localStorage.getItem('recruit_erp_production_readiness_v1100'));for(const secret of ['테스트지원자1','010-0000-0001','000000-0000000'])assert.ok(!readinessStored.includes(secret),`운영 준비 상태에 개인정보가 남으면 안 됩니다: ${secret}`);
+    const [readinessDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#btnReadinessExport').click()]);const readinessReport=JSON.parse(fs.readFileSync(await readinessDownload.path(),'utf8'));
+    assert.equal(readinessReport.format,'recruit-erp-production-readiness');assert.equal(readinessReport.overall,'ready');assert.equal(readinessReport.verificationSource,'local');assert.equal(readinessReport.operationEnvironment,'local-only');assert.equal(readinessReport.localOnly,true);assert.equal(readinessReport.remoteDependency,false);assert.match(readinessReport.limitation,/전자서명된 증명서가 아닙니다/);assert.ok(!/supabase|cloud/i.test(JSON.stringify(readinessReport)));assert.ok(!JSON.stringify(readinessReport).includes('테스트지원자1'));
     await page.evaluate(()=>window.setPage('backup'));await openEncryptedRestoreFixture(page);await page.locator('#btnPrivacyShield').click();assert.equal(await page.evaluate(()=>window.erpBackupCenter.getStatus().inspection),null,'화면 잠금 시 복호화 미리보기를 폐기해야 합니다.');await page.locator('#btnPrivacyUnlock').click();
     for(const eventName of ['erp:auth-logout','erp:permission-change','erp:operation-environment-change','pagehide']){await page.evaluate(()=>window.setPage('backup'));await openEncryptedRestoreFixture(page);await page.evaluate(name=>name==='pagehide'?window.dispatchEvent(new Event(name)):document.dispatchEvent(new CustomEvent(name)),eventName);assert.equal(await page.evaluate(()=>window.erpBackupCenter.getStatus().inspection),null,`${eventName} 시 복호화 미리보기를 폐기해야 합니다.`);}
     await openEncryptedRestoreFixture(page);assert.ok((await page.locator('#bcInspection').innerText()).includes('ERP 전체 백업 JSON'));assert.ok((await page.locator('#bcInspection').innerText()).includes('지원자'));await page.screenshot({path:path.join(outputDir,'390x844-encrypted-restore-preview.png'),fullPage:true});await page.locator('#bcClearInspection').click();assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),restoreBaseline,'복원 미리보기 취소는 ERP 데이터를 바꾸면 안 됩니다.');
     await openEncryptedRestoreFixture(page);await page.evaluate(()=>{window.__realEncryptedExport=window.erpEncryptedBackup.encryptObject;window.erpEncryptedBackup.encryptObject=async()=>{throw new Error('가상 안전 백업 실패');};});const safetyDialogs=[];const safetyDialogHandler=dialog=>{safetyDialogs.push(dialog.type());return dialog.accept();};page.on('dialog',safetyDialogHandler);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});page.off('dialog',safetyDialogHandler);await page.evaluate(()=>{window.erpEncryptedBackup.encryptObject=window.__realEncryptedExport;delete window.__realEncryptedExport;});assert.ok(safetyDialogs.includes('confirm')&&safetyDialogs.includes('alert'),'안전 백업 실패 시 확인과 중단 안내가 필요합니다.');assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),restoreBaseline,'안전 백업 생성 실패 시 실제 적용을 차단해야 합니다.');
     await openEncryptedRestoreFixture(page);await page.evaluate(()=>{window.__realStorageSetItem=Storage.prototype.setItem;window.__failApplicantWrite=true;Storage.prototype.setItem=function(key,value){if(window.__failApplicantWrite&&key==='recruit_erp_applicants_stable'){window.__failApplicantWrite=false;throw new Error('가상 저장 실패');}return window.__realStorageSetItem.call(this,key,value);};});const rollbackDialogs=[];const rollbackDialogHandler=dialog=>{rollbackDialogs.push(dialog.type());return dialog.accept();};page.on('dialog',rollbackDialogHandler);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});page.off('dialog',rollbackDialogHandler);await page.evaluate(()=>{Storage.prototype.setItem=window.__realStorageSetItem;delete window.__realStorageSetItem;delete window.__failApplicantWrite;});assert.ok(rollbackDialogs.filter(type=>type==='confirm').length>=2&&rollbackDialogs.includes('alert'),'저장 실패 전 안전 백업 확인과 원상복구 안내가 필요합니다.');assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),restoreBaseline,'적용 저장 실패 시 localStorage를 원상복구해야 합니다.');assert.equal(await page.evaluate(()=>applicants.length),3,'적용 저장 실패 시 메모리 데이터도 원상복구해야 합니다.');
     const mergeDialogHandler=dialog=>dialog.accept();page.on('dialog',mergeDialogHandler);await openEncryptedRestoreFixture(page);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});assert.equal(await page.evaluate(()=>applicants.length),4,'첫 병합은 가상 지원자 1건을 추가해야 합니다.');await openEncryptedRestoreFixture(page);await page.locator('#bcMergeApply').click();await page.locator('#bcInspection').waitFor({state:'hidden'});page.off('dialog',mergeDialogHandler);assert.equal(await page.evaluate(()=>applicants.length),4,'같은 암호화 파일을 다시 병합해도 중복이 늘면 안 됩니다.');
-    await page.evaluate(()=>window.erpSyncSafety.openConflicts());assert.ok(await page.locator('#syncConflictModal').isVisible());assert.ok(await page.locator('#syncConflictModal .safety-intro-card').count());await page.screenshot({path:path.join(outputDir,'390x844-sync-conflict.png'),fullPage:false});await page.locator('#btnCloseSyncConflicts').click();await page.evaluate(()=>window.erpSyncSafety.openDeletes());assert.ok(await page.locator('#syncDeleteModal').isVisible());assert.ok(await page.locator('#syncDeleteModal .safety-intro-card').count());await page.locator('#btnCloseSyncDeletes').click();
     assert.ok(await page.locator('#employeeOrgImportModal .employee-org-import-notice.safety-intro-card').count(),'조직정보 Import 안전 안내가 명시적으로 표시되어야 합니다.');
     await page.evaluate(()=>{
       window.__hireAutomationFixture={applicants,hireWaitingProfiles};
@@ -1190,11 +1183,8 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
     console.log(`지원자 일반목록 geometry: ${JSON.stringify(applicantTableGeometryMetrics)}`);
-    console.log(`ui-visual-layout.js: 8개 뷰포트+125% 확대·18개 화면·지원자 일반목록 3개 scroll 위치/빠른 보기 다음 액션/내 보기/워크시트·학교 인력분석·오늘 자동화·온보딩·운영 준비·3개 역할·암호화/상태/보안/동기화 팝업 통과\n스크린샷: ${outputDir}`);
+    console.log(`ui-visual-layout.js: 공장초기화·8개 뷰포트+125% 확대·18개 화면·지원자 일반목록 3개 scroll 위치/빠른 보기 다음 액션/내 보기/워크시트·학교 인력분석·오늘 자동화·온보딩·LOCAL ONLY 운영 준비·3개 역할·암호화/상태/보안 팝업 통과\n스크린샷: ${outputDir}`);
   }finally{
-    await browser.close();server.kill();await new Promise(resolve=>bridgeServer.close(resolve));
-    const resolved=fs.realpathSync(bridgeTempParent);
-    if(path.dirname(resolved)!==bridgeTempRoot)throw new Error('Bridge UI 임시 폴더 범위가 올바르지 않습니다.');
-    fs.rmSync(resolved,{recursive:true,force:true});
+    await browser.close();server.kill();
   }
-})().catch(error=>{server.kill();if(bridgeServer.listening)bridgeServer.close();console.error(error);process.exitCode=1;});
+})().catch(error=>{server.kill();console.error(error);process.exitCode=1;});

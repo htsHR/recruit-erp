@@ -28,7 +28,6 @@ const stabilityCss=read('css/recruiter-ui-stability.css');
 const reboot=read('js/ux-reboot-v12.js');
 const rebootCss=read('css/ux-reboot-v12.css');
 const advancedBulk=read('js/advanced-bulk.js');
-const sharedStorage=read('js/shared-storage.js');
 
 assert.doesNotMatch(index,/id="homeTodayGrid"/,'홈에 오늘 업무 숫자 카드가 중복되면 안 됩니다.');
 assert.match(index,/id="btnHomeStartFirstDaily"/);
@@ -61,7 +60,7 @@ assert.match(statusWorkflow,/uxAppendStatusMemo/);assert.match(statusWorkflow,/�
 assert.match(enhancements,/required:\['name','phone','applyDate','workplace'\]/);assert.match(enhancements,/step-needs-review/);assert.match(enhancements,/optional:true/);assert.match(enhancements,/선택 입력/);assert.match(enhancements,/필수 \$\{requiredComplete\}\/\$\{requiredTotal\} 단계 완료/);
 assert.doesNotMatch(calm,/^\.page-intro-card\{display:flex!important;\}/m);assert.match(calm,/\.page-intro-card\.safety-intro-card\{display:flex!important;\}/);assert.match(uiLayout,/#home \.home-dashboard-intro,#stats \.stats-intro\{display:none!important;\}/);
 
-assert.match(permissions,/permission-matrix-row/);assert.match(permissions,/마지막 관리자 계정/);assert.match(permissions,/permission-result-notice/);
+assert.match(permissions,/permission-matrix-row/);assert.match(permissions,/LOCAL ONLY에서는 계정별 권한 변경을 사용하지 않습니다/);assert.match(permissions,/source:'local'/);
 assert.match(audit,/auditTypeFilter/);assert.match(audit,/auditActionFilter/);assert.match(audit,/AUDIT_PAGE_SIZE=20/);assert.match(audit,/audit-detail/);
 assert.match(layout,/html\{background:#f5f6f8;overflow-x:hidden;\}/);assert.match(layout,/body\{background:#f5f6f8;overflow-x:hidden;\}/);
 assert.match(calm,/focus-visible/);assert.match(calm,/min-height:44px/);
@@ -70,17 +69,16 @@ assert.match(uiLayout,/body\[data-active-page="form"\] \.topbar/);
 const visualTest=read('tests/ui-visual-layout.js');
 assert.match(visualTest,/formWorkflowBanner/);assert.match(visualTest,/formActions\.overlaps,false/);
 assert.match(visualTest,/390x844-status-modal\.png'\),fullPage:false/);
-assert.match(visualTest,/390x844-sync-conflict\.png'\),fullPage:false/);
-assert.match(index,/css\/applicant-worksheet\.css\?v=12\.0\.1/);assert.match(index,/js\/applicant-worksheet\.js\?v=12\.0\.1/);assert.match(index,/css\/ui-density-navigation\.css\?v=12\.0\.1/);assert.match(index,/css\/recruiter-ui-stability\.css\?v=12\.0\.1/);
+assert.match(index,/css\/applicant-worksheet\.css\?v=12\.0\.2/);assert.match(index,/js\/applicant-worksheet\.js\?v=12\.0\.2/);assert.match(index,/css\/ui-density-navigation\.css\?v=12\.0\.2/);assert.match(index,/css\/recruiter-ui-stability\.css\?v=12\.0\.2/);
 assert.match(applicantWorksheet,/전체 지원자/);assert.match(applicantWorksheet,/공고별/);assert.match(applicantWorksheet,/채용 단계/);assert.match(applicantWorksheet,/워크시트/);assert.match(applicantWorksheet,/변경 \$\{entries\.length\}건/);
 assert.match(applicantWorksheet,/root\.save\(\)/);assert.match(applicantWorksheet,/applicants=snapshot/);assert.match(applicantWorksheet,/beforeunload/);
 assert.match(applicantWorksheetCss,/nth-child\(2\).*position:sticky/);assert.match(applicantWorksheetCss,/nth-child\(3\).*position:sticky/);assert.match(applicantWorksheetCss,/--worksheet-phone-left/);assert.match(applicantWorksheet,/syncStickyOffsets/);assert.match(applicantWorksheet,/getBoundingClientRect\(\)\.width/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-dirty/);assert.match(applicantWorksheetCss,/\.worksheet-cell\.is-error/);
 assert.match(densityCss,/overflow:visible!important;[\s\S]*flex-wrap:wrap!important/);assert.match(densityCss,/#applicants #quickFilters \.chip\{[^}]*height:36px!important;min-height:36px!important/);assert.match(densityCss,/#calendar \.calendar-today-dot\{[^}]*color:#fff!important/);assert.match(densityCss,/\.sidebar \.nav\{[^}]*overflow-y:auto/);
 assert.match(visualTest,/1440x900/);assert.match(visualTest,/verifyApplicantWorksheet/);assert.match(visualTest,/__worksheetSaveCalls/);
 assert.match(visualTest,/const denseApplicants=Array\.from\(\{length:60\}/);assert.match(visualTest,/visibleRows>=3/);assert.match(visualTest,/390x844-mobile-menu\.png/);assert.match(visualTest,/\$\{label\}-sidebar\.png/);
-assert.match(index,/css\/applicant-quick-detail\.css\?v=12\.0\.1/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
+assert.match(index,/css\/applicant-quick-detail\.css\?v=12\.0\.2/);assert.match(applicants,/openApplicantQuickDetail/);assert.match(applicants,/moveApplicantQuickDetail/);assert.match(applicants,/행 클릭 → 빠른 보기/);
 assert.match(applicants,/window\.viewApplicant\?\.\(id\)/);assert.match(applicants,/window\.editApplicant\?\.\(id\)/);assert.match(applicants,/applicantQuickDetailCanWrite/);assert.doesNotMatch(applicants.match(/function renderApplicantQuickDetail\(\)[\s\S]*?function openApplicantQuickDetail\(/)?.[0]||'',/residentNumber|Object\.values/);
-assert.match(rebootCss,/width:clamp\(360px,28vw,420px\)/);assert.match(quickDetailCss,/@media\(max-width:900px\)[\s\S]*width:100%/);assert.match(visualTest,/verifyApplicantQuickDetail/);assert.match(visualTest,/bridgeSaveRequests,0/);assert.match(visualTest,/applicant-quick-detail-long-memo\.png/);
+assert.match(rebootCss,/width:clamp\(360px,28vw,420px\)/);assert.match(quickDetailCss,/@media\(max-width:900px\)[\s\S]*width:100%/);assert.match(visualTest,/verifyApplicantQuickDetail/);assert.match(visualTest,/applicant-quick-detail-long-memo\.png/);
 assert.match(applicants,/applicantQuickDetailNextAction/);assert.match(applicants,/progressHistory/);assert.match(stabilityCss,/applicant-quick-detail-next-action/);assert.match(index,/id="applicantMyViews"/);assert.match(advancedBulk,/recruit_erp_saved_advanced_searches/);assert.match(advancedBulk,/window\.erpSavedAdvancedSearches/);assert.match(visualTest,/verifyApplicantNormalTableGeometry/);assert.match(visualTest,/verifyApplicantMyViews/);
 
 const emptyTopbarButtons=[...index.matchAll(/<button[^>]*class="[^"]*topbar-icon-btn[^"]*"[^>]*>[\s\S]*?<\/button>/g)];
@@ -93,10 +91,10 @@ assert.match(visualTest,/1280x720/);assert.match(visualTest,/1024x768/);assert.m
 assert.match(reboot,/setTimeout\(\(\)=>\{if\(root\.document\.body\.classList\.contains\('sidebar-collapsed'\)\)root\.document\.body\.classList\.add\('sidebar-preview-expanded'\);\},150\)/);
 assert.match(reboot,/\},500\)/);assert.match(reboot,/aria-pressed/);assert.match(rebootCss,/sidebar-preview-expanded \.sidebar/);
 assert.match(reboot,/function isDesktopShell\(\)/);assert.match(reboot,/root\.devicePixelRatio/);assert.match(reboot,/ux12-desktop-shell/);assert.match(rebootCss,/\.ux12-ready\.ux12-desktop-shell \.app-shell/);
-assert.match(index,/<h1>Recruit ERP<\/h1>/);assert.match(index,/<p>v12\.0\.1<\/p>/);assert.doesNotMatch(index,/\bPreview\b|VERSION 2\.0|TODAY WORK OPERATIONS · ACTION FIRST/);assert.doesNotMatch(applicants,/QUICK REVIEW/);
-assert.match(index,/<html class="ux12-booting"/);assert.match(index,/id="ux12BootGuard"/);assert.match(index,/js\/local-only-init\.js\?v=12\.0\.1/);
+assert.match(index,/<h1>Recruit ERP<\/h1>/);assert.match(index,/<p>v12\.0\.2<\/p>/);assert.doesNotMatch(index,/\bPreview\b|VERSION 2\.0|TODAY WORK OPERATIONS · ACTION FIRST/);assert.doesNotMatch(applicants,/QUICK REVIEW/);
+assert.match(index,/<html class="ux12-booting"/);assert.match(index,/id="ux12BootGuard"/);assert.match(index,/js\/local-only-init\.js\?v=12\.0\.2/);
 assert.doesNotMatch(index,/js\/auth-init\.js|supabase_config\.js|@supabase\/supabase-js/);
-assert.match(rebootCss,/\.applicant-my-views\{[^}]*min-width:220px!important;max-width:240px!important/);assert.match(sharedStorage,/className:'sync-shared-idle-note'/);assert.match(rebootCss,/\.security-note\.sync-shared-idle-note/);
+assert.match(rebootCss,/\.applicant-my-views\{[^}]*min-width:220px!important;max-width:240px!important/);assert.equal(fs.existsSync(path.join(root,'js','shared-storage.js')),false);
 assert.match(visualTest,/verifyOwnerVisualDesktopShell/);assert.match(visualTest,/1280x720-zoom125/);assert.match(visualTest,/owner-shell-hover\.png/);assert.match(visualTest,/toolbar\.select\.width>=toolbar\.select\.needed/);
 assert.match(reboot,/home:'#\/today'/);assert.match(reboot,/applicants:'#\/applicants'/);assert.match(reboot,/root\.addEventListener\('popstate',handleHistory\)/);assert.match(reboot,/root\.addEventListener\('hashchange'/);assert.match(reboot,/beforeunload/);
 assert.match(reboot,/onQuickOpen:pushQuickRoute/);assert.match(reboot,/onQuickClose:replaceQuickWithList/);assert.match(reboot,/quickApplicantId/);

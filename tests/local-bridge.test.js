@@ -8,11 +8,10 @@ const {EventEmitter}=require('node:events');
 const os=require('node:os');
 const path=require('node:path');
 const bridge=require('../bridge/erp-bridge.js');
-const storageUi=require('../js/storage-performance.js');
 
 const projectRoot=path.resolve(__dirname,'..');
 const bridgeSource=fs.readFileSync(path.join(projectRoot,'bridge','erp-bridge.js'),'utf8');
-const clientSource=fs.readFileSync(path.join(projectRoot,'js','shared-storage.js'),'utf8');
+const storageSource=fs.readFileSync(path.join(projectRoot,'js','storage-performance.js'),'utf8');
 const vercel=JSON.parse(fs.readFileSync(path.join(projectRoot,'vercel.json'),'utf8'));
 const allowedOrigin='https://preview.example.test';
 const testPort=17841;
@@ -138,11 +137,11 @@ function request({method='GET',pathname='/health',origin=allowedOrigin,host=`127
     const deleteResult=await bridge.deleteFileWithRetry('fake',{fsApi:{async unlink(){calls+=1;if(calls===1)throw Object.assign(new Error('busy'),{code:'EBUSY'});exists=false;},async access(){if(exists)return;throw Object.assign(new Error('missing'),{code:'ENOENT'});}},waitFn:async value=>delays.push(value),logger});
     assert.deepEqual(deleteResult,{deleted:true,attempts:2,retries:1});assert.deepEqual(delays,[300]);
 
-    assert.equal(storageUi.BRIDGE_VERSION,'1.0-preview');assert.equal(storageUi.BRIDGE_HEALTH_URL,'http://127.0.0.1:17840/health');
-    assert.doesNotMatch(`${bridgeSource}\n${clientSource}`,/0\.0\.0\.0|showDirectoryPicker|showOpenFilePicker|sendBeacon|FormData|type=["']file["']/i);
-    assert.doesNotMatch(clientSource,/fetch\([^)]*(?:vercel|supabase)/i);assert.match(clientSource,/credentials:'omit'/);assert.match(clientSource,/cache:'no-store'/);
+    assert.equal(fs.existsSync(path.join(projectRoot,'js','shared-storage.js')),false,'Production 브라우저 Bridge 클라이언트는 제거되어야 합니다.');
+    assert.doesNotMatch(storageSource,/127\.0\.0\.1|Bridge|\/storage\/snapshot|fetch\(/,'Production 저장소 화면은 Bridge에 연결하면 안 됩니다.');
+    assert.doesNotMatch(bridgeSource,/0\.0\.0\.0|showDirectoryPicker|showOpenFilePicker|sendBeacon|FormData|type=["']file["']/i);
     assert.doesNotMatch(bridgeSource,/bridgeToken:\s*token[^}]*console|console\.[a-z]+\([^)]*token/i);
-    const csp=vercel.headers[0].headers.find(item=>item.key==='Content-Security-Policy')?.value||'';assert.match(csp,/connect-src[^;]*http:\/\/127\.0\.0\.1:17840/);
+    const csp=vercel.headers[0].headers.find(item=>item.key==='Content-Security-Policy')?.value||'';assert.match(csp,/connect-src 'self';/);assert.doesNotMatch(csp,/127\.0\.0\.1|supabase/i);
     assert.ok(logs.every(line=>!line.includes('가상 지원자')&&!line.includes('900101')),'로그에 업무 데이터나 주민번호를 출력하면 안 됩니다.');
     console.log('local-bridge.test.js: 토큰·Origin·50MB 제한·안전 snapshot·원자 저장·revision 충돌·잠금·20개 백업·5MB 가상 왕복 확인 완료');
   }finally{

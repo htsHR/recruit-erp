@@ -241,11 +241,10 @@ bind('jsonImport','change',e=>{
       if(!Array.isArray(data) || !data.length){ alert('지원자 백업 JSON 형식이 아니거나 데이터가 비어 있습니다.'); return; }
       const ok=confirm(`JSON 가져오기 전 확인\n\n현재 저장된 지원자: ${applicants.length}명\n가져올 지원자: ${data.length}명\n\n가져오면 현재 브라우저의 지원자 목록이 가져온 파일 기준으로 교체됩니다. 진행할까요?`);
       if(!ok) return;
-      supabaseSnapshotSave('가져오기 직전 자동 백업').then(()=>{
+      Promise.resolve().then(()=>{
         const previous=applicants;
         applicants=data.map(normalize);
         if(!save()){applicants=previous;return;}
-        renderSnapshotList();
         alert(`가져오기 완료: ${applicants.length}명`);
       });
     }catch{ alert('JSON 파일을 확인해주세요.'); }
@@ -276,11 +275,10 @@ bind('jsonImportMerge','change',e=>{
       const beforeCount=applicants.length;
       const ok=confirm(`JSON 병합 가져오기 전 확인\n\n현재 저장된 지원자: ${beforeCount}명\n가져올 파일 지원자: ${incoming.length}명\n\n기존 지원자는 지워지지 않습니다. id가 같으면 더 최근에 수정된 쪽을 채택하고, 새 id는 그대로 추가됩니다. 진행할까요?`);
       if(!ok) return;
-      supabaseSnapshotSave('병합 가져오기 직전 자동 백업').then(()=>{
+      Promise.resolve().then(()=>{
         const previous=applicants;
         applicants=Object.keys(map).map(k=>map[k]);
         if(!save()){applicants=previous;return;}
-        renderSnapshotList();
         alert(`병합 완료: 기존 ${beforeCount}명 + 가져온 파일 ${incoming.length}명 -> 최종 ${applicants.length}명 (신규 ${addedCount}명, 갱신 ${updatedCount}명, 데이터 손실 없음)`);
       });
     }catch{ alert('JSON 파일을 확인해주세요.'); }
@@ -291,17 +289,13 @@ bind('jsonImportMerge','change',e=>{
 bind('btnClearAll','click',()=>{
   if(window.erpPermissions&&!window.erpPermissions.require('applicant.delete'))return;
   if(!applicants.length){alert('삭제할 지원자가 없습니다.');return;}
-  if(!confirm(`현재 브라우저의 지원자 ${applicants.length}명을 모두 삭제할까요?\n\n삭제 직전 자동으로 클라우드에 백업을 남겨둡니다.`)) return;
+  if(!confirm(`현재 브라우저의 지원자 ${applicants.length}명을 모두 삭제할까요?\n\n필요한 경우 먼저 암호화 백업을 내려받으세요.`)) return;
   const phrase=prompt('정말 삭제하려면 아래 문구를 그대로 입력하세요.\n\n전체삭제');
   if(phrase !== '전체삭제'){ alert('삭제가 취소되었습니다.'); return; }
-  supabaseSnapshotSave('전체삭제 직전 자동 백업').then(()=>{
-    const queued=supabaseDeleteAll({defer:true});
-    if(!queued.ok){alert('삭제 안전정보를 저장하지 못해 전체 삭제를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;}
+  Promise.resolve().then(()=>{
     const previous=applicants;
     applicants=[];
-    if(!save()){applicants=previous;window.erpSyncSafety.cancelDelete(queued.key);return;}
-    window.erpSyncSafety.retryDeletes('applicants');
-    renderSnapshotList();
+    if(!save()){applicants=previous;return;}
     alert('전체 삭제 완료 (삭제 전 상태는 백업/내보내기 화면에서 복원 가능합니다)');
   });
 });

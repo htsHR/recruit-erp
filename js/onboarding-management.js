@@ -237,8 +237,6 @@
     if(nextApplicants)applicants=nextApplicants;
     if(nextEmployees)root.erpAudit?.commitSave?.('employee',employeeAudit,nextEmployees);
     if(nextApplicants){root.erpAudit?.setNextContext?.('applicant',{reason});root.erpAudit?.commitSave?.('applicant',applicantAudit,nextApplicants);}
-    if(changedEmployee&&typeof supabaseSyncEmployees==='function')supabaseSyncEmployees([changedEmployee]);
-    if(nextApplicants&&typeof canUseCloud==='function'&&canUseCloud()&&typeof supabaseSyncAll==='function')supabaseSyncAll(nextApplicants);
     if(typeof renderAll==='function')renderAll();render();return true;
   }
   function readinessErrors(profile){

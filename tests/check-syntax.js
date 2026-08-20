@@ -7,8 +7,7 @@ const {spawnSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
 const targets=[
   ...fs.readdirSync(path.join(root,'js')).filter(file=>file.endsWith('.js')).map(file=>path.join(root,'js',file)),
-  ...fs.readdirSync(__dirname).filter(file=>file.endsWith('.js')).map(file=>path.join(__dirname,file)),
-  path.join(root,'supabase_config.js')
+  ...fs.readdirSync(__dirname).filter(file=>file.endsWith('.js')).map(file=>path.join(__dirname,file))
 ].sort();
 
 for(const file of targets){

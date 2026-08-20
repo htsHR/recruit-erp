@@ -1,4 +1,4 @@
-/* Recruit ERP v11.0.0 AUDIT HISTORY
+/* Recruit ERP v12.0.2 LOCAL ONLY AUDIT HISTORY
  * Audit records are append-only. Sensitive values are summarized, never copied verbatim.
  */
 (function(root,factory){
@@ -7,7 +7,7 @@
   root.erpAudit=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='11.0.0';
+  const VERSION='12.0.2';
   const STORAGE_KEY='recruit_erp_audit_logs_v1';
   const MAX_LOCAL_RECORDS=2000;
   const DATASETS={
@@ -24,7 +24,6 @@
   ]);
   const SENSITIVE_KEY=/(name|phone|mobile|email|address|resident|rrn|ssn|birth|password|secret|token|bank|account|salary|memo|note|reason|consult|content|title|description|history)/i;
   let pendingContext={};
-  let cloudSyncing=false;
   let pageRows=[];
   let auditPage=1;
   const AUDIT_PAGE_SIZE=20;
@@ -80,7 +79,7 @@
       client_event_id:uid(),occurred_at:new Date().toISOString(),actor_user_id:who.userId,actor_label:who.label,actor_role:who.role,
       entity_type:entityType,entity_id:String(entityId||''),entity_label:label||DATASETS[entityType]?.label||'기록',action,
       changed_fields:fields,before_values:beforeValues,after_values:afterValues,reason:scrubText(reason),source:who.source,
-      app_version:VERSION,metadata,cloud_synced:false
+      app_version:VERSION,metadata
     };
   }
   function capture(entityType){const dataset=DATASETS[entityType];return dataset?clone(asArray(readJson(dataset.key,[]))):[];}
@@ -107,29 +106,11 @@
   function append(records){
     const valid=asArray(records).filter(Boolean);if(!valid.length)return [];
     if(!writeLocal([...valid,...readLocal()]))return [];
-    syncCloud();renderPage();return valid;
+    renderPage();return valid;
   }
   function commitSave(entityType,beforeRows,afterRows){const context=pendingContext[entityType]||{};clearNextContext(entityType);return append(buildDatasetRecords(entityType,beforeRows,afterRows,context));}
   function recordEvent(event){return append([makeRecord(event||{})]);}
-  function cloudEligible(){const current=root.erpPermissions?.current?.()||{};return !!(root.sb&&current.source==='cloud'&&current.userId);}
-  async function syncCloud(){
-    if(cloudSyncing||!cloudEligible())return;const pending=readLocal().filter(row=>!row.cloud_synced).slice(-500);if(!pending.length)return;
-    cloudSyncing=true;
-    try{
-      for(let start=0;start<pending.length;start+=100){
-        const batch=pending.slice(start,start+100);const payload=batch.map(({cloud_synced,...row})=>row);
-        const response=await root.sb.from('audit_logs').upsert(payload,{onConflict:'client_event_id',ignoreDuplicates:true});
-        if(response?.error)throw response.error;
-        const ids=new Set(batch.map(row=>row.client_event_id));writeLocal(readLocal().map(row=>ids.has(row.client_event_id)?{...row,cloud_synced:true}:row));
-      }
-    }catch(error){console.warn('변경 이력 클라우드 동기화 실패:',error);}
-    finally{cloudSyncing=false;renderPage();}
-  }
-  async function loadCloud(){
-    if(!cloudEligible()||!root.erpPermissions?.has?.('audit.read')){pageRows=readLocal();renderPage();return pageRows;}
-    const response=await root.sb.from('audit_logs').select('client_event_id,occurred_at,actor_label,actor_role,entity_type,entity_id,entity_label,action,changed_fields,before_values,after_values,reason,source,app_version,metadata').order('occurred_at',{ascending:false}).order('id',{ascending:false}).limit(200);
-    if(response?.error)throw response.error;pageRows=asArray(response.data);renderPage();return pageRows;
-  }
+  async function loadHistory(){pageRows=readLocal();renderPage();return pageRows;}
   function actionLabel(value){return ({create:'등록',update:'수정',delete:'삭제',restore:'복원',export:'내보내기',role_change:'권한 변경',batch:'일괄 변경'})[value]||value||'-';}
   function typeLabel(value){return DATASETS[value]?.label||({system:'시스템',export:'백업·내보내기',user:'사용자'})[value]||value||'-';}
   function ensureUi(){
@@ -139,13 +120,13 @@
       const button=root.document.createElement('button');button.className='nav-btn nav-sub';button.type='button';button.dataset.page='auditHistory';button.dataset.requiredPermission='audit.read';
       const icon=root.document.createElement('span');icon.className='nav-ico';icon.setAttribute('aria-hidden','true');icon.textContent='🧾';
       const label=root.document.createElement('span');label.textContent='변경 이력';button.append(icon,label);systemItems.appendChild(button);
-      button.addEventListener('click',()=>{root.setPage?.('auditHistory');setTimeout(()=>loadCloud().catch(error=>console.warn('변경 이력 조회 실패:',error)),0);});
+      button.addEventListener('click',()=>{root.setPage?.('auditHistory');setTimeout(loadHistory,0);});
     }
     const main=root.document.querySelector('main.main');
     if(main&&!root.document.getElementById('auditHistory')){
       const section=root.document.createElement('section');section.className='page audit-page';section.id='auditHistory';
       section.innerHTML='<div class="page-intro-card safety-intro-card"><div><h3>변경 이력</h3><p>누가 언제 무엇을 바꿨는지 확인합니다. 민감한 값은 기록하지 않습니다.</p></div><button class="ghost" id="btnAuditRefresh" type="button">새로고침</button></div><div id="auditPageBody" class="audit-page-shell"></div>';
-      main.appendChild(section);section.querySelector('#btnAuditRefresh')?.addEventListener('click',()=>loadCloud().catch(error=>root.alert?.('변경 이력을 불러오지 못했습니다: '+(error.message||error))));
+      main.appendChild(section);section.querySelector('#btnAuditRefresh')?.addEventListener('click',loadHistory);
     }
   }
   function renderPage(){
@@ -165,8 +146,8 @@
     if(!visible.length){const tr=root.document.createElement('tr'),td=root.document.createElement('td');td.colSpan=7;td.textContent='조건에 맞는 변경 이력이 없습니다.';tr.appendChild(td);tbody.appendChild(tr);}table.appendChild(tbody);wrap.appendChild(table);
     const pager=root.document.createElement('div');pager.className='audit-pagination';const prev=root.document.createElement('button'),next=root.document.createElement('button'),label=root.document.createElement('span');prev.type=next.type='button';prev.className=next.className='ghost';prev.textContent='이전';next.textContent='다음';prev.disabled=auditPage<=1;next.disabled=auditPage>=totalPages;label.textContent=`${auditPage} / ${totalPages} 페이지`;prev.addEventListener('click',()=>{auditPage-=1;renderPage();});next.addEventListener('click',()=>{auditPage+=1;renderPage();});pager.append(prev,label,next);host.append(controls,summary,wrap,pager);
   }
-  function init(){if(!root.document)return;ensureUi();root.document.addEventListener('erp:permission-change',()=>{ensureUi();syncCloud();renderPage();});root.addEventListener?.('online',syncCloud);syncCloud();renderPage();}
-  const api={VERSION,STORAGE_KEY,MAX_LOCAL_RECORDS,DATASETS,SAFE_FIELDS,scrubText,maskName,maskEmail,valueSummary,capture,setNextContext,clearNextContext,buildDatasetRecords,commitSave,recordEvent,readLocal,syncCloud,loadCloud,renderPage,init};
+  function init(){if(!root.document)return;ensureUi();root.document.addEventListener('erp:permission-change',()=>{ensureUi();renderPage();});renderPage();}
+  const api={VERSION,STORAGE_KEY,MAX_LOCAL_RECORDS,DATASETS,SAFE_FIELDS,scrubText,maskName,maskEmail,valueSummary,capture,setNextContext,clearNextContext,buildDatasetRecords,commitSave,recordEvent,readLocal,loadHistory,renderPage,init};
   if(root.document){if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',init,{once:true});else init();}
   return api;
 });

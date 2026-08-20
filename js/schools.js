@@ -1,7 +1,7 @@
 /* =========================================================
    v10.14.0 협력학교 마스터 (학교 정식 엔티티화, 1단계)
    - applicants.school(자유텍스트)는 그대로 유지 — 지원자목록/오늘할일/
-     일정관리/면접명단표/입사통계/기존 Supabase 동기화 전부 안 건드림
+     일정관리/면접명단표/입사통계 저장 구조 유지
    - schools를 별도 저장소로 신설, applicants.schoolId는 추가 필드로만 붙임
    - schoolId가 비어있어도 기존 6개 기능은 예전과 완전히 동일하게 동작함
    ========================================================= */
@@ -58,84 +58,11 @@ function saveSchools(){
   const auditBefore=window.erpAudit?.capture('school');
   if(!safeLocalStorageSet(SCHOOLS_KEY,JSON.stringify(schools)))return false;
   window.erpAudit?.commitSave('school',auditBefore,schools);
-  supabaseSyncSchools(schools);
   populateSchoolDatalist();
   renderSchoolManage();
   renderSchools();
   return true;
 }
-function supabaseSyncSchools(list){
-  if(window.erpPermissions&&!window.erpPermissions.require('school.write',{notify:false})) return Promise.resolve({skipped:true,reason:'permission',count:0});
-  if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
-  const targets=Array.isArray(list)?list.filter(Boolean):[];
-  if(!targets.length)return Promise.resolve({skipped:true,count:0});
-  setCloudSyncStatus('syncing');
-  return window.erpSyncSafety.runUpload('schools',targets,async function(batch){
-    let res=await window.sb.from('schools').upsert(batch);
-    if(!res || !res.error)return {saved:batch.length,count:batch.length};
-    const msg=String(res.error.message||'');
-    const relationshipColumns=['managementStatus','memoHistory','contacts','activities','recommendationRequests','departments','mouInfo'];
-    const missingRelationshipColumn=relationshipColumns.some(col=>msg.includes(col));
-    if(missingRelationshipColumn){
-      const safeList=batch.map(s=>{
-        const copy={...s};
-        relationshipColumns.forEach(k=>delete copy[k]);
-        return copy;
-      });
-      console.warn('Supabase schools 확장 컬럼이 없어 관계관리 확장정보를 제외하고 재저장합니다. 로컬에는 전체 정보가 보존됩니다. v10.42.0 SQL을 적용하면 클라우드에도 저장됩니다.');
-      res=await window.sb.from('schools').upsert(safeList);
-      if(res&&res.error)throw new Error(res.error.message||'학교마스터 Supabase 저장 실패');
-      return {saved:batch.length,count:batch.length,legacy:true};
-    }
-    throw new Error(msg||'학교마스터 Supabase 저장 실패');
-  });
-}
-async function supabaseDeleteSchoolOperation(operation){
-  if(window.erpPermissions&&!window.erpPermissions.require('school.delete',{notify:false}))throw new Error('학교 삭제 권한이 없습니다.');
-  if(!canUseCloud())throw new Error('클라우드에 로그인되어 있지 않습니다.');
-  const res=await window.sb.from('schools').delete().eq('id',operation.id);
-  if(res&&res.error)throw res.error;
-  return {deleted:true,id:operation.id};
-}
-function supabaseDeleteSchool(id,label,options){
-  if(window.erpPermissions&&!window.erpPermissions.require('school.delete'))return {ok:false,reason:'permission'};
-  const queued=window.erpSyncSafety.enqueueDelete('schools',{id,label:label||id,scope:'one'});
-  if(queued.ok&&!options?.defer)window.erpSyncSafety.retryDeletes('schools');
-  return queued;
-}
-function supabaseSchoolsSyncOnLoad(){
-  if(!canUseCloud()) return;
-  // v10.48.0: 학교가 이미 1,000행을 넘어 Supabase 기본 제한에 걸릴 수 있으므로
-  // employees.js·cloud-sync.js(지원자)와 동일한 500건 페이지 재귀 조회로 변경.
-  const PAGE_SIZE=500;
-  function loadPage(from,collected){
-    return window.sb.from('schools').select('*').order('id',{ascending:true}).range(from,from+PAGE_SIZE-1).then(function(res){
-      if(res&&res.error) throw new Error(res.error.message);
-      const rows=(res&&res.data)?res.data:[];
-      const merged=collected.concat(rows);
-      return rows.length<PAGE_SIZE?merged:loadPage(from+PAGE_SIZE,merged);
-    });
-  }
-  loadPage(0,[]).then(function(cloudRaw){
-    const cloud = window.erpSyncSafety.filterPendingDeletes('schools',cloudRaw,window.erpSyncSafety.readPendingDeletes()).map(normalizeSchool);
-    const local = schools;
-    const mergeResult=window.erpSyncSafety.mergeAndTrack('schools',local,cloud);
-    schools=mergeResult.rows.map(normalizeSchool);
-    if(!safeLocalStorageSet(SCHOOLS_KEY,JSON.stringify(schools))){schools=local;throw new Error('학교마스터 클라우드 병합 결과의 로컬 저장 실패');}
-    populateSchoolDatalist(); renderSchoolManage(); renderSchools();
-    setCloudSyncStatus('ok');
-    console.info('학교마스터 Supabase 안전 병합 완료: 클라우드 '+cloud.length+'개 -> 병합 후 '+schools.length+'개 · 충돌 '+mergeResult.conflicts.length+'건');
-  }).catch(function(e){ console.warn('학교마스터 Supabase 페이지 조회 중 실패 — 기존 로컬 데이터 유지:', e); });
-}
-if(window.erpSyncSafety)window.erpSyncSafety.registerDataset('schools',{
-  getRows:function(){return schools;},
-  setRows:function(rows){schools=rows.map(normalizeSchool);},
-  normalize:normalizeSchool,
-  storageKey:function(){return SCHOOLS_KEY;},
-  upload:supabaseSyncSchools,
-  remove:supabaseDeleteSchoolOperation,
-  render:function(){populateSchoolDatalist();renderSchoolManage();renderSchools();}
-});
 function findSchoolByText(text){
   const t = String(text||'').trim().toLowerCase();
   if(!t) return null;
@@ -361,12 +288,10 @@ function deleteSchool(id){
   if(appCount||empCount){alert(`연결된 학교는 삭제할 수 없습니다.\n지원자 ${appCount}명 · 사원 ${empCount}명의 schoolId 연결을 먼저 연결 관리에서 확인해 주세요.`);return;}
   if(!confirm(`"${s.name}" 학교를 삭제할까요?\n연결 데이터가 없는 학교만 삭제됩니다.`))return;
   const auditReason=auditDeletionReason();if(!auditReason)return;
-  const queued=supabaseDeleteSchool(id,s.name,{defer:true});
-  if(!queued.ok){alert('삭제 안전정보를 저장하지 못해 삭제를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;}
   const previous=schools;schools=schools.filter(x=>x.id!==id);
   window.erpAudit?.setNextContext('school',{action:'delete',reason:auditReason});
-  if(!saveSchools()){schools=previous;window.erpAudit?.clearNextContext('school');window.erpSyncSafety.cancelDelete(queued.key);renderSchoolManage();renderSchools();return;}
-  if(editingSchoolId===id)resetSchoolForm();window.erpSyncSafety.retryDeletes('schools');
+  if(!saveSchools()){schools=previous;window.erpAudit?.clearNextContext('school');renderSchoolManage();renderSchools();return;}
+  if(editingSchoolId===id)resetSchoolForm();
 }
 function schoolLinkTextKey(text){ return String(text||'').trim().toLocaleLowerCase('ko-KR'); }
 function schoolHasValidId(entity){ return !!schools.find(s=>String(s.id)===String(entity?.schoolId||'')); }
@@ -470,7 +395,6 @@ function applySchoolAutoLink(){
     employees=employees.map(e=>{const row=empMap.get(String(e.id));return row&&!schoolHasValidId(e)?{...e,schoolId:row.targetId}:e;});
     localStorage.setItem(STORAGE_KEY,JSON.stringify(applicants));
     localStorage.setItem(EMPLOYEES_KEY,JSON.stringify(employees));
-    if(canUseCloud()){supabaseSyncAll(applicants);supabaseSyncEmployees(employees);}
     renderTable();renderEmployees();renderSchoolManage();renderSchoolUnmatched();
     alert(`학교 연결 완료
 지원자 ${appMap.size}명 · 사원 ${empMap.size}명`);
@@ -536,10 +460,8 @@ function mergeUnmatchedText(text){
   target.updatedAt=new Date().toISOString();
   applicants = applicants.map(a=>String(a.school||'').trim()===text ? {...a, schoolId:targetId} : a);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants));
-  supabaseSyncAll(applicants);
   employees = employees.map(e=>String(e.school||'').trim()===text ? {...e, schoolId:targetId} : e);
   localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
-  supabaseSyncEmployees(employees);
   saveSchools();
   renderTable();
   renderEmployees();
@@ -550,10 +472,8 @@ function createSchoolFromText(text){
   schools.unshift(s);
   applicants = applicants.map(a=>String(a.school||'').trim()===text ? {...a, schoolId:s.id} : a);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(applicants));
-  supabaseSyncAll(applicants);
   employees = employees.map(e=>String(e.school||'').trim()===text ? {...e, schoolId:s.id} : e);
   localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees));
-  supabaseSyncEmployees(employees);
   saveSchools();
   renderTable();
   renderEmployees();

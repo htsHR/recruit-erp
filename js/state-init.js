@@ -1,9 +1,11 @@
-// Recruit ERP v10.40.29 — integrated runtime state initialization
-// All function declarations are loaded before data is normalized and rendered.
-schools = loadSchools();
-employees = loadEmployees();
-applicants = load();
-calendarEvents = loadCalendarEvents();
-hireWaitingProfiles = loadHireWaitingProfiles();
-messageTemplates = typeof loadMessageTemplates==='function' ? loadMessageTemplates() : [];
-console.info(`[HOME_DEV] Recruit ERP v${window.erpAppVersion?.VERSION||'unknown'} loaded applicants:`, applicants.length, 'hire waiting profiles:', hireWaitingProfiles.length, 'message templates:', messageTemplates.length);
+// Recruit ERP v12.0.2 — state is read only after the one-time reset gate succeeds.
+window.erpStateReady=Promise.resolve(window.erpFactoryResetReady).then(reset=>{
+  if(!reset?.ok)return {ok:false};
+  schools=loadSchools();
+  employees=loadEmployees();
+  applicants=load();
+  calendarEvents=loadCalendarEvents();
+  hireWaitingProfiles=loadHireWaitingProfiles();
+  messageTemplates=typeof loadMessageTemplates==='function'?loadMessageTemplates():[];
+  return {ok:true};
+});
