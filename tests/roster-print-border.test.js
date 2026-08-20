@@ -22,8 +22,8 @@ assert.doesNotMatch(rosterCss,/border(?:-top)?:1px solid/,'면접표 인쇄선�
 assert.doesNotMatch(rosterCss,/border(?:-top)?:[^;]*(?:rgba?\(|#[1-9a-f][0-9a-f]{2,5})/i,'면접표 인쇄선에 회색·알파 색상을 사용하면 안 됩니다.');
 assert.match(rosterCss,/@page\{ size:A4 landscape; margin:12mm 23mm 15mm 23mm; \}/);
 
-const reportsHash=crypto.createHash('sha256').update(reports).digest('hex');
-assert.equal(reportsHash,'4e60ffed53267047adb65c4c087237d8404fe4def1f2b5585d8d6f65839d7cb2','면접표 텍스트·자동입력·5명 분할 로직은 변경하면 안 됩니다.');
+const reportsHash=crypto.createHash('sha256').update(reports.replace(/\r\n/g,'\n')).digest('hex');
+assert.equal(reportsHash,'391082e9f5cadb2fbdc870a59e4f29fe894dcf3e8fa5195d2e5d162ee1007a5a','면접표 텍스트·자동입력·5명 분할 로직은 변경하면 안 됩니다.');
 
 const context={
   applicants:[],
