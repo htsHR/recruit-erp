@@ -1,7 +1,7 @@
 /* Recruit ERP v10.48.2 SCREENING WORKBENCH
    - 새 메뉴/새 페이지 없이 지원자 목록·홈에서 진입하는 모달형 연속 검토 도구
    - 기존 applicants 배열·save()·progressHistory·failureReason 체계만 사용
-   - 신규 Supabase 테이블/컬럼/localStorage 키 없음
+   - 신규 원격 저장소·localStorage 키 없음
 */
 (function(){
   let wbQueueIds=[];      // 워크벤치 시작 시점의 서류검토 대상 ID (고정 순서, 인덱스 흔들림 방지)

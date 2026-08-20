@@ -8,15 +8,6 @@ const EMPLOYEE_EXTENDED_FIELDS=[
   'gender','team','groupName','product','part','rank','position','promotionDate',
   'recruitType','recruitChannel','education','major','leaveStartDate','returnDate','applicantId'
 ];
-const EMPLOYEE_CLOUD_FIELDS=[
-  'id','empNo','name','department','role','school','schoolId','hireDate','leaveDate','status',
-  'disciplineCount','notes','createdAt','updatedAt',...EMPLOYEE_EXTENDED_FIELDS
-];
-const EMPLOYEE_LEGACY_CLOUD_FIELDS=[
-  'id','empNo','name','department','role','school','schoolId','hireDate','leaveDate','status',
-  'disciplineCount','notes','createdAt','updatedAt'
-];
-let employeeExtendedCloudUnsupported=false;
 
 function normalizeEmployeeStatus(value, leaveDate=''){
   const raw=String(value||'').trim();
@@ -73,96 +64,15 @@ function loadEmployees(){
     return Array.isArray(data)?data.map(normalizeEmployee):[];
   }catch(e){console.error('직원명부 load error',e);return[];}
 }
-function employeeCloudRow(employee,legacy=false){
-  const normalized=normalizeEmployee(employee);
-  const fields=legacy?EMPLOYEE_LEGACY_CLOUD_FIELDS:EMPLOYEE_CLOUD_FIELDS;
-  return fields.reduce((row,key)=>{row[key]=normalized[key]??'';return row;},{});
-}
-function saveEmployees(syncList){
+function saveEmployees(){
   if(window.erpPermissions&&!window.erpPermissions.require('employee.write'))return false;
   const auditBefore=window.erpAudit?.capture('employee');
   if(!safeLocalStorageSet(EMPLOYEES_KEY,JSON.stringify(employees)))return false;
   window.erpAudit?.commitSave('employee',auditBefore,employees);
-  supabaseSyncEmployees(Array.isArray(syncList)?syncList:employees);
   renderEmployees();
   renderSchools();
   return true;
 }
-function supabaseSyncEmployees(list){
-  if(window.erpPermissions&&!window.erpPermissions.require('employee.write',{notify:false})) return Promise.resolve({skipped:true,reason:'permission',count:0});
-  if(!canUseCloud()) return Promise.resolve({skipped:true,count:0});
-  const targets=Array.isArray(list)?list.filter(Boolean):[];
-  if(!targets.length) return Promise.resolve({skipped:true,count:0});
-  setCloudSyncStatus('syncing');
-  const CHUNK_SIZE=250;
-  return window.erpSyncSafety.runUpload('employees',targets,async function(batch){
-    let useLegacy=employeeExtendedCloudUnsupported,saved=0;
-    for(let start=0;start<batch.length;start+=CHUNK_SIZE){
-      const chunk=batch.slice(start,start+CHUNK_SIZE);
-      let res=await window.sb.from('employees').upsert(chunk.map(e=>employeeCloudRow(e,useLegacy)));
-      if(res&&res.error&&!useLegacy){
-        const canUseLegacy=chunk.every(employee=>{
-          const normalized=normalizeEmployee(employee);
-          return normalized.position===normalized.role;
-        });
-        if(!canUseLegacy){
-          const error=new Error('직책과 직무를 분리 저장할 수 없는 클라우드 구조입니다. 로컬 저장은 유지되며 클라우드 저장은 재시도 대기합니다.');
-          error.partialSaved=saved;
-          throw error;
-        }
-        employeeExtendedCloudUnsupported=true;useLegacy=true;
-        console.warn('사원 확장필드용 Supabase 컬럼이 없어 값이 동일한 기존 필드만 호환 저장합니다.');
-        res=await window.sb.from('employees').upsert(chunk.map(e=>employeeCloudRow(e,true)));
-      }
-      if(res&&res.error){const error=new Error('사원명부 Supabase 저장 실패');error.partialSaved=saved;throw error;}
-      saved+=chunk.length;
-    }
-    return {saved,count:batch.length,legacy:useLegacy};
-  });
-}
-async function supabaseDeleteEmployeeOperation(operation){
-  if(window.erpPermissions&&!window.erpPermissions.require('employee.delete',{notify:false}))throw new Error('사원 삭제 권한이 없습니다.');
-  if(!canUseCloud())throw new Error('클라우드에 로그인되어 있지 않습니다.');
-  const res=await window.sb.from('employees').delete().eq('id',operation.id);
-  if(res&&res.error)throw res.error;
-  return {deleted:true,id:operation.id};
-}
-function supabaseDeleteEmployee(id,label,options){
-  if(window.erpPermissions&&!window.erpPermissions.require('employee.delete'))return {ok:false,reason:'permission'};
-  const queued=window.erpSyncSafety.enqueueDelete('employees',{id,label:label||id,scope:'one'});
-  if(queued.ok&&!options?.defer)window.erpSyncSafety.retryDeletes('employees');
-  return queued;
-}
-function supabaseEmployeesSyncOnLoad(){
-  if(!canUseCloud()) return;
-  const PAGE_SIZE=500;
-  function loadPage(from,collected){
-    return window.sb.from('employees').select('*').order('id',{ascending:true}).range(from,from+PAGE_SIZE-1).then(function(res){
-      if(res&&res.error) throw new Error(res.error.message);
-      const rows=(res&&res.data)?res.data:[];
-      const merged=collected.concat(rows);
-      return rows.length<PAGE_SIZE?merged:loadPage(from+PAGE_SIZE,merged);
-    });
-  }
-  loadPage(0,[]).then(function(cloudRaw){
-    const local=employees,cloud=window.erpSyncSafety.filterPendingDeletes('employees',cloudRaw,window.erpSyncSafety.readPendingDeletes()).map(normalizeEmployee),mergeResult=window.erpSyncSafety.mergeAndTrack('employees',local,cloud);
-    employees=mergeResult.rows.map(normalizeEmployee);
-    if(!safeLocalStorageSet(EMPLOYEES_KEY,JSON.stringify(employees))){employees=local;throw new Error('사원명부 클라우드 병합 결과의 로컬 저장 실패');}
-    renderEmployees();
-    setCloudSyncStatus('ok');
-    console.info('직원명부 Supabase 안전 병합 완료: 클라우드 '+cloud.length+'명 -> 병합 후 '+employees.length+'명 · 충돌 '+mergeResult.conflicts.length+'건');
-  }).catch(function(e){console.warn('직원명부 페이지 조회 중 실패 — 기존 로컬 데이터 유지:',e);});
-}
-if(window.erpSyncSafety)window.erpSyncSafety.registerDataset('employees',{
-  getRows:function(){return employees;},
-  setRows:function(rows){employees=rows.map(normalizeEmployee);},
-  normalize:normalizeEmployee,
-  storageKey:function(){return EMPLOYEES_KEY;},
-  upload:supabaseSyncEmployees,
-  remove:supabaseDeleteEmployeeOperation,
-  render:function(){renderEmployees();renderSchools();}
-});
-
 let employeeStatusFilter='all';
 let employeeSearchName='';
 let employeeSearchNo='';
@@ -295,12 +205,10 @@ function deleteEmployee(id){
   const phrase=prompt('삭제하려면 사원명을 그대로 입력하세요.',e.name);
   if(phrase!==e.name){alert('삭제가 취소됐습니다.');return;}
   const auditReason=auditDeletionReason();if(!auditReason)return;
-  const queued=supabaseDeleteEmployee(id,e.name,{defer:true});
-  if(!queued.ok){alert('삭제 안전정보를 저장하지 못해 삭제를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;}
   const previous=employees;employees=employees.filter(x=>x.id!==id);
   window.erpAudit?.setNextContext('employee',{action:'delete',reason:auditReason});
-  if(!saveEmployees()){employees=previous;window.erpAudit?.clearNextContext('employee');window.erpSyncSafety.cancelDelete(queued.key);renderEmployees();return;}
-  resetEmployeeForm();window.erpSyncSafety.retryDeletes('employees');
+  if(!saveEmployees()){employees=previous;window.erpAudit?.clearNextContext('employee');renderEmployees();return;}
+  resetEmployeeForm();
 }
 function deleteEditingEmployee(){if(editingEmployeeId)deleteEmployee(editingEmployeeId);}
 
@@ -801,24 +709,14 @@ function employeeOrgImportUpdateApplyState(){
   const confirmed=!!$('employeeOrgImportConfirm')?.checked;
   if(btn){btn.disabled=!count||!confirmed;btn.textContent=count?`선택 ${count}명 조직정보 반영`:'선택 조직정보 반영';}
 }
-function employeeOrgImportCloudMessage(){
-  const box=$('employeeOrgImportCloudState');if(!box)return;
+function employeeOrgImportStorageMessage(){
+  const box=$('employeeOrgImportStorageState');if(!box)return;
   if(typeof isCompanyLocalMode==='function'&&isCompanyLocalMode()){
-    box.className='employee-org-import-cloud is-blocked';
+    box.className='employee-org-import-storage is-blocked';
     box.innerHTML='<strong>회사 모드 적용 차단</strong><span>회사에서는 파일 업로드와 일괄 반영을 실행하지 않습니다. 집 모드에서 회사 JSON을 복원한 뒤 진행하세요.</span>';return;
   }
-  if(typeof canUseCloud==='function'&&canUseCloud()){
-    if(employeeExtendedCloudUnsupported){
-      box.className='employee-org-import-cloud is-warning';
-      box.innerHTML='<strong>Supabase 확장 컬럼 확인 필요</strong><span>v10.40.13 사원 확장필드 SQL을 먼저 실행해야 조직정보가 클라우드에도 저장됩니다. 로컬 반영은 가능합니다.</span>';
-    }else{
-      box.className='employee-org-import-cloud is-ready';
-      box.innerHTML='<strong>로컬 + Supabase 저장 시도</strong><span>반영 후 로컬 저장을 완료하고, 현재 로그인된 Supabase에도 자동 저장을 시도합니다.</span>';
-    }
-  }else{
-    box.className='employee-org-import-cloud is-local';
-    box.innerHTML='<strong>로컬 저장 모드</strong><span>현재 Supabase 로그인이 확인되지 않아 브라우저 로컬에만 반영됩니다. 저장 후 전체 JSON 백업을 보관하세요.</span>';
-  }
+  box.className='employee-org-import-storage is-local';
+  box.innerHTML='<strong>LOCAL ONLY 저장</strong><span>반영 결과는 이 브라우저에만 저장됩니다. 중요한 작업 뒤에는 암호화 백업을 보관하세요.</span>';
 }
 function renderEmployeeOrgImport(){
   const counts=employeeOrgImportCounts();
@@ -865,7 +763,7 @@ function renderEmployeeOrgImport(){
     if(totalPages<=1)pager.innerHTML='';
     else pager.innerHTML=`<button class="mini" data-org-import-page="${Math.max(1,employeeOrgImportState.page-1)}" ${employeeOrgImportState.page===1?'disabled':''}>이전</button><span>${employeeOrgImportState.page} / ${totalPages}</span><button class="mini" data-org-import-page="${Math.min(totalPages,employeeOrgImportState.page+1)}" ${employeeOrgImportState.page===totalPages?'disabled':''}>다음</button>`;
   }
-  employeeOrgImportCloudMessage();
+  employeeOrgImportStorageMessage();
   employeeOrgImportUpdateApplyState();
 }
 function openEmployeeOrgImport(){
@@ -874,7 +772,7 @@ function openEmployeeOrgImport(){
   }
   const modal=$('employeeOrgImportModal');if(!modal)return false;
   modal.classList.add('show');modal.setAttribute('aria-hidden','false');
-  employeeOrgImportCloudMessage();
+  employeeOrgImportStorageMessage();
   return true;
 }
 function closeEmployeeOrgImport(){
@@ -985,7 +883,7 @@ function applyEmployeeOrgImport(){
   employeeOrgImportState={...employeeOrgImportState,rows,selected:new Set(),filter:'changed',page:1};
   if($('employeeOrgImportConfirm'))$('employeeOrgImportConfirm').checked=false;
   renderEmployeeOrgImport();
-  alert(`조직정보 반영 완료\n\n대상 ${selectedRows.length}명\n${detail}\n\n로컬 저장을 완료했고, 로그인 상태이면 Supabase 저장도 자동 시도했습니다.`);
+  alert(`조직정보 반영 완료\n\n대상 ${selectedRows.length}명\n${detail}\n\nLOCAL ONLY 저장을 완료했습니다.`);
 }
 
 /* =========================================================
@@ -1326,32 +1224,24 @@ async function applyEmployeeExcelCompare(){
   if(employeeExcelCompareState.meta?.referenceDate?.conflict){alert('워크북 시트의 명단 기준일이 서로 달라 반영할 수 없습니다. 파일 작성자에게 기준일 확인을 요청해주세요.');return;}
   if(typeof isCompanyLocalMode==='function'&&isCompanyLocalMode()){alert('회사 모드에서는 엑셀 비교 결과를 반영할 수 없습니다.');return;}const summary=employeeExcelSelectionSummary();if(!summary.total){alert('반영할 신규 사원 또는 변경 항목을 선택해주세요.');return;}if(!$('employeeExcelConfirm')?.checked){alert('선택 항목을 확인했다는 항목에 체크해주세요.');return;}const validation=employeeExcelApplyValidation();if(validation.length){alert(`선택한 변경 중 상태·날짜 규칙을 통과하지 못한 항목이 있습니다.\n\n${validation.slice(0,10).join('\n')}${validation.length>10?'\n외 '+(validation.length-10)+'건':''}`);return;}
   if(!confirm(`신규 ${summary.newCount}명과 변경 ${summary.fieldCount}개 항목을 반영할까요?\n\n빈 엑셀 칸은 기존 값을 지우지 않으며, 적용 직전 전체 ERP JSON이 자동 다운로드됩니다.`))return;
-  employeeExcelSafetyBackup();const previousEmployees=employees.slice(),previousEmployeeStorage=localStorage.getItem(EMPLOYEES_KEY),previousUndoStorage=localStorage.getItem(EMPLOYEE_EXCEL_UNDO_KEY),previousCompareState={...employeeExcelCompareState,selected:new Set(employeeExcelCompareState.selected)},auditBefore=window.erpAudit?.capture('employee'),before=[],newIds=[],affected=[];const now=new Date().toISOString();let newCount=0,updatedCount=0,fieldCount=0;
+  employeeExcelSafetyBackup();const previousEmployees=employees.slice(),previousEmployeeStorage=localStorage.getItem(EMPLOYEES_KEY),previousUndoStorage=localStorage.getItem(EMPLOYEE_EXCEL_UNDO_KEY),previousCompareState={...employeeExcelCompareState,selected:new Set(employeeExcelCompareState.selected)},auditBefore=window.erpAudit?.capture('employee'),before=[],newIds=[];const now=new Date().toISOString();let newCount=0,updatedCount=0,fieldCount=0;
   employeeExcelCompareState.rows.forEach(row=>{
-    if(row.status==='new'&&employeeExcelCompareState.selected.has(employeeExcelToken(row.key,'__create__'))){const planned=row.plannedEmployee||{empNo:row.record.empNo,name:row.record.name,...Object.fromEntries(EMPLOYEE_EXCEL_COMPARE_FIELDS.map(f=>[f.key,employeeBlankToEmpty(row.record[f.key])])),leaveStartDate:employeeBlankToEmpty(row.record.leaveStartDate),department:row.record.team||''};const created=normalizeEmployee({...planned,id:uid(),createdAt:now,updatedAt:now});employees.unshift(created);newIds.push(created.id);affected.push(created);newCount++;return;}
-    if(!row.employee)return;const selected=row.changes.filter(c=>employeeExcelCompareState.selected.has(employeeExcelToken(row.key,c.field)));if(!selected.length)return;before.push({id:row.employee.id,data:row.employee});const patch={updatedAt:now};selected.forEach(c=>{patch[c.field]=c.to;if(c.field==='team')patch.department=c.to;fieldCount++;});const updated=normalizeEmployee({...row.employee,...patch,id:row.employee.id});employees=employees.map(e=>e.id===updated.id?updated:e);affected.push(updated);updatedCount++;
+    if(row.status==='new'&&employeeExcelCompareState.selected.has(employeeExcelToken(row.key,'__create__'))){const planned=row.plannedEmployee||{empNo:row.record.empNo,name:row.record.name,...Object.fromEntries(EMPLOYEE_EXCEL_COMPARE_FIELDS.map(f=>[f.key,employeeBlankToEmpty(row.record[f.key])])),leaveStartDate:employeeBlankToEmpty(row.record.leaveStartDate),department:row.record.team||''};const created=normalizeEmployee({...planned,id:uid(),createdAt:now,updatedAt:now});employees.unshift(created);newIds.push(created.id);newCount++;return;}
+    if(!row.employee)return;const selected=row.changes.filter(c=>employeeExcelCompareState.selected.has(employeeExcelToken(row.key,c.field)));if(!selected.length)return;before.push({id:row.employee.id,data:row.employee});const patch={updatedAt:now};selected.forEach(c=>{patch[c.field]=c.to;if(c.field==='team')patch.department=c.to;fieldCount++;});const updated=normalizeEmployee({...row.employee,...patch,id:row.employee.id});employees=employees.map(e=>e.id===updated.id?updated:e);updatedCount++;
   });
   const undoSaved=writeEmployeeExcelUndo({at:now,fileName:employeeExcelCompareState.fileName,before,newIds});
   if(!undoSaved||!safeLocalStorageSet(EMPLOYEES_KEY,JSON.stringify(employees))){const employeeRestored=restoreEmployeeExcelStorage(EMPLOYEES_KEY,previousEmployeeStorage),undoRestored=restoreEmployeeExcelStorage(EMPLOYEE_EXCEL_UNDO_KEY,previousUndoStorage);employees=previousEmployees;employeeExcelCompareState=previousCompareState;renderEmployees();renderSchools();renderEmployeeExcelCompare();alert(employeeRestored&&undoRestored?'브라우저 저장에 실패해 사원명부와 실행취소 상태를 모두 원상복구했습니다.':'브라우저 저장에 실패했고 일부 임시 상태를 복구하지 못했습니다. 즉시 현재 화면을 유지하고 저장공간을 확인해주세요.');return;}
   window.erpAudit?.setNextContext('employee',{action:'import',batchSummary:true,reason:'사원명부 XLSX 선택 반영',metadata:{source:'employee-xlsx',created:newCount,updated:updatedCount,changedFields:fieldCount}});
   window.erpAudit?.commitSave('employee',auditBefore||previousEmployees,employees);
   renderEmployees();renderSchools();
-  const cloud=await supabaseSyncEmployees(affected);
-  if(cloud?.error)window.erpAudit?.recordEvent({entityType:'employee',entityId:'',entityLabel:'사원명부 XLSX 최신화',action:'import',fields:['cloudSaved','cloudFailed'],before:{cloudSaved:0,cloudFailed:0},after:{cloudSaved:Number(cloud.saved)||0,cloudFailed:Number(cloud.failed)||affected.length},reason:'사원명부 XLSX 클라우드 부분 저장 실패',metadata:{source:'employee-xlsx',created:newCount,updated:updatedCount,changedFields:fieldCount,pending:true}});
-  employeeExcelCompareState.selected.clear();employeeExcelCompareState.lastResult={newCount,updatedCount,fieldCount,cloud};if($('employeeExcelConfirm'))$('employeeExcelConfirm').checked=false;const records=employeeExcelCompareState.rows.filter(r=>r.record).map(r=>r.record);if(employeeExcelCompareState.meta?.sourceType==='xlsx'){const reference=employeeExcelCompareState.meta.referenceDate||{};const refreshedPlan=window.erpEmployeeMasterXlsx.buildImportPlan({records,employees,schools,asOf:reference.date||reference.suggestedDate||employeeTodayIso(),idFactory:uid});employeeExcelCompareState.meta.plan=refreshedPlan;employeeExcelCompareState.meta.issues=[...(employeeExcelCompareState.meta.sourceIssues||[]),...refreshedPlan.issues];}employeeExcelCompareState.rows=employeeExcelBuildRows(records,employeeExcelCompareState.meta||{});renderEmployeeExcelCompare();const result=$('employeeExcelResult');const cloudText=cloud?.error?(cloud.saved?`클라우드 ${cloud.saved}명 저장 후 ${cloud.failed}명 재시도 대기`:`클라우드 저장 재시도 대기 ${cloud.count||affected.length}명`):cloud?.skipped?'로컬 저장 완료 · 클라우드 미사용':`클라우드 저장 ${cloud?.saved??affected.length}명 완료`,resultTitle=cloud?.error?'로컬 반영 완료 · 클라우드 재시도 필요':'반영 완료';if(result){result.className=cloud?.error?'employee-excel-result is-error':'employee-excel-result is-ready';result.innerHTML=`<strong>${resultTitle}</strong><span>신규 ${newCount}명 · 수정 ${updatedCount}명 · 변경 필드 ${fieldCount}개 · ${cloudText}</span>`;}alert(`사원명부 ${resultTitle}\n\n신규 ${newCount}명\n수정 ${updatedCount}명\n변경 필드 ${fieldCount}개\n\n${cloudText}`);
+  employeeExcelCompareState.selected.clear();employeeExcelCompareState.lastResult={newCount,updatedCount,fieldCount};if($('employeeExcelConfirm'))$('employeeExcelConfirm').checked=false;const records=employeeExcelCompareState.rows.filter(r=>r.record).map(r=>r.record);if(employeeExcelCompareState.meta?.sourceType==='xlsx'){const reference=employeeExcelCompareState.meta.referenceDate||{};const refreshedPlan=window.erpEmployeeMasterXlsx.buildImportPlan({records,employees,schools,asOf:reference.date||reference.suggestedDate||employeeTodayIso(),idFactory:uid});employeeExcelCompareState.meta.plan=refreshedPlan;employeeExcelCompareState.meta.issues=[...(employeeExcelCompareState.meta.sourceIssues||[]),...refreshedPlan.issues];}employeeExcelCompareState.rows=employeeExcelBuildRows(records,employeeExcelCompareState.meta||{});renderEmployeeExcelCompare();const result=$('employeeExcelResult');if(result){result.className='employee-excel-result is-ready';result.innerHTML=`<strong>반영 완료</strong><span>신규 ${newCount}명 · 수정 ${updatedCount}명 · 변경 필드 ${fieldCount}개 · LOCAL ONLY 저장 완료</span>`;}alert(`사원명부 반영 완료\n\n신규 ${newCount}명\n수정 ${updatedCount}명\n변경 필드 ${fieldCount}개\n\nLOCAL ONLY 저장 완료`);
 }
 function undoEmployeeExcelApply(){
   const undo=readEmployeeExcelUndo();if(!undo){alert('실행 취소할 직전 반영 기록이 없습니다.');return;}
   if(!confirm(`직전 사원명부 반영을 취소할까요?\n\n파일: ${undo.fileName||'-'}\n기존 복원 ${undo.before.length}명 · 신규 제거 ${undo.newIds.length}명`))return;
-  const deleteRequests=undo.newIds.map(id=>{const employee=employees.find(e=>e.id===id);return supabaseDeleteEmployee(id,employee?.name||id,{defer:true});});
-  if(deleteRequests.some(request=>!request.ok)){
-    deleteRequests.filter(request=>request.ok).forEach(request=>window.erpSyncSafety.cancelDelete(request.key));
-    alert('삭제 안전정보를 저장하지 못해 실행 취소를 중단했습니다. 브라우저 저장공간을 확인해주세요.');return;
-  }
   const previous=employees,beforeMap=new Map(undo.before.map(x=>[x.id,normalizeEmployee(x.data)]));
   employees=employees.filter(e=>!undo.newIds.includes(e.id)).map(e=>beforeMap.has(e.id)?beforeMap.get(e.id):e);
-  if(!saveEmployees(Array.from(beforeMap.values()))){employees=previous;deleteRequests.forEach(request=>window.erpSyncSafety.cancelDelete(request.key));renderEmployees();return;}
-  if(deleteRequests.length)window.erpSyncSafety.retryDeletes('employees');
+  if(!saveEmployees()){employees=previous;renderEmployees();return;}
   localStorage.removeItem(EMPLOYEE_EXCEL_UNDO_KEY);
   if(employeeExcelCompareState.rows.length){const records=employeeExcelCompareState.rows.filter(r=>r.record).map(r=>r.record);employeeExcelCompareState.rows=employeeExcelBuildRows(records,employeeExcelCompareState.meta||{});}
   renderEmployeeExcelCompare();if(typeof uxToast==='function')uxToast('직전 사원명부 엑셀 반영을 취소했습니다.');
@@ -1405,12 +1295,12 @@ function employeeRelationIssueHtml(items=[]){
   const list=(Array.isArray(items)?items:[]).filter(Boolean);if(!list.length)return'<span class="employee-relation-clean">연결 이상 없음</span>';
   return`<div class="employee-relation-issues">${list.map(item=>`<span>${esc(item)}</span>`).join('')}</div>`;
 }
-function employeeRelationSetCloudState(text,tone='idle'){
-  const el=$('employeeRelationCloudText');if(!el)return;el.textContent=text;el.className=`employee-relation-cloud is-${tone}`;
+function employeeRelationSetStorageState(text,tone='idle'){
+  const el=$('employeeRelationStorageText');if(!el)return;el.textContent=text;el.className=`employee-relation-storage is-${tone}`;
 }
 function employeeRelationSetBusy(busy,message=''){
   employeeRelationBusy=!!busy;const modal=$('employeeRelationModal');modal?.classList.toggle('is-busy',employeeRelationBusy);
-  if(message)employeeRelationSetCloudState(message,'syncing');
+  if(message)employeeRelationSetStorageState(message,'syncing');
   employeeRelationUpdateApplyState();
 }
 function employeeExpectedSchoolType(e){
@@ -1570,40 +1460,32 @@ function renderEmployeeApplicantLink(){
 function employeeRelationSafetyBackup(reason){if(window.erpBackupCenter&&typeof window.erpBackupCenter.safetyBackup==='function')return window.erpBackupCenter.safetyBackup(reason);if(window.erpBackupCenter&&typeof window.erpBackupCenter.exportFull==='function')return window.erpBackupCenter.exportFull();const payload={format:'recruit-erp-backup',appVersion:'10.40.29',createdAt:new Date().toISOString(),reason,applicants,schools,employees,calendarEvents};download(`Recruit_ERP_연결변경전_안전백업_${today()}.json`,JSON.stringify(payload,null,2),'application/json;charset=utf-8');return payload;}
 async function employeeRelationPersist(changedEmployees=[],applicantsChanged=false){
   localStorage.setItem(EMPLOYEES_KEY,JSON.stringify(employees));if(applicantsChanged)localStorage.setItem(STORAGE_KEY,JSON.stringify(applicants));
-  const result={local:true,employeeCloud:{skipped:true},applicantCloud:{skipped:true}};
-  if(changedEmployees.length)result.employeeCloud=await supabaseSyncEmployees(changedEmployees);
-  if(applicantsChanged&&canUseCloud())result.applicantCloud=await supabaseSyncAll(applicants);
-  renderAll();return result;
+  renderAll();return {local:true};
 }
-function employeeRelationCloudResultText(result){
-  if(!canUseCloud())return{tone:'local',text:'로컬 저장 완료 · 현재 환경에서는 Supabase 저장을 건너뜁니다.'};
-  const errors=[];if(result?.employeeCloud?.error)errors.push('사원 저장 실패');if(result?.applicantCloud?.error)errors.push('지원자 저장 실패');if(errors.length)return{tone:'error',text:`로컬 저장 완료 · ${errors.join(' / ')} (콘솔과 로그인 상태 확인)`};
-  const legacy=result?.employeeCloud?.legacy||result?.applicantCloud?.legacy;if(legacy)return{tone:'warning',text:'로컬 저장 완료 · Supabase는 구형 컬럼으로 저장됨. v10.40.24 관계 필드 SQL을 확인하세요.'};
-  return{tone:'ok',text:'로컬 및 Supabase 저장 확인 완료'};
-}
+function employeeRelationStorageResultText(){return{tone:'local',text:'LOCAL ONLY 저장 완료'};}
 function employeeRelationUpdateApplyState(){
   const count=employeeRelationActiveTab==='school'?employeeSchoolLinkState.selected.size:employeeApplicantLinkState.selected.size;const text=$('employeeRelationSelectionText');if(text)text.innerHTML=count?`<b>${count.toLocaleString()}</b>건 선택됨`:'선택된 변경 없음';const countEl=$('employeeRelationSelectionCount');if(countEl)countEl.textContent=count.toLocaleString();const btn=$('btnApplyEmployeeRelations');if(btn){btn.disabled=count===0||employeeRelationBusy;btn.textContent=employeeRelationBusy?'저장 중...':employeeRelationActiveTab==='school'?`선택 학교 연결 반영 (${count})`:`선택 지원자 연결 반영 (${count})`;}
 }
-function openEmployeeRelations(tab='school'){$('employeeRelationModal')?.classList.add('show');employeeRelationActiveTab=tab==='applicant'?'applicant':'school';employeeRelationSetCloudState(canUseCloud()?'연결 반영 시 로컬과 Supabase에 함께 저장합니다.':'현재 환경은 로컬 저장만 사용합니다.','idle');renderEmployeeRelations();}
+function openEmployeeRelations(tab='school'){$('employeeRelationModal')?.classList.add('show');employeeRelationActiveTab=tab==='applicant'?'applicant':'school';employeeRelationSetStorageState('현재 브라우저에만 저장합니다.','idle');renderEmployeeRelations();}
 function closeEmployeeRelations(){if(employeeRelationBusy)return;$('employeeRelationModal')?.classList.remove('show');}
 function renderEmployeeRelations(){document.querySelectorAll('[data-employee-relation-tab]').forEach(b=>b.classList.toggle('active',b.dataset.employeeRelationTab===employeeRelationActiveTab));document.querySelectorAll('[data-employee-relation-pane]').forEach(p=>p.classList.toggle('active',p.dataset.employeeRelationPane===employeeRelationActiveTab));if(employeeRelationActiveTab==='school')renderEmployeeSchoolLink();else renderEmployeeApplicantLink();}
 async function applyEmployeeSchoolLinks(){
   if(window.erpPermissions&&!window.erpPermissions.require('employee.write'))return;
   const keys=[...employeeSchoolLinkState.selected];if(!keys.length||employeeRelationBusy)return;const rows=employeeSchoolLinkRows().filter(r=>keys.includes(r.key));const changes=[];for(const row of rows){const schoolId=employeeSchoolChoice(row),school=(schools||[]).find(s=>String(s.id)===String(schoolId));if(!school){alert(`${row.employee.name}님의 학교 후보를 다시 선택해주세요.`);return;}changes.push({row,school});}
-  if(!confirm(`선택한 ${changes.length}명의 출신학교 연결을 반영할까요?\n\n학교명 텍스트는 바꾸지 않고 schoolId 연결값만 저장합니다.`))return;employeeRelationSafetyBackup('사원-학교 연결 반영 직전');employeeRelationSetBusy(true,'학교 연결 저장 중...');try{const now=new Date().toISOString(),changed=[];changes.forEach(({row,school})=>{const updated=normalizeEmployee({...row.employee,schoolId:school.id,updatedAt:now});employees=employees.map(e=>e.id===updated.id?updated:e);changed.push(updated);});const result=await employeeRelationPersist(changed,false);employeeSchoolLinkState.selected.clear();const cloud=employeeRelationCloudResultText(result);employeeRelationSetCloudState(cloud.text,cloud.tone);renderEmployeeSchoolLink();if(typeof uxToast==='function')uxToast(`${changed.length}명의 학교 연결을 반영했습니다.`);}finally{employeeRelationSetBusy(false);}
+  if(!confirm(`선택한 ${changes.length}명의 출신학교 연결을 반영할까요?\n\n학교명 텍스트는 바꾸지 않고 schoolId 연결값만 저장합니다.`))return;employeeRelationSafetyBackup('사원-학교 연결 반영 직전');employeeRelationSetBusy(true,'학교 연결 저장 중...');try{const now=new Date().toISOString(),changed=[];changes.forEach(({row,school})=>{const updated=normalizeEmployee({...row.employee,schoolId:school.id,updatedAt:now});employees=employees.map(e=>e.id===updated.id?updated:e);changed.push(updated);});await employeeRelationPersist(changed,false);employeeSchoolLinkState.selected.clear();const stored=employeeRelationStorageResultText();employeeRelationSetStorageState(stored.text,stored.tone);renderEmployeeSchoolLink();if(typeof uxToast==='function')uxToast(`${changed.length}명의 학교 연결을 반영했습니다.`);}finally{employeeRelationSetBusy(false);}
 }
 async function unlinkEmployeeSchool(employeeId){
-  if(employeeRelationBusy)return;const e=employees.find(x=>x.id===employeeId);if(!e||!e.schoolId)return;const school=(schools||[]).find(s=>String(s.id)===String(e.schoolId));if(!confirm(`${e.name}님의 학교 연결을 해제할까요?\n\n출신학교 텍스트(${e.school||'-'})는 유지됩니다.`))return;employeeRelationSafetyBackup('사원-학교 연결 해제 직전');employeeRelationSetBusy(true,'학교 연결 해제 저장 중...');try{const updated=normalizeEmployee({...e,schoolId:'',updatedAt:new Date().toISOString()});employees=employees.map(x=>x.id===e.id?updated:x);const result=await employeeRelationPersist([updated],false);const cloud=employeeRelationCloudResultText(result);employeeRelationSetCloudState(cloud.text,cloud.tone);renderEmployeeSchoolLink();if(typeof uxToast==='function')uxToast(`${school?.name||'학교'} 연결을 해제했습니다.`);}finally{employeeRelationSetBusy(false);}
+  if(employeeRelationBusy)return;const e=employees.find(x=>x.id===employeeId);if(!e||!e.schoolId)return;const school=(schools||[]).find(s=>String(s.id)===String(e.schoolId));if(!confirm(`${e.name}님의 학교 연결을 해제할까요?\n\n출신학교 텍스트(${e.school||'-'})는 유지됩니다.`))return;employeeRelationSafetyBackup('사원-학교 연결 해제 직전');employeeRelationSetBusy(true,'학교 연결 해제 저장 중...');try{const updated=normalizeEmployee({...e,schoolId:'',updatedAt:new Date().toISOString()});employees=employees.map(x=>x.id===e.id?updated:x);await employeeRelationPersist([updated],false);const stored=employeeRelationStorageResultText();employeeRelationSetStorageState(stored.text,stored.tone);renderEmployeeSchoolLink();if(typeof uxToast==='function')uxToast(`${school?.name||'학교'} 연결을 해제했습니다.`);}finally{employeeRelationSetBusy(false);}
 }
 function validateEmployeeApplicantSelections(rows){
   const errors=[],empIds=new Set(),appIds=new Set();rows.forEach(row=>{const target=employeeApplicantChoice(row);const eId=row.kind==='employee'?row.employee.id:target,aId=row.kind==='employee'?target:row.applicant.id;if(!eId||!aId){errors.push('후보가 선택되지 않은 항목이 있습니다.');return;}if(empIds.has(String(eId))||appIds.has(String(aId)))errors.push('한 사원 또는 지원자가 두 번 이상 선택되었습니다.');empIds.add(String(eId));appIds.add(String(aId));const e=employees.find(x=>String(x.id)===String(eId)),a=applicants.find(x=>String(x.id)===String(aId));if(!e||!a){errors.push('연결 대상이 존재하지 않습니다.');return;}if(e.applicantId&&String(e.applicantId)!==String(a.id))errors.push(`${e.name}: 기존 지원자 연결을 먼저 해제해야 합니다.`);if(a.employeeId&&String(a.employeeId)!==String(e.id)&&String(a.employeeId)!=='수동처리')errors.push(`${a.name}: 다른 사원 연결을 먼저 해제해야 합니다.`);});return[...new Set(errors)];
 }
 async function applyEmployeeApplicantLinks(){
   if(window.erpPermissions&&!window.erpPermissions.require('employee.write'))return;
-  const keys=[...employeeApplicantLinkState.selected];if(!keys.length||employeeRelationBusy)return;const rows=employeeApplicantLinkRows().filter(r=>keys.includes(r.key)),errors=validateEmployeeApplicantSelections(rows);if(errors.length){alert(`연결을 반영할 수 없습니다.\n\n${errors.slice(0,10).join('\n')}`);return;}if(!confirm(`선택한 ${rows.length}건의 사원-지원자 연결을 반영할까요?\n\n사원 applicantId와 지원자 employeeId를 함께 저장합니다.`))return;employeeRelationSafetyBackup('사원-지원자 연결 반영 직전');employeeRelationSetBusy(true,'양방향 연결 저장 중...');try{const now=new Date().toISOString(),changed=[];rows.forEach(row=>{const target=employeeApplicantChoice(row),eId=row.kind==='employee'?row.employee.id:target,aId=row.kind==='employee'?target:row.applicant.id;const e=employees.find(x=>String(x.id)===String(eId)),a=applicants.find(x=>String(x.id)===String(aId));const updatedE=normalizeEmployee({...e,applicantId:a.id,updatedAt:now});employees=employees.map(x=>x.id===e.id?updatedE:x);applicants=applicants.map(x=>x.id===a.id?normalize({...x,employeeId:e.id,updatedAt:now}):x);changed.push(updatedE);});const result=await employeeRelationPersist(changed,true);employeeApplicantLinkState.selected.clear();const cloud=employeeRelationCloudResultText(result);employeeRelationSetCloudState(cloud.text,cloud.tone);renderEmployeeApplicantLink();if(typeof uxToast==='function')uxToast(`${rows.length}건의 사원-지원자 연결을 반영했습니다.`);}finally{employeeRelationSetBusy(false);}
+  const keys=[...employeeApplicantLinkState.selected];if(!keys.length||employeeRelationBusy)return;const rows=employeeApplicantLinkRows().filter(r=>keys.includes(r.key)),errors=validateEmployeeApplicantSelections(rows);if(errors.length){alert(`연결을 반영할 수 없습니다.\n\n${errors.slice(0,10).join('\n')}`);return;}if(!confirm(`선택한 ${rows.length}건의 사원-지원자 연결을 반영할까요?\n\n사원 applicantId와 지원자 employeeId를 함께 저장합니다.`))return;employeeRelationSafetyBackup('사원-지원자 연결 반영 직전');employeeRelationSetBusy(true,'양방향 연결 저장 중...');try{const now=new Date().toISOString(),changed=[];rows.forEach(row=>{const target=employeeApplicantChoice(row),eId=row.kind==='employee'?row.employee.id:target,aId=row.kind==='employee'?target:row.applicant.id;const e=employees.find(x=>String(x.id)===String(eId)),a=applicants.find(x=>String(x.id)===String(aId));const updatedE=normalizeEmployee({...e,applicantId:a.id,updatedAt:now});employees=employees.map(x=>x.id===e.id?updatedE:x);applicants=applicants.map(x=>x.id===a.id?normalize({...x,employeeId:e.id,updatedAt:now}):x);changed.push(updatedE);});await employeeRelationPersist(changed,true);employeeApplicantLinkState.selected.clear();const stored=employeeRelationStorageResultText();employeeRelationSetStorageState(stored.text,stored.tone);renderEmployeeApplicantLink();if(typeof uxToast==='function')uxToast(`${rows.length}건의 사원-지원자 연결을 반영했습니다.`);}finally{employeeRelationSetBusy(false);}
 }
 async function unlinkEmployeeApplicant(key){
-  if(employeeRelationBusy)return;const row=employeeApplicantLinkRows().find(r=>r.key===key);if(!row)return;let e=null,a=null;if(row.kind==='employee'){e=row.employee;a=row.linked||applicants.find(x=>String(x.id)===String(e.applicantId));}else{a=row.applicant;e=row.linked||employees.find(x=>String(x.id)===String(a.employeeId));}if(!e&&!a)return;if(!confirm(`${e?.name||a?.name||'선택 기록'}의 사원-지원자 연결을 해제할까요?\n\n사원과 지원자 양쪽 연결값을 함께 정리합니다.`))return;employeeRelationSafetyBackup('사원-지원자 연결 해제 직전');employeeRelationSetBusy(true,'양방향 연결 해제 저장 중...');try{const now=new Date().toISOString(),changed=[];if(e){const updated=normalizeEmployee({...e,applicantId:'',updatedAt:now});employees=employees.map(x=>x.id===e.id?updated:x);changed.push(updated);}if(a)applicants=applicants.map(x=>x.id===a.id?normalize({...x,employeeId:'',updatedAt:now}):x);const result=await employeeRelationPersist(changed,!!a);const cloud=employeeRelationCloudResultText(result);employeeRelationSetCloudState(cloud.text,cloud.tone);renderEmployeeApplicantLink();if(typeof uxToast==='function')uxToast('사원-지원자 연결을 해제했습니다.');}finally{employeeRelationSetBusy(false);}
+  if(employeeRelationBusy)return;const row=employeeApplicantLinkRows().find(r=>r.key===key);if(!row)return;let e=null,a=null;if(row.kind==='employee'){e=row.employee;a=row.linked||applicants.find(x=>String(x.id)===String(e.applicantId));}else{a=row.applicant;e=row.linked||employees.find(x=>String(x.id)===String(a.employeeId));}if(!e&&!a)return;if(!confirm(`${e?.name||a?.name||'선택 기록'}의 사원-지원자 연결을 해제할까요?\n\n사원과 지원자 양쪽 연결값을 함께 정리합니다.`))return;employeeRelationSafetyBackup('사원-지원자 연결 해제 직전');employeeRelationSetBusy(true,'양방향 연결 해제 저장 중...');try{const now=new Date().toISOString(),changed=[];if(e){const updated=normalizeEmployee({...e,applicantId:'',updatedAt:now});employees=employees.map(x=>x.id===e.id?updated:x);changed.push(updated);}if(a)applicants=applicants.map(x=>x.id===a.id?normalize({...x,employeeId:'',updatedAt:now}):x);await employeeRelationPersist(changed,!!a);const stored=employeeRelationStorageResultText();employeeRelationSetStorageState(stored.text,stored.tone);renderEmployeeApplicantLink();if(typeof uxToast==='function')uxToast('사원-지원자 연결을 해제했습니다.');}finally{employeeRelationSetBusy(false);}
 }
 function applyEmployeeRelations(){return employeeRelationActiveTab==='school'?applyEmployeeSchoolLinks():applyEmployeeApplicantLinks();}
 function employeeRelationModalClick(event){
@@ -1626,4 +1508,3 @@ function employeeSchoolSelectExact(){employeeSchoolLinkRows().filter(r=>r.status
 function employeeSchoolClearSelection(){employeeSchoolLinkState.selected.clear();renderEmployeeSchoolLink();}
 function employeeApplicantSelectStrong(){employeeApplicantLinkRows().filter(r=>r.status==='strong'&&r.candidates.length&&!employeeApplicantCandidateUnavailable(r,employeeApplicantChoice(r))).forEach(r=>employeeApplicantLinkState.selected.add(r.key));renderEmployeeApplicantLink();}
 function employeeApplicantClearSelection(){employeeApplicantLinkState.selected.clear();renderEmployeeApplicantLink();}
-

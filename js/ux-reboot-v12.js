@@ -399,7 +399,10 @@
     root.document.querySelectorAll('.auth-user-avatar,.topbar-user-mark').forEach(element=>element.remove());
   }
 
-  function init(){
+  async function init(){
+    const reset=await Promise.resolve(root.erpFactoryResetReady);
+    const runtime=await Promise.resolve(root.erpRuntimeReady);
+    if(!reset?.ok||!runtime?.ok)return;
     if(root.document.body.dataset.ux12Ready==='true')return;
     root.document.body.dataset.ux12Ready='true';root.document.body.classList.add('ux12-ready');
     syncDesktopShell();root.addEventListener('resize',syncDesktopShell,{passive:true});
@@ -414,5 +417,5 @@
     root.document.dispatchEvent(new CustomEvent('erp:ux12-ready',{detail:{shownAt:root.__erpUx12FirstShownAt}}));
   }
 
-  if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+  if(root.document.readyState==='loading')root.document.addEventListener('DOMContentLoaded',()=>{init();},{once:true});else init();
 })(typeof window!=='undefined'?window:globalThis);

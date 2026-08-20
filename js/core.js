@@ -1,6 +1,5 @@
 // [HOME_DEV] Recruit ERP v10.40.30 SCHOOL_EXACT_AUTO_LINK — 역할별 파일 분리 빌드
 const STORAGE_KEY = 'recruit_erp_applicants_stable';
-const LEGACY_KEYS = ['resume_excel_like_v9_rows','recruit_erp_vercel_v2_applicants','recruit_erp_vercel_v1_applicants'];
 const BACKUP_KEY = 'recruit_erp_last_backup_date';
 const CALENDAR_EVENTS_KEY = 'recruit_erp_calendar_events';
 const HIRE_WAITING_PROFILES_KEY = 'recruit_erp_hire_waiting_profiles';
@@ -94,9 +93,6 @@ function normalize(a){ return {
     progressHistory:Array.isArray(a.progressHistory)?a.progressHistory:[],
     lastChangedBy:a.lastChangedBy||'', lastChangedAt:a.lastChangedAt||''
 }; }
-function looksLikeApplicantRow(x){
-  return x && typeof x === 'object' && (x.name || x.phone || x.email || x.applyDate || x.workplace || x.interviewDate);
-}
 function readArrayFromStorageKey(key){
   try{
     const raw = localStorage.getItem(key);
@@ -117,83 +113,22 @@ function safeLocalStorageSet(key,value,options){
 }
 function load(){
   try{
-    let data = readArrayFromStorageKey(STORAGE_KEY);
-    if(!data.length){
-      for(const key of LEGACY_KEYS){
-        const legacy = readArrayFromStorageKey(key);
-        if(Array.isArray(legacy) && legacy.some(looksLikeApplicantRow)){
-          data = legacy;
-          safeLocalStorageSet(STORAGE_KEY, JSON.stringify(data.map(normalize)), {notify:false});
-          break;
-        }
-      }
-    }
-    if(!data.length){
-      const candidates = [];
-      for(let i=0;i<localStorage.length;i++){
-        const key = localStorage.key(i);
-        if(!key || key === STORAGE_KEY || key === BACKUP_KEY) continue;
-        const arr = readArrayFromStorageKey(key);
-        if(Array.isArray(arr) && arr.some(looksLikeApplicantRow)) candidates.push(arr);
-      }
-      if(candidates.length){
-        candidates.sort((a,b)=>b.length-a.length);
-        data = candidates[0];
-        safeLocalStorageSet(STORAGE_KEY, JSON.stringify(data.map(normalize)), {notify:false});
-      }
-    }
+    const data = readArrayFromStorageKey(STORAGE_KEY);
     return Array.isArray(data) ? data.map(normalize) : [];
   }catch(e){
     console.error('Recruit ERP load error', e);
     return [];
   }
 }
-let cloudSyncStatus = 'unknown'; // 'syncing' | 'ok' | 'error' | 'unknown'
-let cloudAuthenticated = false;
 const OPERATION_ENV_STORAGE_KEY = 'recruit_erp_ui_operation_environment';
-const CLOUD_LAST_SUCCESS_KEY = 'recruit_erp_cloud_last_success_at';
 function isCompanyLocalMode(){ return localStorage.getItem(OPERATION_ENV_STORAGE_KEY) === 'company'; }
 function isLocalOnlyRuntime(){ return window.erpAppVersion?.LOCAL_ONLY === true; }
-function canUseCloud(){ return !isLocalOnlyRuntime() && !!window.sb && !isCompanyLocalMode() && cloudAuthenticated; }
-function cloudLastSuccessAt(){ return localStorage.getItem(CLOUD_LAST_SUCCESS_KEY)||''; }
-function cloudLastSuccessLabel(){
-  const value=cloudLastSuccessAt();if(!value)return '아직 성공 기록 없음';
-  const date=new Date(value);return Number.isNaN(date.getTime())?'기록 확인 불가':date.toLocaleString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-}
-function setCloudSyncStatus(status){
-  cloudSyncStatus=status;
-  if(status==='ok')safeLocalStorageSet(CLOUD_LAST_SUCCESS_KEY,new Date().toISOString(),{notify:false});
-  updateStorageNote();
-}
 function updateStorageNote(){
   var el = $('storageNote');
   if(!el) return;
   el.setAttribute('aria-live','polite');
-  el.className='security-note';
-  const last='<small>마지막 성공: '+esc(cloudLastSuccessLabel())+'</small>';
-  if(isLocalOnlyRuntime()){
-    el.className='security-note sync-local-note';
-    el.innerHTML='<strong>LOCAL ONLY</strong><span>이 브라우저 저장을 기본으로 사용합니다.</span>';
-  } else if(isCompanyLocalMode()){
-    el.className='security-note sync-local-note';
-    el.innerHTML='<strong>회사 로컬 모드</strong><span>이 브라우저에만 저장하며 클라우드로 보내지 않습니다.</span>';
-  } else if(!window.sb){
-    el.className='security-note sync-local-note';
-    el.innerHTML='<strong>로컬 전용</strong><span>클라우드 설정이 없어 이 브라우저에만 저장합니다.</span>';
-  } else if(!cloudAuthenticated){
-    el.className='security-note sync-logged-out-note';
-    el.innerHTML='<strong>클라우드 로그아웃</strong><span>로컬 저장만 사용 중입니다. 로그인하면 동기화를 다시 시작합니다.</span>'+last;
-  } else if(cloudSyncStatus === 'error'){
-    el.className = 'security-note sync-warn-note';
-    el.innerHTML = '<strong>⚠ 클라우드 동기화 실패</strong><span>로컬 저장은 완료됐지만 클라우드 반영에 실패했습니다. 인터넷 연결을 확인해주세요.</span>'+last;
-  } else if(cloudSyncStatus === 'ok'){
-    el.className='security-note sync-ok-note';
-    el.innerHTML='<strong>클라우드 동기화 정상</strong><span>로컬과 클라우드 저장이 정상 작동합니다.</span>'+last;
-  } else {
-    el.className='security-note sync-progress-note';
-    el.innerHTML='<strong>클라우드 동기화 중</strong><span>클라우드 상태를 확인하고 있습니다.</span>'+last;
-  }
-  if(window.erpSyncSafety&&typeof window.erpSyncSafety.decorateStatus==='function')window.erpSyncSafety.decorateStatus(el);
+  el.className='security-note sync-local-note';
+  el.innerHTML='<strong>LOCAL ONLY</strong><span>이 브라우저에만 안전하게 저장합니다.</span>';
 }
 window.isLocalOnlyRuntime=isLocalOnlyRuntime;
 function save(){
@@ -201,7 +136,6 @@ function save(){
   const auditBefore=window.erpAudit?.capture('applicant');
   if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants)))return false;
   window.erpAudit?.commitSave('applicant',auditBefore,applicants);
-  if(canUseCloud())supabaseSyncAll(applicants);
   renderAll();
   return true;
 }

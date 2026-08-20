@@ -1108,11 +1108,11 @@ button:focus-visible,.nav-btn:focus-visible,.tab:focus-visible,.chip:focus-visib
 #employeeOrgImportModal .employee-org-import-changes b{display:inline-block;min-width:35px;color:#245aa9}
 #employeeOrgImportModal .employee-org-import-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#5c6673;font-size:10px}
 #employeeOrgImportModal .employee-org-import-pagination>div{display:flex;align-items:center;gap:8px}
-#employeeOrgImportModal .employee-org-import-cloud{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border:1px solid #dce5f1;border-radius:11px;background:#fff;color:#526176}
-#employeeOrgImportModal .employee-org-import-cloud strong{white-space:nowrap;color:#183f77;font-size:10px}
-#employeeOrgImportModal .employee-org-import-cloud span{font-size:10px;line-height:1.5}
-#employeeOrgImportModal .employee-org-import-cloud.is-ready{border-color:#bce5cf;background:#f1fbf5}
-#employeeOrgImportModal .employee-org-import-cloud.is-warning,#employeeOrgImportModal .employee-org-import-cloud.is-blocked{border-color:#f0c8bd;background:#fff5f2}
+#employeeOrgImportModal .employee-org-import-storage{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border:1px solid #dce5f1;border-radius:11px;background:#fff;color:#526176}
+#employeeOrgImportModal .employee-org-import-storage strong{white-space:nowrap;color:#183f77;font-size:10px}
+#employeeOrgImportModal .employee-org-import-storage span{font-size:10px;line-height:1.5}
+#employeeOrgImportModal .employee-org-import-storage.is-ready{border-color:#bce5cf;background:#f1fbf5}
+#employeeOrgImportModal .employee-org-import-storage.is-warning,#employeeOrgImportModal .employee-org-import-storage.is-blocked{border-color:#f0c8bd;background:#fff5f2}
 #employeeOrgImportModal .employee-org-import-footer{flex:0 0 auto;display:flex;align-items:center;gap:10px;padding:12px 18px;background:#fff;border-top:1px solid #e3e6eb}
 #employeeOrgImportModal .employee-org-import-confirm{display:flex;align-items:center;gap:7px;margin-right:auto;color:#46566c;font-size:10px;font-weight:600}
 #employeeOrgImportModal .employee-org-import-selected{color:#1e5cb5;font-size:11px;font-weight:700}

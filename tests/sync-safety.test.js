@@ -1,42 +1,63 @@
 'use strict';
 
 const assert=require('node:assert/strict');
-const sync=require('../js/sync-safety.js');
+const fs=require('node:fs');
+const path=require('node:path');
 
-const old={id:'test-1',name:'테스트지원자',status:'서류검토',updatedAt:'2026-08-01T00:00:00.000Z'};
-const base=sync.fingerprint(old);
+const root=path.resolve(__dirname,'..');
+const reset=require('../js/factory-reset-v12.js');
 
-const localOnlyChange={...old,status:'면접예정',updatedAt:'2026-08-02T01:00:00.000Z'};
-let result=sync.mergeDataset([localOnlyChange],[old],{'test-1':base});
-assert.equal(result.rows[0].status,'면접예정');
-assert.equal(result.conflicts.length,0);
+class MemoryStorage{
+  constructor(entries=[]){this.map=new Map(entries);}
+  get length(){return this.map.size;}
+  key(index){return [...this.map.keys()][index]??null;}
+  getItem(key){return this.map.has(key)?this.map.get(key):null;}
+  setItem(key,value){this.map.set(key,String(value));}
+  removeItem(key){this.map.delete(key);}
+}
 
-const cloudOnlyChange={...old,status:'서류합격',updatedAt:'2026-08-02T02:00:00.000Z'};
-result=sync.mergeDataset([old],[cloudOnlyChange],{'test-1':base});
-assert.equal(result.rows[0].status,'서류합격');
-assert.equal(result.conflicts.length,0);
+function indexedDb({blocked=false,remaining=false}={}){
+  return {
+    deleteDatabase(name){
+      assert.equal(name,reset.DATABASE_NAME);
+      const request={};
+      queueMicrotask(()=>blocked?request.onblocked?.():request.onsuccess?.());
+      return request;
+    },
+    async databases(){return remaining?[{name:reset.DATABASE_NAME}]:[];}
+  };
+}
 
-result=sync.mergeDataset([localOnlyChange],[cloudOnlyChange],{'test-1':base});
-assert.equal(result.rows[0].status,'면접예정');
-assert.equal(result.conflicts.length,1);
-assert.equal(result.conflicts[0].cloud.status,'서류합격');
+(async()=>{
+  assert.equal(reset.DATA_EPOCH,'v12.0.2-reset-1');
+  assert.equal(reset.APP_STORAGE_KEYS.length,41);
+  assert.equal(new Set(reset.APP_STORAGE_KEYS).size,41);
+  assert.equal(fs.existsSync(path.join(root,'js','sync-safety.js')),false);
+  assert.equal(fs.existsSync(path.join(root,'js','cloud-sync.js')),false);
 
-const sameContentDifferentTime={...localOnlyChange,updatedAt:'2026-08-02T03:00:00.000Z'};
-result=sync.mergeDataset([localOnlyChange],[sameContentDifferentTime],{'test-1':base});
-assert.equal(result.conflicts.length,0);
-assert.equal(result.rows[0].updatedAt,'2026-08-02T03:00:00.000Z');
+  const entries=reset.APP_STORAGE_KEYS.map((key,index)=>[key,`old-${index}`]);
+  entries.push([`${reset.PROJECT_AUTH_PREFIX}auth-token`,'secret']);
+  entries.push(['other_product_data','keep-me']);
+  const storage=new MemoryStorage(entries);
+  const result=await reset.run({storage,indexedDB:indexedDb()});
+  assert.deepEqual(result,{ok:true,reset:true,epoch:reset.DATA_EPOCH,removedKeys:41});
+  for(const key of reset.APP_STORAGE_KEYS)assert.equal(storage.getItem(key),null);
+  assert.equal(storage.getItem(`${reset.PROJECT_AUTH_PREFIX}auth-token`),null);
+  assert.equal(storage.getItem('other_product_data'),'keep-me','다른 웹앱 데이터는 지우면 안 됩니다.');
+  assert.equal(storage.getItem(reset.EPOCH_KEY),reset.DATA_EPOCH);
 
-result=sync.mergeDataset([{id:'local',name:'로컬테스트'}],[{id:'cloud',name:'클라우드테스트'}],{});
-assert.deepEqual(result.rows.map(row=>row.id),['local','cloud']);
+  storage.setItem('recruit_erp','new-local-data');
+  const second=await reset.run({storage,indexedDB:indexedDb()});
+  assert.equal(second.reset,false);
+  assert.equal(storage.getItem('recruit_erp'),'new-local-data','같은 epoch의 두 번째 실행은 새 데이터를 지우면 안 됩니다.');
 
-let pending=sync.mergePendingIds({},'applicants',[{id:'test-1'},{id:'test-2'}]);
-pending=sync.mergePendingIds(pending,'applicants',[{id:'test-2'},{id:'test-3'}]);
-assert.deepEqual(pending.applicants,['test-1','test-2','test-3']);
+  for(const scenario of [{blocked:true},{remaining:true}]){
+    const failedStorage=new MemoryStorage([['recruit_erp','old'],['unrelated','safe']]);
+    const failed=await reset.run({storage:failedStorage,indexedDB:indexedDb(scenario)});
+    assert.equal(failed.ok,false);
+    assert.equal(failedStorage.getItem(reset.EPOCH_KEY),null,'초기화 실패 시 완료 epoch를 기록하면 안 됩니다.');
+    assert.equal(failedStorage.getItem('unrelated'),'safe');
+  }
 
-assert.equal(sync.VERSION,'11.0.0');
-const originalWarn=console.warn,warnings=[];console.warn=(...args)=>warnings.push(args.map(value=>String(value?.message||value)).join(' '));
-sync.runUpload('employees',[{id:'employee-1'},{id:'employee-2'},{id:'employee-3'}],async()=>{const error=new Error('가상 부분 실패');error.partialSaved=1;throw error;}).then(partial=>{
-  assert.equal(partial.pending,true);assert.equal(partial.saved,1);assert.equal(partial.failed,2);assert.equal(partial.count,3);
-  assert.equal(warnings.length,1);console.warn=originalWarn;
-  console.log('sync-safety tests: passed');
-}).catch(error=>{console.warn=originalWarn;console.error(error);process.exitCode=1;});
+  console.log('sync-safety.test.js: 원격 동기화 제거·41개 표적 초기화·타 웹앱 보존·IndexedDB fail-closed 확인 완료');
+})().catch(error=>{console.error(error);process.exitCode=1;});

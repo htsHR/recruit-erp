@@ -12,9 +12,9 @@ const runtimeSources=[index,...fs.readdirSync(path.join(root,'js')).filter(name=
 
 assert.doesNotMatch(runtimeSources,/(?:<|\s)on(?:click|change|keydown|input|submit|error|load)\s*=\s*["']/i,'HTML 인라인 이벤트 속성이 남아 있습니다.');
 assert.match(runtimeSources,/data-erp-handler=/,'CSP 호환 선언형 화면 동작이 없습니다.');
-assert.match(index,/js\/security\.js\?v=12\.0\.1/);
+assert.match(index,/js\/security\.js\?v=12\.0\.2/);
 assert.doesNotMatch(index,/@supabase\/supabase-js|supabase_config\.js/,'LOCAL ONLY 첫 화면에서 Supabase 초기 자산을 불러오면 안 됩니다.');
-assert.ok(fs.existsSync(path.join(root,'supabase_config.js')),'향후 인증 복구용 Supabase 설정 파일은 삭제하지 않습니다.');
+assert.equal(fs.existsSync(path.join(root,'supabase_config.js')),false,'LOCAL ONLY 릴리스에는 Supabase 설정 파일이 남으면 안 됩니다.');
 
 const csp=vercel.headers[0].headers.find(item=>item.key==='Content-Security-Policy')?.value||'';
 assert.ok(csp,'Content-Security-Policy 헤더가 없습니다.');
@@ -23,6 +23,8 @@ assert.doesNotMatch(scriptPolicy,/'unsafe-inline'|'unsafe-eval'/);
 assert.match(csp,/script-src-attr 'none'/);
 assert.match(csp,/object-src 'none'/);
 assert.match(csp,/frame-ancestors 'none'/);
+assert.match(csp,/connect-src 'self'/);
+assert.doesNotMatch(csp,/supabase|127\.0\.0\.1|localhost/i);
 
 const xss='<img src=x onerror=alert(1)>';
 assert.equal(security.escapeAttribute(xss),'&lt;img src=x onerror=alert(1)&gt;');

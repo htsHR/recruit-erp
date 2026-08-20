@@ -2,7 +2,7 @@
    - 서류검토 워크벤치와 별도 파일(요청서 §5), 검증된 큐/Undo 알고리즘만 재사용
    - 새 필드 없음: 전화내용=consult, 재연락일=nextContactDate(기존 progressHistory 추적 필드),
      면접거절/지원포기=기존 공식 상태(면접거절/입사철회) 그대로 사용
-   - 신규 Supabase 테이블/컬럼/localStorage 키 없음
+   - 신규 원격 저장소·localStorage 키 없음
 */
 (function(){
   let piQueueIds=[];

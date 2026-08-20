@@ -3,7 +3,7 @@
    - 일정관리에서 선택한 입사일의 입사예정자 자동 조회
    - 회사 입사대기자 양식 23열 순서 유지
    - 부서배치·사번·주민번호 등은 표 안에서 직접 입력/붙여넣기
-   - 추가 입력정보는 로컬 전용 저장키에 저장하고 Supabase에는 전송하지 않음
+   - 추가 입력정보는 로컬 전용 저장키에만 저장
    ========================================================= */
 const HIRE_WAITING_PROFILE_FIELDS=['employeeNo','pmtc','groupName','product','part','rank','residentNumber','commuteMethod','remarks','heightCm','weightKg'];
 const HIRE_WAITING_REQUIRED_FIELDS=['employeeNo','groupName','product','part','rank','residentNumber','commuteMethod'];

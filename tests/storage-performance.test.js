@@ -11,7 +11,7 @@ const source=fs.readFileSync(path.join(root,'js','storage-performance.js'),'utf8
 const safetySource=fs.readFileSync(path.join(root,'js','safety.js'),'utf8');
 const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 
-assert.equal(storage.VERSION,'11.0.0');
+assert.equal(storage.VERSION,'12.0.2');
 assert.equal(storage.DB_NAME,'recruit-erp-storage-v10-61');
 assert.equal(storage.MAX_SNAPSHOTS,5);
 assert.equal(storage.DATASETS.length,6);
@@ -25,9 +25,10 @@ assert.match(source,/erpSecurity\?\.assertSafeTree/);
 assert.match(source,/erpSecurity\?\.validateRowIds/);
 assert.match(safetySource,/erp:storage-write/);
 assert.doesNotMatch(safetySource,/detail:\{[^}]*value/);
-assert.match(index,/js\/storage-performance\.js\?v=12\.0\.1/);
-assert.match(index,/css\/storage-performance\.css\?v=12\.0\.1/);
+assert.match(index,/js\/storage-performance\.js\?v=12\.0\.2/);
+assert.match(index,/css\/storage-performance\.css\?v=12\.0\.2/);
 assert.match(source,/DATASETS\.find\(item=>item\.key===event\?\.detail\?\.key\)/);
+assert.doesNotMatch(source,/erpSharedStorage|127\.0\.0\.1|\/storage\/snapshot|fetch\(/i);
 
 assert.equal(storage.formatBytes(0),'0 B');
 assert.equal(storage.formatBytes(1024),'1.0 KB');

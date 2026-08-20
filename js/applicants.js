@@ -1218,7 +1218,6 @@ function excelPasteBatchSafetyBackup(){
 }
 function excelPasteBatchPersistWithoutHistory(){
   if(!safeLocalStorageSet(STORAGE_KEY,JSON.stringify(applicants)))return false;
-  try{if(typeof canUseCloud==='function'&&canUseCloud()&&typeof supabaseSyncAll==='function')supabaseSyncAll(applicants);}catch(err){console.warn('엑셀 일괄작업 실행 취소 클라우드 동기화 실패',err);}
   if(typeof renderAll==='function')renderAll();
   if(typeof window.applicantProgressHistoryRefreshSnapshots==='function')window.applicantProgressHistoryRefreshSnapshots();
   return true;

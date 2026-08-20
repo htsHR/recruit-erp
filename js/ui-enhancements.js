@@ -538,12 +538,11 @@ updateStorageNote=function(){
   const isCompany=mode==='company';
   document.documentElement.dataset.operationEnvironment=mode;
   const modeTitle='LOCAL ONLY';
-  const modeDescription=isCompany?'회사 모드의 브라우저 보조 저장을 사용합니다. 공용 저장소 상태는 연결 시 함께 표시됩니다.':'이 브라우저 저장을 기본으로 사용합니다.';
+  const modeDescription=isCompany?'회사 모드에서도 이 브라우저 저장만 사용합니다.':'이 브라우저 저장을 기본으로 사용합니다.';
   const statusClass='sync-local-note';
-  const sharedNote=isCompany&&window.erpSharedStorage?.statusNote?.();
-  const displayTitle=sharedNote?.title||modeTitle;
-  const displayDescription=sharedNote?.description||modeDescription;
-  const displayStatusClass=sharedNote?.className||statusClass;
+  const displayTitle=modeTitle;
+  const displayDescription=modeDescription;
+  const displayStatusClass=statusClass;
   el.className=`security-note operation-mode-note ${mode} ${displayStatusClass}`;
   el.setAttribute('aria-live','polite');
   el.innerHTML=`
@@ -564,7 +563,7 @@ updateStorageNote=function(){
     badge.title=isCompany?'회사 환경 · 로컬 전용':'이 브라우저 저장 · 로컬 전용';
     badge.classList.toggle('company',isCompany);
     badge.classList.toggle('home',!isCompany);
-    badge.classList.remove('cloud-ready','cloud-error');
+    badge.classList.remove('remote-ready','remote-error');
   }
 };
 window.updateStorageNote=updateStorageNote;
