@@ -14,7 +14,9 @@ const vercel=JSON.parse(read('vercel.json'));
 
 assert.equal(packageJson.version,version);
 assert.match(index,new RegExp(`<title>채용관리 시스템 v${version.replaceAll('.','\\.')}</title>`));
-assert.match(index,new RegExp(`VERSION 2\\.0 · v${version.replaceAll('.','\\.')}`));
+assert.match(index,/<h1>Recruit ERP<\/h1>/);
+assert.match(index,new RegExp(`<p>v${version.replaceAll('.','\\.')} Preview</p>`));
+assert.doesNotMatch(index,/VERSION 2\.0/);
 
 const localAssets=[...index.matchAll(/(?:src|href)="(?!https?:)([^"?]+)\?v=([^"]+)"/g)];
 assert.ok(localAssets.length>=40,'버전이 붙은 로컬 화면 파일을 찾지 못했습니다.');

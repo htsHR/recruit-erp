@@ -26,9 +26,8 @@ body.ux12-ready{
 .ux12-ready .ghost,.ux12-ready button.mini{box-shadow:none}
 
 /* Global shell */
-@media (min-width:1280px){
-  .ux12-ready .app-shell{grid-template-columns:var(--ux12-sidebar) minmax(0,1fr)!important}
-  .ux12-ready .sidebar{
+.ux12-ready.ux12-desktop-shell .app-shell{grid-template-columns:var(--ux12-sidebar) minmax(0,1fr)!important}
+.ux12-ready.ux12-desktop-shell .sidebar{
     width:var(--ux12-sidebar)!important;
     min-width:var(--ux12-sidebar)!important;
     background:var(--ux12-surface)!important;
@@ -37,18 +36,17 @@ body.ux12-ready{
     box-shadow:none!important;
     transition:width 180ms ease,box-shadow 180ms ease;
     z-index:70;
-  }
-  .ux12-ready .main{margin-left:0!important;width:100%!important;transition:none}
-  .ux12-ready.sidebar-collapsed .app-shell{grid-template-columns:var(--ux12-rail) minmax(0,1fr)!important}
-  .ux12-ready.sidebar-collapsed .sidebar{width:var(--ux12-rail)!important;min-width:var(--ux12-rail)!important}
-  .ux12-ready.sidebar-collapsed .main{margin-left:0!important;width:100%!important}
-  .ux12-ready.sidebar-collapsed.sidebar-preview-expanded .sidebar{width:var(--ux12-sidebar)!important;min-width:var(--ux12-sidebar)!important;box-shadow:8px 0 24px rgba(16,24,40,.12)!important}
-  .ux12-ready.sidebar-collapsed.sidebar-preview-expanded .main{margin-left:0!important;width:100%!important}
 }
+.ux12-ready.ux12-desktop-shell .main{margin-left:0!important;width:100%!important;transition:none}
+.ux12-ready.ux12-desktop-shell.sidebar-collapsed .app-shell{grid-template-columns:var(--ux12-rail) minmax(0,1fr)!important}
+.ux12-ready.ux12-desktop-shell.sidebar-collapsed .sidebar{width:var(--ux12-rail)!important;min-width:var(--ux12-rail)!important}
+.ux12-ready.ux12-desktop-shell.sidebar-collapsed .main{margin-left:0!important;width:100%!important}
+.ux12-ready.ux12-desktop-shell.sidebar-collapsed.sidebar-preview-expanded .sidebar{width:var(--ux12-sidebar)!important;min-width:var(--ux12-sidebar)!important;box-shadow:8px 0 24px rgba(16,24,40,.12)!important}
+.ux12-ready.ux12-desktop-shell.sidebar-collapsed.sidebar-preview-expanded .main{margin-left:0!important;width:100%!important}
 .ux12-ready .brand{min-height:64px;padding:12px 14px!important;border-bottom:1px solid var(--ux12-line);gap:10px!important;color:var(--ux12-text)!important}
 .ux12-ready .brand-mark{background:var(--ux12-blue)!important;border:0!important;box-shadow:none!important}
-.ux12-ready .brand-copy strong{color:var(--ux12-text)!important;font-size:14px}
-.ux12-ready .brand-copy span{color:var(--ux12-muted)!important;font-size:11px}
+.ux12-ready .brand-copy h1{margin:0;color:var(--ux12-text)!important;font-size:14px!important;line-height:1.25;text-transform:none!important}
+.ux12-ready .brand-copy p{margin:3px 0 0;color:var(--ux12-muted)!important;font-size:11px!important;line-height:1.2;white-space:nowrap}
 .ux12-ready .nav{padding:10px 8px 92px!important;gap:2px!important;overflow-y:auto;scrollbar-width:thin}
 .ux12-ready .ux12-nav-group{margin:0 0 5px}
 .ux12-ready .ux12-nav-group-label{width:100%;min-height:28px;padding:4px 8px;border:0;background:transparent;color:#98a2b3;display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.03em;text-align:left}
@@ -59,6 +57,11 @@ body.ux12-ready{
 .ux12-ready .nav-btn:hover{background:#f2f4f7!important;color:var(--ux12-text)!important}
 .ux12-ready .nav-btn.active{background:var(--ux12-blue-soft)!important;color:#175cd3!important;font-weight:700!important}
 .ux12-ready .sidebar-auth,.ux12-ready .sidebar-mode-status,.ux12-ready .sidebar-status-area{background:#f8fafc!important;border-color:var(--ux12-line)!important;color:var(--ux12-text)!important;box-shadow:none!important}
+.ux12-ready .sidebar-status-area .security-note.sync-shared-idle-note{padding:6px 8px!important;background:#f8fafc!important;border-color:transparent!important;color:#667085!important}
+.ux12-ready .sidebar-status-area .security-note.sync-shared-idle-note strong{color:#475467!important;font-size:10.5px!important}
+.ux12-ready .sidebar-status-area .security-note.sync-shared-idle-note span{display:-webkit-box;margin-top:2px!important;color:#667085!important;font-size:9.5px!important;line-height:1.3!important;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.ux12-ready .sidebar-status-area .security-note.sync-shared-idle-note .operation-mode-switch{margin-top:5px!important;padding:1px!important}
+.ux12-ready .sidebar-status-area .security-note.sync-shared-idle-note .operation-mode-switch button{min-height:22px!important;height:22px!important}
 .ux12-ready .auth-user-avatar,.ux12-ready .topbar-user-mark{display:none!important}
 .ux12-ready .ux12-sidebar-footer{position:absolute;left:0;right:0;bottom:0;padding:8px;border-top:1px solid var(--ux12-line);background:var(--ux12-surface)}
 .ux12-ready .ux12-sidebar-footer #sidebarToggle{position:static!important;width:100%!important;height:38px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;padding:8px 10px!important;border:1px solid var(--ux12-line)!important;border-radius:8px!important;background:#fff!important;color:#475467!important}
@@ -158,8 +161,9 @@ body.ux12-ready{
 .ux12-ready #applicants .applicant-list-tool-row .search,.ux12-ready #applicants .applicant-list-tool-row select{height:38px!important;border-color:var(--ux12-line)!important;background:#fff!important}
 .ux12-ready #applicants .compact-check-inline{grid-column:auto!important;justify-self:start!important;flex-direction:row!important;width:auto!important;height:38px!important;min-height:38px!important;padding:0!important;border:0!important;background:transparent!important;white-space:nowrap!important}
 .ux12-ready #applicants .compact-check-inline input{width:16px!important;height:16px!important;min-height:0!important;margin:0!important}
-.ux12-ready #applicants .applicant-my-views{grid-column:auto!important;min-width:120px!important;max-width:180px!important;width:100%!important}
-.ux12-ready #applicants .applicant-list-button-row{display:flex!important;gap:6px!important;justify-content:flex-end!important;flex-wrap:nowrap!important}
+.ux12-ready #applicants .applicant-my-views{grid-column:auto!important;min-width:220px!important;max-width:240px!important;width:100%!important}
+.ux12-ready #applicants .applicant-my-views select{min-width:92px!important}
+.ux12-ready #applicants .applicant-list-button-row{display:flex!important;gap:6px!important;justify-content:flex-end!important;flex-wrap:nowrap!important;margin-left:0!important}
 .ux12-ready #applicants .applicant-list-button-row button{height:36px!important;min-width:58px!important;padding-left:8px!important;padding-right:8px!important;white-space:nowrap!important}
 .ux12-ready #applicants .applicant-list-filter-stack{height:56px!important;min-height:56px!important;padding:8px 16px!important;display:flex!important;align-items:center!important;gap:12px!important;border-top:0!important;background:#fafbfc!important;overflow:visible}
 .ux12-ready #applicants .applicant-filter-group{height:40px!important;min-height:40px!important;padding:0!important;border:0!important;background:transparent!important;display:flex!important;align-items:center!important;gap:8px!important;min-width:0}
@@ -227,7 +231,7 @@ body.ux12-ready{
 .ux12-ready .ux12-stage-grid span,.ux12-ready .ux12-stage-grid small{display:block;color:var(--ux12-muted)}.ux12-ready .ux12-stage-grid strong{display:block;margin:8px 0;font-size:26px}
 
 /* Quick detail */
-@media (min-width:1280px){.ux12-ready .applicant-quick-detail-panel{width:clamp(360px,28vw,420px)!important;max-width:420px!important}}
+.ux12-ready.ux12-desktop-shell .applicant-quick-detail-panel{width:clamp(360px,28vw,420px)!important;max-width:420px!important}
 .ux12-ready .applicant-quick-detail-panel{background:#fff!important;box-shadow:-10px 0 30px rgba(16,24,40,.12)!important}
 .ux12-ready .applicant-quick-detail-header{padding:16px 18px!important;border-bottom:1px solid var(--ux12-line)!important;background:#fff!important;color:var(--ux12-text)!important}
 .ux12-ready .applicant-quick-detail-heading .eyebrow{color:var(--ux12-blue)!important}.ux12-ready .applicant-quick-detail-heading h3{color:var(--ux12-text)!important}
@@ -250,7 +254,10 @@ body.ux12-ready{
 .ux12-ready #today .daily-workflow-list,.ux12-ready #today .daily-work-item{box-shadow:none!important}
 
 @media (max-width:1439px) and (min-width:1280px){
-  .ux12-ready #applicants .applicant-list-tool-row{grid-template-columns:minmax(190px,1fr) 136px auto minmax(110px,.7fr) auto!important}
+  .ux12-ready #applicants .applicant-list-tool-row{grid-template-columns:minmax(165px,1fr) 128px auto 205px max-content!important}
+  .ux12-ready #applicants .applicant-list-tool-row .search{min-width:165px!important}
+  .ux12-ready #applicants .applicant-list-tool-row .sort-select{min-width:128px!important;width:128px!important}
+  .ux12-ready #applicants .applicant-my-views{min-width:205px!important;max-width:205px!important}
   .ux12-ready #applicants .applicant-list-filter-stack{overflow-x:auto}
   .ux12-ready .local-mode-badge{display:none}
   .ux12-ready .ux12-page-context{padding-left:20px;padding-right:20px}.ux12-ready .page{padding-left:20px!important;padding-right:20px!important}
@@ -264,6 +271,17 @@ body.ux12-ready{
   .ux12-ready #applicants .applicant-list-tool-row{grid-template-columns:minmax(220px,1fr) 150px auto!important}
   .ux12-ready #applicants .applicant-my-views,.ux12-ready #applicants .applicant-list-button-row{grid-column:auto/span 1}
   .ux12-ready #applicants .applicant-list-filter-stack{overflow-x:auto}
+}
+@media (max-width:1279px) and (min-width:1000px){
+  .ux12-ready.ux12-desktop-shell .local-mode-badge{display:none}
+  .ux12-ready.ux12-desktop-shell #applicants .applicant-list-tool-row{grid-template-columns:minmax(120px,1fr) 108px max-content!important;gap:6px!important}
+  .ux12-ready.ux12-desktop-shell #applicants .applicant-list-tool-row .search{min-width:120px!important}
+  .ux12-ready.ux12-desktop-shell #applicants .applicant-list-tool-row .sort-select{min-width:108px!important;width:108px!important}
+  .ux12-ready.ux12-desktop-shell #applicants .compact-check-inline{font-size:11px!important}
+  .ux12-ready.ux12-desktop-shell #applicants .applicant-my-views{grid-column:1/span 2!important;min-width:205px!important;max-width:215px!important}
+  .ux12-ready.ux12-desktop-shell #applicants .applicant-my-views-label{font-size:10px!important}
+  .ux12-ready.ux12-desktop-shell #applicants .applicant-list-button-row{grid-column:3!important;gap:4px!important;justify-self:end!important}
+  .ux12-ready.ux12-desktop-shell #applicants .applicant-list-button-row button{min-width:54px!important;padding-left:7px!important;padding-right:7px!important}
 }
 @media (max-width:1023px){
   .ux12-ready #applicants .applicant-list-filter-stack{height:auto!important;min-height:0!important;flex-direction:column!important;align-items:stretch!important;gap:6px!important;overflow:visible!important}

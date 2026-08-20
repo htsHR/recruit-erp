@@ -28,6 +28,7 @@ const stabilityCss=read('css/recruiter-ui-stability.css');
 const reboot=read('js/ux-reboot-v12.js');
 const rebootCss=read('css/ux-reboot-v12.css');
 const advancedBulk=read('js/advanced-bulk.js');
+const sharedStorage=read('js/shared-storage.js');
 
 assert.doesNotMatch(index,/id="homeTodayGrid"/,'홈에 오늘 업무 숫자 카드가 중복되면 안 됩니다.');
 assert.match(index,/id="btnHomeStartFirstDaily"/);
@@ -91,6 +92,10 @@ assert.match(visualTest,/1280x720/);assert.match(visualTest,/1024x768/);assert.m
 
 assert.match(reboot,/setTimeout\(\(\)=>\{if\(root\.document\.body\.classList\.contains\('sidebar-collapsed'\)\)root\.document\.body\.classList\.add\('sidebar-preview-expanded'\);\},150\)/);
 assert.match(reboot,/\},500\)/);assert.match(reboot,/aria-pressed/);assert.match(rebootCss,/sidebar-preview-expanded \.sidebar/);
+assert.match(reboot,/function isDesktopShell\(\)/);assert.match(reboot,/root\.devicePixelRatio/);assert.match(reboot,/ux12-desktop-shell/);assert.match(rebootCss,/\.ux12-ready\.ux12-desktop-shell \.app-shell/);
+assert.match(index,/<h1>Recruit ERP<\/h1>/);assert.match(index,/<p>v12\.0\.0 Preview<\/p>/);assert.doesNotMatch(index,/VERSION 2\.0|TODAY WORK OPERATIONS · ACTION FIRST/);assert.doesNotMatch(applicants,/QUICK REVIEW/);
+assert.match(rebootCss,/\.applicant-my-views\{[^}]*min-width:220px!important;max-width:240px!important/);assert.match(sharedStorage,/className:'sync-shared-idle-note'/);assert.match(rebootCss,/\.security-note\.sync-shared-idle-note/);
+assert.match(visualTest,/verifyOwnerVisualDesktopShell/);assert.match(visualTest,/1280x720-zoom125/);assert.match(visualTest,/owner-shell-hover\.png/);assert.match(visualTest,/toolbar\.select\.width>=toolbar\.select\.needed/);
 assert.match(reboot,/home:'#\/today'/);assert.match(reboot,/applicants:'#\/applicants'/);assert.match(reboot,/root\.addEventListener\('popstate',handleHistory\)/);assert.match(reboot,/root\.addEventListener\('hashchange'/);assert.match(reboot,/beforeunload/);
 assert.match(reboot,/onQuickOpen:pushQuickRoute/);assert.match(reboot,/onQuickClose:replaceQuickWithList/);assert.match(reboot,/quickApplicantId/);
 assert.doesNotMatch(reboot,/localStorage\.setItem|sessionStorage\.setItem/,'v12 셸과 라우터는 새 UI 저장 키를 만들면 안 됩니다.');

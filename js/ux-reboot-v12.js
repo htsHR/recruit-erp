@@ -33,6 +33,15 @@
   const escapeHtml=value=>String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
   const currentDate=()=>typeof today==='function'?today():new Date().toISOString().slice(0,10);
 
+  function isDesktopShell(){
+    const viewportWidth=Math.max(0,Number(root.innerWidth)||0);
+    const pixelRatio=Math.max(1,Number(root.devicePixelRatio)||1);
+    return viewportWidth>=1280||(viewportWidth>=1000&&viewportWidth*pixelRatio>=1279);
+  }
+  function syncDesktopShell(){
+    root.document.body.classList.toggle('ux12-desktop-shell',isDesktopShell());
+  }
+
   function managerAssignments(){
     try{
       const parsed=JSON.parse(root.localStorage.getItem(MANAGER_KEY)||'{}');
@@ -129,7 +138,7 @@
 
     const toggle=sidebarToggle;if(toggle){
       toggle.setAttribute('aria-controls','appSidebar');toggle.setAttribute('aria-expanded','true');
-      if(root.innerWidth>=1280){const footer=root.document.createElement('div');footer.className='ux12-sidebar-footer';toggle.classList.add('ux12-pin-button');toggle.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 4v5l2 3H7l2-3V4M12 12v8"></path></svg><span class="ux12-collapse-label">메뉴 접기</span>';toggle.setAttribute('aria-pressed','true');footer.appendChild(toggle);sidebar.appendChild(footer);}
+      if(isDesktopShell()){const footer=root.document.createElement('div');footer.className='ux12-sidebar-footer';toggle.classList.add('ux12-pin-button');toggle.innerHTML='<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 4v5l2 3H7l2-3V4M12 12v8"></path></svg><span class="ux12-collapse-label">메뉴 접기</span>';toggle.setAttribute('aria-pressed','true');footer.appendChild(toggle);sidebar.appendChild(footer);}
       else{toggle.classList.add('ux12-mobile-menu-toggle');left.insertBefore(toggle,left.firstChild);}
       toggle.addEventListener('click',()=>root.requestAnimationFrame(()=>{root.document.body.classList.remove('sidebar-preview-expanded');updateCollapseButton();}));
     }
@@ -393,6 +402,7 @@
   function init(){
     if(root.document.body.dataset.ux12Ready==='true')return;
     root.document.body.dataset.ux12Ready='true';root.document.body.classList.add('ux12-ready');
+    syncDesktopShell();root.addEventListener('resize',syncDesktopShell,{passive:true});
     auditPhotoFreeShell();buildNavigation();buildShell();rebuildApplicantTable();organizeApplicantFilters();installHome();installTodaySummary();installWrappers();bindAdvancedSearchRouting();bindHomeSummary();
     root.erpUx12Router={onQuickOpen:pushQuickRoute,onQuickClose:replaceQuickWithList,onQuickChange:updateQuickState,resolveRoute,routeForPage,activePageId,hasUnsavedChanges,state:routing};
     root.erpUx12={managerAssignments,postingOf,managerOf,nextActionOf,scheduleOf,renderStageOverview,renderHomeSummary,updateTodaySummary,router:root.erpUx12Router};

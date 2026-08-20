@@ -344,6 +344,53 @@ async function verifyApplicantMyViews(page,label,{exercise=false}={}){
   assert.equal(bridgePuts,0,'내 보기 조회는 Bridge 저장을 호출하면 안 됩니다.');page.off('request',requestListener);
   await page.evaluate(filters=>{currentWorkplace=filters.currentWorkplace;currentFilter=filters.currentFilter;currentSearch=filters.currentSearch;currentSort=filters.currentSort;hideFinished=filters.hideFinished;currentSchoolFilterId=filters.currentSchoolFilterId;window.__erpAdvancedFilterIds=null;renderTable();},before.filters);
 }
+async function verifyOwnerVisualDesktopShell(page,label){
+  await page.evaluate(()=>{window.setPage('home');document.body.classList.remove('sidebar-collapsed','sidebar-preview-expanded');window.dispatchEvent(new Event('resize'));window.scrollTo(0,0);});
+  await page.waitForFunction(()=>document.body.classList.contains('ux12-desktop-shell')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-216)<=1);
+  const expanded=await page.evaluate(()=>{
+    const sidebar=document.querySelector('.sidebar'),main=document.querySelector('.main'),storage=document.getElementById('storageNote'),sideStyle=getComputedStyle(sidebar),storageStyle=getComputedStyle(storage);
+    const side=sidebar.getBoundingClientRect(),content=main.getBoundingClientRect();
+    return{desktop:document.body.classList.contains('ux12-desktop-shell'),sidebar:{left:side.left,right:side.right,width:side.width,background:sideStyle.backgroundColor,color:sideStyle.color},main:{left:content.left,right:content.right},brand:[document.querySelector('.brand-copy h1')?.textContent.trim(),document.querySelector('.brand-copy p')?.textContent.trim()],storage:{className:storage.className,height:storage.getBoundingClientRect().height,background:storageStyle.backgroundColor},width:innerWidth,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,oldLabels:document.body.innerText.includes('TODAY WORK OPERATIONS · ACTION FIRST')||document.body.innerText.includes('QUICK REVIEW')};
+  });
+  assert.equal(expanded.desktop,true,`${label} 125% 확대에서도 v12 PC 셸을 유지해야 합니다.`);
+  assert.ok(Math.abs(expanded.sidebar.width-216)<=1&&Math.abs(expanded.main.left-216)<=1,`${label} 확장 메뉴와 본문 위치 오류: ${JSON.stringify(expanded)}`);
+  assert.equal(expanded.sidebar.background,'rgb(255, 255, 255)',`${label} 밝은 PC 메뉴가 어두운 레거시 메뉴로 바뀌면 안 됩니다.`);
+  assert.deepEqual(expanded.brand,['Recruit ERP','v12.0.0 Preview'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
+  assert.equal(expanded.oldLabels,false,`${label} 중복 영문 업무 라벨이 남아 있습니다.`);
+  assert.ok(expanded.overflow<=1,`${label} 확장 메뉴에서 전역 가로 넘침이 있습니다: ${expanded.overflow}`);
+  if(expanded.storage.className.includes('sync-shared-idle-note'))assert.ok(expanded.storage.background!=='rgba(179, 53, 46, 0.14)'&&expanded.storage.height<=100,`${label} 비차단 공용저장 안내는 중립색의 작은 상태 영역이어야 합니다: ${JSON.stringify(expanded.storage)}`);
+  await page.screenshot({path:path.join(outputDir,`${label}-owner-shell-expanded.png`),fullPage:false});
+
+  await page.evaluate(()=>{window.setPage('applicants');window.erpApplicantWorksheet?.setViewMode?.('normal');window.erpSavedAdvancedSearches?.render();});await page.waitForTimeout(40);
+  const toolbar=await page.evaluate(()=>{
+    const row=document.querySelector('#applicants .applicant-list-tool-row'),host=document.getElementById('applicantMyViews'),select=document.getElementById('applicantMyViewSelect'),selected=select?.selectedOptions?.[0]?.textContent||'',style=select?getComputedStyle(select):null;
+    const direct=[...row.children].filter(node=>node.getClientRects().length).map(node=>{const r=node.getBoundingClientRect();return{id:node.id||node.className,left:r.left,right:r.right,top:r.top,bottom:r.bottom};});
+    const overlaps=[];for(let i=0;i<direct.length;i++)for(let j=i+1;j<direct.length;j++){const a=direct[i],b=direct[j];if(!(a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom))overlaps.push([a.id,b.id]);}
+    const canvas=document.createElement('canvas'),context=canvas.getContext('2d');if(context&&style)context.font=style.font;const needed=(context?.measureText(selected).width||0)+parseFloat(style?.paddingLeft||0)+parseFloat(style?.paddingRight||0)+8;
+    const rect=host.getBoundingClientRect(),selectRect=select.getBoundingClientRect();return{row:{scroll:row.scrollWidth,client:row.clientWidth},host:{left:rect.left,right:rect.right,scroll:host.scrollWidth,client:host.clientWidth},select:{text:selected,width:selectRect.width,needed},direct,overlaps,width:innerWidth,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth};
+  });
+  assert.ok(toolbar.row.scroll<=toolbar.row.client+1&&toolbar.host.scroll<=toolbar.host.client+1&&toolbar.host.left>=-1&&toolbar.host.right<=toolbar.width+1,`${label} 지원자 도구행 또는 내 보기가 잘렸습니다: ${JSON.stringify(toolbar)}`);
+  assert.deepEqual(toolbar.overlaps,[],`${label} 지원자 도구행 요소가 겹쳤습니다: ${JSON.stringify(toolbar)}`);
+  assert.equal(toolbar.select.text,'선택');assert.ok(toolbar.select.width>=toolbar.select.needed&&toolbar.select.width>=80,`${label} 내 보기의 “선택” 글자가 한 글자로 잘리면 안 됩니다: ${JSON.stringify(toolbar.select)}`);
+  assert.ok(toolbar.overflow<=1,`${label} 지원자 도구행에서 전역 가로 넘침이 있습니다.`);
+  await page.screenshot({path:path.join(outputDir,`${label}-owner-applicant-toolbar.png`),fullPage:false});
+
+  await page.locator('#applicantTbody .applicant-row').first().focus();await page.keyboard.press('Enter');await page.locator('#applicantQuickDetail.is-open').waitFor();
+  const quick=await page.locator('.applicant-quick-detail-panel').evaluate(panel=>{const rect=panel.getBoundingClientRect();return{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:innerWidth,height:innerHeight,heading:panel.querySelector('.eyebrow')?.textContent.trim(),overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth};});
+  assert.ok(quick.left>=-1&&quick.right<=quick.width+1&&quick.top>=-1&&quick.bottom<=quick.height+1&&quick.overflow<=1,`${label} 빠른 보기 패널이 잘리거나 전역 넘침을 만들었습니다: ${JSON.stringify(quick)}`);
+  assert.equal(quick.heading,'핵심 정보 미리보기');await page.screenshot({path:path.join(outputDir,`${label}-owner-quick-detail.png`),fullPage:false});await page.keyboard.press('Escape');await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});
+
+  await page.locator('#sidebarToggle').click();await page.waitForFunction(()=>document.body.classList.contains('sidebar-collapsed')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-72)<=1);
+  const collapsed=await page.evaluate(()=>({sidebar:document.querySelector('.sidebar').getBoundingClientRect().width,main:document.querySelector('.main').getBoundingClientRect().left,statusVisible:!!document.querySelector('.sidebar-status-area')?.getClientRects().length,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth}));
+  assert.deepEqual({sidebar:Math.round(collapsed.sidebar),main:Math.round(collapsed.main),statusVisible:collapsed.statusVisible},{sidebar:72,main:72,statusVisible:false},`${label} 접힌 rail 또는 상태영역 오류: ${JSON.stringify(collapsed)}`);assert.ok(collapsed.overflow<=1);
+  await page.screenshot({path:path.join(outputDir,`${label}-owner-shell-collapsed.png`),fullPage:false});
+  await page.locator('.sidebar').hover();await page.waitForFunction(()=>document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-216)<=1);
+  const preview=await page.evaluate(()=>({sidebar:document.querySelector('.sidebar').getBoundingClientRect().width,main:document.querySelector('.main').getBoundingClientRect().left,labels:[...document.querySelectorAll('.nav-btn>span:last-child')].filter(node=>node.getClientRects().length).length}));
+  assert.ok(Math.abs(preview.sidebar-216)<=1&&Math.abs(preview.main-72)<=1&&preview.labels>0,`${label} 150ms 메뉴 임시 확장이 본문을 밀거나 문구를 숨겼습니다: ${JSON.stringify(preview)}`);
+  await page.screenshot({path:path.join(outputDir,`${label}-owner-shell-hover.png`),fullPage:false});
+  await page.locator('#sidebarToggle').click();await page.waitForFunction(()=>!document.body.classList.contains('sidebar-collapsed')&&!document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.main').getBoundingClientRect().left-216)<=1);
+  await page.screenshot({path:path.join(outputDir,`${label}-owner-shell-pinned.png`),fullPage:false});
+}
 async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   const closeQuickDetail=async()=>{
     await page.waitForFunction(()=>document.getElementById('applicantQuickDetail')?.contains(document.activeElement));
@@ -382,10 +429,10 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
   assert.ok(nextActionText.includes('2026-08-18')&&nextActionText.includes('2099-08-20')&&nextActionText.includes('D-')&&nextActionText.includes('2026-08-18 · 연락')&&nextActionText.includes('가상 후속 연락 안내 완료'),`${label} 다음 액션 날짜·상태·최근 이력이 정확하지 않습니다: ${nextActionText}`);
   const panelState=await page.evaluate(()=>{
     const shell=document.getElementById('applicantQuickDetail'),panel=shell.querySelector('.applicant-quick-detail-panel'),header=shell.querySelector('.applicant-quick-detail-header'),footer=shell.querySelector('.applicant-quick-detail-footer'),pr=panel.getBoundingClientRect(),hr=header.getBoundingClientRect(),fr=footer.getBoundingClientRect();
-    return {panel:{left:pr.left,right:pr.right,top:pr.top,bottom:pr.bottom,width:pr.width,height:pr.height},header:{top:hr.top,bottom:hr.bottom},footer:{top:fr.top,bottom:fr.bottom},viewport:{width:innerWidth,height:innerHeight},bodyOverflow:getComputedStyle(document.body).overflow,buttons:[...shell.querySelectorAll('button:not([hidden])')].map(button=>{const rect=button.getBoundingClientRect();return{id:button.id,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};}),text:shell.innerText,html:shell.innerHTML};
+    return {desktopShell:document.body.classList.contains('ux12-desktop-shell'),panel:{left:pr.left,right:pr.right,top:pr.top,bottom:pr.bottom,width:pr.width,height:pr.height},header:{top:hr.top,bottom:hr.bottom},footer:{top:fr.top,bottom:fr.bottom},viewport:{width:innerWidth,height:innerHeight},bodyOverflow:getComputedStyle(document.body).overflow,buttons:[...shell.querySelectorAll('button:not([hidden])')].map(button=>{const rect=button.getBoundingClientRect();return{id:button.id,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};}),text:shell.innerText,html:shell.innerHTML};
   });
   assert.ok(panelState.panel.left>=-1&&panelState.panel.right<=panelState.viewport.width+1&&panelState.panel.top>=-1&&panelState.panel.bottom<=panelState.viewport.height+1,`${label} 빠른 보기 패널 잘림: ${JSON.stringify(panelState.panel)}`);
-  if(panelState.viewport.width>=1280)assert.ok(panelState.panel.width>=360&&panelState.panel.width<=420,`${label} v12 데스크톱 빠른 보기 폭: ${panelState.panel.width}`);else if(panelState.viewport.width>900)assert.ok(panelState.panel.width>=420&&panelState.panel.width<=480,`${label} 확대·노트북 빠른 보기 폭: ${panelState.panel.width}`);else assert.ok(Math.abs(panelState.panel.width-panelState.viewport.width)<=1,`${label} 모바일·태블릿 빠른 보기는 화면 너비를 사용해야 합니다.`);
+  if(panelState.desktopShell)assert.ok(panelState.panel.width>=360&&panelState.panel.width<=420,`${label} v12 데스크톱 빠른 보기 폭: ${panelState.panel.width}`);else if(panelState.viewport.width>900)assert.ok(panelState.panel.width>=420&&panelState.panel.width<=480,`${label} 노트북 빠른 보기 폭: ${panelState.panel.width}`);else assert.ok(Math.abs(panelState.panel.width-panelState.viewport.width)<=1,`${label} 모바일·태블릿 빠른 보기는 화면 너비를 사용해야 합니다.`);
   assert.ok(panelState.header.top>=-1&&panelState.footer.bottom<=panelState.viewport.height+1&&panelState.footer.top>panelState.header.bottom,`${label} 빠른 보기 고정 머리말·작업영역 배치 오류`);
   assert.ok(panelState.buttons.every(button=>button.left>=-1&&button.right<=panelState.viewport.width+1&&button.top>=-1&&button.bottom<=panelState.viewport.height+1),`${label} 빠른 보기 버튼 잘림: ${JSON.stringify(panelState.buttons)}`);
   assert.equal(panelState.bodyOverflow,'hidden');assert.ok(!panelState.html.includes('residentNumber')&&!/\d{6}-?\d{7}/.test(panelState.text),'빠른 보기 DOM에 주민등록번호 필드나 형태가 있으면 안 됩니다.');
@@ -697,7 +744,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
       const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height}});
       const page=await context.newPage();
       page.on('pageerror',error=>consoleErrors.push(`${viewport.name}: ${error.message}`));
-      page.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`${viewport.name}: ${message.text()}`);});
+      page.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`${viewport.name}: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
       await page.addInitScript(fixture=>{
         localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));
         localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));
@@ -708,6 +755,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
       assert.equal(await page.title(),'채용관리 시스템 v12.0.0');
       assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.0.0','화면은 단일 현재 버전 소스를 사용해야 합니다.');
       assert.equal(await page.locator('#homeTodayGrid').count(),0,'홈의 중복 숫자 업무 카드는 제거되어야 합니다.');
+      if([1280,1366].includes(viewport.width))await verifyOwnerVisualDesktopShell(page,`${viewport.name}-zoom100`);
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
         const layout=await page.evaluate(id=>({active:window.erpUx12Router.activePageId(),body:document.body.scrollWidth,html:document.documentElement.scrollWidth,width:innerWidth,hash:location.hash,expected:window.erpUx12Router.routeForPage(id)}),screen);
@@ -899,9 +947,10 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
 
     const zoomContext=await browser.newContext({viewport:{width:1093,height:614},deviceScaleFactor:1.25}),zoomPage=await zoomContext.newPage();
     zoomPage.on('pageerror',error=>consoleErrors.push(`1366x768-zoom125: ${error.message}`));
-    zoomPage.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`1366x768-zoom125: ${message.text()}`);});
+    zoomPage.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`1366x768-zoom125: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
     await zoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
     await zoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await zoomPage.waitForTimeout(700);
+    await verifyOwnerVisualDesktopShell(zoomPage,'1366x768-zoom125');
     await verifyApplicantQuickDetail(zoomPage,'1366x768-zoom125');
     await verifyHireWaitingGrid(zoomPage,'1366x768-zoom125');
     await verifyApplicantWorksheet(zoomPage,'1366x768-zoom125',{exercise:true});
@@ -925,6 +974,12 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     await zoomPage.screenshot({path:path.join(outputDir,'1366x768-zoom125-form.png'),fullPage:true});
     await openSchoolWorkforceFixture(zoomPage);const zoomWorkforce=await zoomPage.evaluate(()=>{const card=document.querySelector('.school-workforce-card').getBoundingClientRect(),topElement=document.elementFromPoint(card.right-24,card.top+24);return{left:card.left,right:card.right,top:card.top,bottom:card.bottom,width:innerWidth,height:innerHeight,modalOnTop:!!topElement?.closest('#schoolWorkforceModal')};});assert.ok(zoomWorkforce.left>=-1&&zoomWorkforce.right<=zoomWorkforce.width+1&&zoomWorkforce.top>=-1&&zoomWorkforce.bottom<=zoomWorkforce.height+1,`1366×768 125% 학교 인력분석 팝업 잘림: ${JSON.stringify(zoomWorkforce)}`);assert.equal(zoomWorkforce.modalOnTop,true,'1366×768 125% 학교 인력분석 팝업은 상단바보다 위에 보여야 합니다.');await zoomPage.screenshot({path:path.join(outputDir,'1366x768-zoom125-school-workforce.png'),fullPage:false});await restoreSchoolWorkforceFixture(zoomPage);
     await zoomContext.close();
+
+    const owner1280ZoomContext=await browser.newContext({viewport:{width:1024,height:576},screen:{width:1280,height:720},deviceScaleFactor:1.25}),owner1280ZoomPage=await owner1280ZoomContext.newPage();
+    owner1280ZoomPage.on('pageerror',error=>consoleErrors.push(`1280x720-zoom125: ${error.message}`));
+    owner1280ZoomPage.on('console',message=>{if(message.type()==='error'&&!/favicon/i.test(message.text()))consoleErrors.push(`1280x720-zoom125: ${message.text()}${message.location().url?` · ${message.location().url}`:''}`);});
+    await owner1280ZoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
+    await owner1280ZoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await owner1280ZoomPage.waitForTimeout(700);await verifyOwnerVisualDesktopShell(owner1280ZoomPage,'1280x720-zoom125');await owner1280ZoomContext.close();
 
     const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
     await page.addInitScript(fixture=>{localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(700);
