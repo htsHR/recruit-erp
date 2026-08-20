@@ -25,8 +25,8 @@ assert.match(source,/erpSecurity\?\.assertSafeTree/);
 assert.match(source,/erpSecurity\?\.validateRowIds/);
 assert.match(safetySource,/erp:storage-write/);
 assert.doesNotMatch(safetySource,/detail:\{[^}]*value/);
-assert.match(index,/js\/storage-performance\.js\?v=11\.5\.2/);
-assert.match(index,/css\/storage-performance\.css\?v=11\.5\.2/);
+assert.match(index,/js\/storage-performance\.js\?v=12\.0\.0/);
+assert.match(index,/css\/storage-performance\.css\?v=12\.0\.0/);
 assert.match(source,/DATASETS\.find\(item=>item\.key===event\?\.detail\?\.key\)/);
 
 assert.equal(storage.formatBytes(0),'0 B');

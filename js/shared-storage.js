@@ -338,8 +338,8 @@
     if(phase==='saving'||phase==='pending'||phase==='connecting')return {title:'공용 ERP 저장 중',description:'공용폴더 저장 상태를 확인하고 있습니다.',badge:'SHARED SAVING',className:'sync-progress-note'};
     if(phase==='conflict')return {title:'다른 PC에서 데이터 변경됨',description:friendlyMessage('REVISION_CONFLICT'),badge:'SHARED CONFLICT',className:'sync-warn-note'};
     if(phase==='needs-confirmation')return {title:'공용 저장 승인 필요',description:state.message,badge:'SHARED CONFIRM',className:'sync-warn-note'};
-    if(phase==='empty')return {title:'공용 ERP 저장소가 비어 있음',description:'현재 데이터로 시작하려면 저장소·속도 화면에서 초기화하세요.',badge:'SHARED EMPTY',className:'sync-warn-note'};
-    return {title:'ERP 공용 저장소 연결 안됨',description:state.message||'Bridge 실행과 공용폴더 연결을 확인해주세요.',badge:'SHARED WARN',className:'sync-warn-note'};
+    if(phase==='empty')return {title:'공용 ERP 저장소가 비어 있음',description:'현재 데이터로 시작하려면 저장소·속도 화면에서 초기화하세요.',badge:'SHARED EMPTY',className:'sync-shared-idle-note'};
+    return {title:'ERP 공용 저장소 연결 안됨',description:state.message||'Bridge 실행과 공용폴더 연결을 확인해주세요.',badge:'SHARED WARN',className:'sync-shared-idle-note'};
   }
   function init(){
     if(!root.document)return;

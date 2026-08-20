@@ -154,7 +154,7 @@ function setPage(page){
   document.body.dataset.activePage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'홈',applicants:'지원자 목록',form:'신규 지원자 등록',today:'오늘 할 일',calendar:'일정관리',stats:'채용 통계',schools:'협력학교 관리',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'고급검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업/내보내기',permissions:'사용자 권한',auditHistory:'변경 이력'};
+  const titleMap = {home:'오늘의 채용 업무',applicants:'지원자',form:'신규 지원자 등록',today:'오늘 처리 목록',calendar:'일정·연락',stats:'채용 통계',schools:'학교·채용채널',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'지원자 상세 검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업·복원',permissions:'사용자 권한',auditHistory:'변경 이력',onboarding:'입사대기',storagePerformance:'저장소·속도',productionReadiness:'운영 준비'};
   const descMap = {
     home:'오늘의 채용 업무와 주요 현황을 확인합니다.',
     applicants:'지원자 진행상태와 면접·입사 일정을 관리합니다.',
@@ -393,10 +393,10 @@ function updateApplicantListFilterCounts(){
     if(target) target.textContent=String(count);
     button.setAttribute('aria-pressed', button.classList.contains('active') ? 'true' : 'false');
   });
-  const auxiliary=['contact','decision','duplicate'];
+  const auxiliary=['contact','active','docpass','hire','finished','decision','duplicate'];
   const selectedAuxiliary=auxiliary.includes(currentFilter)?1:0;
   const summary=document.getElementById('applicantAuxiliaryFilterSummary');
-  if(summary)summary.textContent=selectedAuxiliary?`보조 조건 · ${selectedAuxiliary}개 적용`:'보조 조건 · 선택 없음';
+  if(summary)summary.textContent=selectedAuxiliary?`상태 더보기 · ${selectedAuxiliary}개 적용`:'상태 더보기';
   setText('applicantHeaderTotalCount', filterCounts.all);
   setText('applicantHeaderActiveCount', filterCounts.active);
   setText('applicantHeaderInterviewCount', filterCounts.interview);
@@ -469,7 +469,7 @@ function applicantQuickDetailNextAction(applicant){
 function ensureApplicantQuickDetailUi(){
   if(document.getElementById('applicantQuickDetail'))return;
   const shell=document.createElement('div');shell.id='applicantQuickDetail';shell.className='applicant-quick-detail';shell.setAttribute('aria-hidden','true');
-  shell.innerHTML='<div class="applicant-quick-detail-backdrop" id="applicantQuickDetailBackdrop"></div><section class="applicant-quick-detail-panel" role="dialog" aria-modal="true" aria-labelledby="applicantQuickDetailTitle" aria-describedby="applicantQuickDetailDescription"><p class="applicant-quick-detail-sr" id="applicantQuickDetailDescription">현재 검색과 정렬 결과에서 지원자 핵심정보를 읽기 전용으로 확인합니다.</p><header class="applicant-quick-detail-header"><div class="applicant-quick-detail-heading"><div><p class="eyebrow">QUICK REVIEW</p><h3 id="applicantQuickDetailTitle">지원자 빠른 보기</h3><p class="applicant-quick-detail-position" id="applicantQuickDetailPosition" aria-live="polite"></p></div><button class="applicant-quick-detail-close" id="btnApplicantQuickDetailClose" type="button" aria-label="지원자 빠른 보기 닫기">×</button></div><div class="applicant-quick-detail-navigation" aria-label="현재 검색 결과 안에서 이동"><button class="ghost" id="btnApplicantQuickDetailPrevious" type="button">← 이전</button><button class="ghost" id="btnApplicantQuickDetailNext" type="button">다음 →</button></div></header><div class="applicant-quick-detail-body" id="applicantQuickDetailBody"></div><footer class="applicant-quick-detail-footer"><button class="ghost" id="btnApplicantQuickDetailFull" type="button">전체 상세보기</button><button class="primary" id="btnApplicantQuickDetailEdit" type="button" data-required-permission="applicant.write">수정</button></footer></section>';
+  shell.innerHTML='<div class="applicant-quick-detail-backdrop" id="applicantQuickDetailBackdrop"></div><section class="applicant-quick-detail-panel" role="dialog" aria-modal="true" aria-labelledby="applicantQuickDetailTitle" aria-describedby="applicantQuickDetailDescription"><p class="applicant-quick-detail-sr" id="applicantQuickDetailDescription">현재 검색과 정렬 결과에서 지원자 핵심정보를 읽기 전용으로 확인합니다.</p><header class="applicant-quick-detail-header"><div class="applicant-quick-detail-heading"><div><p class="eyebrow">핵심 정보 미리보기</p><h3 id="applicantQuickDetailTitle">지원자 빠른 보기</h3><p class="applicant-quick-detail-position" id="applicantQuickDetailPosition" aria-live="polite"></p></div><button class="applicant-quick-detail-close" id="btnApplicantQuickDetailClose" type="button" aria-label="지원자 빠른 보기 닫기">×</button></div><div class="applicant-quick-detail-navigation" aria-label="현재 검색 결과 안에서 이동"><button class="ghost" id="btnApplicantQuickDetailPrevious" type="button">← 이전</button><button class="ghost" id="btnApplicantQuickDetailNext" type="button">다음 →</button></div></header><div class="applicant-quick-detail-body" id="applicantQuickDetailBody"></div><footer class="applicant-quick-detail-footer"><button class="ghost" id="btnApplicantQuickDetailFull" type="button">전체 상세보기</button><button class="primary" id="btnApplicantQuickDetailEdit" type="button" data-required-permission="applicant.write">다음 조치</button></footer></section>';
   document.body.appendChild(shell);
   document.getElementById('applicantQuickDetailBackdrop')?.addEventListener('click',()=>closeApplicantQuickDetail());
   document.getElementById('btnApplicantQuickDetailClose')?.addEventListener('click',()=>closeApplicantQuickDetail());
@@ -500,9 +500,11 @@ function renderApplicantQuickDetail(){
   const rows=filtered(),index=rows.findIndex(row=>String(row.id)===String(applicantQuickDetailState.id));
   if(index<0){closeApplicantQuickDetail({restoreFocus:false});return false;}
   const applicant=rows[index],name=applicantQuickDetailValue(applicant.name),status=applicantQuickDetailValue(normalizeStatus(applicant.status)),workplace=applicantQuickDetailValue(applicant.workplace);
+  const managerMap=window.erpUx12?.managerAssignments?.()||{},posting=window.erpUx12?.postingOf?.(applicant)||'',manager=window.erpUx12?.managerOf?.(applicant,managerMap)||applicant.manager||'',nextSchedule=window.erpUx12?.scheduleOf?.(applicant)||{label:'일정',value:[applicant.interviewDate,applicant.interviewTime].filter(Boolean).join(' ')||applicant.hireDate||applicant.nextContactDate||'미정'};
+  const evaluation=`${finalDecisionOf(applicant)} · ${calcScore(applicant)}점`;
   const body=document.getElementById('applicantQuickDetailBody'),position=document.getElementById('applicantQuickDetailPosition');
   if(position)position.textContent=`검색 결과 ${index+1} / ${rows.length} · 읽기 전용`;
-  if(body)body.innerHTML=`<div class="applicant-quick-detail-summary"><h4>${esc(name.text)}</h4><p>${esc(applicantQuickDetailCombined(applicant.phone,applicant.email).text)}</p><div class="applicant-quick-detail-badges"><span>${esc(status.text)}</span><span>${esc(workplace.text)}</span></div></div>${applicantQuickDetailNextAction(applicant)}${applicantQuickDetailSection('연락·지원',[applicantQuickDetailField('연락처',applicant.phone),applicantQuickDetailField('이메일',applicant.email),applicantQuickDetailField('지역',applicant.region),applicantQuickDetailField('지원일',applicant.applyDate),applicantQuickDetailField('지원경로',applicant.source),applicantQuickDetailField('경력구분',applicant.careerType)])}${applicantQuickDetailSection('일정·근무',[applicantQuickDetailField('면접일시',[applicant.interviewDate,applicant.interviewTime].filter(Boolean).join(' ')),applicantQuickDetailField('입사예정일',applicant.hireDate),applicantQuickDetailField('출근방법',applicant.dormUse||applicant.commuteMethod),applicantQuickDetailField('담당자',applicant.manager)])}${applicantQuickDetailSection('학력',[applicantQuickDetailField('최종학력',applicant.education||applicant.finalEducation),applicantQuickDetailField('학교',applicant.school),applicantQuickDetailField('전공',applicant.major),applicantQuickDetailField('학점',applicant.gradePoint)])}${applicantQuickDetailSection('경력·검토',[applicantQuickDetailField('경력사항',applicant.career,{wide:true}),applicantQuickDetailField('최근 회사',applicant.lastCompany),applicantQuickDetailField('담당업무',applicant.duties),applicantQuickDetailField('자격증',applicant.certs,{wide:true}),applicantQuickDetailField('상담내용',applicant.consult,{wide:true})])}${applicantQuickDetailSection('메모',[applicantQuickDetailField('지원자 메모',applicant.memo,{wide:true}),applicantQuickDetailField('판정 사유',applicant.decisionReason,{wide:true})])}`;
+  if(body)body.innerHTML=`<div class="applicant-quick-detail-summary"><div><h4>${esc(name.text)}</h4><p>${esc(posting||'지원 공고 미연결')}</p></div><div class="applicant-quick-detail-badges"><span>${esc(status.text)}</span><span>${esc(workplace.text)}</span></div></div><section class="applicant-quick-detail-priority" aria-label="지원자 핵심 정보"><div><span>연락처</span><strong>${esc(applicant.phone||APPLICANT_QUICK_DETAIL_EMPTY)}</strong></div><div><span>학교</span><strong>${esc(applicant.school||APPLICANT_QUICK_DETAIL_EMPTY)}</strong></div><div><span>${esc(nextSchedule.label||'다음 일정')}</span><strong>${esc(nextSchedule.value||'미정')}</strong></div><div><span>담당자</span><strong>${esc(manager||'미지정')}</strong></div><div><span>평가 요약</span><strong>${esc(evaluation)}</strong></div></section>${applicantQuickDetailNextAction(applicant)}${applicantQuickDetailSection('연락·지원',[applicantQuickDetailField('이메일',applicant.email),applicantQuickDetailField('지역',applicant.region),applicantQuickDetailField('지원일',applicant.applyDate),applicantQuickDetailField('지원경로',applicant.source),applicantQuickDetailField('경력구분',applicant.careerType)])}${applicantQuickDetailSection('일정·근무',[applicantQuickDetailField('면접일시',[applicant.interviewDate,applicant.interviewTime].filter(Boolean).join(' ')),applicantQuickDetailField('입사예정일',applicant.hireDate),applicantQuickDetailField('출근방법',applicant.dormUse||applicant.commuteMethod)])}${applicantQuickDetailSection('학력',[applicantQuickDetailField('최종학력',applicant.education||applicant.finalEducation),applicantQuickDetailField('전공',applicant.major),applicantQuickDetailField('학점',applicant.gradePoint)])}${applicantQuickDetailSection('경력·검토',[applicantQuickDetailField('경력사항',applicant.career,{wide:true}),applicantQuickDetailField('최근 회사',applicant.lastCompany),applicantQuickDetailField('담당업무',applicant.duties),applicantQuickDetailField('자격증',applicant.certs,{wide:true}),applicantQuickDetailField('상담내용',applicant.consult,{wide:true})])}${applicantQuickDetailSection('메모',[applicantQuickDetailField('지원자 메모',applicant.memo,{wide:true}),applicantQuickDetailField('판정 사유',applicant.decisionReason,{wide:true})])}`;
   const previous=document.getElementById('btnApplicantQuickDetailPrevious'),next=document.getElementById('btnApplicantQuickDetailNext'),edit=document.getElementById('btnApplicantQuickDetailEdit');
   if(previous)previous.disabled=index===0;if(next)next.disabled=index===rows.length-1;
   if(edit){const allowed=applicantQuickDetailCanWrite();edit.hidden=!allowed;edit.disabled=!allowed;edit.setAttribute('aria-disabled',allowed?'false':'true');}
@@ -521,6 +523,7 @@ function openApplicantQuickDetail(id,trigger=null){
   if(targetPage!==currentApplicantPage){currentApplicantPage=targetPage;renderTable();}
   renderApplicantQuickDetail();
   requestAnimationFrame(()=>document.getElementById('btnApplicantQuickDetailClose')?.focus({preventScroll:true}));
+  window.erpUx12Router?.onQuickOpen?.(id);
   return true;
 }
 function openApplicantQuickDetailFromWorkflow(id,trigger=null){
@@ -539,6 +542,7 @@ function closeApplicantQuickDetail(options={}){
   shell.classList.remove('is-open');shell.setAttribute('aria-hidden','true');document.body.classList.remove('applicant-quick-detail-open');applicantQuickDetailMarkSelected();
   if(restoreScroll)applicantQuickDetailRestoreContext(context);
   applicantQuickDetailState.id='';applicantQuickDetailState.trigger=null;applicantQuickDetailState.context=null;
+  window.erpUx12Router?.onQuickClose?.();
   if(restoreFocus)requestAnimationFrame(()=>{const target=(trigger&&trigger.isConnected?trigger:applicantQuickDetailRow(currentId));target?.focus?.({preventScroll:true});});
   return true;
 }
@@ -547,7 +551,7 @@ function moveApplicantQuickDetail(direction){
   const rows=filtered(),index=rows.findIndex(row=>String(row.id)===String(applicantQuickDetailState.id)),nextIndex=index+Number(direction||0);if(index<0||nextIndex<0||nextIndex>=rows.length)return false;
   applicantQuickDetailState.id=String(rows[nextIndex].id);const targetPage=Math.floor(nextIndex/applicantPageSize)+1;
   if(targetPage!==currentApplicantPage){currentApplicantPage=targetPage;renderTable();}
-  return renderApplicantQuickDetail();
+  const rendered=renderApplicantQuickDetail();window.erpUx12Router?.onQuickChange?.(applicantQuickDetailState.id);return rendered;
 }
 function openApplicantQuickDetailFull(){const id=applicantQuickDetailState.id;if(!id)return false;closeApplicantQuickDetail({restoreFocus:false});window.viewApplicant?.(id);return true;}
 function editApplicantFromQuickDetail(){if(!applicantQuickDetailCanWrite())return false;const id=applicantQuickDetailState.id;if(!id)return false;closeApplicantQuickDetail({restoreFocus:false});window.editApplicant?.(id);return true;}
@@ -622,31 +626,30 @@ function renderTable(){
       <span class="list-interaction-hint">행 클릭 → 빠른 보기</span>
     </div>`;
   const canRegister=!window.erpPermissions||window.erpPermissions.has('applicant.write');
+  const managerMap=window.erpUx12?.managerAssignments?.()||{};
   $('applicantTbody').innerHTML=rows.length?rows.map((a,idx)=>{
     const score=calcScore(a), decision=finalDecisionOf(a);
-    const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
-    const scheduleStrong = interview || '일정 미정';
-    const scheduleNote = interview ? '' : (['면접예정','다음면접'].includes(a.status) ? '<small>일정 확인</small>' : '');
-    const dorm = dormLabel(a);
-    const typeLine = [a.careerType, a.education].filter(Boolean).join(' · ') || '기본정보 미입력';
+    const posting=window.erpUx12?.postingOf?.(a)||a.jobPosting||a.jobTitle||a.recruitmentTitle||'';
+    const nextAction=window.erpUx12?.nextActionOf?.(a)||{label:'진행 확인',detail:a.status||'상태 미입력'};
+    const schedule=window.erpUx12?.scheduleOf?.(a)||{label:'일정',value:[a.interviewDate,a.interviewTime].filter(Boolean).join(' ')||a.hireDate||a.nextContactDate||'미정'};
+    const manager=window.erpUx12?.managerOf?.(a,managerMap)||a.manager||'';
+    const typeLine = [a.school,a.careerType].filter(Boolean).join(' · ') || '지원 정보 미입력';
     const staleDays = ['서류검토','부재중'].includes(a.status) ? daysSinceApply(a) : null;
     const staleBadge = (staleDays!==null && staleDays>=3) ? `<span class="stale-badge" title="지원일 기준 ${staleDays}일째 연락 안 됨">${staleDays}일째</span>` : '';
     return `<tr class="applicant-row compact-row clickable-data-row ${applicantRowToneClass(a)}" data-applicant-id="${esc(a.id)}" tabindex="0">
       <td class="no-cell sticky-app-col sticky-app-no" data-label="번호">${pageStart+idx+1}</td>
       <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><div class="applicant-name-line"><button class="name-button ${genderClass(a)}" data-erp-handler="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button>${staleBadge}</div><small>${esc(typeLine)}</small></td>
       <td class="phone-cell sticky-app-col sticky-app-phone" data-label="연락처"><strong>${esc(a.phone||'')}</strong></td>
-      <td class="email-cell" data-label="이메일">${a.email ? `<span>${esc(a.email)}</span>` : ''}</td>
-      <td class="region-cell" data-label="지역">${esc(a.region||'')}</td>
-      <td class="workplace-cell" data-label="근무지"><span class="workplace-pill ${workplaceBadgeClass(a.workplace)}">${esc(a.workplace||'미지정')}</span></td>
-      <td class="status-cell" data-label="상태"><span class="status-select-wrap ${badgeClass(a.status)}" title="${LEGACY_STATUS_OPTIONS.includes(normalizeStatus(a.status))?'기존 상태 · 재분류 필요':'눌러서 상태 변경'}"><select class="status-inline ${badgeClass(a.status)}" aria-label="${esc(a.name||'지원자')} 상태 변경" data-erp-change-handler="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></span></td>
+      <td class="posting-cell" data-label="지원 공고"><strong>${esc(posting||'공고 미연결')}</strong><small>${esc(a.source||'채용경로 미입력')}</small></td>
+      <td class="stage-cell status-cell" data-label="현재 단계"><span class="status-select-wrap ${badgeClass(a.status)}" title="${LEGACY_STATUS_OPTIONS.includes(normalizeStatus(a.status))?'기존 상태 · 재분류 필요':'눌러서 상태 변경'}"><select class="status-inline ${badgeClass(a.status)}" aria-label="${esc(a.name||'지원자')} 상태 변경" data-erp-change-handler="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></span></td>
+      <td class="next-action-cell" data-label="다음 조치"><strong>${esc(nextAction.label)}</strong><small>${esc(nextAction.detail)}</small></td>
+      <td class="schedule-cell" data-label="예정 일정"><strong class="${schedule.value==='미정'?'muted-schedule':''}">${esc(schedule.value)}</strong><small>${esc(schedule.label)}</small></td>
+      <td class="manager-cell" data-label="담당자">${esc(manager||'미지정')}</td>
       <td class="apply-date-cell" data-label="지원일">${esc(a.applyDate||'-')}</td>
-      <td class="schedule-cell" data-label="면접일정"><strong class="${interview?'':'muted-schedule'}">${esc(scheduleStrong)}</strong>${scheduleNote}</td>
-      <td class="hire-date-cell" data-label="입사예정일"><strong>${esc(a.hireDate||'-')}</strong></td>
-      <td class="commute-cell" data-label="출근방법"><span class="dorm-pill ${dormClass(dorm)}">${esc(dorm)}</span></td>
       <td class="decision-cell" data-label="판정"><span class="decision-pill ${decisionToneClass(a)}">${esc(decision)}</span><small>${score}점</small></td>
-      <td class="row-actions compact-actions applicant-actions" data-label="관리"><button class="view" data-erp-handler="event.stopPropagation();viewApplicant('${a.id}')">상세</button><button data-erp-handler="event.stopPropagation();editApplicant('${a.id}')">수정</button><button class="delete" data-erp-handler="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></td>
+      <td class="row-actions applicant-actions" data-label="더보기"><details class="applicant-row-more"><summary aria-label="${esc(a.name||'지원자')} 보조 행동">•••</summary><div class="applicant-row-more-menu" role="menu"><button type="button" role="menuitem" data-erp-handler="event.stopPropagation();viewApplicant('${a.id}')">전체 상세</button><button type="button" role="menuitem" data-required-permission="applicant.write" data-erp-handler="event.stopPropagation();editApplicant('${a.id}')">수정</button><button type="button" role="menuitem" class="delete" data-required-permission="applicant.delete" data-erp-handler="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></div></details></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="13" class="empty list-empty-cell"><div class="applicant-list-empty-state"><strong>조건에 맞는 지원자가 없습니다.</strong><span>새 지원자를 등록하거나 현재 필터를 초기화해 다시 확인하세요.</span><div class="applicant-list-empty-actions">${canRegister?'<button class="primary applicant-empty-register" type="button" data-required-permission="applicant.write" data-erp-handler="setPage(\'form\')">지원자 등록</button>':''}<button class="ghost applicant-empty-reset" type="button" data-erp-handler="resetAndRenderList()">필터 초기화</button></div></div></td></tr>`;
+  }).join(''):`<tr><td colspan="11" class="empty list-empty-cell"><div class="applicant-list-empty-state"><strong>조건에 맞는 지원자가 없습니다.</strong><span>새 지원자를 등록하거나 현재 필터를 초기화해 다시 확인하세요.</span><div class="applicant-list-empty-actions">${canRegister?'<button class="primary applicant-empty-register" type="button" data-required-permission="applicant.write" data-erp-handler="setPage(\'form\')">지원자 등록</button>':''}<button class="ghost applicant-empty-reset" type="button" data-erp-handler="resetAndRenderList()">필터 초기화</button></div></div></td></tr>`;
   renderApplicantPagination(allRows.length);
   applicantQuickDetailAfterListRender(allRows);
 }

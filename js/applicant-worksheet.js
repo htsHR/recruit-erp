@@ -8,7 +8,7 @@
 
   const VERSION='11.4.1';
   const SETTINGS_KEY='recruit_erp_applicant_worksheet_view_v1';
-  const VIEW_MODES=['normal','worksheet'];
+  const VIEW_MODES=['normal','stage','worksheet'];
   const WORKPLACES=['all','천안','평택','기타'];
   const FILTERS=['all','todayAction','active','docpass','interview','hire','finished','contact','decision','duplicate','priority','hold','rejected'];
   const SORTS=['recent','applyDesc','applyAsc','interviewAsc','scoreDesc','nameAsc'];
@@ -555,16 +555,18 @@
   function ensureUi(){
     const section=root.document.getElementById('applicants');if(!section||root.document.getElementById('applicantWorksheet'))return;
     const header=section.querySelector('.applicant-list-header-row'),metrics=section.querySelector('.applicant-list-header-metrics');
-    const toggle=root.document.createElement('div');toggle.className='worksheet-view-toggle';toggle.setAttribute('aria-label','지원자 목록 보기 방식');toggle.innerHTML='<button type="button" id="btnApplicantNormalView">일반보기</button><button type="button" id="btnApplicantWorksheetView">워크시트 보기</button>';
+    const toggle=root.document.createElement('div');toggle.className='worksheet-view-toggle applicant-view-tabs';toggle.setAttribute('aria-label','지원자 목록 보기 방식');toggle.innerHTML='<button type="button" id="btnApplicantNormalView">전체 지원자</button><button type="button" id="btnApplicantPostingView" disabled aria-disabled="true" title="공고 데이터 연동 후 제공됩니다.">공고별</button><button type="button" id="btnApplicantStageView">채용 단계</button><button type="button" id="btnApplicantWorksheetView">워크시트</button>';
     if(header)header.insertBefore(toggle,metrics||null);
     const normalWrap=section.querySelector('#applicantTbody')?.closest('.table-wrap'),host=root.document.createElement('div');host.id='applicantWorksheet';host.className='applicant-worksheet-shell';host.hidden=true;
     normalWrap?.insertAdjacentElement('afterend',host);
+    const stage=root.document.createElement('div');stage.id='applicantStageOverview';stage.className='applicant-stage-overview';stage.hidden=true;host.insertAdjacentElement('afterend',stage);
     const modal=root.document.createElement('div');modal.id='applicantWorksheetGuard';modal.className='applicant-worksheet-guard';modal.hidden=true;modal.innerHTML='<div class="applicant-worksheet-guard-backdrop"></div><div class="applicant-worksheet-guard-card" role="dialog" aria-modal="true" aria-labelledby="applicantWorksheetGuardTitle"><h3 id="applicantWorksheetGuardTitle">저장하지 않은 워크시트 변경</h3><p>이동하기 전에 변경사항을 어떻게 처리할까요?</p><div><button type="button" class="primary" id="btnWorksheetGuardSave">변경사항 저장</button><button type="button" class="danger" id="btnWorksheetGuardDiscard">변경 취소</button><button type="button" class="ghost" id="btnWorksheetGuardStay">계속 편집</button></div></div>';
     root.document.body.appendChild(modal);
     const review=root.document.createElement('div');review.id='applicantWorksheetReview';review.className='applicant-worksheet-review';review.hidden=true;
     review.innerHTML='<div class="applicant-worksheet-review-backdrop"></div><div class="applicant-worksheet-review-card" role="dialog" aria-modal="true" aria-labelledby="applicantWorksheetReviewTitle"><span class="eyebrow">FINAL REVIEW</span><h3 id="applicantWorksheetReviewTitle">워크시트 변경 최종 확인</h3><p>아래 범위만 기존 지원자 저장 흐름으로 한 번 저장합니다.</p><div class="applicant-worksheet-review-grid" id="applicantWorksheetReviewSummary"></div><div class="applicant-worksheet-review-actions"><button type="button" class="ghost" id="btnWorksheetReviewCancel">취소</button><button type="button" class="primary" id="btnWorksheetReviewConfirm" data-required-permission="applicant.write">확인 후 저장</button></div></div>';
     root.document.body.appendChild(review);
     toggle.querySelector('#btnApplicantNormalView').addEventListener('click',()=>requestAction(()=>setViewMode('normal'),'일반보기로 이동'));
+    toggle.querySelector('#btnApplicantStageView').addEventListener('click',()=>requestAction(()=>setViewMode('stage'),'채용 단계 보기로 이동'));
     toggle.querySelector('#btnApplicantWorksheetView').addEventListener('click',()=>setViewMode('worksheet'));
     modal.querySelector('#btnWorksheetGuardSave').addEventListener('click',openFinalReview);
     modal.querySelector('#btnWorksheetGuardDiscard').addEventListener('click',()=>{discardDirty();const action=state.pendingAction;closeGuard();action?.();});
@@ -582,12 +584,14 @@
   }
   function setViewMode(mode){
     state.viewMode=VIEW_MODES.includes(mode)?mode:'normal';
-    const section=root.document.getElementById('applicants'),normalWrap=section?.querySelector('#applicantTbody')?.closest('.table-wrap'),host=root.document.getElementById('applicantWorksheet');
-    if(normalWrap)normalWrap.hidden=state.viewMode==='worksheet';if(host)host.hidden=state.viewMode!=='worksheet';
+    const section=root.document.getElementById('applicants'),normalWrap=section?.querySelector('#applicantTbody')?.closest('.table-wrap'),host=root.document.getElementById('applicantWorksheet'),stage=root.document.getElementById('applicantStageOverview');
+    if(normalWrap)normalWrap.hidden=state.viewMode!=='normal';if(host)host.hidden=state.viewMode!=='worksheet';if(stage)stage.hidden=state.viewMode!=='stage';
     root.document.getElementById('btnApplicantNormalView')?.classList.toggle('active',state.viewMode==='normal');
+    root.document.getElementById('btnApplicantStageView')?.classList.toggle('active',state.viewMode==='stage');
     root.document.getElementById('btnApplicantWorksheetView')?.classList.toggle('active',state.viewMode==='worksheet');
     section?.classList.toggle('is-worksheet-mode',state.viewMode==='worksheet');
-    persistSettings();if(state.viewMode==='worksheet')renderWorksheet();
+    section?.classList.toggle('is-stage-mode',state.viewMode==='stage');
+    persistSettings();if(state.viewMode==='worksheet')renderWorksheet();if(state.viewMode==='stage')root.erpUx12?.renderStageOverview?.();
   }
   function actionForGuardTarget(target,event){
     const workplace=target.closest('#workplaceTabs [data-workplace]');if(workplace)return {label:'근무지 필터 변경',run:()=>{root.document.querySelectorAll('#workplaceTabs [data-workplace]').forEach(button=>button.classList.toggle('active',button===workplace));currentWorkplace=workplace.dataset.workplace;renderTable();}};
@@ -614,7 +618,7 @@
     }
     const previousSetPage=root.setPage;
     if(typeof previousSetPage==='function'&&!previousSetPage.__worksheetV114){
-      const wrapped=function(page){const active=root.document.querySelector('.page.active')?.id;if(active==='applicants'&&page!=='applicants'&&state.dirty.size&&!state.bypassGuard){requestAction(()=>previousSetPage.apply(this,arguments),'다른 화면으로 이동');return false;}return previousSetPage.apply(this,arguments);};wrapped.__worksheetV114=true;root.setPage=wrapped;
+      const wrapped=function(page){const active=root.document.querySelector('.page.active')?.id;if(active==='applicants'&&page!=='applicants'&&state.dirty.size&&!state.bypassGuard){requestAction(()=>root.setPage(page),'다른 화면으로 이동');return false;}return previousSetPage.apply(this,arguments);};wrapped.__worksheetV114=true;root.setPage=wrapped;
     }
   }
   function init(){

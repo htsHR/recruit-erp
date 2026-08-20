@@ -290,7 +290,7 @@
   }
   function init(){
     if(!root.document)return;ensureUi();
-    const baseSetPage=root.setPage;if(typeof baseSetPage==='function')root.setPage=function(page){baseSetPage(page);if(page==='onboarding'){const title=root.document.getElementById('page-title');if(title)title.textContent='입사·온보딩';const breadcrumb=root.document.querySelector('.topbar-breadcrumb');if(breadcrumb)breadcrumb.textContent='최종합격부터 출근과 사원명부 전환까지 확인합니다.';render();}};
+    const baseSetPage=root.setPage;if(typeof baseSetPage==='function')root.setPage=function(page){const result=baseSetPage(page);if(result===false)return false;if(page==='onboarding'){const title=root.document.getElementById('page-title');if(title)title.textContent='입사·온보딩';const breadcrumb=root.document.querySelector('.topbar-breadcrumb');if(breadcrumb)breadcrumb.textContent='최종합격부터 출근과 사원명부 전환까지 확인합니다.';render();}return result;};
     root.document.addEventListener('erp:permission-change',()=>render());
     root.document.addEventListener('erp:storage-write',event=>{if(['recruit_erp_applicants_stable','recruit_erp_employees','recruit_erp_hire_waiting_profiles'].includes(event.detail?.key)&&root.document.body.dataset.activePage==='onboarding')render();});
     root.document.addEventListener('keydown',event=>{if(event.key==='Escape'&&root.document.getElementById('onboardingModal')?.classList.contains('show'))closeModal();});

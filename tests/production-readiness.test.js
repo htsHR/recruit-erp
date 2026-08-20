@@ -41,7 +41,7 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
 }
 
 (async()=>{
-  assert.equal(appVersion.VERSION,'11.5.2');
+  assert.equal(appVersion.VERSION,'12.0.0');
   assert.equal(readiness.VERSION,appVersion.VERSION);
   assert.equal(readiness.STATE_KEY,'recruit_erp_production_readiness_v1100');
   assert.equal(readiness.STATE_SCHEMA_VERSION,2);
@@ -139,7 +139,7 @@ function installRuntime(state,{cloudUsable=false,environment='home',withSupabase
   const reportText=JSON.stringify(cloudReport);
   for(const forbidden of ['가상지원자홍길동','010-1234-5678','900101-1234567','residentNumber','phone','address','memo','password','ciphertext'])assert.ok(!reportText.includes(forbidden),`점검 보고서에 금지된 개인정보 필드가 포함됨: ${forbidden}`);
 
-  assert.match(index,/js\/app-version\.js\?v=11\.5\.2/);assert.match(index,/css\/production-readiness\.css\?v=11\.5\.2/);assert.match(index,/js\/production-readiness\.js\?v=11\.5\.2/);assert.match(permissions,/readiness\.manage/);
+  assert.match(index,/js\/app-version\.js\?v=12\.0\.0/);assert.match(index,/css\/production-readiness\.css\?v=12\.0\.0/);assert.match(index,/js\/production-readiness\.js\?v=12\.0\.0/);assert.match(permissions,/readiness\.manage/);
   assert.match(source,/CLOUD_ADMIN_MESSAGE/);assert.match(source,/runEncryptionRoundTrip/);assert.match(source,/verificationSource/);assert.doesNotMatch(source,/localStorage[^\n]*(?:name|phone|residentNumber|address|memo)/i);
   assert.doesNotMatch(source,/v11\.0\.0 파일과 화면|화면 또는 파일 버전이 v11\.0\.0/,'v11.0.0을 현재 기대 버전으로 사용하면 안 됩니다.');
 

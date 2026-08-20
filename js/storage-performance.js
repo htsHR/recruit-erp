@@ -373,13 +373,14 @@
     ensureUi();
     const baseSetPage=root.setPage;
     if(typeof baseSetPage==='function')root.setPage=function(page){
-      if(page==='storagePerformance'&&!root.erpPermissions?.has?.('storage.manage')){root.erpPermissions?.require?.('storage.manage');return;}
-      baseSetPage(page);
+      if(page==='storagePerformance'&&!root.erpPermissions?.has?.('storage.manage')){root.erpPermissions?.require?.('storage.manage');return false;}
+      const result=baseSetPage(page);if(result===false)return false;
       if(page==='storagePerformance'){
         const title=root.document.getElementById('page-title');if(title)title.textContent='저장소·속도';
         const breadcrumb=root.document.querySelector('.topbar-breadcrumb');if(breadcrumb)breadcrumb.textContent='브라우저 저장공간과 IndexedDB 안전 복사 상태를 확인합니다.';
         render();
       }
+      return result;
     };
     root.document.addEventListener('erp:storage-write',scheduleMirror);
     root.document.addEventListener('erp:permission-change',()=>render());
