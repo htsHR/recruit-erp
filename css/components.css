@@ -738,26 +738,34 @@ tbody tr.applicant-row td{
    회사 원본 양식과 다르게 보이던 문제 수정 - 명단표 전용 스타일을 전부 명시적으로
    지정해서 다른 곳의 스타일이 끼어들 수 없게 완전히 격리함.
    v10.11.10: 회사 원본 Word 양식 기준 A4 가로방향으로 복구하고, 원본 여백/컬럼/행 높이에 맞춰 재보정함. */
-#rosterPrintArea{display:none;}
+#rosterPrintArea{
+  --roster-print-line-color:#000;
+  --roster-print-line-width:0.35mm;
+  display:none;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
+}
 #rosterPrintArea, #rosterPrintArea *{
   background:#fff !important;
   color:#000 !important;
   font-family:"Malgun Gothic","맑은 고딕",sans-serif !important;
   box-shadow:none!important;
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
 }
 .roster-page{padding:0;page-break-after:always;width:100%;box-sizing:border-box;}
 .roster-company{margin:0 0 3px;font-size:12px;line-height:1.15;text-align:left;font-weight:400;text-decoration:underline;}
 .roster-title{margin:0 0 7px;font-size:18px;line-height:1.2;text-align:center;font-weight:600;}
-.roster-oath-box{display:flex;align-items:stretch;width:100%;margin:0 0 7px;border:1px solid #000;box-sizing:border-box;min-height:98px;}
+.roster-oath-box{display:flex;align-items:stretch;width:100%;margin:0 0 7px;border:var(--roster-print-line-width) solid var(--roster-print-line-color);box-sizing:border-box;min-height:98px;}
 .roster-oath-text{flex:1 1 auto;font-size:13.5px;line-height:1.6;text-align:left;font-weight:400;padding:8px 10px;box-sizing:border-box;display:flex;align-items:center;}
 .roster-oath-meta{flex:0 0 225px;font-size:13.5px;line-height:1.75;text-align:left;font-weight:400;white-space:nowrap;padding:6px 4px 6px 8px;box-sizing:border-box;display:flex;align-items:center;}
 .roster-oath-meta-inner{width:100%;}
 .roster-oath-line{display:flex;align-items:baseline;}
 .roster-oath-line + .roster-oath-line{margin-top:2px;}
 .roster-oath-label{display:inline-block;width:3.2em;flex:0 0 3.2em;text-align:left;}
-.roster-table{width:100% !important;min-width:0 !important;border-collapse:collapse;table-layout:fixed;}
+.roster-table{width:100% !important;min-width:0 !important;border:var(--roster-print-line-width) solid var(--roster-print-line-color) !important;border-collapse:collapse;table-layout:fixed;}
 .roster-table th,.roster-table td{
-  border:1px solid #000 !important;
+  border:var(--roster-print-line-width) solid var(--roster-print-line-color) !important;
   padding:3px 4px;
   font-size:11.5px;
   font-weight:400;
@@ -770,7 +778,7 @@ tbody tr.applicant-row td{
 .roster-table td.roster-no{font-weight:600;font-size:11.5px;}
 .roster-name-head{display:flex;flex-direction:column;align-items:stretch;justify-content:center;height:100%;min-height:100%;}
 .roster-name-head-text{display:flex;align-items:center;justify-content:center;width:100%;flex:1 1 auto;padding:0 4px;box-sizing:border-box;text-align:center;line-height:1.2;}
-.roster-name-head-divider{display:block;align-self:stretch;width:100%;border-top:1px solid #000;margin:0;box-sizing:border-box;}
+.roster-name-head-divider{display:block;align-self:stretch;width:100%;border-top:var(--roster-print-line-width) solid var(--roster-print-line-color);margin:0;box-sizing:border-box;}
 .roster-table td.roster-name{text-align:center;font-weight:400;font-size:11.5px;}
 .roster-row-top td,.roster-row-bottom td{height:42px;}
 .roster-table td.roster-pass{font-weight:600;font-size:11.5px;}
