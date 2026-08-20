@@ -1,91 +1,83 @@
 <!doctype html>
 
-<html lang="ko">
+<html class="ux12-booting" lang="ko">
   <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <style id="ux12BootGuard">
+      html.ux12-booting,
+      html.ux12-booting body {
+        min-height: 100%;
+        background: #f5f6f8;
+      }
+      html.ux12-booting body {
+        margin: 0;
+        overflow: hidden;
+      }
+      html.ux12-booting body > * {
+        visibility: hidden !important;
+      }
+      html.ux12-booting body.ux12-ready .sidebar {
+        transition: none !important;
+      }
+      html.ux12-booting body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        visibility: visible;
+        background:
+          linear-gradient(#fff, #fff) 0 0 / 216px 100% no-repeat,
+          linear-gradient(#fff, #fff) 216px 0 / calc(100% - 216px) 56px no-repeat,
+          #f5f6f8;
+      }
+    </style>
     <link href="favicon.svg" rel="icon" type="image/svg+xml" />
-    <title>채용관리 시스템 v12.0.0</title>
-    <script src="js/app-version.js?v=12.0.0"></script>
-    <script src="js/safety.js?v=12.0.0"></script>
-    <script src="js/security.js?v=12.0.0"></script>
-    <script src="js/sync-safety.js?v=12.0.0"></script>
-    <script src="js/today-automation.js?v=12.0.0"></script>
-    <link rel="stylesheet" href="css/base.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/layout.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/components.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/pages.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/pages-extra.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/corporate.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/ui-layout.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/list-layout.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/feature-pages.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/applicant-detail-polish.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/calendar-bulk-decision.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/onboarding-management.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/hire-waiting-list.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/applicant-clearview.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/daily-operations-polish.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/design-calm-cascade.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/privacy-security.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/sync-safety.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/permissions.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/audit-history.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/encrypted-backup.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/storage-performance.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/production-readiness.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/school-workforce-analytics.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/applicant-worksheet.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/ui-density-navigation.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/applicant-quick-detail.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/recruiter-daily-usability.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/production-gate-responsive-polish.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/recruiter-ui-stability.css?v=12.0.0" />
-    <link rel="stylesheet" href="css/ux-reboot-v12.css?v=12.0.0" />
-    <script
-      crossorigin="anonymous"
-      integrity="sha384-fPWur1rx/DE6YtXP/x0MD6dd90RgnVsz5yX/DIg7CcVAnTBZsENWuIcpvVTM39ti"
-      src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.111.0/dist/umd/supabase.min.js"
-    ></script>
-    <script src="supabase_config.js?v=12.0.0"></script>
+    <title>채용관리 시스템 v12.0.1</title>
+    <script src="js/app-version.js?v=12.0.1"></script>
+    <script src="js/safety.js?v=12.0.1"></script>
+    <script src="js/security.js?v=12.0.1"></script>
+    <script src="js/sync-safety.js?v=12.0.1"></script>
+    <script src="js/today-automation.js?v=12.0.1"></script>
+    <link rel="stylesheet" href="css/base.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/layout.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/components.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/pages.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/pages-extra.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/corporate.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/ui-layout.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/list-layout.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/feature-pages.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/applicant-detail-polish.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/calendar-bulk-decision.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/onboarding-management.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/hire-waiting-list.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/applicant-clearview.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/daily-operations-polish.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/design-calm-cascade.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/privacy-security.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/sync-safety.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/permissions.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/audit-history.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/encrypted-backup.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/storage-performance.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/production-readiness.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/school-workforce-analytics.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/applicant-worksheet.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/ui-density-navigation.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/applicant-quick-detail.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/recruiter-daily-usability.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/production-gate-responsive-polish.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/recruiter-ui-stability.css?v=12.0.1" />
+    <link rel="stylesheet" href="css/ux-reboot-v12.css?v=12.0.1" />
   </head>
   <body>
-    <div class="login-overlay" id="loginOverlay" style="display: none">
-      <div class="login-card">
-        <p class="eyebrow">Recruit ERP</p>
-        <h3>로그인</h3>
-        <p class="muted">
-          클라우드에 저장된 지원자 데이터를 보려면 로그인이 필요합니다.
-        </p>
-        <label
-          >이메일<input
-            autocomplete="username"
-            id="loginEmail"
-            type="email" /></label
-        ><label
-          >비밀번호<input
-            autocomplete="current-password"
-            id="loginPassword"
-            type="password"
-        /></label>
-        <div class="login-error" id="loginError"></div>
-        <button class="primary" id="btnLogin" type="button">로그인</button>
-        <p class="muted login-hint">
-          로그인 없이도 이 컴퓨터/브라우저에 저장된 데이터는 계속 볼 수 있어요.
-          다만 클라우드 동기화는 로그인 후에만 동작합니다.
-        </p>
-        <button class="ghost" id="btnLoginSkip" type="button">
-          로그인 없이 계속(로컬만 사용)
-        </button>
-      </div>
-    </div>
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand">
           <div aria-hidden="true" class="brand-mark">R</div>
           <div class="brand-copy">
             <h1>Recruit ERP</h1>
-            <p>v12.0.0 Preview</p>
+            <p>v12.0.1</p>
           </div>
         </div>
         <nav class="nav">
@@ -210,26 +202,8 @@
           </div>
         </nav>
         <div class="security-note" id="storageNote">
-          <strong>서버 저장 없음</strong
-          ><span>지원자 데이터는 현재 브라우저에만 저장됩니다.</span>
-        </div>
-        <div class="auth-note" id="authNote">
-          <div class="auth-logged-in" id="authLoggedIn" style="display: none">
-            <div class="auth-user-info">
-              <div class="auth-user-copy">
-                <strong id="authEmailText"></strong
-                ><small>Supabase 로그인됨</small>
-              </div>
-            </div>
-            <button class="mini" id="btnLogout" type="button">로그아웃</button>
-          </div>
-          <div class="auth-logged-out" id="authLoggedOut">
-            <strong>클라우드 로그아웃</strong
-            ><span>필요할 때 다시 로그인할 수 있습니다.</span
-            ><button class="mini" id="btnOpenLogin" type="button">
-              Supabase 로그인
-            </button>
-          </div>
+          <strong>LOCAL ONLY</strong
+          ><span>이 브라우저 저장을 기본으로 사용합니다.</span>
         </div>
       </aside>
       <main class="main">
@@ -285,13 +259,8 @@
             <div class="topbar-utils">
               <span
                 class="local-mode-badge"
-                title="현재 브라우저 저장 데이터를 기준으로 운영합니다."
-                >LOCAL MASTER</span
-              ><span class="topbar-user" id="topbarUser" style="display: none"
-                ><span class="topbar-user-copy"
-                  ><strong id="topbarUserEmail"></strong
-                  ><small>시스템 관리자</small></span
-                ></span
+                title="이 브라우저 저장 · 로컬 전용"
+                >LOCAL ONLY</span
               >
             </div>
           </div>
@@ -5710,51 +5679,51 @@
       </div>
     </div>
     <div id="rosterPrintArea"></div>
-    <script src="js/permissions.js?v=12.0.0"></script>
-    <script src="js/audit-history.js?v=12.0.0"></script>
-    <script src="js/encrypted-backup.js?v=12.0.0"></script>
-    <script src="js/core.js?v=12.0.0"></script>
-    <script src="js/cloud-sync.js?v=12.0.0"></script>
-    <script src="js/schools.js?v=12.0.0"></script>
-    <script src="js/school-merge-manager.js?v=12.0.0"></script>
-    <script src="js/school-workforce-analytics.js?v=12.0.0"></script>
-    <script src="js/employee-master-xlsx-import.js?v=12.0.0"></script>
-    <script src="js/employees.js?v=12.0.0"></script>
-    <script src="js/applicants.js?v=12.0.0"></script>
-    <script src="js/tasks.js?v=12.0.0"></script>
-    <script src="js/calendar.js?v=12.0.0"></script>
-    <script src="js/hire-waiting-automation.js?v=12.0.0"></script>
-    <script src="js/hire-waiting-list.js?v=12.0.0"></script>
-    <script src="js/statistics.js?v=12.0.0"></script>
-    <script src="js/school-relations.js?v=12.0.0"></script>
-    <script src="js/detail-views.js?v=12.0.0"></script>
-    <script src="js/school-workforce-ui.js?v=12.0.0"></script>
-    <script src="js/school-management-core.js?v=12.0.0"></script>
-    <script src="js/school-analytics.js?v=12.0.0"></script>
-    <script src="js/state-init.js?v=12.0.0"></script>
-    <script src="js/reports.js?v=12.0.0"></script>
-    <script src="js/school-data-control.js?v=12.0.0"></script>
-    <script src="js/bindings.js?v=12.0.0"></script>
-    <script src="js/applicant-quick-entry.js?v=12.0.0"></script>
-    <script src="js/recruiter-daily-usability.js?v=12.0.0"></script>
-    <script src="js/auth-init.js?v=12.0.0"></script>
-    <script src="js/ui-enhancements.js?v=12.0.0"></script>
-    <script src="js/message-templates.js?v=12.0.0"></script>
-    <script src="js/backup-center.js?v=12.0.0"></script>
-    <script src="js/encrypted-backup-ui.js?v=12.0.0"></script>
-    <script src="js/data-health.js?v=12.0.0"></script>
-    <script src="js/advanced-bulk.js?v=12.0.0"></script>
-    <script src="js/applicant-filter.js?v=12.0.0"></script>
-    <script src="js/school-report.js?v=12.0.0"></script>
-    <script src="js/applicant-progress-history.js?v=12.0.0"></script>
-    <script src="js/form-flow-stability.js?v=12.0.0"></script>
-    <script src="js/screening-workbench.js?v=12.0.0"></script>
-    <script src="js/phone-interview.js?v=12.0.0"></script>
-    <script src="js/privacy-security.js?v=12.0.0"></script>
-    <script src="js/storage-performance.js?v=12.0.0"></script>
-    <script src="js/onboarding-management.js?v=12.0.0"></script>
-    <script src="js/production-readiness.js?v=12.0.0"></script>
-    <script src="js/applicant-worksheet.js?v=12.0.0"></script>
-    <script src="js/ux-reboot-v12.js?v=12.0.0"></script>
+    <script src="js/permissions.js?v=12.0.1"></script>
+    <script src="js/audit-history.js?v=12.0.1"></script>
+    <script src="js/encrypted-backup.js?v=12.0.1"></script>
+    <script src="js/core.js?v=12.0.1"></script>
+    <script src="js/cloud-sync.js?v=12.0.1"></script>
+    <script src="js/schools.js?v=12.0.1"></script>
+    <script src="js/school-merge-manager.js?v=12.0.1"></script>
+    <script src="js/school-workforce-analytics.js?v=12.0.1"></script>
+    <script src="js/employee-master-xlsx-import.js?v=12.0.1"></script>
+    <script src="js/employees.js?v=12.0.1"></script>
+    <script src="js/applicants.js?v=12.0.1"></script>
+    <script src="js/tasks.js?v=12.0.1"></script>
+    <script src="js/calendar.js?v=12.0.1"></script>
+    <script src="js/hire-waiting-automation.js?v=12.0.1"></script>
+    <script src="js/hire-waiting-list.js?v=12.0.1"></script>
+    <script src="js/statistics.js?v=12.0.1"></script>
+    <script src="js/school-relations.js?v=12.0.1"></script>
+    <script src="js/detail-views.js?v=12.0.1"></script>
+    <script src="js/school-workforce-ui.js?v=12.0.1"></script>
+    <script src="js/school-management-core.js?v=12.0.1"></script>
+    <script src="js/school-analytics.js?v=12.0.1"></script>
+    <script src="js/state-init.js?v=12.0.1"></script>
+    <script src="js/reports.js?v=12.0.1"></script>
+    <script src="js/school-data-control.js?v=12.0.1"></script>
+    <script src="js/bindings.js?v=12.0.1"></script>
+    <script src="js/applicant-quick-entry.js?v=12.0.1"></script>
+    <script src="js/recruiter-daily-usability.js?v=12.0.1"></script>
+    <script src="js/local-only-init.js?v=12.0.1"></script>
+    <script src="js/ui-enhancements.js?v=12.0.1"></script>
+    <script src="js/message-templates.js?v=12.0.1"></script>
+    <script src="js/backup-center.js?v=12.0.1"></script>
+    <script src="js/encrypted-backup-ui.js?v=12.0.1"></script>
+    <script src="js/data-health.js?v=12.0.1"></script>
+    <script src="js/advanced-bulk.js?v=12.0.1"></script>
+    <script src="js/applicant-filter.js?v=12.0.1"></script>
+    <script src="js/school-report.js?v=12.0.1"></script>
+    <script src="js/applicant-progress-history.js?v=12.0.1"></script>
+    <script src="js/form-flow-stability.js?v=12.0.1"></script>
+    <script src="js/screening-workbench.js?v=12.0.1"></script>
+    <script src="js/phone-interview.js?v=12.0.1"></script>
+    <script src="js/privacy-security.js?v=12.0.1"></script>
+    <script src="js/storage-performance.js?v=12.0.1"></script>
+    <script src="js/onboarding-management.js?v=12.0.1"></script>
+    <script src="js/production-readiness.js?v=12.0.1"></script>
+    <script src="js/applicant-worksheet.js?v=12.0.1"></script>
+    <script src="js/ux-reboot-v12.js?v=12.0.1"></script>
   </body>
 </html>
