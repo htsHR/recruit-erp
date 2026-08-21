@@ -14,12 +14,13 @@ globalThis.erpBackupCenter={exportEncrypted(){}};
 globalThis.erpEncryptedBackup={encryptEnvelope(){}};
 globalThis.erpStoragePerformance={estimateStorage(){}};
 
-const readiness=require('../js/production-readiness.js');
 const source=fs.readFileSync(path.join(root,'js','production-readiness.js'),'utf8');
 const version=require('../js/app-version.js');
+globalThis.erpAppVersion=version;
+const readiness=require('../js/production-readiness.js');
 
-assert.equal(readiness.VERSION,'12.1.0');
-assert.equal(version.VERSION,'12.1.0');
+assert.equal(readiness.VERSION,'12.2.0');
+assert.equal(version.VERSION,'12.2.0');
 assert.equal(readiness.MANUAL_CHECKS.length,7);
 assert.equal(readiness.context().verificationSource,'local');
 assert.equal(readiness.context().operationEnvironment,'local-only');

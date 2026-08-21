@@ -13,7 +13,7 @@ const permissions=read('js/permissions.js');
 const storage=read('js/storage-performance.js');
 const version=require('../js/app-version.js');
 
-assert.equal(version.VERSION,'12.1.0');
+assert.equal(version.VERSION,'12.2.0');
 assert.equal(version.LOCAL_ONLY,true);
 assert.equal(version.mode,'local-only');
 assert.doesNotMatch(index,/id="(?:loginOverlay|loginEmail|loginPassword|btnLogin|btnLoginSkip|btnLogout|btnOpenLogin|authNote|topbarUser)"/);
