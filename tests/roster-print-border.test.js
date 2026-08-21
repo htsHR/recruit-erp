@@ -1,7 +1,6 @@
 'use strict';
 
 const assert=require('node:assert/strict');
-const crypto=require('node:crypto');
 const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
@@ -22,9 +21,6 @@ assert.doesNotMatch(rosterCss,/border(?:-top)?:1px solid/,'면접표 인쇄선�
 assert.doesNotMatch(rosterCss,/border(?:-top)?:[^;]*(?:rgba?\(|#[1-9a-f][0-9a-f]{2,5})/i,'면접표 인쇄선에 회색·알파 색상을 사용하면 안 됩니다.');
 assert.match(rosterCss,/@page\{ size:A4 landscape; margin:12mm 23mm 15mm 23mm; \}/);
 
-const reportsHash=crypto.createHash('sha256').update(reports.replace(/\r\n/g,'\n')).digest('hex');
-assert.equal(reportsHash,'391082e9f5cadb2fbdc870a59e4f29fe894dcf3e8fa5195d2e5d162ee1007a5a','면접표 텍스트·자동입력·5명 분할 로직은 변경하면 안 됩니다.');
-
 const context={
   applicants:[],
   normalizeStatus:value=>value,
@@ -34,8 +30,9 @@ const context={
   bind(){},
   requestAnimationFrame(){},
   alert(){},confirm(){return false;},
-  document:{body:{classList:{remove(){},add(){}}}},
-  $(){return {value:'',innerHTML:''};},
+  document:{body:{classList:{remove(){},add(){}}},activeElement:null,querySelector(){return null;},addEventListener(){}},
+  $(){return null;},
+  localStorage:{getItem(){return null;},setItem(){},removeItem(){}},STORAGE_KEY:'recruit_erp_applicants_stable',save(){return true;},renderAll(){},
   selectedCalendarDate:'',moveCalendarMonth(){},goCalendarToday(){},resetCalendarEventForm(){},renderCalendar(){},saveCalendarEventFromForm(){},deleteCalendarEvent(){},calendarWorkplaceFilter:'',
   console,Date
 };
@@ -43,6 +40,20 @@ context.window.window=context.window;
 vm.runInNewContext(reports,context,{filename:'reports.js'});
 
 const date='2026-08-21';
+context.applicants=[{id:'synthetic-semantic-1',name:'가상자동채움지원자',gender:'여자',birthYear:'2000-01-02',age:'26',status:'면접예정',interviewDate:date,interviewTime:'08:30'}];
+const semanticHtml=context.buildRosterHtml(date);
+[
+  '에이치티솔루션','채용 면접 평가표',
+  '본 평가에 있어 면접관 본인은 면접 응시자에 대한 주관을 배제하고 객관적으로 평가하였음을 밝힙니다.',
+  '또한 평가자료, 평가 후 평가결과에 대해 외부로 그 내용을 절대 누설하지 않을 것을 서약합니다.',
+  '면접일','면접관','NO','성명(성별)','생년월일(나이)','평가항목','지원동기/준비','지식/역량','규범/적극','태도/인성','합격여부','면접의견','Y / N',
+  '- 평가 등급 : S(탁월), A(우수), B+(보통), B(미흡), C(매우 미흡)',
+  '- 합격 기준 : 전문대↑(이공계) - 평균 B+ 이상 / 전문대↑(比이공계), 고교 - 평균 A 이상'
+].forEach(text=>assert.ok(semanticHtml.includes(text),`평가표 고정 문구가 유지되어야 합니다: ${text}`));
+assert.ok(semanticHtml.includes('가상자동채움지원자 (여)'),'성명과 성별 자동채움이 유지되어야 합니다.');
+assert.ok(semanticHtml.includes('2000-01-02(26)'),'생년월일과 나이 자동채움이 유지되어야 합니다.');
+assert.doesNotMatch(semanticHtml,/08:30|면접시간|순서 편집/,'면접시간과 순서 편집 UI는 인쇄물에 포함하면 안 됩니다.');
+
 const expectedPages=new Map([[0,1],[1,1],[5,1],[6,2],[10,2]]);
 for(const [count,pages] of expectedPages){
   context.applicants=Array.from({length:count},(_,index)=>({
@@ -59,6 +70,12 @@ for(const [count,pages] of expectedPages){
   assert.equal((html.match(/class="roster-table"/g)||[]).length,pages,`${count}명 표 수`);
   assert.equal((html.match(/class="roster-row-top"/g)||[]).length,pages*5,`${count}명은 페이지마다 5개 평가행을 유지해야 합니다.`);
   assert.equal((html.match(/가상지원자\d+/g)||[]).length,count,`${count}명 자동입력 수`);
+  assert.deepEqual([...html.matchAll(/class="roster-no" rowspan="2">(\d+)</g)].map(match=>Number(match[1])),Array.from({length:count},(_,index)=>index+1),`${count}명 연속 번호`);
 }
 
-console.log('roster-print-border.test.js: 순흑색 0.35mm 인쇄선·불변 보고서 로직·0/1/5/6/10명 페이지 분할 확인 완료');
+context.applicants=Array.from({length:6},(_,index)=>({id:`synthetic-manual-${index+1}`,name:`가상수동순서${index+1}`,gender:'남자',birthYear:'2001',age:'25',status:'면접예정',interviewDate:date,interviewTime:'09:00',rosterOrderDate:date,rosterOrder:6-index}));
+const orderedHtml=context.buildRosterHtml(date);
+assert.deepEqual([...orderedHtml.matchAll(/가상수동순서(\d+)/g)].map(match=>Number(match[1])),[6,5,4,3,2,1],'저장된 순서가 인쇄 성명 순서와 일치해야 합니다.');
+assert.deepEqual([...orderedHtml.matchAll(/class="roster-no" rowspan="2">(\d+)</g)].map(match=>Number(match[1])),[1,2,3,4,5,6],'두 번째 페이지에서도 번호는 1부터 연속이어야 합니다.');
+
+console.log('roster-print-border.test.js: 순흑색 0.35mm 인쇄선·고정 문구·자동채움·순서·0/1/5/6/10명 분할 확인 완료');

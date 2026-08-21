@@ -76,6 +76,19 @@ function normalizeDorm(v){
 function dormLabel(a){ return normalizeDorm(a?.dormUse) || '미확인'; }
 function dormClass(v){ const d=normalizeDorm(v); if(d==='기숙사') return 'on'; if(d==='출퇴근') return 'off'; return 'pending'; }
 function displayCheckNeeds(v){ return String(v||'').replaceAll('근무형태 확인','출근방법 확인').replaceAll('근무형태','출근방법'); }
+function normalizeRosterOrderDate(v){
+  const s=String(v||'').trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(s)) return '';
+  const d=new Date(`${s}T00:00:00`);
+  if(Number.isNaN(d.getTime())) return '';
+  const normalized=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return normalized===s?s:'';
+}
+function normalizeRosterOrder(v){
+  if(v===null||v===undefined||v==='') return '';
+  const n=Number(v);
+  return Number.isInteger(n)&&n>=1?n:'';
+}
 function normalize(a){ return {
   id:window.erpSecurity?.isValidId(a.id)?String(a.id):uid(), createdAt:a.createdAt||new Date().toISOString(), updatedAt:a.updatedAt||'',
   applyDate:a.applyDate||'', source:a.source||'', extra:a.extra||a.etc||'', status:normalizeStatus(a.status), workplace:a.workplace||'',
@@ -86,6 +99,7 @@ function normalize(a){ return {
   certs:a.certs||'', career:a.career||'', lastCompany:a.lastCompany||'', duties:a.duties||'', leaveReason:a.leaveReason||'',
   careerType:a.careerType||'', jobFitCategory:a.jobFitCategory||'', checkNeeds:a.checkNeeds||'', selfIntroKeywords:a.selfIntroKeywords||'',
   interviewDate:a.interviewDate||'', interviewTime:a.interviewTime||'', hireDate:a.hireDate||'',
+    rosterOrderDate:normalizeRosterOrderDate(a.rosterOrderDate), rosterOrder:normalizeRosterOrder(a.rosterOrder),
     finalDecision:a.finalDecision||'', decisionReason:a.decisionReason||'', consult:a.consult||'',
     memo:a.memo||'', employeeId:a.employeeId||'',
     failureReason:a.failureReason||'', withdrawalReason:a.withdrawalReason||'',

@@ -10,7 +10,7 @@ const employeeXlsx=require('../js/employee-master-xlsx-import.js');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.1.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.2.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -450,7 +450,7 @@ async function verifyOwnerVisualDesktopShell(page,label){
   assert.equal(expanded.desktop,true,`${label} 125% 확대에서도 v12 PC 셸을 유지해야 합니다.`);
   assert.ok(Math.abs(expanded.sidebar.width-216)<=1&&Math.abs(expanded.main.left-216)<=1,`${label} 확장 메뉴와 본문 위치 오류: ${JSON.stringify(expanded)}`);
   assert.equal(expanded.sidebar.background,'rgb(255, 255, 255)',`${label} 밝은 PC 메뉴가 어두운 레거시 메뉴로 바뀌면 안 됩니다.`);
-  assert.deepEqual(expanded.brand,['Recruit ERP','v12.1.0'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
+  assert.deepEqual(expanded.brand,['Recruit ERP','v12.2.0'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
   assert.equal(expanded.oldLabels,false,`${label} 중복 영문 업무 라벨이 남아 있습니다.`);
   assert.ok(expanded.overflow<=1,`${label} 확장 메뉴에서 전역 가로 넘침이 있습니다: ${expanded.overflow}`);
   assert.ok(expanded.storage.height<=130,`${label} LOCAL ONLY 상태 안내가 과도한 공간을 차지하면 안 됩니다: ${JSON.stringify(expanded.storage)}`);
@@ -790,6 +790,8 @@ async function verifyRecruiterDailyUsability(page,label,{exerciseQuick=false}={}
   assert.ok(formSizing.optionalCollapsed&&formSizing.statusVisible,`${label} 선택 입력 영역은 접혀도 상태 배지가 보여야 합니다.`);
 
   await page.evaluate(()=>window.setPage('home'));await page.locator('#btnQuickApplicantEntry').click();
+  await page.locator('.applicant-quick-entry-card').waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.activeElement?.id==='quickEntryName');
   const quickBounds=await page.locator('.applicant-quick-entry-card').evaluate(card=>{const rect=card.getBoundingClientRect();return{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:innerWidth,height:innerHeight,active:document.activeElement?.id};});
   assert.ok(quickBounds.left>=-1&&quickBounds.right<=quickBounds.width+1&&quickBounds.top>=-1&&quickBounds.bottom<=quickBounds.height+1&&quickBounds.active==='quickEntryName',`${label} 빠른 등록 팝업 잘림 또는 최초 포커스 오류: ${JSON.stringify(quickBounds)}`);
   await page.screenshot({path:path.join(outputDir,`${label}-quick-entry.png`),fullPage:false});await page.locator('[data-quick-entry-close]').last().click();
@@ -817,6 +819,118 @@ async function verifyRecruiterDailyUsability(page,label,{exerciseQuick=false}={}
     await page.evaluate(()=>{window.save=window.__v115RealSave;delete window.__v115RealSave;delete window.__v115SaveCalls;applicants=window.__v115OriginalApplicants;delete window.__v115OriginalApplicants;delete window.__v115FailureApplicants;delete window.__v115FailureStorage;resetListFiltersToAll();renderAll();});
   }else await page.evaluate(()=>{applicants=window.__v115OriginalApplicants;delete window.__v115OriginalApplicants;resetListFiltersToAll();renderAll();});
 }
+
+async function verifyRosterOrderEditor(page,label,{exercise=false}={}){
+  const date='2026-08-21';
+  const snapshot=await page.evaluate(()=>({applicants:JSON.stringify(applicants),storage:localStorage.getItem('recruit_erp_applicants_stable')}));
+  await page.evaluate(()=>{window.setPage?.('today');document.getElementById('rosterDate').value='2026-08-21';});
+  assert.equal(await page.locator('#rosterOrderEditor').isHidden(),true,`${label} 순서 편집기는 기본적으로 닫혀 있어야 합니다.`);
+  const initialStorage=await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable'));
+
+  for(const count of [0,1,5,6,30,31]){
+    await page.evaluate(({count,date})=>{
+      applicants=Array.from({length:count},(_,index)=>normalize({
+        id:`72000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,
+        name:index===0?'가상으로만검사하는매우긴면접지원자이름':`가상순서면접자${String(index+1).padStart(2,'0')}`,
+        phone:`010-7200-${String(index+1).padStart(4,'0')}`,
+        email:`roster-${index+1}@example.invalid`,status:'면접예정',interviewDate:date,
+        interviewTime:index%7===0?'':index%3===0?'09:00':`${String(8+(index%10)).padStart(2,'0')}:${index%2?'30':'00'}`,
+        createdAt:`2026-08-20T${String(index%24).padStart(2,'0')}:00:00.000Z`,source:'가상채널',memo:'UI 자동검사용 가상 메모'
+      }));
+      renderAll();window.setPage?.('today');document.getElementById('rosterDate').value=date;document.getElementById('btnRosterOrderEdit').focus();window.erpRosterOrderEditor.open(date);
+    },{count,date});
+    await page.locator('#rosterOrderEditor:not([hidden])').waitFor();
+    const state=await page.evaluate(count=>{
+      const modal=document.getElementById('rosterOrderEditor'),dialog=modal.querySelector('.roster-order-editor-dialog'),list=document.getElementById('rosterOrderEditorList'),footer=modal.querySelector('.roster-order-editor-footer');
+      const dialogRect=dialog.getBoundingClientRect(),footerRect=footer.getBoundingClientRect();
+      const rows=[...list.querySelectorAll('.roster-order-editor-row:not(.is-header)')];
+      const controls=[...list.querySelectorAll('input,button,.roster-order-editor-drag')].filter(node=>node.getClientRects().length).map(node=>{const rect=node.getBoundingClientRect(),style=getComputedStyle(node);return{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,height:rect.height,fontSize:parseFloat(style.fontSize)};});
+      const rowBounds=rows.map(row=>{const outer=row.getBoundingClientRect(),children=[...row.children].map(child=>{const rect=child.getBoundingClientRect();return{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom};});return{outer:{left:outer.left,right:outer.right,top:outer.top,bottom:outer.bottom},children};});
+      return {
+        count,renderedRows:rows.length,meta:document.getElementById('rosterOrderEditorCount').textContent,
+        empty:!!list.querySelector('.roster-order-editor-empty'),active:document.activeElement?.id,
+        viewport:{width:innerWidth,height:innerHeight},bodyWidth:document.body.scrollWidth,htmlWidth:document.documentElement.scrollWidth,
+        dialog:{left:dialogRect.left,right:dialogRect.right,top:dialogRect.top,bottom:dialogRect.bottom,clientWidth:dialog.clientWidth,scrollWidth:dialog.scrollWidth},
+        list:{clientWidth:list.clientWidth,scrollWidth:list.scrollWidth,clientHeight:list.clientHeight,scrollHeight:list.scrollHeight},
+        footer:{left:footerRect.left,right:footerRect.right,top:footerRect.top,bottom:footerRect.bottom},controls,rowBounds
+      };
+    },count);
+    assert.equal(state.renderedRows,count,`${label} ${count}명 행 수`);assert.equal(state.meta,`${count}명`);
+    assert.equal(state.empty,count===0,`${label} ${count}명 빈 상태 표시`);
+    assert.ok(state.bodyWidth<=state.viewport.width+1&&state.htmlWidth<=state.viewport.width+1,`${label} ${count}명 전역 가로 넘침: ${JSON.stringify(state)}`);
+    assert.ok(state.dialog.left>=-1&&state.dialog.right<=state.viewport.width+1&&state.dialog.top>=-1&&state.dialog.bottom<=state.viewport.height+1,`${label} ${count}명 편집기 잘림: ${JSON.stringify(state.dialog)}`);
+    assert.ok(state.dialog.scrollWidth<=state.dialog.clientWidth+1&&state.list.scrollWidth<=state.list.clientWidth+1,`${label} ${count}명 패널 가로 넘침: ${JSON.stringify(state.list)}`);
+    assert.ok(state.footer.left>=state.dialog.left-1&&state.footer.right<=state.dialog.right+1&&state.footer.top>=state.dialog.top&&state.footer.bottom<=state.dialog.bottom+1,`${label} ${count}명 footer 가림: ${JSON.stringify(state.footer)}`);
+    assert.ok(state.controls.every(control=>control.height>=37.5&&control.fontSize>=13),`${label} ${count}명 입력·버튼 크기: ${JSON.stringify(state.controls.slice(0,5))}`);
+    assert.ok(state.rowBounds.every(row=>row.children.every(child=>child.left>=row.outer.left-1&&child.right<=row.outer.right+1&&child.top>=row.outer.top-1&&child.bottom<=row.outer.bottom+1)),`${label} ${count}명 행 내부 돌출이 있습니다.`);
+    if(count>=30)assert.ok(state.list.scrollHeight>state.list.clientHeight,`${label} ${count}명은 목록만 세로 스크롤되어야 합니다.`);
+
+    if(count===1){
+      assert.equal(state.active,'btnRosterOrderClose',`${label} 편집기 최초 포커스가 닫기 버튼이어야 합니다.`);
+      await page.keyboard.press('Escape');await page.locator('#rosterOrderEditor').waitFor({state:'hidden'});
+      assert.equal(await page.evaluate(()=>document.activeElement?.id),'btnRosterOrderEdit',`${label} 닫은 뒤 실행 버튼으로 포커스가 돌아가야 합니다.`);
+      await page.evaluate(date=>window.erpRosterOrderEditor.open(date),date);
+      const timeInput=page.locator('#rosterOrderEditorList [data-roster-order-time]').first();await timeInput.fill('11:20');await timeInput.dispatchEvent('change');
+      assert.equal(await page.locator('#rosterOrderEditorStatus').innerText(),'저장되지 않은 변경 있음');
+      await page.screenshot({path:path.join(outputDir,`${label}-roster-order-dirty.png`),fullPage:false});
+    }
+    if(count===5){
+      const before=await page.evaluate(()=>window.erpRosterOrderEditor.state.rows.map(row=>row.id));
+      await page.locator('#rosterOrderEditorList [data-roster-order-action="down"]').first().click();
+      let after=await page.evaluate(()=>window.erpRosterOrderEditor.state.rows.map(row=>row.id));assert.deepEqual(after.slice(0,2),[before[1],before[0]],`${label} 아래 이동 버튼이 같은 순서 초안을 갱신해야 합니다.`);
+      const direct=page.locator(`#rosterOrderEditorList [data-roster-order-number="${before[0]}"]`);await direct.fill('5');await direct.dispatchEvent('change');
+      await page.waitForFunction(id=>window.erpRosterOrderEditor.state.rows.at(-1)?.id===id,before[0]);
+      after=await page.evaluate(()=>window.erpRosterOrderEditor.state.rows.map(row=>row.id));assert.equal(after.at(-1),before[0],`${label} 직접 순번 입력 뒤 연속 순서가 재계산되어야 합니다.`);
+    }
+    if(count===6){
+      const dragResult=await page.evaluate(()=>{
+        const before=window.erpRosterOrderEditor.state.rows.map(row=>row.id),last=before.at(-1),first=before[0],dataTransfer=new DataTransfer();
+        const handle=document.querySelector(`[data-roster-id="${last}"] .roster-order-editor-drag`),target=document.querySelector(`[data-roster-id="${first}"]`);
+        handle.dispatchEvent(new DragEvent('dragstart',{bubbles:true,cancelable:true,dataTransfer}));target.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer}));target.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer}));
+        return{last,after:window.erpRosterOrderEditor.state.rows.map(row=>row.id)};
+      });
+      assert.equal(dragResult.after[0],dragResult.last,`${label} 기본 드래그로 행 순서가 이동해야 합니다.`);
+    }
+    if(count===0)await page.screenshot({path:path.join(outputDir,`${label}-roster-order-empty.png`),fullPage:false});
+    if(count===31)await page.screenshot({path:path.join(outputDir,`${label}-roster-order-31.png`),fullPage:false});
+    await page.evaluate(()=>window.erpRosterOrderEditor.close({force:true,restoreFocus:false}));
+  }
+
+  assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_applicants_stable')),initialStorage,`${label} 열기·이동·시간 입력·취소는 저장소 write 0회여야 합니다.`);
+
+  if(exercise){
+    const result=await page.evaluate(date=>{
+      const originalSave=window.save;window.__rosterOrderUiSaveCalls=0;
+      window.save=function(){window.__rosterOrderUiSaveCalls++;return originalSave();};
+      try{
+        applicants=Array.from({length:6},(_,index)=>normalize({id:`73000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,name:`가상저장면접자${index+1}`,phone:`010-7300-${String(index+1).padStart(4,'0')}`,status:'면접예정',interviewDate:date,interviewTime:`${String(9+index).padStart(2,'0')}:00`,createdAt:`2026-08-20T0${index}:00:00.000Z`}));
+        document.getElementById('rosterDate').value=date;renderAll();window.setPage?.('today');window.erpRosterOrderEditor.open(date);
+        const lastId=window.erpRosterOrderEditor.state.rows.at(-1).id;
+        window.erpRosterOrderEditor.move(lastId,0);window.erpRosterOrderEditor.setTime(lastId,'08:15');
+        const expected=window.erpRosterOrderEditor.state.rows.map(row=>row.id);
+        const ok=window.erpRosterOrderEditor.save();
+        window.erpRosterOrderEditor.close({force:true,restoreFocus:false});
+        applicants=load();window.erpRosterOrderEditor.open(date);
+        const reopened=window.erpRosterOrderEditor.state.rows.map(row=>row.id);
+        const persisted=JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')||'[]').filter(row=>row.interviewDate===date).sort((a,b)=>a.rosterOrder-b.rosterOrder).map(row=>row.id);
+        const backup=window.erpBackupCenter.__test.packageFor(['applicants'],'synthetic roster round-trip');
+        const restored=window.erpBackupCenter.__test.normalizeRows('applicants',JSON.parse(JSON.stringify(backup.data.applicants)));
+        const roundTrip=restored.filter(row=>row.interviewDate===date).sort((a,b)=>a.rosterOrder-b.rosterOrder).map(row=>[row.id,row.rosterOrderDate,row.rosterOrder]);
+        window.erpRosterOrderEditor.close({force:true,restoreFocus:false});
+        applicants.push(normalize({id:'73000000-0000-4000-8000-999999999999',name:'가상신규면접자',phone:'010-7300-9999',status:'면접예정',interviewDate:date,interviewTime:'07:00',createdAt:'2026-08-21T00:00:00.000Z'}));
+        const withNew=window.erpRosterOrderEditor.orderedApplicants(date,applicants).map(row=>row.id);
+        return{ok,calls:window.__rosterOrderUiSaveCalls,expected,reopened,persisted,roundTrip,newLast:withNew.at(-1),newId:'73000000-0000-4000-8000-999999999999'};
+      }finally{window.save=originalSave;delete window.__rosterOrderUiSaveCalls;}
+    },date);
+    assert.equal(result.ok,true);assert.equal(result.calls,1,'UI 성공 저장은 save 1회여야 합니다.');assert.deepEqual(result.reopened,result.expected);assert.deepEqual(result.persisted,result.expected);assert.deepEqual(result.roundTrip.map(row=>row[0]),result.expected);assert.ok(result.roundTrip.every((row,index)=>row[1]===date&&row[2]===index+1),'백업·내보내기·가져오기·normalize 왕복에서 순서 필드가 유지되어야 합니다.');assert.equal(result.newLast,result.newId,'저장 뒤 신규 면접자는 더 빠른 시간이어도 맨 아래여야 합니다.');
+  }
+
+  await page.evaluate(snapshot=>{
+    if(snapshot.storage===null)localStorage.removeItem('recruit_erp_applicants_stable');else localStorage.setItem('recruit_erp_applicants_stable',snapshot.storage);
+    applicants=JSON.parse(snapshot.applicants);renderAll();window.setPage?.('today');
+  },snapshot);
+}
+
 async function verifyProductionGateContentSafety(page,label){
   await page.evaluate(()=>{
     window.__v1151Snapshot={
@@ -871,8 +985,8 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v12.1.0');
-      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.1.0','화면은 단일 현재 버전 소스를 사용해야 합니다.');
+      assert.equal(await page.title(),'채용관리 시스템 v12.2.0');
+      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.2.0','화면은 단일 현재 버전 소스를 사용해야 합니다.');
       const localOnlyState=await page.evaluate(()=>({
         active:document.querySelector('.page.active')?.id,
         localOnly:window.erpAppVersion?.LOCAL_ONLY===true&&window.erpLocalOnlyRuntime?.enabled===true,
@@ -920,6 +1034,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         await page.screenshot({path:path.join(outputDir,'1366x768-stats-toolbar.png'),fullPage:false});
       }
       await verifyRecruiterDailyUsability(page,viewport.name,{exerciseQuick:viewport.width===1366});
+      if([1280,1366,1440,1920].includes(viewport.width))await verifyRosterOrderEditor(page,viewport.name,{exercise:viewport.width===1366});
       if(viewport.width===1366)await verifyProductionGateContentSafety(page,viewport.name);
       if(viewport.width===390||viewport.width===1366){
         await verifyHireWaitingGrid(page,viewport.name,{mobile:viewport.width===390});
@@ -951,7 +1066,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         await page.evaluate(()=>window.setPage?.('productionReadiness'));await page.waitForTimeout(120);
         const readinessState=await page.evaluate(()=>({automatic:document.querySelectorAll('#productionReadiness .readiness-check').length,manual:document.querySelectorAll('#productionReadiness [data-readiness-manual]').length,text:document.querySelector('#productionReadiness')?.innerText||'',overflow:document.querySelector('#productionReadiness').scrollWidth-document.querySelector('#productionReadiness').clientWidth}));
         assert.deepEqual({automatic:readinessState.automatic,manual:readinessState.manual},{automatic:8,manual:7});assert.ok(readinessState.overflow<=1,`${viewport.name} 운영 준비 화면 가로 넘침: ${JSON.stringify(readinessState)}`);assert.ok(!/000000-0000000|010-0000-0001/.test(readinessState.text),'운영 준비 화면에 가상 개인정보 원문도 표시하면 안 됩니다.');
-        assert.ok(readinessState.text.includes('v12.1.0 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.'),'운영 준비 화면이 v12.1.0 선택적 캐시 일치 결과를 보여야 합니다.');
+        assert.ok(readinessState.text.includes('v12.2.0 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.'),'운영 준비 화면이 v12.2.0 선택적 캐시 일치 결과를 보여야 합니다.');
         assert.ok(readinessState.text.includes('LOCAL ONLY')&&!/Supabase|클라우드 검증/i.test(readinessState.text),'운영 준비 화면은 LOCAL ONLY 독립 상태만 보여야 합니다.');
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-production-readiness.png`),fullPage:true});
       }
@@ -1065,6 +1180,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     await verifyApplicantWorksheet(zoomPage,'1366x768-zoom125',{exercise:true});
     await verifyApplicantMyViews(zoomPage,'1366x768-zoom125',{exercise:true});
     await verifyUsabilityPolish(zoomPage,'1366x768-zoom125');
+    await verifyRosterOrderEditor(zoomPage,'1366x768-zoom125');
     for(const screen of ['home','applicants','form','today','onboarding','storagePerformance','productionReadiness']){
       await zoomPage.evaluate(id=>window.setPage?.(id),screen);await zoomPage.waitForTimeout(50);
       const layout=await zoomPage.evaluate(()=>({screen:document.querySelector('.page.active')?.id,width:innerWidth,body:document.body.scrollWidth,html:document.documentElement.scrollWidth}));
