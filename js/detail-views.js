@@ -263,11 +263,8 @@ function updateFormMode(){
   if($('submitBtn')) $('submitBtn').textContent = editing ? '수정 저장' : '지원자 등록';
 }
 
-function updateScorePreview(){
-  if(!$('scorePreview')) return;
+function updateApplicantFormDerivedFields(){
   if(!$('age').value && $('birthYear').value) $('age').value=calcAge($('birthYear').value);
-  const data=getForm(), sc=deriveScores(data);
-  $('scorePreview').innerHTML=`검토점수 미리보기: <b>${sc.total}점 · ${grade(sc.total)}</b><div class="score-line"><span class="score-pill">전공 ${sc.major}/25</span><span class="score-pill">경력 ${sc.career}/35</span><span class="score-pill">자격 ${sc.cert}/20</span><span class="score-pill">현장 ${sc.field}/20</span></div>`;
 }
 function normalizePhone(v){ return String(v||'').replace(/\D/g,''); }
 function checkDuplicate(){
@@ -299,14 +296,13 @@ function download(name, content, type='text/plain;charset=utf-8'){
 }
 function csv(){
   const headers=['지원날짜','지원경로','연락상태','지원근무지','성명','연락처','이메일','성별','생년월일','연령','거주지역',
-    '출근방법','학력구분','최종학교','전공/학과','외국어/기타자격','경력구분','직무적합분류','확인필요사항','자소서키워드','자격증','경력키워드','면접날짜',
-    '면접시간','입사예정일','상담내용','판정/메모/다음액션','전공적합도','경력적합도','자격적합도','현장적응도','총점','추천등급','다음액션'];
-  const lines=[headers,...applicants.map(a=>{ const sc=deriveScores(a); return [a.applyDate,
+    '출근방법','학력구분','최종학교','전공/학과','외국어/기타자격','지원구분','확인필요사항','자소서키워드','자격증','경력사항','면접날짜',
+    '면접시간','입사예정일','상담내용','메모','면접결과','결과·검토메모','다음액션'];
+  const lines=[headers,...applicants.map(a=>[a.applyDate,
     a.source,a.status,a.workplace,a.name,a.phone,a.email,a.gender,a.birthYear,a.age,a.region,
-    dormLabel(a),a.education,a.school,a.major,a.languageEtc,a.careerType,displayCategory(a),displayCheckNeeds(a.checkNeeds),
-    a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.consult,[a.memo,
-    a.decisionReason].filter(Boolean).join(' / '),sc.major,sc.career,sc.cert,sc.field,sc.total,
-    grade(sc.total),nextAction(a)]; })].map(row=>row.map(v=>window.erpSafety.csvCell(v,true)).join(','));
+    dormLabel(a),a.education,a.school,a.major,a.languageEtc,a.careerType,displayCheckNeeds(a.checkNeeds),
+    a.selfIntroKeywords,a.certs,a.career,a.interviewDate,a.interviewTime,a.hireDate,a.consult,a.memo,
+    a.finalDecision,a.decisionReason,nextAction(a)])].map(row=>row.map(v=>window.erpSafety.csvCell(v,true)).join(','));
   download(`지원자명단_${today()}.csv`,'\ufeff'+lines.join('\n'),'text/csv;charset=utf-8');
 }
 function jsonBackup(){ localStorage.setItem(BACKUP_KEY, today()); download(`resume_management_backup_${today()}.json`,JSON.stringify(applicants,null,2),'application/json'); renderAll(); }

@@ -1,4 +1,4 @@
-/* Recruit ERP v12.0.3 LOCAL ONLY production readiness. */
+/* Recruit ERP v12.1.0 LOCAL ONLY production readiness. */
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
@@ -6,8 +6,8 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
 
-  const VERSION='12.0.3';
-  const UNCHANGED_ASSET_VERSION='12.0.2';
+  const VERSION='12.1.0';
+  const UNCHANGED_ASSET_VERSIONS=new Set(['12.0.2','12.0.3']);
   const STATE_KEY='recruit_erp_production_readiness_v1100';
   const STATE_SCHEMA=3;
   const VALID_DAYS=30;
@@ -95,12 +95,12 @@
     try{
       const cryptoApi=root.crypto;
       if(!cryptoApi?.subtle)return false;
-      const bytes=new TextEncoder().encode('Recruit ERP v12.0.3 synthetic readiness');
+      const bytes=new TextEncoder().encode('Recruit ERP v12.1.0 synthetic readiness');
       const key=await cryptoApi.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
       const iv=cryptoApi.getRandomValues(new Uint8Array(12));
       const cipher=await cryptoApi.subtle.encrypt({name:'AES-GCM',iv},key,bytes);
       const plain=await cryptoApi.subtle.decrypt({name:'AES-GCM',iv},key,cipher);
-      return new TextDecoder().decode(plain)==='Recruit ERP v12.0.3 synthetic readiness';
+      return new TextDecoder().decode(plain)==='Recruit ERP v12.1.0 synthetic readiness';
     }catch{return false;}
   }
   function loadedAssetVersions(){
@@ -112,7 +112,7 @@
   }
   async function automaticChecks(evidence=context()){
     const versions=loadedAssetVersions();
-    const versionMatch=!versions.length||versions.every(value=>value===VERSION||value===UNCHANGED_ASSET_VERSION);
+    const versionMatch=!versions.length||versions.every(value=>value===VERSION||UNCHANGED_ASSET_VERSIONS.has(value));
     const encryptionOk=await encryptionRoundTrip();
     const localOnlyRuntime=root.erpRuntimeMode==='local-only';
     const auditReady=!!(root.erpAudit?.recordEvent||root.erpAudit?.record);
@@ -120,7 +120,7 @@
     const storageReady=!!root.erpStoragePerformance;
     const permissionsReady=evidence.permissionsModuleReady&&['local_admin','admin','recruiter','viewer','legacy_admin'].includes(evidence.role);
     return [
-      {id:'version',testType:'기능 시험',label:'v12.0.3 버전 일치',status:versionMatch?'pass':'fail',detail:versionMatch?'v12.0.3 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.':'정적 파일 버전이 일치하지 않습니다.'},
+      {id:'version',testType:'기능 시험',label:'v12.1.0 버전 일치',status:versionMatch?'pass':'fail',detail:versionMatch?'v12.1.0 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.':'정적 파일 버전이 일치하지 않습니다.'},
       {id:'factory_reset',testType:'기능 시험',label:'공장 초기화 완료',status:evidence.factoryResetReady?'pass':'fail',detail:evidence.factoryResetReady?'승인된 브라우저 저장영역 초기화가 완료됐습니다.':'브라우저 공장 초기화가 완료되지 않았습니다.'},
       {id:'local_only',testType:'구조 검사',label:'LOCAL ONLY 독립 실행',status:localOnlyRuntime?'pass':'fail',detail:localOnlyRuntime?'원격 인증·DB 클라이언트 없이 실행 중입니다.':'원격 데이터 계층 흔적을 확인해야 합니다.'},
       {id:'permissions',testType:'모듈 확인',label:'로컬 권한 보호',status:permissionsReady?'pass':'fail',detail:permissionsReady?'로컬 역할표와 화면 보호 모듈을 확인했습니다.':'권한 보호 모듈을 불러오지 못했습니다.'},

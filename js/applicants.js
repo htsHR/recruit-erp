@@ -20,40 +20,6 @@ function formatPhoneDisplay(v){
   if(digits.length === 11) return `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7,11)}`;
   return digits;
 }
-function textOf(a){
-  return `${a.dormUse||''} ${a.education||''} ${a.finalEducation||''} ${a.school||''} ${a.major||''}
-    ${a.gradePoint||''} ${a.languageEtc||''} ${a.certs||''} ${a.career||''} ${a.lastCompany||''} ${a.duties||''}
-    ${a.leaveReason||''} ${a.careerType||''} ${a.jobFitCategory||''} ${a.consult||''} ${a.memo||''}
-    ${a.decisionReason||''} ${a.selfIntroKeywords||''}`.toLowerCase();
-  }
-function deriveScores(a){
-  const text=textOf(a);
-  let major=0, career=0, cert=0, field=0;
-  if(/반도체|전기|전자|기계|자동화|메카|설비|정비|금형|항공정비|컴퓨터소프트웨어|융합소프트웨어|건축공학/.test(text)) major += 15;
-  if(/반도체장비|전기에너지|전기전자|전기공학|기계자동차|반도체과학|전기전공|반도체장비설계|항공정비전공/.test(text)) major += 10;
-  if(/pm|예방정비|설비|장비|maintenance|field|fe|셋업|set.?up|반도체|fab|클린룸|방진복|plc|drive|analyzer|bhs|정비|유지보수|기술지원|설비이상대응|전기정비|시설운영|출입제어/.test(text)) career += 25;
-  if(/pm경력|pm 직접|반도체 장비|장비 셋업|전기정비|시설운영|포스코|에스원|에이치앤에스테크|현장|경력|재직중/.test(text)) career += 10;
-  if(/전기기능사|전기산업기사|전기기사|산업안전|기계|설비보전|반도체설비보전|항공기정비|지게차|굴착기|기능사|산업기사|기사|운전면허|소방안전|컴활|adsp|1종보통/.test(text)) cert += 15;
-  if(/지게차|굴착기|운전면허|1종|기능사|기사|산업기사/.test(text)) cert += 5;
-  if(/교대|군|정비병|차량정비|안전|책임|성실|소통|인수인계|점검|현장|방진복|체력|보안|규정|매뉴얼|문제해결|트러블|개선|군입대|병력필/.test(text)) field += 15;
-  if(a.name && a.phone && a.workplace && a.applyDate) field += 5;
-  major=Math.min(major,25); career=Math.min(career,35); cert=Math.min(cert,20); field=Math.min(field,20);
-  return {major, career, cert, field, total:major+career+cert+field};
-}
-function calcScore(a){ return deriveScores(a).total; }
-function grade(score){ if(score>=80) return '우선검토'; if(score>=65) return '검토가능'; if(score>=45) return '추가확인'; return '조건미흡 가능성'; }
-function displayCategory(a){
-  if(a.jobFitCategory) return a.jobFitCategory;
-  const text=textOf(a);
-  if(/pm|예방정비/.test(text) && /반도체|설비|장비/.test(text)) return 'PM 직접경력자';
-  if(/반도체.*(장비|셋업|fe|field)|장비.*셋업|fe|field/.test(text)) return '반도체 장비/FE 경험자';
-  if(/전기정비|plc|drive|설비.*정비|유지보수|기술지원/.test(text)) return '전기·설비 정비 경험자';
-  if(/기계|금형|차량정비|항공정비|선반|밀링/.test(text)) return '기계·금형·차량정비 경험자';
-  if(/시설운영|설비이상대응|출입제어/.test(text)) return '시설운영/설비이상대응 경험자';
-  if(/전기|전자|기계|반도체|자동화|소프트웨어/.test(text)) return '관련전공 신입';
-  if(/교대|현장|군|보안|정비병|안전/.test(text)) return '현장근무 적응형';
-  return '확인필요';
-}
 function badgeClass(status){
   if(['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절'].includes(status)) return 'bad';
   if(status==='서류탈락') return 'neutral';
@@ -79,18 +45,12 @@ function workplaceBadgeClass(value){
   if(!workplace) return 'workplace-empty';
   return 'workplace-other';
 }
-function decisionToneClass(a){
-  const decision=String(a?.finalDecision||'').trim();
-  if(decision==='합격') return 'decision-good';
-  if(['불합격','입사포기','입사철회','철회'].includes(decision) || isFinished(a)) return 'decision-finished';
-  return 'decision-neutral';
-}
 function nextAction(a){
   if(!a.status || a.status==='서류검토') return '서류 검토·첫 연락';
   if(a.status==='서류합격') return '면접 일정 조율';
   if(a.status==='부재중') return '재연락';
   if(a.status==='면접예정') return '면접 일정 확인';
-  if(a.status==='면접완료') return a.finalDecision ? a.finalDecision : '판정 입력';
+  if(a.status==='면접완료') return a.finalDecision ? a.finalDecision : '결과 입력';
   if(a.status==='다음면접') return '다음 면접 조율';
   if(a.status==='출근') return '출근 완료';
   if(a.status==='입사예정') return '입사 안내';
@@ -116,7 +76,10 @@ function isInterviewDateMeaningful(a){
 function isHireDateMeaningful(a){ return !!a?.hireDate && ['입사예정','출근'].includes(normalizeStatus(a?.status)); }
 function hasFinalDecision(a){ return !!String(a?.finalDecision || '').trim(); }
 function isDecisionNeeded(a){ return isActive(a) && a.status === '면접완료' && !hasFinalDecision(a); }
-function finalDecisionOf(a){ return a.finalDecision || grade(calcScore(a)); }
+function findApplicantPhoneEmailDuplicate(data,excludeId=''){
+  const phone=normalizePhone(data?.phone),email=String(data?.email||'').trim();
+  return applicants.find(a=>String(a.id)!==String(excludeId)&&((phone&&phone.length>=8&&normalizePhone(a.phone)===phone)||(email&&String(a.email||'').trim()===email)));
+}
 
 function datePlus(days){
   const d = new Date(today() + 'T00:00:00');
@@ -150,7 +113,7 @@ function countText(n){ return `${n}명`; }
 function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 
 function setPage(page){
-  if(page!=='applicants'&&applicantQuickDetailIsOpen())closeApplicantQuickDetail({restoreFocus:false});
+  if(page!=='applicants'&&applicantQuickDetailIsOpen()&&closeApplicantQuickDetail({restoreFocus:false})===false)return false;
   document.body.dataset.activePage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
@@ -266,13 +229,13 @@ function miniStepperHtml(a){
   return `<div class="mini-stepper" aria-hidden="true">${dots}</div>`;
 }
 function card(a){
-  const score=calcScore(a), decision=finalDecisionOf(a), dorm=dormLabel(a);
+  const dorm=dormLabel(a);
   const schedule=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ');
   const scheduleText=schedule ? `면접 ${schedule} · ` : '';
   return `<div class="person-card compact-person-card ${statusToneClass(a)}">
     <div><strong><span class="person-name ${genderClass(a)}">${esc(a.name||'이름없음')}</span>
     <span class="badge ${badgeClass(a.status)}">${esc(a.status||'미입력')}</span></strong>
-    <small>${esc(scheduleText)}${esc(a.workplace||'근무지 미입력')} · ${esc(dorm)} · ${esc(displayCategory(a))} · ${score}점/${esc(decision)}</small>
+    <small>${esc(scheduleText)}${esc(a.workplace||'근무지 미입력')} · ${esc(dorm)}${a.school?` · ${esc(a.school)}`:''}</small>
     ${miniStepperHtml(a)}</div>
     <button class="mini" data-erp-handler="editApplicant('${a.id}')">수정</button></div>`;
 }
@@ -326,11 +289,10 @@ function filtered(){
   const todayActionIds=currentFilter==='todayAction'?new Set((window.dailyWorkflowSelection?.().rows||[]).map(row=>String(row.applicant.id))):null;
   let rows = applicants.filter(a=>{
     const workplaceOk=currentWorkplace==='all'||(currentWorkplace==='기타'?!['천안','평택'].includes(a.workplace):a.workplace===currentWorkplace);
-    const text=Object.values(a).join(' ').toLowerCase();
+    const text=[a.name,a.phone,a.source].join(' ').toLowerCase();
     const searchOk=!currentSearch||text.includes(currentSearch.toLowerCase());
     const schoolOk=!currentSchoolFilterId||a.schoolId===currentSchoolFilterId;
     let filterOk=true;
-    if(currentFilter==='priority') filterOk=finalDecisionOf(a)==='우선검토';
     if(currentFilter==='contact') filterOk=['서류검토','부재중'].includes(a.status);
     if(currentFilter==='docpass') filterOk=a.status==='서류합격';
     if(currentFilter==='interview') filterOk=['면접예정','다음면접'].includes(a.status);
@@ -358,7 +320,6 @@ function filtered(){
       const bv=(b.interviewDate||'9999-12-31')+' '+(b.interviewTime||'23:59');
       return av.localeCompare(bv);
     }
-    if(currentSort==='scoreDesc') return calcScore(b)-calcScore(a);
     if(currentSort==='nameAsc') return (a.name||'').localeCompare(b.name||'', 'ko');
     return (b.createdAt||'').localeCompare(a.createdAt||'');
   });
@@ -437,7 +398,8 @@ window.goApplicantPage=goApplicantPage;
 window.changeApplicantPageSize=changeApplicantPageSize;
 
 const APPLICANT_QUICK_DETAIL_EMPTY='미입력';
-const applicantQuickDetailState={id:'',trigger:null,context:null};
+const APPLICANT_QUICK_EDIT_FIELDS=Object.freeze(['name','phone','email','region','workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo']);
+const applicantQuickDetailState={id:'',trigger:null,context:null,mode:'view',baseline:'',feedback:''};
 function applicantQuickDetailIsOpen(){return !!document.getElementById('applicantQuickDetail')?.classList.contains('is-open');}
 function applicantQuickDetailCanRead(){return !window.erpPermissions||window.erpPermissions.has('applicant.read');}
 function applicantQuickDetailCanWrite(){return !window.erpPermissions||window.erpPermissions.has('applicant.write');}
@@ -456,7 +418,7 @@ function applicantQuickDetailDayStatus(value){
   if(days>0)return{text:`D-${days}`,tone:'is-upcoming'};
   return{text:`${Math.abs(days)}일 경과 · 확인 필요`,tone:'is-overdue'};
 }
-function applicantQuickDetailHistoryLabel(type){return({status:'상태·사유',manager:'담당자',contact:'연락',schedule:'일정',memo:'메모',reason:'사유',created:'등록'})[type]||'진행';}
+function applicantQuickDetailHistoryLabel(type){return({status:'상태·사유',manager:'과거 담당자 기록',contact:'연락',schedule:'일정',memo:'메모',reason:'사유',created:'등록'})[type]||'진행';}
 function applicantQuickDetailLatestHistory(applicant){
   const rows=Array.isArray(applicant.progressHistory)?[...applicant.progressHistory]:[];
   return rows.sort((left,right)=>String(right?.createdAt||'').localeCompare(String(left?.createdAt||'')))[0]||null;
@@ -466,17 +428,51 @@ function applicantQuickDetailNextAction(applicant){
   const historyDate=String(history?.createdAt||'').slice(0,10)||'기록 없음',historyType=history?applicantQuickDetailHistoryLabel(history.type):'기록 없음',historySummary=history?(history.summary||history.title||history.detail||'기록 없음'):'기록 없음';
   return `<section class="applicant-quick-detail-section applicant-quick-detail-next-action" aria-label="다음 액션 요약"><h4>다음 액션</h4><div class="applicant-quick-detail-action-grid"><div><span>마지막 연락일</span><strong class="${last.empty?'is-empty':''}">${esc(last.text)}</strong></div><div><span>다음 연락 예정일</span><strong class="${next.empty?'is-empty':''}">${esc(next.text)}</strong></div><div class="${day.tone}"><span>처리 상태</span><strong>${esc(day.text)}</strong></div></div><div class="applicant-quick-detail-latest-history"><span>최근 진행 이력</span><strong>${esc(historyDate)} · ${esc(historyType)}</strong><p>${esc(historySummary)}</p></div></section>`;
 }
+function applicantQuickEditOption(value,label,current){return `<option value="${esc(value)}" ${String(value)===String(current||'')?'selected':''}>${esc(label)}</option>`;}
+function applicantQuickEditOptions(values,current,{empty='선택'}={}){return applicantQuickEditOption('',empty,current)+values.map(value=>applicantQuickEditOption(value,value,current)).join('');}
+function applicantQuickEditHtml(applicant){
+  const workplaceValues=[...new Set(['천안','평택','기타',applicant.workplace].filter(Boolean))];
+  return `<form class="applicant-quick-edit-form" id="applicantQuickEditForm" novalidate>
+    <div class="applicant-quick-edit-grid">
+      <label>성명<input data-quick-field="name" required maxlength="80" value="${esc(applicant.name||'')}"></label>
+      <label>연락처<input data-quick-field="phone" inputmode="tel" maxlength="40" value="${esc(applicant.phone||'')}"></label>
+      <label class="is-wide">이메일<input data-quick-field="email" type="email" maxlength="160" value="${esc(applicant.email||'')}"></label>
+      <label>지역<input data-quick-field="region" maxlength="100" value="${esc(applicant.region||'')}"></label>
+      <label>지원근무지<select data-quick-field="workplace">${applicantQuickEditOptions(workplaceValues,applicant.workplace)}</select></label>
+      <label>현재 단계<select data-quick-field="status">${statusOptionsHtml(applicant.status)}</select></label>
+      <label>면접날짜<input data-quick-field="interviewDate" type="date" value="${esc(applicant.interviewDate||'')}"></label>
+      <label>면접시간<input data-quick-field="interviewTime" type="time" value="${esc(applicant.interviewTime||'')}"></label>
+      <label>입사날짜<input data-quick-field="hireDate" type="date" value="${esc(applicant.hireDate||'')}"></label>
+      <label>지원경로<input data-quick-field="source" maxlength="160" value="${esc(applicant.source||'')}"></label>
+      <label>지원구분<select data-quick-field="careerType">${applicantQuickEditOptions(['신입','경력'],applicant.careerType)}</select></label>
+      <label>출근방법<select data-quick-field="dormUse">${applicantQuickEditOptions(['기숙사','출퇴근','확인필요'],applicant.dormUse)}</select></label>
+      <label class="is-wide">메모<textarea data-quick-field="memo" rows="6" maxlength="5000">${esc(applicant.memo||'')}</textarea></label>
+    </div>
+    <p class="applicant-quick-edit-feedback ${applicantQuickDetailState.feedback?'is-error':''}" id="applicantQuickEditFeedback" role="status" aria-live="polite">${esc(applicantQuickDetailState.feedback)}</p>
+  </form>`;
+}
+function applicantQuickEditValues(){
+  const form=document.getElementById('applicantQuickEditForm'),values={};
+  APPLICANT_QUICK_EDIT_FIELDS.forEach(field=>{values[field]=String(form?.querySelector(`[data-quick-field="${field}"]`)?.value||'').trim();});
+  values.phone=formatPhoneDisplay(values.phone);values.status=normalizeStatus(values.status);values.dormUse=normalizeDorm(values.dormUse);return values;
+}
+function applicantQuickEditSignature(values=applicantQuickEditValues()){return JSON.stringify(APPLICANT_QUICK_EDIT_FIELDS.map(field=>values[field]||''));}
+function applicantQuickDetailIsDirty(){return applicantQuickDetailState.mode==='edit'&&!!applicantQuickDetailState.baseline&&applicantQuickEditSignature()!==applicantQuickDetailState.baseline;}
+function applicantQuickDetailConfirmDiscard(){return !applicantQuickDetailIsDirty()||confirm('빠른 수정 중인 내용이 저장되지 않았습니다. 이동할까요?');}
 function ensureApplicantQuickDetailUi(){
   if(document.getElementById('applicantQuickDetail'))return;
   const shell=document.createElement('div');shell.id='applicantQuickDetail';shell.className='applicant-quick-detail';shell.setAttribute('aria-hidden','true');
-  shell.innerHTML='<div class="applicant-quick-detail-backdrop" id="applicantQuickDetailBackdrop"></div><section class="applicant-quick-detail-panel" role="dialog" aria-modal="true" aria-labelledby="applicantQuickDetailTitle" aria-describedby="applicantQuickDetailDescription"><p class="applicant-quick-detail-sr" id="applicantQuickDetailDescription">현재 검색과 정렬 결과에서 지원자 핵심정보를 읽기 전용으로 확인합니다.</p><header class="applicant-quick-detail-header"><div class="applicant-quick-detail-heading"><div><p class="eyebrow">핵심 정보 미리보기</p><h3 id="applicantQuickDetailTitle">지원자 빠른 보기</h3><p class="applicant-quick-detail-position" id="applicantQuickDetailPosition" aria-live="polite"></p></div><button class="applicant-quick-detail-close" id="btnApplicantQuickDetailClose" type="button" aria-label="지원자 빠른 보기 닫기">×</button></div><div class="applicant-quick-detail-navigation" aria-label="현재 검색 결과 안에서 이동"><button class="ghost" id="btnApplicantQuickDetailPrevious" type="button">← 이전</button><button class="ghost" id="btnApplicantQuickDetailNext" type="button">다음 →</button></div></header><div class="applicant-quick-detail-body" id="applicantQuickDetailBody"></div><footer class="applicant-quick-detail-footer"><button class="ghost" id="btnApplicantQuickDetailFull" type="button">전체 상세보기</button><button class="primary" id="btnApplicantQuickDetailEdit" type="button" data-required-permission="applicant.write">다음 조치</button></footer></section>';
+  shell.innerHTML='<div class="applicant-quick-detail-backdrop" id="applicantQuickDetailBackdrop"></div><section class="applicant-quick-detail-panel" role="dialog" aria-modal="true" aria-labelledby="applicantQuickDetailTitle" aria-describedby="applicantQuickDetailDescription"><p class="applicant-quick-detail-sr" id="applicantQuickDetailDescription">현재 검색과 정렬 결과에서 지원자 정보를 확인하고 허용된 기본 항목만 빠르게 수정합니다.</p><header class="applicant-quick-detail-header"><div class="applicant-quick-detail-heading"><div><p class="eyebrow" id="applicantQuickDetailEyebrow">핵심 정보 미리보기</p><h3 id="applicantQuickDetailTitle">지원자 빠른 보기</h3><p class="applicant-quick-detail-position" id="applicantQuickDetailPosition" aria-live="polite"></p></div><button class="applicant-quick-detail-close" id="btnApplicantQuickDetailClose" type="button" aria-label="지원자 빠른 보기 닫기">×</button></div><div class="applicant-quick-detail-navigation" aria-label="현재 검색 결과 안에서 이동"><button class="ghost" id="btnApplicantQuickDetailPrevious" type="button">← 이전</button><button class="ghost" id="btnApplicantQuickDetailNext" type="button">다음 →</button></div></header><div class="applicant-quick-detail-body" id="applicantQuickDetailBody"></div><footer class="applicant-quick-detail-footer"><button class="ghost" id="btnApplicantQuickDetailFull" type="button">전체 상세보기</button><button class="ghost" id="btnApplicantQuickDetailCancel" type="button" hidden>취소</button><button class="primary" id="btnApplicantQuickDetailEdit" type="button" data-required-permission="applicant.write">수정</button><button class="primary" id="btnApplicantQuickDetailSave" type="button" data-required-permission="applicant.write" hidden>저장</button></footer></section>';
   document.body.appendChild(shell);
   document.getElementById('applicantQuickDetailBackdrop')?.addEventListener('click',()=>closeApplicantQuickDetail());
   document.getElementById('btnApplicantQuickDetailClose')?.addEventListener('click',()=>closeApplicantQuickDetail());
   document.getElementById('btnApplicantQuickDetailPrevious')?.addEventListener('click',()=>moveApplicantQuickDetail(-1));
   document.getElementById('btnApplicantQuickDetailNext')?.addEventListener('click',()=>moveApplicantQuickDetail(1));
   document.getElementById('btnApplicantQuickDetailFull')?.addEventListener('click',openApplicantQuickDetailFull);
-  document.getElementById('btnApplicantQuickDetailEdit')?.addEventListener('click',editApplicantFromQuickDetail);
+  document.getElementById('btnApplicantQuickDetailEdit')?.addEventListener('click',startApplicantQuickEdit);
+  document.getElementById('btnApplicantQuickDetailCancel')?.addEventListener('click',cancelApplicantQuickEdit);
+  document.getElementById('btnApplicantQuickDetailSave')?.addEventListener('click',saveApplicantQuickEdit);
+  shell.addEventListener('submit',event=>{if(event.target?.id==='applicantQuickEditForm'){event.preventDefault();saveApplicantQuickEdit();}});
   shell.addEventListener('keydown',applicantQuickDetailKeydown);
 }
 function applicantQuickDetailRow(id){return [...document.querySelectorAll('#applicantTbody .applicant-row')].find(row=>String(row.dataset.applicantId)===String(id))||null;}
@@ -498,26 +494,31 @@ function applicantQuickDetailMarkSelected(){
 function renderApplicantQuickDetail(){
   if(!applicantQuickDetailIsOpen())return false;
   const rows=filtered(),index=rows.findIndex(row=>String(row.id)===String(applicantQuickDetailState.id));
-  if(index<0){closeApplicantQuickDetail({restoreFocus:false});return false;}
-  const applicant=rows[index],name=applicantQuickDetailValue(applicant.name),status=applicantQuickDetailValue(normalizeStatus(applicant.status)),workplace=applicantQuickDetailValue(applicant.workplace);
-  const managerMap=window.erpUx12?.managerAssignments?.()||{},posting=window.erpUx12?.postingOf?.(applicant)||'',manager=window.erpUx12?.managerOf?.(applicant,managerMap)||applicant.manager||'',nextSchedule=window.erpUx12?.scheduleOf?.(applicant)||{label:'일정',value:[applicant.interviewDate,applicant.interviewTime].filter(Boolean).join(' ')||applicant.hireDate||applicant.nextContactDate||'미정'};
-  const evaluation=`${finalDecisionOf(applicant)} · ${calcScore(applicant)}점`;
-  const body=document.getElementById('applicantQuickDetailBody'),position=document.getElementById('applicantQuickDetailPosition');
-  if(position)position.textContent=`검색 결과 ${index+1} / ${rows.length} · 읽기 전용`;
-  if(body)body.innerHTML=`<div class="applicant-quick-detail-summary"><div><h4>${esc(name.text)}</h4><p>${esc(posting||'지원 공고 미연결')}</p></div><div class="applicant-quick-detail-badges"><span>${esc(status.text)}</span><span>${esc(workplace.text)}</span></div></div><section class="applicant-quick-detail-priority" aria-label="지원자 핵심 정보"><div><span>연락처</span><strong>${esc(applicant.phone||APPLICANT_QUICK_DETAIL_EMPTY)}</strong></div><div><span>학교</span><strong>${esc(applicant.school||APPLICANT_QUICK_DETAIL_EMPTY)}</strong></div><div><span>${esc(nextSchedule.label||'다음 일정')}</span><strong>${esc(nextSchedule.value||'미정')}</strong></div><div><span>담당자</span><strong>${esc(manager||'미지정')}</strong></div><div><span>평가 요약</span><strong>${esc(evaluation)}</strong></div></section>${applicantQuickDetailNextAction(applicant)}${applicantQuickDetailSection('연락·지원',[applicantQuickDetailField('이메일',applicant.email),applicantQuickDetailField('지역',applicant.region),applicantQuickDetailField('지원일',applicant.applyDate),applicantQuickDetailField('지원경로',applicant.source),applicantQuickDetailField('경력구분',applicant.careerType)])}${applicantQuickDetailSection('일정·근무',[applicantQuickDetailField('면접일시',[applicant.interviewDate,applicant.interviewTime].filter(Boolean).join(' ')),applicantQuickDetailField('입사예정일',applicant.hireDate),applicantQuickDetailField('출근방법',applicant.dormUse||applicant.commuteMethod)])}${applicantQuickDetailSection('학력',[applicantQuickDetailField('최종학력',applicant.education||applicant.finalEducation),applicantQuickDetailField('전공',applicant.major),applicantQuickDetailField('학점',applicant.gradePoint)])}${applicantQuickDetailSection('경력·검토',[applicantQuickDetailField('경력사항',applicant.career,{wide:true}),applicantQuickDetailField('최근 회사',applicant.lastCompany),applicantQuickDetailField('담당업무',applicant.duties),applicantQuickDetailField('자격증',applicant.certs,{wide:true}),applicantQuickDetailField('상담내용',applicant.consult,{wide:true})])}${applicantQuickDetailSection('메모',[applicantQuickDetailField('지원자 메모',applicant.memo,{wide:true}),applicantQuickDetailField('판정 사유',applicant.decisionReason,{wide:true})])}`;
-  const previous=document.getElementById('btnApplicantQuickDetailPrevious'),next=document.getElementById('btnApplicantQuickDetailNext'),edit=document.getElementById('btnApplicantQuickDetailEdit');
-  if(previous)previous.disabled=index===0;if(next)next.disabled=index===rows.length-1;
-  if(edit){const allowed=applicantQuickDetailCanWrite();edit.hidden=!allowed;edit.disabled=!allowed;edit.setAttribute('aria-disabled',allowed?'false':'true');}
+  const applicant=(index>=0?rows[index]:applicants.find(row=>String(row.id)===String(applicantQuickDetailState.id)));if(!applicant){closeApplicantQuickDetail({restoreFocus:false,force:true});return false;}
+  const name=applicantQuickDetailValue(applicant.name),status=applicantQuickDetailValue(normalizeStatus(applicant.status)),workplace=applicantQuickDetailValue(applicant.workplace),nextSchedule=window.erpUx12?.scheduleOf?.(applicant)||{label:'일정',value:[applicant.interviewDate,applicant.interviewTime].filter(Boolean).join(' ')||applicant.hireDate||applicant.nextContactDate||'미정'};
+  const body=document.getElementById('applicantQuickDetailBody'),position=document.getElementById('applicantQuickDetailPosition'),eyebrow=document.getElementById('applicantQuickDetailEyebrow'),title=document.getElementById('applicantQuickDetailTitle'),panel=document.querySelector('.applicant-quick-detail-panel');
+  const editing=applicantQuickDetailState.mode==='edit';panel?.classList.toggle('is-editing',editing);if(eyebrow)eyebrow.textContent=editing?'허용 항목 빠른 수정':'핵심 정보 미리보기';if(title)title.textContent=editing?`${name.text} 빠른 수정`:'지원자 빠른 보기';
+  if(position)position.textContent=index>=0?`검색 결과 ${index+1} / ${rows.length} · ${editing?'수정 중':'읽기 전용'}`:`현재 필터에서 제외됨 · ${editing?'수정 중':'읽기 전용'}`;
+  const sourceLine=String(applicant.source||'').trim()?`<p>${esc(applicant.source)}</p>`:'';
+  if(body&&!editing)body.innerHTML=`<div class="applicant-quick-detail-summary"><div><h4>${esc(name.text)}</h4>${sourceLine}</div><div class="applicant-quick-detail-badges"><span>${esc(status.text)}</span><span>${esc(workplace.text)}</span></div></div><section class="applicant-quick-detail-priority" aria-label="지원자 핵심 정보"><div><span>연락처</span><strong>${esc(applicant.phone||APPLICANT_QUICK_DETAIL_EMPTY)}</strong></div><div><span>학교</span><strong>${esc(applicant.school||APPLICANT_QUICK_DETAIL_EMPTY)}</strong></div><div><span>${esc(nextSchedule.label||'다음 일정')}</span><strong>${esc(nextSchedule.value||'미정')}</strong></div></section>${applicantQuickDetailNextAction(applicant)}${applicantQuickDetailSection('연락·지원',[applicantQuickDetailField('이메일',applicant.email),applicantQuickDetailField('지역',applicant.region),applicantQuickDetailField('지원일',applicant.applyDate),applicantQuickDetailField('지원경로',applicant.source),applicantQuickDetailField('지원구분',applicant.careerType)])}${applicantQuickDetailSection('일정·근무',[applicantQuickDetailField('면접일시',[applicant.interviewDate,applicant.interviewTime].filter(Boolean).join(' ')),applicantQuickDetailField('입사예정일',applicant.hireDate),applicantQuickDetailField('출근방법',applicant.dormUse||applicant.commuteMethod)])}${applicantQuickDetailSection('학력',[applicantQuickDetailField('최종학력',applicant.education||applicant.finalEducation),applicantQuickDetailField('전공',applicant.major),applicantQuickDetailField('학점',applicant.gradePoint)])}${applicantQuickDetailSection('경력·검토',[applicantQuickDetailField('경력사항',applicant.career,{wide:true}),applicantQuickDetailField('최근 회사',applicant.lastCompany),applicantQuickDetailField('담당업무',applicant.duties),applicantQuickDetailField('자격증',applicant.certs,{wide:true}),applicantQuickDetailField('상담내용',applicant.consult,{wide:true})])}${applicantQuickDetailSection('메모',[applicantQuickDetailField('지원자 메모',applicant.memo,{wide:true}),applicantQuickDetailField('결과·검토 메모',applicant.decisionReason,{wide:true})])}`;
+  if(body&&editing&&!body.querySelector('#applicantQuickEditForm'))body.innerHTML=applicantQuickEditHtml(applicant);
+  const previous=document.getElementById('btnApplicantQuickDetailPrevious'),next=document.getElementById('btnApplicantQuickDetailNext'),edit=document.getElementById('btnApplicantQuickDetailEdit'),saveButton=document.getElementById('btnApplicantQuickDetailSave'),cancel=document.getElementById('btnApplicantQuickDetailCancel'),full=document.getElementById('btnApplicantQuickDetailFull'),allowed=applicantQuickDetailCanWrite();
+  if(previous)previous.disabled=index<=0;if(next)next.disabled=index<0||index===rows.length-1;
+  if(edit){edit.hidden=editing||!allowed;edit.disabled=!allowed;edit.setAttribute('aria-disabled',allowed?'false':'true');}
+  if(saveButton){saveButton.hidden=!editing||!allowed;saveButton.disabled=!allowed;saveButton.setAttribute('aria-disabled',allowed?'false':'true');}
+  if(cancel)cancel.hidden=!editing;if(full)full.hidden=false;
   applicantQuickDetailMarkSelected();
   return true;
 }
 function openApplicantQuickDetail(id,trigger=null){
   if(!applicantQuickDetailCanRead())return false;
   ensureApplicantQuickDetailUi();
+  if(applicantQuickDetailIsOpen()&&String(applicantQuickDetailState.id)!==String(id)&&!applicantQuickDetailConfirmDiscard())return false;
   const rows=filtered(),index=rows.findIndex(row=>String(row.id)===String(id));if(index<0)return false;
   const shell=document.getElementById('applicantQuickDetail'),row=trigger?.closest?.('.applicant-row')||applicantQuickDetailRow(id)||document.activeElement;
   if(!applicantQuickDetailIsOpen()){applicantQuickDetailState.trigger=row;applicantQuickDetailState.context=applicantQuickDetailCapture(row);}
   applicantQuickDetailState.id=String(id);
+  applicantQuickDetailState.mode='view';applicantQuickDetailState.baseline='';applicantQuickDetailState.feedback='';
   const targetPage=Math.floor(index/applicantPageSize)+1;
   shell.classList.add('is-open');shell.setAttribute('aria-hidden','false');document.body.classList.add('applicant-quick-detail-open');
   if(targetPage!==currentApplicantPage){currentApplicantPage=targetPage;renderTable();}
@@ -538,23 +539,47 @@ function openApplicantQuickDetailFromWorkflow(id,trigger=null){
 }
 function closeApplicantQuickDetail(options={}){
   const shell=document.getElementById('applicantQuickDetail');if(!shell?.classList.contains('is-open'))return false;
+  if(!options.force&&!applicantQuickDetailConfirmDiscard())return false;
   const restoreFocus=options.restoreFocus!==false,restoreScroll=options.restoreScroll!==false,context=applicantQuickDetailState.context,trigger=applicantQuickDetailState.trigger,currentId=applicantQuickDetailState.id;
   shell.classList.remove('is-open');shell.setAttribute('aria-hidden','true');document.body.classList.remove('applicant-quick-detail-open');applicantQuickDetailMarkSelected();
   if(restoreScroll)applicantQuickDetailRestoreContext(context);
-  applicantQuickDetailState.id='';applicantQuickDetailState.trigger=null;applicantQuickDetailState.context=null;
+  applicantQuickDetailState.id='';applicantQuickDetailState.trigger=null;applicantQuickDetailState.context=null;applicantQuickDetailState.mode='view';applicantQuickDetailState.baseline='';applicantQuickDetailState.feedback='';
   window.erpUx12Router?.onQuickClose?.();
   if(restoreFocus)requestAnimationFrame(()=>{const target=(trigger&&trigger.isConnected?trigger:applicantQuickDetailRow(currentId));target?.focus?.({preventScroll:true});});
   return true;
 }
 function moveApplicantQuickDetail(direction){
   if(!applicantQuickDetailIsOpen())return false;
+  if(!applicantQuickDetailConfirmDiscard())return false;
   const rows=filtered(),index=rows.findIndex(row=>String(row.id)===String(applicantQuickDetailState.id)),nextIndex=index+Number(direction||0);if(index<0||nextIndex<0||nextIndex>=rows.length)return false;
-  applicantQuickDetailState.id=String(rows[nextIndex].id);const targetPage=Math.floor(nextIndex/applicantPageSize)+1;
+  applicantQuickDetailState.id=String(rows[nextIndex].id);applicantQuickDetailState.mode='view';applicantQuickDetailState.baseline='';applicantQuickDetailState.feedback='';const targetPage=Math.floor(nextIndex/applicantPageSize)+1;
   if(targetPage!==currentApplicantPage){currentApplicantPage=targetPage;renderTable();}
   const rendered=renderApplicantQuickDetail();window.erpUx12Router?.onQuickChange?.(applicantQuickDetailState.id);return rendered;
 }
-function openApplicantQuickDetailFull(){const id=applicantQuickDetailState.id;if(!id)return false;closeApplicantQuickDetail({restoreFocus:false});window.viewApplicant?.(id);return true;}
-function editApplicantFromQuickDetail(){if(!applicantQuickDetailCanWrite())return false;const id=applicantQuickDetailState.id;if(!id)return false;closeApplicantQuickDetail({restoreFocus:false});window.editApplicant?.(id);return true;}
+function openApplicantQuickDetailFull(){const id=applicantQuickDetailState.id;if(!id||!applicantQuickDetailConfirmDiscard())return false;closeApplicantQuickDetail({restoreFocus:false,force:true});window.viewApplicant?.(id);return true;}
+function startApplicantQuickEdit(){
+  if(!applicantQuickDetailCanWrite()||!applicantQuickDetailIsOpen())return false;
+  const applicant=applicants.find(row=>String(row.id)===String(applicantQuickDetailState.id));if(!applicant)return false;
+  applicantQuickDetailState.mode='edit';applicantQuickDetailState.feedback='';renderApplicantQuickDetail();applicantQuickDetailState.baseline=applicantQuickEditSignature();requestAnimationFrame(()=>document.querySelector('#applicantQuickEditForm [data-quick-field="name"]')?.focus({preventScroll:true}));return true;
+}
+function cancelApplicantQuickEdit(){if(applicantQuickDetailState.mode!=='edit')return false;applicantQuickDetailState.mode='view';applicantQuickDetailState.baseline='';applicantQuickDetailState.feedback='';renderApplicantQuickDetail();requestAnimationFrame(()=>document.getElementById('btnApplicantQuickDetailEdit')?.focus({preventScroll:true}));return true;}
+function saveApplicantQuickEdit(){
+  if(!applicantQuickDetailCanWrite()||applicantQuickDetailState.mode!=='edit')return false;
+  const form=document.getElementById('applicantQuickEditForm');if(!form?.reportValidity())return false;
+  const values=applicantQuickEditValues();if(!values.name){document.querySelector('#applicantQuickEditForm [data-quick-field="name"]')?.focus();return false;}
+  const duplicate=findApplicantPhoneEmailDuplicate(values,applicantQuickDetailState.id);if(duplicate&&!confirm(`중복 가능성이 있습니다: ${duplicate.name}\n그래도 저장할까요?`))return false;
+  const index=applicants.findIndex(row=>String(row.id)===String(applicantQuickDetailState.id));if(index<0)return false;
+  const before=applicants,baseline=applicantQuickDetailState.baseline,previous=before[index];
+  const normalized=normalize({...previous,...Object.fromEntries(APPLICANT_QUICK_EDIT_FIELDS.map(field=>[field,values[field]]))});
+  const updated={...previous};APPLICANT_QUICK_EDIT_FIELDS.forEach(field=>{updated[field]=normalized[field];});
+  applicants=before.map((row,rowIndex)=>rowIndex===index?updated:row);applicantQuickDetailState.mode='view';applicantQuickDetailState.baseline='';applicantQuickDetailState.feedback='';
+  if(!save()){
+    applicants=before;applicantQuickDetailState.mode='edit';applicantQuickDetailState.baseline=baseline;applicantQuickDetailState.feedback='저장하지 못했습니다. 입력 내용은 유지되며 기존 지원자 정보는 변경되지 않았습니다.';
+    const feedback=document.getElementById('applicantQuickEditFeedback');if(feedback){feedback.textContent=applicantQuickDetailState.feedback;feedback.classList.add('is-error');}
+    return false;
+  }
+  renderApplicantQuickDetail();applicantQuickDetailRestoreContext(applicantQuickDetailState.context);return true;
+}
 function applicantQuickDetailFocusables(){const shell=document.getElementById('applicantQuickDetail');if(!shell)return[];return [...shell.querySelectorAll('button:not([disabled]):not([hidden]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(element=>element.getClientRects().length&&!element.classList.contains('erp-permission-hidden'));}
 function applicantQuickDetailKeydown(event){
   if(!applicantQuickDetailIsOpen())return;
@@ -575,13 +600,13 @@ function bindApplicantQuickDetailRows(){
 function applicantQuickDetailAfterListRender(allRows){
   bindApplicantQuickDetailRows();
   if(!applicantQuickDetailIsOpen())return;
-  if(!allRows.some(row=>String(row.id)===String(applicantQuickDetailState.id)))closeApplicantQuickDetail({restoreFocus:false});else applicantQuickDetailMarkSelected();
+  if(!applicants.some(row=>String(row.id)===String(applicantQuickDetailState.id)))closeApplicantQuickDetail({restoreFocus:false,force:true});else applicantQuickDetailMarkSelected();
 }
 window.openApplicantQuickDetail=openApplicantQuickDetail;
 window.openApplicantQuickDetailFromWorkflow=openApplicantQuickDetailFromWorkflow;
 window.closeApplicantQuickDetail=closeApplicantQuickDetail;
 window.moveApplicantQuickDetail=moveApplicantQuickDetail;
-window.erpApplicantQuickDetail={isOpen:applicantQuickDetailIsOpen,state:applicantQuickDetailState,render:renderApplicantQuickDetail};
+window.erpApplicantQuickDetail={isOpen:applicantQuickDetailIsOpen,isDirty:applicantQuickDetailIsDirty,state:applicantQuickDetailState,fields:APPLICANT_QUICK_EDIT_FIELDS,render:renderApplicantQuickDetail,startEdit:startApplicantQuickEdit,cancelEdit:cancelApplicantQuickEdit,saveEdit:saveApplicantQuickEdit};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ensureApplicantQuickDetailUi,{once:true});else ensureApplicantQuickDetailUi();
 function renderApplicantPagination(totalRows){
   const host=$('applicantPagination'); if(!host)return;
@@ -626,30 +651,24 @@ function renderTable(){
       <span class="list-interaction-hint">행 클릭 → 빠른 보기</span>
     </div>`;
   const canRegister=!window.erpPermissions||window.erpPermissions.has('applicant.write');
-  const managerMap=window.erpUx12?.managerAssignments?.()||{};
   $('applicantTbody').innerHTML=rows.length?rows.map((a,idx)=>{
-    const score=calcScore(a), decision=finalDecisionOf(a);
-    const posting=window.erpUx12?.postingOf?.(a)||a.jobPosting||a.jobTitle||a.recruitmentTitle||'';
     const nextAction=window.erpUx12?.nextActionOf?.(a)||{label:'진행 확인',detail:a.status||'상태 미입력'};
     const schedule=window.erpUx12?.scheduleOf?.(a)||{label:'일정',value:[a.interviewDate,a.interviewTime].filter(Boolean).join(' ')||a.hireDate||a.nextContactDate||'미정'};
-    const manager=window.erpUx12?.managerOf?.(a,managerMap)||a.manager||'';
-    const typeLine = [a.school,a.careerType].filter(Boolean).join(' · ') || '지원 정보 미입력';
+    const typeLine = String(a.school||'').trim();
     const staleDays = ['서류검토','부재중'].includes(a.status) ? daysSinceApply(a) : null;
     const staleBadge = (staleDays!==null && staleDays>=3) ? `<span class="stale-badge" title="지원일 기준 ${staleDays}일째 연락 안 됨">${staleDays}일째</span>` : '';
     return `<tr class="applicant-row compact-row clickable-data-row ${applicantRowToneClass(a)}" data-applicant-id="${esc(a.id)}" tabindex="0">
       <td class="no-cell sticky-app-col sticky-app-no" data-label="번호">${pageStart+idx+1}</td>
-      <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><div class="applicant-name-line"><button class="name-button ${genderClass(a)}" data-erp-handler="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button>${staleBadge}</div><small>${esc(typeLine)}</small></td>
+      <td class="applicant-name-cell sticky-app-col sticky-app-name" data-label="성명"><div class="applicant-name-line"><button class="name-button ${genderClass(a)}" data-erp-handler="viewApplicant('${a.id}')">${esc(a.name||'이름없음')}</button>${staleBadge}</div>${typeLine?`<small>${esc(typeLine)}</small>`:''}</td>
       <td class="phone-cell sticky-app-col sticky-app-phone" data-label="연락처"><strong>${esc(a.phone||'')}</strong></td>
-      <td class="posting-cell" data-label="지원 공고"><strong>${esc(posting||'공고 미연결')}</strong><small>${esc(a.source||'채용경로 미입력')}</small></td>
+      <td class="source-cell" data-label="지원경로"><strong>${esc(a.source||'미입력')}</strong></td>
       <td class="stage-cell status-cell" data-label="현재 단계"><span class="status-select-wrap ${badgeClass(a.status)}" title="${LEGACY_STATUS_OPTIONS.includes(normalizeStatus(a.status))?'기존 상태 · 재분류 필요':'눌러서 상태 변경'}"><select class="status-inline ${badgeClass(a.status)}" aria-label="${esc(a.name||'지원자')} 상태 변경" data-erp-change-handler="updateApplicantStatus('${a.id}', this.value)">${statusOptionsHtml(a.status)}</select></span></td>
-      <td class="next-action-cell" data-label="다음 조치"><strong>${esc(nextAction.label)}</strong><small>${esc(nextAction.detail)}</small></td>
-      <td class="schedule-cell" data-label="예정 일정"><strong class="${schedule.value==='미정'?'muted-schedule':''}">${esc(schedule.value)}</strong><small>${esc(schedule.label)}</small></td>
-      <td class="manager-cell" data-label="담당자">${esc(manager||'미지정')}</td>
+      <td class="next-action-cell" data-label="다음 조치"><strong title="${esc([nextAction.label,nextAction.detail].filter(Boolean).join(' · '))}">${esc([nextAction.label,nextAction.detail].filter(Boolean).join(' · '))}</strong></td>
+      <td class="schedule-cell" data-label="예정 일정"><strong class="${schedule.value==='미정'?'muted-schedule':''}" title="${esc([schedule.label,schedule.value].filter(Boolean).join(' · '))}">${esc([schedule.label,schedule.value].filter(Boolean).join(' · '))}</strong></td>
       <td class="apply-date-cell" data-label="지원일">${esc(a.applyDate||'-')}</td>
-      <td class="decision-cell" data-label="판정"><span class="decision-pill ${decisionToneClass(a)}">${esc(decision)}</span><small>${score}점</small></td>
       <td class="row-actions applicant-actions" data-label="더보기"><details class="applicant-row-more"><summary aria-label="${esc(a.name||'지원자')} 보조 행동">•••</summary><div class="applicant-row-more-menu" role="menu"><button type="button" role="menuitem" data-erp-handler="event.stopPropagation();viewApplicant('${a.id}')">전체 상세</button><button type="button" role="menuitem" data-required-permission="applicant.write" data-erp-handler="event.stopPropagation();editApplicant('${a.id}')">수정</button><button type="button" role="menuitem" class="delete" data-required-permission="applicant.delete" data-erp-handler="event.stopPropagation();deleteApplicant('${a.id}')">삭제</button></div></details></td>
     </tr>`;
-  }).join(''):`<tr><td colspan="11" class="empty list-empty-cell"><div class="applicant-list-empty-state"><strong>조건에 맞는 지원자가 없습니다.</strong><span>새 지원자를 등록하거나 현재 필터를 초기화해 다시 확인하세요.</span><div class="applicant-list-empty-actions">${canRegister?'<button class="primary applicant-empty-register" type="button" data-required-permission="applicant.write" data-erp-handler="setPage(\'form\')">지원자 등록</button>':''}<button class="ghost applicant-empty-reset" type="button" data-erp-handler="resetAndRenderList()">필터 초기화</button></div></div></td></tr>`;
+  }).join(''):`<tr><td colspan="9" class="empty list-empty-cell"><div class="applicant-list-empty-state"><strong>조건에 맞는 지원자가 없습니다.</strong><span>새 지원자를 등록하거나 현재 필터를 초기화해 다시 확인하세요.</span><div class="applicant-list-empty-actions">${canRegister?'<button class="primary applicant-empty-register" type="button" data-required-permission="applicant.write" data-erp-handler="setPage(\'form\')">지원자 등록</button>':''}<button class="ghost applicant-empty-reset" type="button" data-erp-handler="resetAndRenderList()">필터 초기화</button></div></div></td></tr>`;
   renderApplicantPagination(allRows.length);
   applicantQuickDetailAfterListRender(allRows);
 }
@@ -681,7 +700,7 @@ const EXCEL_PASTE_FIELD_MAP = {
   education:'xpEducation', school:'xpSchool', major:'xpMajor', career:'xpCareer', certs:'xpCerts', memo:'xpMemo'
 };
 const EXCEL_PASTE_FIELD_LABELS = {
-  applyDate:'지원일',status:'연락상태',interviewDate:'면접일',interviewTime:'면접시간',hireDate:'입사일',source:'지원경로',careerType:'경력구분',
+  applyDate:'지원일',status:'연락상태',interviewDate:'면접일',interviewTime:'면접시간',hireDate:'입사일',source:'지원경로',careerType:'지원구분',
   workplace:'지원근무지',dormUse:'출근방법',name:'성명',gender:'성별',birthYear:'생년월일',age:'나이',phone:'연락처',email:'이메일',region:'지역',
   education:'학력구분',school:'학교',major:'학과',career:'경력',certs:'자격증',memo:'비고·메모'
 };
@@ -889,13 +908,11 @@ function excelPasteNormalizeEducation(value){
   if(v==='기타')return '기타';
   return '';
 }
-function excelPasteCareerType(value,career){
+function excelPasteCareerType(value){
   const v=excelPasteText(value);
   if(v.includes('신입'))return '신입';
   if(v.includes('경력'))return '경력';
-  const c=excelPasteText(career);
-  if(!c||c==='-')return '';
-  return /신입|졸업|졸업예정/.test(c)&&!/[~～]\s*(현재|재직|\d{2})/.test(c)?'신입':'경력';
+  return '';
 }
 function excelPasteEducation(school){
   const s=excelPasteText(school);
@@ -950,7 +967,7 @@ function excelPasteRowToApplicant(row,headerRow=null){
   const region=[get('region'),get('detailRegion')].filter(Boolean).join(' ');
   const data={
     applyDate,status:statusRaw?normalizeStatus(statusRaw):'서류검토',interviewDate,interviewTime,hireDate,source:get('source'),
-    careerType:excelPasteCareerType(get('careerType'),get('career')),workplace:excelPasteWorkplace(get('workplace')),dormUse:excelPasteDorm(memo)||'확인필요',
+    careerType:excelPasteCareerType(get('careerType')),workplace:excelPasteWorkplace(get('workplace')),dormUse:excelPasteDorm(memo)||'확인필요',
     gender:normalizeGender(genderRaw),name:get('name'),email:emailRaw,school,major:get('major'),phone:formatPhoneDisplay(phoneRaw),birthYear:birthValue,
     age:get('age')||(birthValue&&typeof calcAge==='function'?String(calcAge(birthValue)||''):''),region,career:get('career'),certs:get('certs'),memo,
     education:explicitEducation||excelPasteEducation(school)
@@ -973,7 +990,7 @@ function excelPasteRowToApplicant(row,headerRow=null){
   if(!explicitEducation&&school)issues.push(excelPasteIssue('education',`학력구분을 학교명 “${school}”에서 ${data.education||'기타'}(으)로 추정했습니다.`,'warning','education-inferred'));
   const present={};
   Object.keys(EXCEL_PASTE_FIELD_MAP).forEach(field=>{present[field]=!!get(field);});
-  present.education=!!get('education')||!!school; present.dormUse=!!memo; present.careerType=!!get('careerType')||!!get('career'); present.region=!!region;
+  present.education=!!get('education')||!!school; present.dormUse=!!memo; present.careerType=!!get('careerType'); present.region=!!region;
   return {data,issues,present,format:detected.format,confidence:detected.confidence,preview:{cells,headers:normalized.headers,layout}};
 }
 function excelPasteFindDuplicates(data,editId=''){
@@ -1549,7 +1566,7 @@ ${value}`:value;
     target.value=value; target.dispatchEvent(new Event('input',{bubbles:true})); target.dispatchEvent(new Event('change',{bubbles:true}));
   });
   window.__erpExcelPastePendingApplicant=current?String(current.id):'__new__';
-  updateScorePreview(); checkDuplicate(); updateFormMode(); closeExcelRowPaste();
+  updateApplicantFormDerivedFields(); checkDuplicate(); updateFormMode(); closeExcelRowPaste();
   if(typeof uxToast==='function')uxToast(current?'선택한 엑셀 값을 수정 폼에 적용했습니다. 저장 버튼을 눌러 확정하세요.':'검증된 엑셀 값을 신규 지원자 폼에 적용했습니다. 내용을 확인한 뒤 등록하세요.');
   setTimeout(()=>$('name')?.focus(),0);
 }

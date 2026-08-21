@@ -1,4 +1,4 @@
-/* Recruit ERP v11.4.0 — 지원자 읽기 전용 빠른 보기 */
+/* Recruit ERP v12.1.0 — 지원자 빠른 보기와 명시적 빠른 수정 */
 .applicant-quick-detail{position:fixed;inset:0;z-index:240;display:none}
 .applicant-quick-detail.is-open{display:block}
 .applicant-quick-detail-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.34);backdrop-filter:blur(1px)}
@@ -27,6 +27,16 @@
 .applicant-quick-detail-field dd.is-empty{color:#94a3b8;font-weight:600}
 .applicant-quick-detail-footer{flex:0 0 auto;display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:14px 20px max(14px,env(safe-area-inset-bottom));border-top:1px solid #dbe3ee;background:#fff}
 .applicant-quick-detail-footer button{min-height:44px}
+.applicant-quick-edit-form{min-width:0}
+.applicant-quick-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 14px}
+.applicant-quick-edit-grid label{display:grid;min-width:0;gap:6px;color:#475569;font-size:12px;font-weight:750}
+.applicant-quick-edit-grid label.is-wide{grid-column:1/-1}
+.applicant-quick-edit-grid :is(input,select,textarea){box-sizing:border-box;width:100%;min-width:0;max-width:100%;border:1px solid #cbd5e1;border-radius:9px;background:#fff;color:#17233b;font:inherit;font-size:14px;padding:9px 10px}
+.applicant-quick-edit-grid :is(input,select){height:40px}
+.applicant-quick-edit-grid textarea{min-height:118px;resize:vertical;white-space:pre-wrap;overflow-wrap:anywhere}
+.applicant-quick-edit-grid :is(input,select,textarea):focus{outline:2px solid #93c5fd;outline-offset:1px;border-color:#3b82f6}
+.applicant-quick-edit-feedback{min-height:20px;margin:12px 0 0;color:#64748b;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.applicant-quick-edit-feedback.is-error{color:#b42318;font-weight:700}
 .applicant-quick-detail-sr{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 body.applicant-quick-detail-open{overflow:hidden}
 #applicantTbody .applicant-row.is-quick-detail-selected>td{background:#eef5ff!important}

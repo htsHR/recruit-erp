@@ -181,40 +181,63 @@ body.ux12-ready{
 .ux12-ready #applicants .applicant-workplace-filter-group{border-left:1px solid var(--ux12-line)!important;padding-left:12px!important}
 .ux12-ready #applicants .list-summary{min-height:40px!important;margin:10px 0 0!important;padding:8px 12px!important;border:1px solid var(--ux12-line)!important;border-bottom:0!important;border-radius:8px 8px 0 0!important;background:#fff!important;color:var(--ux12-muted)!important}
 .ux12-ready #applicants .table-wrap{max-width:100%;overflow:auto!important;border:1px solid var(--ux12-line)!important;border-radius:0 0 8px 8px!important;background:#fff!important;box-shadow:none!important}
-.ux12-ready #applicants .applicant-table{width:1448px!important;min-width:1448px!important;table-layout:fixed!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-no{width:52px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-name{width:178px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-phone{width:138px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-posting{width:180px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-stage{width:132px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-next{width:190px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-schedule{width:156px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-manager{width:106px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-apply-date{width:112px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-decision{width:120px!important}
-.ux12-ready #applicants .applicant-table col.applicant-col-actions{width:84px!important}
-.ux12-ready #applicants .applicant-table :is(.no-head,.no-cell){width:52px!important;min-width:52px!important;max-width:52px!important}
-.ux12-ready #applicants .applicant-table :is(.name-head,.applicant-name-cell){width:178px!important;min-width:178px!important;max-width:178px!important}
-.ux12-ready #applicants .applicant-table :is(.phone-head,.phone-cell){width:138px!important;min-width:138px!important;max-width:138px!important}
-.ux12-ready #applicants .applicant-table :is(.posting-head,.posting-cell){display:table-cell!important;width:180px!important;min-width:180px!important;max-width:180px!important}
-.ux12-ready #applicants .applicant-table :is(.stage-head,.status-cell){display:table-cell!important;width:132px!important;min-width:132px!important;max-width:132px!important}
-.ux12-ready #applicants .applicant-table :is(.next-head,.next-action-cell){display:table-cell!important;width:190px!important;min-width:190px!important;max-width:190px!important}
-.ux12-ready #applicants .applicant-table :is(.schedule-head,.schedule-cell){display:table-cell!important;width:156px!important;min-width:156px!important;max-width:156px!important}
-.ux12-ready #applicants .applicant-table :is(.manager-head,.manager-cell){display:table-cell!important;width:106px!important;min-width:106px!important;max-width:106px!important}
-.ux12-ready #applicants .applicant-table :is(.apply-date-head,.apply-date-cell){display:table-cell!important;width:112px!important;min-width:112px!important;max-width:112px!important}
-.ux12-ready #applicants .applicant-table :is(.decision-head,.decision-cell){display:table-cell!important;width:120px!important;min-width:120px!important;max-width:120px!important}
-.ux12-ready #applicants .applicant-table :is(.actions-head,.applicant-actions){display:table-cell!important;width:84px!important;min-width:84px!important;max-width:84px!important}
-.ux12-ready #applicants .applicant-table th,.ux12-ready #applicants .applicant-table td{height:48px!important;min-height:48px!important;padding:6px 10px!important;vertical-align:middle!important;font-size:14px!important}
-.ux12-ready #applicants .applicant-table th.no-head,.ux12-ready #applicants .sticky-app-no{position:sticky!important;left:0!important;z-index:8!important}
-.ux12-ready #applicants .applicant-table th.name-head,.ux12-ready #applicants .sticky-app-name{position:sticky!important;left:52px!important;z-index:8!important}
-.ux12-ready #applicants .applicant-table th.phone-head,.ux12-ready #applicants .sticky-app-phone{position:sticky!important;left:230px!important;z-index:8!important;box-shadow:1px 0 0 var(--ux12-line)}
+body.ux12-ready #applicants .applicant-table{width:100%!important;min-width:1020px!important;max-width:none!important;table-layout:fixed!important}
+body.ux12-ready #applicants .applicant-table col.applicant-col-no{width:46px!important}
+body.ux12-ready #applicants .applicant-table col.applicant-col-name{width:150px!important}
+body.ux12-ready #applicants .applicant-table col.applicant-col-phone{width:124px!important}
+body.ux12-ready #applicants .applicant-table col.applicant-col-source{width:135px!important}
+body.ux12-ready #applicants .applicant-table col.applicant-col-stage{width:116px!important}
+body.ux12-ready #applicants .applicant-table col.applicant-col-next{width:145px!important}
+body.ux12-ready #applicants .applicant-table col.applicant-col-schedule{width:150px!important}
+body.ux12-ready #applicants .applicant-table col.applicant-col-apply-date{width:90px!important}
+body.ux12-ready #applicants .applicant-table col.applicant-col-actions{width:64px!important}
+body.ux12-ready #applicants .applicant-table :is(.no-head,.no-cell){width:46px!important;min-width:46px!important;max-width:46px!important}
+body.ux12-ready #applicants .applicant-table :is(.name-head,.applicant-name-cell){width:150px!important;min-width:150px!important;max-width:150px!important}
+body.ux12-ready #applicants .applicant-table :is(.phone-head,.phone-cell){width:124px!important;min-width:124px!important;max-width:124px!important}
+body.ux12-ready #applicants .applicant-table :is(.source-head,.source-cell){display:table-cell!important;width:135px!important;min-width:135px!important;max-width:135px!important}
+body.ux12-ready #applicants .applicant-table :is(.stage-head,.status-cell){display:table-cell!important;width:116px!important;min-width:116px!important;max-width:116px!important}
+body.ux12-ready #applicants .applicant-table :is(.next-head,.next-action-cell){display:table-cell!important;width:145px!important;min-width:145px!important;max-width:145px!important}
+body.ux12-ready #applicants .applicant-table :is(.schedule-head,.schedule-cell){display:table-cell!important;width:150px!important;min-width:150px!important;max-width:150px!important}
+body.ux12-ready #applicants .applicant-table :is(.apply-date-head,.apply-date-cell){display:table-cell!important;width:90px!important;min-width:90px!important;max-width:90px!important}
+body.ux12-ready #applicants .applicant-table :is(.actions-head,.applicant-actions){display:table-cell!important;width:64px!important;min-width:64px!important;max-width:64px!important}
+.ux12-ready #applicants.ui-system-v20 .applicant-table tbody tr{height:48px!important}
+.ux12-ready #applicants .applicant-table th,.ux12-ready #applicants .applicant-table td{box-sizing:border-box!important;height:48px!important;min-height:48px!important;padding:6px 10px!important;vertical-align:middle!important;font-size:14px!important}
+body.ux12-ready #applicants .applicant-table th.no-head,body.ux12-ready #applicants .sticky-app-no{position:sticky!important;left:0!important;z-index:8!important}
+body.ux12-ready #applicants .applicant-table th.name-head,body.ux12-ready #applicants .sticky-app-name{position:sticky!important;left:46px!important;z-index:8!important}
+body.ux12-ready #applicants .applicant-table th.phone-head,body.ux12-ready #applicants .sticky-app-phone{position:sticky!important;left:196px!important;z-index:8!important;box-shadow:1px 0 0 var(--ux12-line)}
+/* v12.1 semantic columns take precedence over the legacy v11.5.2 width contract. */
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table{width:1020px!important;min-width:1020px!important;max-width:100%!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-no{width:46px!important;min-width:46px!important;max-width:46px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-name{width:150px!important;min-width:150px!important;max-width:150px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-phone{width:124px!important;min-width:124px!important;max-width:124px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-source{width:135px!important;min-width:135px!important;max-width:135px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-stage{width:116px!important;min-width:116px!important;max-width:116px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-next{width:145px!important;min-width:145px!important;max-width:145px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-schedule{width:150px!important;min-width:150px!important;max-width:150px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-apply-date{width:90px!important;min-width:90px!important;max-width:90px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-actions{width:64px!important;min-width:64px!important;max-width:64px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.no-head,.no-cell){width:46px!important;min-width:46px!important;max-width:46px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.name-head,.applicant-name-cell){width:150px!important;min-width:150px!important;max-width:150px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.phone-head,.phone-cell){width:124px!important;min-width:124px!important;max-width:124px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.source-head,.source-cell){width:135px!important;min-width:135px!important;max-width:135px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.stage-head,.status-cell){width:116px!important;min-width:116px!important;max-width:116px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.next-head,.next-action-cell){width:145px!important;min-width:145px!important;max-width:145px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.schedule-head,.schedule-cell){width:150px!important;min-width:150px!important;max-width:150px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.apply-date-head,.apply-date-cell){width:90px!important;min-width:90px!important;max-width:90px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.actions-head,.applicant-actions){width:64px!important;min-width:64px!important;max-width:64px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.no-head,.no-cell){left:0!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.name-head,.applicant-name-cell){left:46px!important}
+body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.phone-head,.phone-cell){left:196px!important}
 .ux12-ready #applicants tbody .sticky-app-col{background:#fff!important}
 .ux12-ready #applicants tbody tr:hover td,.ux12-ready #applicants tbody tr:hover .sticky-app-col{background:#f8fbff!important}
 .ux12-ready #applicants tbody tr.is-quick-detail-selected td,.ux12-ready #applicants tbody tr.is-quick-detail-selected .sticky-app-col{background:var(--ux12-blue-soft)!important}
-.ux12-ready #applicants .applicant-name-cell small,.ux12-ready #applicants .posting-cell small,.ux12-ready #applicants .next-action-cell small,.ux12-ready #applicants .schedule-cell small,.ux12-ready #applicants .decision-cell small{display:block;margin-top:2px;color:var(--ux12-muted);font-size:11px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ux12-ready #applicants .posting-cell strong,.ux12-ready #applicants .next-action-cell strong,.ux12-ready #applicants .schedule-cell strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.ux12-ready #applicants .applicant-name-cell small{display:block;margin-top:2px;color:var(--ux12-muted);font-size:11px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ux12-ready #applicants :is(.source-cell,.next-action-cell,.schedule-cell) strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
 .ux12-ready #applicants .status-inline{height:30px!important;font-size:12px!important;max-width:112px}
 .ux12-ready .applicant-row-more{position:relative}
+.ux12-ready #applicants .applicant-table tr.applicant-row:has(.applicant-row-more[open]){position:relative!important;z-index:40!important}
+.ux12-ready #applicants .applicant-table td.applicant-actions{overflow:visible!important}
+.ux12-ready .applicant-row-more[open]{z-index:50}
 .ux12-ready .applicant-row-more summary{width:34px;height:30px;margin:auto;display:grid;place-items:center;border:1px solid var(--ux12-line);border-radius:7px;background:#fff;color:#475467;cursor:pointer;list-style:none;font-weight:700;letter-spacing:1px}
 .ux12-ready .applicant-row-more summary::-webkit-details-marker{display:none}
 .ux12-ready .applicant-row-more-menu{position:absolute;right:0;top:35px;z-index:30;width:126px;padding:5px;background:#fff;border:1px solid var(--ux12-line);border-radius:8px;box-shadow:0 8px 20px rgba(16,24,40,.12)}
@@ -232,10 +255,11 @@ body.ux12-ready{
 
 /* Quick detail */
 .ux12-ready.ux12-desktop-shell .applicant-quick-detail-panel{width:clamp(360px,28vw,420px)!important;max-width:420px!important}
+.ux12-ready.ux12-desktop-shell .applicant-quick-detail-panel.is-editing{width:min(560px,calc(100vw - 216px))!important;max-width:560px!important}
 .ux12-ready .applicant-quick-detail-panel{background:#fff!important;box-shadow:-10px 0 30px rgba(16,24,40,.12)!important}
 .ux12-ready .applicant-quick-detail-header{padding:16px 18px!important;border-bottom:1px solid var(--ux12-line)!important;background:#fff!important;color:var(--ux12-text)!important}
 .ux12-ready .applicant-quick-detail-heading .eyebrow{color:var(--ux12-blue)!important}.ux12-ready .applicant-quick-detail-heading h3{color:var(--ux12-text)!important}
-.ux12-ready .applicant-quick-detail-summary{padding:16px 18px!important;background:#fff!important;color:var(--ux12-text)!important;border-bottom:1px solid var(--ux12-line);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.ux12-ready .applicant-quick-detail-summary{padding:16px 18px!important;background:#fff!important;color:var(--ux12-text)!important;border-bottom:1px solid var(--ux12-line);display:flex;flex-direction:column;align-items:stretch;gap:8px}
 .ux12-ready .applicant-quick-detail-summary h4{font-size:22px!important;color:var(--ux12-text)!important}.ux12-ready .applicant-quick-detail-summary p{color:var(--ux12-muted)!important}
 .ux12-ready .applicant-quick-detail-badges span{background:var(--ux12-blue-soft)!important;color:#175cd3!important;border:1px solid #cfe0f9!important}
 .ux12-ready .applicant-quick-detail-priority{display:grid;grid-template-columns:1fr 1fr;margin:0 18px;border:1px solid var(--ux12-line);border-radius:8px;overflow:hidden}
@@ -245,6 +269,47 @@ body.ux12-ready{
 .ux12-ready .applicant-quick-detail-section{margin:14px 18px 0!important;padding:0 0 14px!important;border:0!important;border-bottom:1px solid var(--ux12-line)!important;border-radius:0!important;background:#fff!important;box-shadow:none!important}
 .ux12-ready .applicant-quick-detail-next-action{background:#f8fafc!important;border:1px solid var(--ux12-line)!important;border-radius:8px!important;padding:14px!important}
 .ux12-ready .applicant-quick-detail-footer{border-top:1px solid var(--ux12-line)!important;background:#fff!important}
+
+@media (max-width:1365px) and (min-width:761px){
+  body.ux12-ready #applicants .applicant-table{min-width:793px!important}
+  body.ux12-ready #applicants .applicant-table col:is(.applicant-col-no,.applicant-col-apply-date){visibility:collapse!important;width:0!important}
+  body.ux12-ready #applicants .applicant-table col.applicant-col-name{width:135px!important}
+  body.ux12-ready #applicants .applicant-table col.applicant-col-phone{width:116px!important}
+  body.ux12-ready #applicants .applicant-table col.applicant-col-source{width:120px!important}
+  body.ux12-ready #applicants .applicant-table col.applicant-col-stage{width:108px!important}
+  body.ux12-ready #applicants .applicant-table col.applicant-col-next{width:128px!important}
+  body.ux12-ready #applicants .applicant-table col.applicant-col-schedule{width:130px!important}
+  body.ux12-ready #applicants .applicant-table col.applicant-col-actions{width:56px!important}
+  body.ux12-ready #applicants .applicant-table :is(.no-head,.no-cell,.apply-date-head,.apply-date-cell){display:none!important}
+  body.ux12-ready #applicants .applicant-table :is(.name-head,.applicant-name-cell){width:135px!important;min-width:135px!important;max-width:135px!important}
+  body.ux12-ready #applicants .applicant-table :is(.phone-head,.phone-cell){width:116px!important;min-width:116px!important;max-width:116px!important}
+  body.ux12-ready #applicants .applicant-table :is(.source-head,.source-cell){width:120px!important;min-width:120px!important;max-width:120px!important}
+  body.ux12-ready #applicants .applicant-table :is(.stage-head,.status-cell){width:108px!important;min-width:108px!important;max-width:108px!important}
+  body.ux12-ready #applicants .applicant-table :is(.next-head,.next-action-cell){width:128px!important;min-width:128px!important;max-width:128px!important}
+  body.ux12-ready #applicants .applicant-table :is(.schedule-head,.schedule-cell){width:130px!important;min-width:130px!important;max-width:130px!important}
+  body.ux12-ready #applicants .applicant-table :is(.actions-head,.applicant-actions){width:56px!important;min-width:56px!important;max-width:56px!important}
+  body.ux12-ready #applicants .applicant-table th.name-head,body.ux12-ready #applicants .sticky-app-name{left:0!important}
+  body.ux12-ready #applicants .applicant-table th.phone-head,body.ux12-ready #applicants .sticky-app-phone{left:135px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table{width:793px!important;min-width:793px!important;max-width:100%!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col:is(.applicant-col-no,.applicant-col-apply-date){visibility:collapse!important;width:0!important;min-width:0!important;max-width:0!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-name{width:135px!important;min-width:135px!important;max-width:135px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-phone{width:116px!important;min-width:116px!important;max-width:116px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-source{width:120px!important;min-width:120px!important;max-width:120px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-stage{width:108px!important;min-width:108px!important;max-width:108px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-next{width:128px!important;min-width:128px!important;max-width:128px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-schedule{width:130px!important;min-width:130px!important;max-width:130px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col.applicant-col-actions{width:56px!important;min-width:56px!important;max-width:56px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.no-head,.no-cell,.apply-date-head,.apply-date-cell){display:table-cell!important;visibility:collapse!important;width:0!important;min-width:0!important;max-width:0!important;padding:0!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table col:is(.applicant-col-name,.applicant-col-phone,.applicant-col-source,.applicant-col-stage,.applicant-col-next,.applicant-col-schedule,.applicant-col-actions){visibility:visible!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.name-head,.applicant-name-cell,.phone-head,.phone-cell,.source-head,.source-cell,.stage-head,.status-cell,.next-head,.next-action-cell,.schedule-head,.schedule-cell,.actions-head,.applicant-actions){display:table-cell!important;visibility:visible!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.name-head,.applicant-name-cell){left:0!important;width:135px!important;min-width:135px!important;max-width:135px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.phone-head,.phone-cell){left:135px!important;width:116px!important;min-width:116px!important;max-width:116px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.source-head,.source-cell){width:120px!important;min-width:120px!important;max-width:120px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.stage-head,.status-cell){width:108px!important;min-width:108px!important;max-width:108px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.next-head,.next-action-cell){width:128px!important;min-width:128px!important;max-width:128px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.schedule-head,.schedule-cell){width:130px!important;min-width:130px!important;max-width:130px!important}
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-table :is(.actions-head,.applicant-actions){width:56px!important;min-width:56px!important;max-width:56px!important}
+}
 
 /* Today task list */
 .ux12-ready #today .daily-automation-summary{display:none!important}

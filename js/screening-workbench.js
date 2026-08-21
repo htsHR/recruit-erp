@@ -217,8 +217,6 @@
       return;
     }
 
-    const score=typeof calcScore==='function'?calcScore(a):0;
-    const sc=typeof deriveScores==='function'?deriveScores(a):{major:0,career:0,cert:0,field:0};
     const dorm=typeof dormLabel==='function'?dormLabel(a):'';
     const dup=wbDuplicateInfo(a);
 
@@ -236,7 +234,7 @@
       detailRow('학과', a.major),
     ].join('');
     const careerRows=[
-      detailRow('경력구분', a.careerType),
+      detailRow('지원구분', a.careerType),
       detailRow('경력사항', a.career),
       detailRow('자격증', a.certs),
       detailRow('외국어/기타자격', a.languageEtc),
@@ -245,7 +243,6 @@
       detailRow('지원일', a.applyDate),
       detailRow('지원경로', a.source),
       detailRow('출근방법', dorm),
-      detailRow('검토점수', `${score}점 (전공${sc.major}·경력${sc.career}·자격${sc.cert}·현장${sc.field})`),
       detailRow('메모', a.memo),
     ].join('');
 

@@ -52,6 +52,23 @@ function schoolEmployeeStats(schoolId){
     updatedAt: new Date().toISOString()
   };
 }
+/* 학교 분석의 기존 참고 수치만 보존한다. 지원자 화면의 자동평가에는 사용하지 않는다. */
+function schoolApplicantReferenceScore(applicant){
+  const text=`${applicant.dormUse||''} ${applicant.education||''} ${applicant.finalEducation||''} ${applicant.school||''} ${applicant.major||''}
+    ${applicant.gradePoint||''} ${applicant.languageEtc||''} ${applicant.certs||''} ${applicant.career||''} ${applicant.lastCompany||''} ${applicant.duties||''}
+    ${applicant.leaveReason||''} ${applicant.careerType||''} ${applicant.jobFitCategory||''} ${applicant.consult||''} ${applicant.memo||''}
+    ${applicant.decisionReason||''} ${applicant.selfIntroKeywords||''}`.toLowerCase();
+  let major=0,career=0,cert=0,field=0;
+  if(/반도체|전기|전자|기계|자동화|메카|설비|정비|금형|항공정비|컴퓨터소프트웨어|융합소프트웨어|건축공학/.test(text))major+=15;
+  if(/반도체장비|전기에너지|전기전자|전기공학|기계자동차|반도체과학|전기전공|반도체장비설계|항공정비전공/.test(text))major+=10;
+  if(/pm|예방정비|설비|장비|maintenance|field|fe|셋업|set.?up|반도체|fab|클린룸|방진복|plc|drive|analyzer|bhs|정비|유지보수|기술지원|설비이상대응|전기정비|시설운영|출입제어/.test(text))career+=25;
+  if(/pm경력|pm 직접|반도체 장비|장비 셋업|전기정비|시설운영|포스코|에스원|에이치앤에스테크|현장|경력|재직중/.test(text))career+=10;
+  if(/전기기능사|전기산업기사|전기기사|산업안전|기계|설비보전|반도체설비보전|항공기정비|지게차|굴착기|기능사|산업기사|기사|운전면허|소방안전|컴활|adsp|1종보통/.test(text))cert+=15;
+  if(/지게차|굴착기|운전면허|1종|기능사|기사|산업기사/.test(text))cert+=5;
+  if(/교대|군|정비병|차량정비|안전|책임|성실|소통|인수인계|점검|현장|방진복|체력|보안|규정|매뉴얼|문제해결|트러블|개선|군입대|병력필/.test(text))field+=15;
+  if(applicant.name&&applicant.phone&&applicant.workplace&&applicant.applyDate)field+=5;
+  return Math.min(major,25)+Math.min(career,35)+Math.min(cert,20)+Math.min(field,20);
+}
 function schoolAggregates(){
   const map={};
   schools.forEach(s=>{
@@ -73,7 +90,7 @@ function schoolAggregates(){
     g.apply++;
     if(isPassed(a)) g.pass++;
     if(a.status==='서류탈락') g.docFail++;
-    g.scoreSum += calcScore(a);
+    g.scoreSum += schoolApplicantReferenceScore(a);
     if(!g.latestApply || (a.applyDate||'') > g.latestApply) g.latestApply = a.applyDate||'';
   });
   return Object.values(map);
@@ -174,7 +191,7 @@ function renderSchools(){
 }
 
 
-function renderAll(){ renderStats(); backupNotice(); renderScheduleReminder(); renderHomeLists(); renderTable(); renderToday(); renderEmployeeLinkTask(); renderCalendar(); renderHireStats(); populateSchoolDatalist(); renderSchools(); renderSchoolManage(); renderEmployees(); updateScorePreview(); }
+function renderAll(){ renderStats(); backupNotice(); renderScheduleReminder(); renderHomeLists(); renderTable(); renderToday(); renderEmployeeLinkTask(); renderCalendar(); renderHireStats(); populateSchoolDatalist(); renderSchools(); renderSchoolManage(); renderEmployees(); updateApplicantFormDerivedFields(); }
 
 const fields=['editId','applyDate','source','status','workplace','name','phone','email',
   'gender','birthYear','age','region','commute','dormUse','education','finalEducation','school',
@@ -196,7 +213,7 @@ function fillForm(a){ fields.forEach(id=>{ const el=$(id); if(!el) return; const
     el.add(new Option(value+' — 현재 버전에서 정의되지 않은 상태', value, true, true));
   }
   el.value = value; }); setChecked('checkNeeds', a.checkNeeds); setChecked('selfIntroKeywords',
-  a.selfIntroKeywords); updateScorePreview(); checkDuplicate(); updateFormMode(); }
+  a.selfIntroKeywords); updateApplicantFormDerivedFields(); checkDuplicate(); updateFormMode(); }
 function resetForm(){
   window.__erpExcelPastePendingApplicant='';
   const form=$('applicantForm');
@@ -211,7 +228,7 @@ function resetForm(){
     $('duplicateBox').textContent='';
     $('duplicateBox').className='wide duplicate-box';
   }
-  updateScorePreview();
+  updateApplicantFormDerivedFields();
   dismissSchoolHint();
   updateFormMode();
 }
@@ -256,26 +273,22 @@ function memoBlock(title, value){
   if(!v) return '';
   return `<div class="detail-memo"><h4>${title}</h4><p>${esc(v)}</p></div>`;
 }
-function applicantSummary(a){ const score=calcScore(a); const sc=deriveScores(a); return `${a.name||'지원자'} / ${a.workplace||'근무지 미입력'} / ${a.phone||'연락처 없음'}
-상태: ${a.status||'-'} / 출근방법: ${dormLabel(a)} / 판정: ${finalDecisionOf(a)} / 검토점수: ${score}점
-직무적합: ${displayCategory(a)} / 경력구분: ${a.careerType||'-'}
+function applicantSummary(a){ return `${a.name||'지원자'} / ${a.workplace||'근무지 미입력'} / ${a.phone||'연락처 없음'}
+상태: ${a.status||'-'} / 출근방법: ${dormLabel(a)} / 면접결과: ${a.finalDecision||'미입력'}
+지원구분: ${a.careerType||'-'} / 지원경로: ${a.source||'-'}
 학력구분: ${a.education||'-'} / 학교·전공: ${[a.school,a.major].filter(Boolean).join(' / ')||'-'} / 외국어·기타자격: ${a.languageEtc||'-'}
-세부점수: 전공 ${sc.major}/25, 경력 ${sc.career}/35, 자격 ${sc.cert}/20, 현장 ${sc.field}/20
 확인필요: ${displayCheckNeeds(a.checkNeeds)||'-'}
 자격증: ${a.certs||'-'}
-판정/메모: ${[a.memo,a.decisionReason].filter(Boolean).join(' / ')||'-'}`; }
+메모/결과·검토메모: ${[a.memo,a.decisionReason].filter(Boolean).join(' / ')||'-'}`; }
 function viewApplicant(id){
   const a=applicants.find(x=>x.id===id); if(!a) return;
   detailCurrentId=id;
-  const score=calcScore(a), sc=deriveScores(a);
   const interview=[a.interviewDate,a.interviewTime].filter(Boolean).join(' ') || '일정 미정';
   const dorm=dormLabel(a);
-  const decision=finalDecisionOf(a);
+  const decision=a.finalDecision||'면접 결과 미입력';
   const action=nextAction(a);
   const status=normalizeStatus(a.status);
   const profileSub=[a.careerType,a.education,a.school,a.major].filter(Boolean).join(' · ') || '지원자 기본정보';
-  let manager='미지정';
-  try{ manager=(JSON.parse(localStorage.getItem('recruit_erp_applicant_manager_assignments')||'{}')||{})[a.id]||'미지정'; }catch{}
   const detailSection=(title, rows, cls='')=>rows ? `<section class="detail-section-card detail-section-v108 applicant-detail-section ${cls}"><div class="detail-section-title"><h4>${title}</h4></div><div class="detail-grid detail-grid-v108">${rows}</div></section>` : '';
   const longBlock=(title, value, cls='')=>{
     const v=String(value ?? '').trim();
@@ -302,7 +315,6 @@ function viewApplicant(id){
   const summary=`<section class="applicant-detail-summary-section">
     <div class="applicant-detail-summary-grid">
       ${summaryItem('현재 상태',status||'미입력','status')}
-      ${summaryItem('담당자',manager,'manager')}
       ${summaryItem('지원근무지',a.workplace||'미입력','workplace')}
       ${summaryItem('면접 일정',interview,'interview')}
       ${summaryItem('입사 예정일',a.hireDate||'미정','hire')}
@@ -318,13 +330,13 @@ function viewApplicant(id){
     detailRow('자격증',a.certs,'wide-row'),detailRow('외국어/기타자격',a.languageEtc,'wide-row')
   ].join('');
   const reviewRows=[
-    detailRow('직무적합',displayCategory(a)),detailRow('경력구분',a.careerType),detailRow('확인필요사항',displayCheckNeeds(a.checkNeeds),'wide-row'),
+    detailRow('지원구분',a.careerType),detailRow('확인필요사항',displayCheckNeeds(a.checkNeeds),'wide-row'),
     detailRow('자소서/태도 키워드',a.selfIntroKeywords,'wide-row')
   ].join('');
   const memoBlocks=[
     longBlock('상담내용',a.consult,'memo-primary'),
     longBlock('메모·다음 액션',a.memo),
-    longBlock('판정사유·참고',a.decisionReason)
+    longBlock('결과·검토 메모',a.decisionReason)
   ].filter(Boolean).join('');
   const careerBlock=longBlock('경력사항',a.career,'career-long');
 
@@ -342,13 +354,9 @@ function viewApplicant(id){
         ${detailSection('학력·자격',educationRows)}
         ${detailSection('검토 참고정보',reviewRows)}
         <section class="applicant-detail-decision-card">
-          <div><span>현재 판정</span><strong>${esc(decision)}</strong></div>
+          <div><span>면접 결과</span><strong>${esc(decision)}</strong></div>
           <div><span>다음 액션</span><strong>${esc(action)}</strong></div>
         </section>
-        <details class="applicant-detail-score-details">
-          <summary><span>검토점수 참고보기</span><strong>${score}점</strong></summary>
-          <div class="detail-score-grid"><div><span>전공적합</span><strong>${sc.major}/25</strong></div><div><span>경력적합</span><strong>${sc.career}/35</strong></div><div><span>자격적합</span><strong>${sc.cert}/20</strong></div><div><span>현장적응</span><strong>${sc.field}/20</strong></div></div>
-        </details>
       </aside>
     </div>`;
   $('detailModal').classList.add('show');
