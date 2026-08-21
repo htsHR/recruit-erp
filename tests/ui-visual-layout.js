@@ -790,6 +790,8 @@ async function verifyRecruiterDailyUsability(page,label,{exerciseQuick=false}={}
   assert.ok(formSizing.optionalCollapsed&&formSizing.statusVisible,`${label} 선택 입력 영역은 접혀도 상태 배지가 보여야 합니다.`);
 
   await page.evaluate(()=>window.setPage('home'));await page.locator('#btnQuickApplicantEntry').click();
+  await page.locator('.applicant-quick-entry-card').waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.activeElement?.id==='quickEntryName');
   const quickBounds=await page.locator('.applicant-quick-entry-card').evaluate(card=>{const rect=card.getBoundingClientRect();return{left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:innerWidth,height:innerHeight,active:document.activeElement?.id};});
   assert.ok(quickBounds.left>=-1&&quickBounds.right<=quickBounds.width+1&&quickBounds.top>=-1&&quickBounds.bottom<=quickBounds.height+1&&quickBounds.active==='quickEntryName',`${label} 빠른 등록 팝업 잘림 또는 최초 포커스 오류: ${JSON.stringify(quickBounds)}`);
   await page.screenshot({path:path.join(outputDir,`${label}-quick-entry.png`),fullPage:false});await page.locator('[data-quick-entry-close]').last().click();
