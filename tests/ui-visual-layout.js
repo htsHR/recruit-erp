@@ -67,9 +67,10 @@ const viewports=[
   {name:'1440x900',width:1440,height:900},
   {name:'1366x768',width:1366,height:768},
   {name:'1280x720',width:1280,height:720},
+  {name:'1024x768',width:1024,height:768},
   {name:'768x1024',width:768,height:1024},
-  {name:'412x915',width:412,height:915},
   {name:'390x844',width:390,height:844},
+  {name:'360x640',width:360,height:640}
 ];
 const savedAdvancedSearchFixture=[
   {name:'천안 채용 <보기> & "A"',criteria:{ApplyFrom:'',ApplyTo:'',InterviewFrom:'',InterviewTo:'',HireFrom:'',HireTo:'',Status:'all',Workplace:'천안',School:'all',Manager:'all',Contact:'all',Dorm:'all',Keyword:'가상'},createdAt:'2026-08-19T00:00:00.000Z'}
@@ -567,13 +568,14 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
     const successBefore=await page.evaluate(()=>({row:{...applicants[0]},filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId,applicantPageSize},calls:window.__quickDetailSaveCalls}));
     await page.locator('#btnApplicantQuickDetailEdit').click();await page.locator('[data-quick-field="phone"]').fill('010-8888-4321');await page.locator('[data-quick-field="email"]').fill('quick-edit-long-synthetic-address@example.invalid');await page.locator('[data-quick-field="source"]').fill(expectedSource);await page.locator('[data-quick-field="memo"]').fill('빠른 수정 저장 성공을 확인하는 가상 메모\n두 번째 줄');
     const sourceFlowBeforeSave=await page.evaluate(expected=>{
+      const rerendered=window.erpApplicantQuickDetail.render();
       const dom=document.querySelector('#applicantQuickEditForm [data-quick-field="source"]')?.value??null;
       const collected=applicantQuickEditValues();
       const index=applicants.findIndex(row=>String(row.id)===String(window.erpApplicantQuickDetail.state.id));
       const normalized=normalize({...applicants[index],...Object.fromEntries(window.erpApplicantQuickDetail.fields.map(field=>[field,collected[field]]))});
-      return{expected,dom,collected:collected.source,normalized:normalized.source,targetId:window.erpApplicantQuickDetail.state.id,rowId:applicants[index]?.id};
+      return{expected,rerendered,dom,collected:collected.source,normalized:normalized.source,targetId:window.erpApplicantQuickDetail.state.id,rowId:applicants[index]?.id};
     },expectedSource);
-    assert.deepEqual(sourceFlowBeforeSave,{expected:expectedSource,dom:expectedSource,collected:expectedSource,normalized:expectedSource,targetId:sourceFlowBeforeSave.targetId,rowId:sourceFlowBeforeSave.targetId},`${label} 지원경로가 DOM→값 수집→normalize 단계에서 유지되어야 합니다: ${JSON.stringify(sourceFlowBeforeSave)}`);
+    assert.deepEqual(sourceFlowBeforeSave,{expected:expectedSource,rerendered:true,dom:expectedSource,collected:expectedSource,normalized:expectedSource,targetId:sourceFlowBeforeSave.targetId,rowId:sourceFlowBeforeSave.targetId},`${label} 지원경로가 수정 중 재렌더→DOM→값 수집→normalize 단계에서 유지되어야 합니다: ${JSON.stringify(sourceFlowBeforeSave)}`);
     await page.locator('#btnApplicantQuickDetailSave').click();await page.waitForFunction(()=>window.erpApplicantQuickDetail.state.mode==='view');
     const success=await page.evaluate(()=>({row:{...applicants[0]},filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId,applicantPageSize},calls:window.__quickDetailSaveCalls,panelOpen:window.erpApplicantQuickDetail.isOpen(),page:document.querySelector('.page.active')?.id,panelText:document.getElementById('applicantQuickDetailBody')?.innerText||'',stored:JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')||'[]').find(row=>row.id===applicants[0].id)}));
     assert.equal(success.calls-successBefore.calls,1,'빠른 수정 성공은 기존 save()를 정확히 한 번 호출해야 합니다.');assert.ok(success.panelOpen&&success.page==='applicants');assert.deepEqual(success.filters,successBefore.filters,'빠른 수정 후 필터·정렬·페이지 설정이 유지되어야 합니다.');assert.deepEqual([success.row.phone,success.row.email,success.row.source,success.row.memo],['010-8888-4321','quick-edit-long-synthetic-address@example.invalid',expectedSource,'빠른 수정 저장 성공을 확인하는 가상 메모\n두 번째 줄']);assert.equal(success.stored.phone,success.row.phone);assert.equal(success.stored.source,expectedSource,'localStorage 지원경로가 입력값과 같아야 합니다.');assert.ok(success.panelText.includes(expectedSource),'저장 직후 읽기 화면에 지원경로가 보여야 합니다.');
@@ -1216,7 +1218,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     await context.close();
     assert.deepEqual(consoleErrors,[],`브라우저 오류: ${consoleErrors.join('\n')}`);
     console.log(`지원자 일반목록 geometry: ${JSON.stringify(applicantTableGeometryMetrics)}`);
-    console.log(`ui-visual-layout.js: 공장초기화·8개 뷰포트+125% 확대·18개 화면·지원자 일반목록 3개 scroll 위치/빠른 보기 다음 액션/내 보기/워크시트·학교 인력분석·오늘 자동화·온보딩·LOCAL ONLY 운영 준비·3개 역할·암호화/상태/보안 팝업 통과\n스크린샷: ${outputDir}`);
+    console.log(`ui-visual-layout.js: 공장초기화·기존 8개 뷰포트+125% 확대·18개 화면·지원자 일반목록 데스크톱 5개 geometry/빠른 보기 다음 액션/내 보기/워크시트·학교 인력분석·오늘 자동화·온보딩·LOCAL ONLY 운영 준비·3개 역할·암호화/상태/보안 팝업 통과\n스크린샷: ${outputDir}`);
   }finally{
     await browser.close();server.kill();
   }

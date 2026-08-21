@@ -44,7 +44,6 @@ body.applicant-quick-detail-open{overflow:hidden}
 
 @media(max-width:900px){
   .applicant-quick-detail-panel{width:100%;border-left:0}
-  .applicant-quick-detail-panel.is-editing{width:100%;max-width:none}
   .applicant-quick-detail-header{padding:14px 16px 12px}
   .applicant-quick-detail-body{padding:13px 16px 18px}
   .applicant-quick-detail-footer{padding:12px 16px max(12px,env(safe-area-inset-bottom))}
@@ -55,7 +54,5 @@ body.applicant-quick-detail-open{overflow:hidden}
   .applicant-quick-detail-summary h4{font-size:22px}
   .applicant-quick-detail-grid{grid-template-columns:1fr}
   .applicant-quick-detail-field.is-wide{grid-column:auto}
-  .applicant-quick-edit-grid{grid-template-columns:1fr}
-  .applicant-quick-edit-grid label.is-wide{grid-column:auto}
   .applicant-quick-detail-footer{grid-template-columns:1fr 1fr}
 }

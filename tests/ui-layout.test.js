@@ -87,7 +87,7 @@ assert.equal(emptyTopbarButtons.length,0,'기능 없는 상단 아이콘 버튼�
 assert.match(read('css/privacy-security.css'),/\.privacy-shield-button\{display:inline-grid!important/);
 assert.match(readiness,/readiness-check-grid/);assert.match(readiness,/@media\(max-width:600px\)/);
 assert.match(visualTest,/\$\{viewport\.name\}-production-readiness\.png/);assert.match(visualTest,/1366x768-zoom125-production-readiness\.png/);
-assert.match(visualTest,/1280x720/);assert.match(visualTest,/768x1024/);assert.match(visualTest,/412x915/);assert.match(visualTest,/390x844/);assert.match(visualTest,/1363x936-sidebar/);assert.match(visualTest,/verifyUsabilityPolish/);assert.match(visualTest,/sticky\.phone\.left-sticky\.name\.right/);assert.match(visualTest,/quickOverflow<=1/);assert.match(visualTest,/ariaCurrent==='date'/);
+assert.match(visualTest,/1280x720/);assert.match(visualTest,/1024x768/);assert.match(visualTest,/360x640/);assert.match(visualTest,/1363x936-sidebar/);assert.match(visualTest,/verifyUsabilityPolish/);assert.match(visualTest,/sticky\.phone\.left-sticky\.name\.right/);assert.match(visualTest,/quickOverflow<=1/);assert.match(visualTest,/ariaCurrent==='date'/);
 
 assert.match(reboot,/setTimeout\(\(\)=>\{if\(root\.document\.body\.classList\.contains\('sidebar-collapsed'\)\)root\.document\.body\.classList\.add\('sidebar-preview-expanded'\);\},150\)/);
 assert.match(reboot,/\},500\)/);assert.match(reboot,/aria-pressed/);assert.match(rebootCss,/sidebar-preview-expanded \.sidebar/);

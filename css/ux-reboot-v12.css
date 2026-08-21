@@ -362,11 +362,6 @@ body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20 .applicant-tabl
   .ux12-ready .dashboard-stats,.ux12-ready .ux12-summary-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important;overflow:visible}.ux12-ready .dashboard-stats .ux12-summary-item,.ux12-ready .ux12-summary-strip>button{border:1px solid var(--ux12-line);min-height:58px}
   .ux12-ready #applicants .applicant-list-header-metrics{display:none!important}.ux12-ready .applicant-view-tabs{overflow-x:auto;max-width:100%;gap:14px!important}
   .ux12-ready #applicants .applicant-list-tool-row{display:flex!important;flex-wrap:wrap!important}.ux12-ready #applicants .applicant-list-tool-row .search{flex:1 0 100%}
-  .ux12-ready #applicants .applicant-table tr.applicant-row:has(.applicant-row-more[open]){overflow:visible!important}
-  .ux12-ready #applicants .applicant-table td.applicant-actions{display:grid!important;grid-template-columns:1fr!important}
-  .ux12-ready #applicants .applicant-row-more{width:100%}
-  .ux12-ready #applicants .applicant-row-more summary{width:100%}
-  .ux12-ready #applicants .applicant-row-more-menu{position:static;width:100%;margin-top:6px;box-sizing:border-box;box-shadow:none}
   .ux12-ready .ux12-stage-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (prefers-reduced-motion:reduce){
