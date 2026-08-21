@@ -10,7 +10,7 @@ const employeeXlsx=require('../js/employee-master-xlsx-import.js');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.0.3');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.1.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -67,10 +67,9 @@ const viewports=[
   {name:'1440x900',width:1440,height:900},
   {name:'1366x768',width:1366,height:768},
   {name:'1280x720',width:1280,height:720},
-  {name:'1024x768',width:1024,height:768},
   {name:'768x1024',width:768,height:1024},
+  {name:'412x915',width:412,height:915},
   {name:'390x844',width:390,height:844},
-  {name:'360x640',width:360,height:640}
 ];
 const savedAdvancedSearchFixture=[
   {name:'천안 채용 <보기> & "A"',criteria:{ApplyFrom:'',ApplyTo:'',InterviewFrom:'',InterviewTo:'',HireFrom:'',HireTo:'',Status:'all',Workplace:'천안',School:'all',Manager:'all',Contact:'all',Dorm:'all',Keyword:'가상'},createdAt:'2026-08-19T00:00:00.000Z'}
@@ -269,7 +268,7 @@ async function verifyUiDensity(page,label){
   assert.ok(density.regions.every(region=>region.height<=regionLimits[region.selector]),`${label} 지원자 상단 제어행이 과도하게 높습니다: ${JSON.stringify(density.regions)}`);
   assert.ok(density.headerVisible&&density.visibleRows>=3,`${label} 768px 높이에서 표 헤더와 지원자 3행 이상이 보여야 합니다: ${JSON.stringify(density)}`);
   assert.ok(density.bodyOverflow<=1,`${label} 본문 가로 넘침: ${density.bodyOverflow}`);
-  assert.ok(density.internalScroll&&density.tableOverflow!=='visible',`${label} 넓은 지원자 표는 table-wrap 안에서만 스크롤되어야 합니다.`);
+  assert.ok(!density.internalScroll&&density.tableOverflow!=='visible',`${label} 1366px 지원자 9열은 내부 가로 스크롤 없이 보여야 합니다.`);
   assert.equal(density.controlIds,true,'지원자 검색·정렬·상세조건·선택·초기화 제어가 유지되어야 합니다.');
   assert.deepEqual(density.statusFilters,['all','todayAction','interview','contact','active','docpass','hire','finished','decision','duplicate']);
   assert.deepEqual(density.statusCounts,density.statusFilters);
@@ -354,7 +353,9 @@ async function verifyRoutingHistory(page,label){
   await page.locator('#applicantTbody .applicant-row').first().focus();await page.keyboard.press('Enter');await page.locator('#applicantQuickDetail.is-open').waitFor();assert.equal(await page.evaluate(()=>location.hash),'#/applicants/quick');
   const privateNeedles=await page.evaluate(()=>[applicants[0]?.name,applicants[0]?.phone,applicants[0]?.email].filter(Boolean));const href=await page.evaluate(()=>location.href);assert.ok(privateNeedles.every(value=>!href.includes(encodeURIComponent(value))&&!href.includes(value)),`${label} URL에 지원자 개인정보가 포함되면 안 됩니다.`);
   await page.goBack();await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});assert.deepEqual(await page.evaluate(()=>({page:document.querySelector('.page.active')?.id,hash:location.hash,search:currentSearch,tableLeft:document.querySelector('#applicants .table-wrap').scrollLeft})),{page:'applicants',hash:'#/applicants',...routeContext},'빠른 보기 뒤로가기는 목록 조건과 스크롤을 유지해야 합니다.');
-  await page.goForward();await page.locator('#applicantQuickDetail.is-open').waitFor();assert.equal(await page.evaluate(()=>location.hash),'#/applicants/quick','앞으로가기는 빠른 보기를 복원해야 합니다.');await page.goBack();await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});
+  await page.goForward();await page.locator('#applicantQuickDetail.is-open').waitFor();assert.equal(await page.evaluate(()=>location.hash),'#/applicants/quick','앞으로가기는 빠른 보기를 복원해야 합니다.');
+  await page.locator('#btnApplicantQuickDetailEdit').click();await page.locator('[data-quick-field="memo"]').fill('브라우저 이탈 보호용 가상 메모');const quickBackDialog=page.waitForEvent('dialog');await page.evaluate(()=>history.back());const quickBack=await quickBackDialog;assert.match(quickBack.message(),/저장되지 않았습니다/);await quickBack.dismiss();await page.waitForFunction(()=>location.hash==='#/applicants/quick'&&window.erpApplicantQuickDetail.state.mode==='edit');assert.equal(await page.locator('[data-quick-field="memo"]').inputValue(),'브라우저 이탈 보호용 가상 메모');
+  const quickBackAcceptDialog=page.waitForEvent('dialog');await page.evaluate(()=>history.back());const quickBackAccept=await quickBackAcceptDialog;await quickBackAccept.accept();await page.locator('#applicantQuickDetail').waitFor({state:'hidden'});await page.waitForFunction(()=>location.hash==='#/applicants');
 
   await page.evaluate(()=>{window.setPage('form');});await page.locator('#name').fill('가상 미저장 입력');
   const formDialog=page.waitForEvent('dialog');await page.evaluate(()=>history.back());const dialog=await formDialog;assert.ok(dialog.message().includes('저장하지 않은 입력'));await dialog.dismiss();await page.waitForFunction(()=>location.hash==='#/applicants/new');assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'form','등록 이탈 취소는 현재 화면을 유지해야 합니다.');assert.equal(await page.locator('#name').inputValue(),'가상 미저장 입력');await page.evaluate(()=>resetForm());
@@ -399,26 +400,24 @@ async function verifyUsabilityPolish(page,label){
 const applicantTableGeometryMetrics=[];
 async function verifyApplicantNormalTableGeometry(page,label){
   await page.evaluate(()=>{window.setPage('applicants');window.erpApplicantWorksheet?.setViewMode?.('normal');resetListFiltersToAll();renderTable();});
-  const positions=await page.locator('#applicants .table-wrap').evaluate(wrap=>{const max=Math.max(0,wrap.scrollWidth-wrap.clientWidth);return[0,Math.round(max/2),max];});
-  for(const [index,target] of positions.entries()){
-    await page.locator('#applicants .table-wrap').evaluate((wrap,left)=>{wrap.scrollLeft=left;},target);await page.waitForTimeout(30);
-    const state=await page.evaluate(()=>{
-      const wrap=document.querySelector('#applicants .table-wrap'),row=document.querySelector('#applicantTbody .applicant-row');
-      const pairs=[['no-head','no-cell'],['name-head','applicant-name-cell'],['phone-head','phone-cell'],['posting-head','posting-cell'],['stage-head','stage-cell'],['next-head','next-action-cell'],['schedule-head','schedule-cell'],['manager-head','manager-cell'],['apply-date-head','apply-date-cell'],['decision-head','decision-cell'],['actions-head','applicant-actions']];
-      const box=(headClass,cellClass)=>{const head=document.querySelector(`#applicants .${headClass}`),cell=row.querySelector(`.${cellClass}`),hr=head.getBoundingClientRect(),cr=cell.getBoundingClientRect(),hs=getComputedStyle(head),cs=getComputedStyle(cell);return{key:headClass.replace('-head',''),head:{left:hr.left,right:hr.right,width:hr.width,position:hs.position,background:hs.backgroundColor,z:hs.zIndex},cell:{left:cr.left,right:cr.right,width:cr.width,position:cs.position,background:cs.backgroundColor,z:cs.zIndex}};};
-      const columns=pairs.map(pair=>box(...pair)),byKey=Object.fromEntries(columns.map(column=>[column.key,column]));
-      return{viewport:innerWidth,clientWidth:wrap.clientWidth,scrollWidth:wrap.scrollWidth,scrollLeft:wrap.scrollLeft,globalOverflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,columns,sticky:['no','name','phone'].map(key=>byKey[key]),statusApply:[byKey.stage.head,byKey['apply-date'].head],decisionActions:[byKey.decision.head,byKey.actions.head],nonSticky:['posting','stage','next','schedule','manager','apply-date','decision','actions'].map(key=>byKey[key].head)};
-    });
-    assert.ok(state.columns.every(column=>Math.abs(column.head.left-column.cell.left)<=1&&Math.abs(column.head.right-column.cell.right)<=1),`${label} ${target}px 헤더/본문 열 경계 오차: ${JSON.stringify(state.columns)}`);
-    assert.ok(Math.abs(state.sticky[1].head.left-state.sticky[0].head.right)<=1&&Math.abs(state.sticky[2].head.left-state.sticky[1].head.right)<=1,`${label} ${target}px NO·성명·연락처 누적 고정 위치 오류`);
-    assert.ok(state.sticky.every(column=>column.head.position==='sticky'&&column.cell.position==='sticky'&&column.head.background!=='rgba(0, 0, 0, 0)'&&column.cell.background!=='rgba(0, 0, 0, 0)'),`${label} ${target}px 고정 열 배경/position 오류`);
-    assert.ok(state.statusApply[0].right<=state.statusApply[1].left+1,`${label} ${target}px 상태/지원일 겹침: ${JSON.stringify(state.statusApply)}`);
-    assert.ok(state.decisionActions[0].right<=state.decisionActions[1].left+1,`${label} ${target}px 판정/관리 겹침: ${JSON.stringify(state.decisionActions)}`);
-    for(let column=1;column<state.nonSticky.length;column++)assert.ok(state.nonSticky[column-1].right<=state.nonSticky[column].left+1,`${label} ${target}px 일반 열 겹침: ${JSON.stringify(state.nonSticky)}`);
-    assert.ok(state.globalOverflow<=1,`${label} ${target}px 전역 가로 넘침: ${state.globalOverflow}`);
-    applicantTableGeometryMetrics.push({label,position:['scroll-0','scroll-mid','scroll-max'][index],clientWidth:state.clientWidth,scrollWidth:state.scrollWidth,scrollLeft:state.scrollLeft,maxHeaderBodyError:Math.max(...state.columns.flatMap(column=>[Math.abs(column.head.left-column.cell.left),Math.abs(column.head.right-column.cell.right)])),stickyWidths:state.sticky.map(column=>Math.round(column.head.width))});
-    await page.screenshot({path:path.join(outputDir,`${label}-applicant-list-${['scroll-0','scroll-mid','scroll-max'][index]}.png`),fullPage:false});
-  }
+  const state=await page.evaluate(()=>{
+    const wrap=document.querySelector('#applicants .table-wrap'),row=document.querySelector('#applicantTbody .applicant-row');
+    const pairs=[['no','no-head','no-cell'],['name','name-head','applicant-name-cell'],['phone','phone-head','phone-cell'],['source','source-head','source-cell'],['stage','stage-head','stage-cell'],['next','next-head','next-action-cell'],['schedule','schedule-head','schedule-cell'],['apply-date','apply-date-head','apply-date-cell'],['actions','actions-head','applicant-actions']];
+    const columns=pairs.map(([key,headClass,cellClass])=>{const head=document.querySelector(`#applicants .${headClass}`),cell=row.querySelector(`.${cellClass}`),hr=head.getBoundingClientRect(),cr=cell.getBoundingClientRect(),hs=getComputedStyle(head),cs=getComputedStyle(cell);return{key,visible:hr.width>0&&hs.display!=='none',head:{left:hr.left,right:hr.right,width:hr.width,position:hs.position,background:hs.backgroundColor},cell:{left:cr.left,right:cr.right,width:cr.width,position:cs.position,background:cs.backgroundColor,whiteSpace:cs.whiteSpace,overflow:cs.overflow,textOverflow:cs.textOverflow}};});
+    const byKey=Object.fromEntries(columns.map(column=>[column.key,column])),visible=columns.filter(column=>column.visible),wrapRect=wrap.getBoundingClientRect();
+    const ellipses=['source-cell','next-action-cell','schedule-cell'].map(className=>{const style=getComputedStyle(row.querySelector(`.${className} strong`));return{whiteSpace:style.whiteSpace,overflow:style.overflow,textOverflow:style.textOverflow};});
+    return{viewport:innerWidth,wrapLeft:wrapRect.left,clientWidth:wrap.clientWidth,scrollWidth:wrap.scrollWidth,globalOverflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,columns,visibleKeys:visible.map(column=>column.key),rowHeight:row.getBoundingClientRect().height,sticky:['no','name','phone'].map(key=>byKey[key]),core:['source','stage','next','schedule','actions'].map(key=>byKey[key]),ellipses};
+  });
+  const compact=state.viewport<1366,expected=compact?['name','phone','source','stage','next','schedule','actions']:['no','name','phone','source','stage','next','schedule','apply-date','actions'];
+  assert.deepEqual(state.visibleKeys,expected,`${label} 표시 열이 9열/압축 7열 기준과 다릅니다: ${JSON.stringify(state.columns)}`);
+  const visible=state.columns.filter(column=>column.visible);assert.ok(visible.every(column=>Math.abs(column.head.left-column.cell.left)<=1&&Math.abs(column.head.right-column.cell.right)<=1),`${label} 헤더/본문 열 경계 오차: ${JSON.stringify(visible)}`);
+  const sticky=compact?state.sticky.slice(1):state.sticky;assert.ok(Math.abs(sticky[0].head.left-state.wrapLeft)<=1&&Math.abs(sticky[1].head.left-sticky[0].head.right)<=1&&(!sticky[2]||Math.abs(sticky[2].head.left-sticky[1].head.right)<=1),`${label} 누적 고정 열 위치 오류: ${JSON.stringify(sticky)}`);
+  assert.ok(sticky.every(column=>column.head.position==='sticky'&&column.cell.position==='sticky'&&column.head.background!=='rgba(0, 0, 0, 0)'&&column.cell.background!=='rgba(0, 0, 0, 0)'),`${label} 고정 열 배경/position 오류`);
+  for(let column=1;column<visible.length;column++)assert.ok(visible[column-1].head.right<=visible[column].head.left+1,`${label} 열 겹침: ${JSON.stringify(visible)}`);
+  assert.ok(state.ellipses.every(cell=>cell.whiteSpace==='nowrap'&&cell.overflow==='hidden'&&cell.textOverflow==='ellipsis'),`${label} 지원경로·다음 조치·예정 일정이 한 줄 말줄임이 아닙니다: ${JSON.stringify(state.ellipses)}`);
+  assert.ok(state.scrollWidth<=state.clientWidth+1,`${label} 일반 목록 안쪽 가로 스크롤이 생겼습니다: ${JSON.stringify(state)}`);assert.ok(state.rowHeight<=52,`${label} 목록 행 높이가 과도합니다: ${state.rowHeight}`);assert.ok(state.globalOverflow<=1,`${label} 전역 가로 넘침: ${state.globalOverflow}`);
+  applicantTableGeometryMetrics.push({label,clientWidth:state.clientWidth,scrollWidth:state.scrollWidth,visibleKeys:state.visibleKeys,stickyWidths:sticky.map(column=>Math.round(column.head.width))});
+  await page.screenshot({path:path.join(outputDir,`${label}-applicant-list.png`),fullPage:false});
 }
 async function verifyApplicantMyViews(page,label,{exercise=false}={}){
   await page.evaluate(()=>{window.setPage('applicants');window.erpApplicantWorksheet?.setViewMode?.('normal');window.erpSavedAdvancedSearches?.render();});
@@ -450,7 +449,7 @@ async function verifyOwnerVisualDesktopShell(page,label){
   assert.equal(expanded.desktop,true,`${label} 125% 확대에서도 v12 PC 셸을 유지해야 합니다.`);
   assert.ok(Math.abs(expanded.sidebar.width-216)<=1&&Math.abs(expanded.main.left-216)<=1,`${label} 확장 메뉴와 본문 위치 오류: ${JSON.stringify(expanded)}`);
   assert.equal(expanded.sidebar.background,'rgb(255, 255, 255)',`${label} 밝은 PC 메뉴가 어두운 레거시 메뉴로 바뀌면 안 됩니다.`);
-  assert.deepEqual(expanded.brand,['Recruit ERP','v12.0.3'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
+  assert.deepEqual(expanded.brand,['Recruit ERP','v12.1.0'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
   assert.equal(expanded.oldLabels,false,`${label} 중복 영문 업무 라벨이 남아 있습니다.`);
   assert.ok(expanded.overflow<=1,`${label} 확장 메뉴에서 전역 가로 넘침이 있습니다: ${expanded.overflow}`);
   assert.ok(expanded.storage.height<=130,`${label} LOCAL ONLY 상태 안내가 과도한 공간을 차지하면 안 됩니다: ${JSON.stringify(expanded.storage)}`);
@@ -551,14 +550,35 @@ async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
     precheckedSafety=await page.evaluate(()=>{const baseline=window.__quickDetailBaseline,keys=Object.keys(baseline.storage);return{saveCalls:window.__quickDetailSaveCalls,arrays:{applicants:JSON.stringify(applicants)===baseline.arrays.applicants,employees:JSON.stringify(employees)===baseline.arrays.employees,schools:JSON.stringify(schools)===baseline.arrays.schools,events:(typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents))===baseline.arrays.events},storage:keys.every(key=>localStorage.getItem(key)===baseline.storage[key])};});
     assert.deepEqual(precheckedSafety,{saveCalls:0,arrays:{applicants:true,employees:true,schools:true,events:true},storage:true},`${label} 빠른 보기 동작은 업무 배열·저장값·save를 변경하면 안 됩니다.`);
     await page.evaluate(()=>{currentApplicantPage=1;renderTable();});await page.locator('#applicantTbody .applicant-row').first().locator('.apply-date-cell').click();await page.locator('#btnApplicantQuickDetailFull').click();await page.locator('#detailModal.show').waitFor();assert.equal(await page.locator('#applicantQuickDetail').getAttribute('aria-hidden'),'true');await page.locator('#btnCloseDetail').click();
-    await page.locator('#applicantTbody .applicant-row').first().locator('.apply-date-cell').click();assert.equal(await page.locator('#btnApplicantQuickDetailEdit').isVisible(),true);await page.locator('#btnApplicantQuickDetailEdit').click();assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'form');assert.equal(await page.locator('#editId').inputValue(),denseApplicants[0].id);await page.evaluate(()=>window.setPage('applicants'));
+    await page.locator('#applicantTbody .applicant-row').first().locator('.apply-date-cell').click();assert.equal(await page.locator('#btnApplicantQuickDetailEdit').isVisible(),true);await page.locator('#btnApplicantQuickDetailEdit').click();await page.locator('#applicantQuickEditForm').waitFor();
+    const editLayout=await page.locator('.applicant-quick-detail-panel').evaluate(panel=>({width:panel.getBoundingClientRect().width,viewport:innerWidth,fields:[...panel.querySelectorAll('[data-quick-field]')].map(node=>node.dataset.quickField),text:panel.innerText,html:panel.innerHTML,page:document.querySelector('.page.active')?.id}));
+    assert.equal(editLayout.page,'applicants','빠른 수정은 전체 수정 페이지로 이동하면 안 됩니다.');assert.deepEqual(editLayout.fields,['name','phone','email','region','workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo']);assert.ok(editLayout.width<=560&&editLayout.width<=editLayout.viewport);assert.ok(!/residentNumber|주민등록번호|000000-0000000/.test(editLayout.html+editLayout.text));
+
+    const saveCallsBeforeCancel=await page.evaluate(()=>window.__quickDetailSaveCalls);await page.locator('[data-quick-field="memo"]').fill('취소할 가상 메모');await page.locator('#btnApplicantQuickDetailCancel').click();assert.equal(await page.evaluate(()=>window.__quickDetailSaveCalls),saveCallsBeforeCancel,'빠른 수정 취소는 save를 호출하면 안 됩니다.');assert.equal(await page.evaluate(()=>applicants[0].memo),'UI 밀도 자동검사용 가상 메모');
+
+    await page.locator('#btnApplicantQuickDetailEdit').click();await page.locator('[data-quick-field="phone"]').fill('010-7777-1234');await page.locator('[data-quick-field="memo"]').fill('저장 실패 후 유지할 가상 메모');
+    const failureBefore=await page.evaluate(()=>({applicant:JSON.stringify(applicants[0]),storage:localStorage.getItem('recruit_erp_applicants_stable')}));
+    await page.evaluate(()=>{window.__quickDetailWorkingSave=window.save;window.save=function(){window.__quickDetailSaveCalls++;return false;};});await page.locator('#btnApplicantQuickDetailSave').click();await page.locator('#applicantQuickEditFeedback.is-error').waitFor();
+    const failure=await page.evaluate(()=>({applicant:JSON.stringify(applicants[0]),storage:localStorage.getItem('recruit_erp_applicants_stable'),phone:document.querySelector('[data-quick-field="phone"]')?.value,memo:document.querySelector('[data-quick-field="memo"]')?.value,mode:window.erpApplicantQuickDetail.state.mode,calls:window.__quickDetailSaveCalls}));
+    assert.deepEqual({applicant:failure.applicant,storage:failure.storage},{applicant:failureBefore.applicant,storage:failureBefore.storage},'빠른 수정 저장 실패는 메모리와 localStorage를 원상복구해야 합니다.');assert.deepEqual({phone:failure.phone,memo:failure.memo,mode:failure.mode},{phone:'010-7777-1234',memo:'저장 실패 후 유지할 가상 메모',mode:'edit'});
+    await page.evaluate(()=>{window.save=window.__quickDetailWorkingSave;delete window.__quickDetailWorkingSave;});await page.locator('#btnApplicantQuickDetailCancel').click();
+
+    const successBefore=await page.evaluate(()=>({row:{...applicants[0]},filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId,applicantPageSize},calls:window.__quickDetailSaveCalls}));
+    await page.locator('#btnApplicantQuickDetailEdit').click();await page.locator('[data-quick-field="phone"]').fill('010-8888-4321');await page.locator('[data-quick-field="email"]').fill('quick-edit-long-synthetic-address@example.invalid');await page.locator('[data-quick-field="source"]').fill('가상으로만 사용하는 매우 긴 지원경로 이름');await page.locator('[data-quick-field="memo"]').fill('빠른 수정 저장 성공을 확인하는 가상 메모\n두 번째 줄');await page.locator('#btnApplicantQuickDetailSave').click();await page.waitForFunction(()=>window.erpApplicantQuickDetail.state.mode==='view');
+    const success=await page.evaluate(()=>({row:{...applicants[0]},filters:{currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId,applicantPageSize},calls:window.__quickDetailSaveCalls,panelOpen:window.erpApplicantQuickDetail.isOpen(),page:document.querySelector('.page.active')?.id,stored:JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')||'[]').find(row=>row.id===applicants[0].id)}));
+    assert.equal(success.calls-successBefore.calls,1,'빠른 수정 성공은 기존 save()를 정확히 한 번 호출해야 합니다.');assert.ok(success.panelOpen&&success.page==='applicants');assert.deepEqual(success.filters,successBefore.filters,'빠른 수정 후 필터·정렬·페이지 설정이 유지되어야 합니다.');assert.deepEqual([success.row.phone,success.row.email,success.row.source,success.row.memo],['010-8888-4321','quick-edit-long-synthetic-address@example.invalid','가상으로만 사용하는 매우 긴 지원경로 이름','빠른 수정 저장 성공을 확인하는 가상 메모\n두 번째 줄']);assert.equal(success.stored.phone,success.row.phone);
+    for(const field of ['id','school','career','certs','finalDecision','decisionReason','residentNumber'])assert.deepEqual(success.row[field],successBefore.row[field],`빠른 수정이 허용 범위 밖 ${field} 값을 바꾸면 안 됩니다.`);
+    await page.screenshot({path:path.join(outputDir,`${label}-applicant-quick-edit-success.png`),fullPage:false});
+
+    await page.locator('#btnApplicantQuickDetailEdit').click();await page.locator('[data-quick-field="memo"]').fill('이탈 확인용 미저장 메모');page.once('dialog',dialog=>dialog.dismiss());await page.locator('#btnApplicantQuickDetailClose').click();assert.equal(await page.evaluate(()=>window.erpApplicantQuickDetail.state.mode),'edit','미저장 이탈을 취소하면 빠른 수정이 유지되어야 합니다.');
+    const callsBeforeDirtyMove=await page.evaluate(()=>window.__quickDetailSaveCalls);page.once('dialog',dialog=>dialog.accept());await page.locator('#btnApplicantQuickDetailNext').click();await page.waitForFunction(()=>window.erpApplicantQuickDetail.state.mode==='view');assert.equal(await page.evaluate(()=>window.__quickDetailSaveCalls),callsBeforeDirtyMove,'미저장 이탈 확인은 save를 호출하면 안 됩니다.');await closeQuickDetail();
   }
 
-  const safety=await page.evaluate(prechecked=>{
+  const safety=await page.evaluate(({prechecked,exercise})=>{
     const baseline=window.__quickDetailBaseline,keys=Object.keys(baseline.storage),result=prechecked||{saveCalls:window.__quickDetailSaveCalls,arrays:{applicants:JSON.stringify(applicants)===baseline.arrays.applicants,employees:JSON.stringify(employees)===baseline.arrays.employees,schools:JSON.stringify(schools)===baseline.arrays.schools,events:(typeof calendarEvents==='undefined'?'':JSON.stringify(calendarEvents))===baseline.arrays.events},storage:keys.every(key=>localStorage.getItem(key)===baseline.storage[key])};
-    window.save=window.__quickDetailRealSave;applicants=window.__quickDetailOriginalApplicants;delete window.__quickDetailRealSave;delete window.__quickDetailOriginalApplicants;delete window.__quickDetailBaseline;delete window.__quickDetailSaveCalls;resetListFiltersToAll();renderAll();setPage('applicants');return result;
-  },precheckedSafety);
-  assert.deepEqual(safety,{saveCalls:0,arrays:{applicants:true,employees:true,schools:true,events:true},storage:true},`${label} 빠른 보기 동작은 업무 배열·저장값·save를 변경하면 안 됩니다.`);
+    window.closeApplicantQuickDetail?.({restoreFocus:false,force:true});window.save=window.__quickDetailRealSave;keys.forEach(key=>baseline.storage[key]===null?localStorage.removeItem(key):localStorage.setItem(key,baseline.storage[key]));applicants=window.__quickDetailOriginalApplicants;const restored=keys.every(key=>localStorage.getItem(key)===baseline.storage[key]);delete window.__quickDetailRealSave;delete window.__quickDetailOriginalApplicants;delete window.__quickDetailBaseline;delete window.__quickDetailSaveCalls;resetListFiltersToAll();renderAll();setPage('applicants');return{result,restored,exercise};
+  },{prechecked:precheckedSafety,exercise});
+  assert.equal(safety.restored,true,'빠른 수정 합성 QA 후 원래 브라우저 저장값을 복구해야 합니다.');assert.deepEqual(safety.result,{saveCalls:0,arrays:{applicants:true,employees:true,schools:true,events:true},storage:true},`${label} 빠른 보기 읽기 동작은 업무 배열·저장값·save를 변경하면 안 됩니다.`);
 }
 async function verifyApplicantWorksheet(page,label,{exercise=false}={}){
   await page.evaluate(rows=>{
@@ -838,8 +858,8 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v12.0.3');
-      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.0.3','화면은 단일 현재 버전 소스를 사용해야 합니다.');
+      assert.equal(await page.title(),'채용관리 시스템 v12.1.0');
+      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.1.0','화면은 단일 현재 버전 소스를 사용해야 합니다.');
       const localOnlyState=await page.evaluate(()=>({
         active:document.querySelector('.page.active')?.id,
         localOnly:window.erpAppVersion?.LOCAL_ONLY===true&&window.erpLocalOnlyRuntime?.enabled===true,
@@ -918,7 +938,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         await page.evaluate(()=>window.setPage?.('productionReadiness'));await page.waitForTimeout(120);
         const readinessState=await page.evaluate(()=>({automatic:document.querySelectorAll('#productionReadiness .readiness-check').length,manual:document.querySelectorAll('#productionReadiness [data-readiness-manual]').length,text:document.querySelector('#productionReadiness')?.innerText||'',overflow:document.querySelector('#productionReadiness').scrollWidth-document.querySelector('#productionReadiness').clientWidth}));
         assert.deepEqual({automatic:readinessState.automatic,manual:readinessState.manual},{automatic:8,manual:7});assert.ok(readinessState.overflow<=1,`${viewport.name} 운영 준비 화면 가로 넘침: ${JSON.stringify(readinessState)}`);assert.ok(!/000000-0000000|010-0000-0001/.test(readinessState.text),'운영 준비 화면에 가상 개인정보 원문도 표시하면 안 됩니다.');
-        assert.ok(readinessState.text.includes('v12.0.3 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.'),'운영 준비 화면이 v12.0.3 선택적 캐시 일치 결과를 보여야 합니다.');
+        assert.ok(readinessState.text.includes('v12.1.0 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.'),'운영 준비 화면이 v12.1.0 선택적 캐시 일치 결과를 보여야 합니다.');
         assert.ok(readinessState.text.includes('LOCAL ONLY')&&!/Supabase|클라우드 검증/i.test(readinessState.text),'운영 준비 화면은 LOCAL ONLY 독립 상태만 보여야 합니다.');
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-production-readiness.png`),fullPage:true});
       }
@@ -1026,6 +1046,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     await zoomPage.addInitScript(fixture=>{localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(fixture.applicants));localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify(fixture.profiles));localStorage.setItem('recruit_erp_saved_advanced_searches',JSON.stringify(fixture.savedViews));localStorage.setItem('recruit_erp_ui_operation_environment','company');},{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
     await zoomPage.goto(baseUrl,{waitUntil:'domcontentloaded'});await zoomPage.waitForTimeout(700);
     await verifyOwnerVisualDesktopShell(zoomPage,'1366x768-zoom125');
+    await verifyApplicantNormalTableGeometry(zoomPage,'1366x768-zoom125');
     await verifyApplicantQuickDetail(zoomPage,'1366x768-zoom125');
     await verifyHireWaitingGrid(zoomPage,'1366x768-zoom125');
     await verifyApplicantWorksheet(zoomPage,'1366x768-zoom125',{exercise:true});
@@ -1102,7 +1123,8 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
       await page.evaluate(()=>{window.setPage('applicants');window.erpApplicantWorksheet?.setViewMode?.('normal');renderTable();window.openApplicantQuickDetail(applicants[0]?.id);});await page.locator('#applicantQuickDetail.is-open').waitFor();
       const quickPermission=await page.evaluate(()=>({editVisible:document.getElementById('btnApplicantQuickDetailEdit').getClientRects().length>0,deleteButtons:document.querySelectorAll('#applicantQuickDetail [data-erp-handler*="delete"],#applicantQuickDetail .delete').length,page:document.querySelector('.page.active')?.id,text:document.getElementById('applicantQuickDetail').innerText}));
       assert.equal(quickPermission.editVisible,role!=='viewer',`${role} 빠른 보기 수정 권한 표시가 잘못되었습니다.`);assert.equal(quickPermission.deleteButtons,0,'빠른 보기에는 삭제 동작이 없어야 합니다.');assert.ok(!/000000-0000000|\d{6}-\d{7}/.test(quickPermission.text),'역할별 빠른 보기에 주민등록번호가 표시되면 안 됩니다.');
-      if(role==='viewer'){await page.locator('#btnApplicantQuickDetailEdit').evaluate(button=>button.click());assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'applicants','조회 전용은 숨은 수정 버튼을 실행해도 편집 화면으로 이동하면 안 됩니다.');}
+      if(role==='viewer'){const blocked=await page.evaluate(()=>({start:window.erpApplicantQuickDetail.startEdit(),save:window.erpApplicantQuickDetail.saveEdit(),mode:window.erpApplicantQuickDetail.state.mode,page:document.querySelector('.page.active')?.id}));assert.deepEqual(blocked,{start:false,save:false,mode:'view',page:'applicants'},'조회 전용은 숨은 빠른 수정 함수를 직접 실행해도 편집·저장할 수 없어야 합니다.');}
+      else{await page.locator('#btnApplicantQuickDetailEdit').click();assert.equal(await page.evaluate(()=>window.erpApplicantQuickDetail.state.mode),'edit');await page.locator('#btnApplicantQuickDetailCancel').click();}
       await page.evaluate(()=>window.closeApplicantQuickDetail());
       const roleView=await page.evaluate(()=>{const before=localStorage.getItem('recruit_erp_saved_advanced_searches'),result=window.erpSavedAdvancedSearches.load(0),after=localStorage.getItem('recruit_erp_saved_advanced_searches'),count=window.__erpAdvancedFilterIds.length;window.__erpAdvancedFilterIds=null;renderTable();return{result,before,after,count};});
       assert.ok(roleView.result&&roleView.count>=1&&roleView.before===roleView.after,`${role} 내 보기 불러오기는 허용되고 저장 검색조건은 변경하지 않아야 합니다.`);

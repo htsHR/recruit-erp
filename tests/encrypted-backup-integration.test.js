@@ -15,7 +15,7 @@ assert.match(ui,/erpPermissions\.require\('backup\.manage'\)/);assert.match(ui,/
 assert.match(audit,/<option value="export">백업·내보내기<\/option>/);
 assert.ok(!/recruiter:\[[^\]]*backup\./.test(permissions),'채용담당자에게 백업 권한을 추가하면 안 됩니다.');assert.ok(!/viewer:\[[^\]]*backup\./.test(permissions),'조회 전용에게 백업 권한을 추가하면 안 됩니다.');
 assert.ok(index.indexOf('js/encrypted-backup.js')<index.indexOf('js/backup-center.js'));assert.ok(index.indexOf('js/backup-center.js')<index.indexOf('js/encrypted-backup-ui.js'));assert.match(index,/accept="\.erpbackup,\.json,application\/json"/);assert.match(index,/css\/encrypted-backup\.css\?v=12\.0\.2/);
-assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v12\.0\.3/);assert.match(workflow,/path: artifacts\/ui-v12\.0\.3/);
+assert.match(workflow,/UI_SCREENSHOT_DIR: artifacts\/ui-v12\.1\.0/);assert.match(workflow,/path: artifacts\/ui-v12\.1\.0/);
 const retiredDir=path.join(root,'supabase');const retiredFiles=fs.existsSync(retiredDir)?fs.readdirSync(retiredDir,{recursive:true}).filter(file=>fs.statSync(path.join(retiredDir,file)).isFile()):[];assert.deepEqual(retiredFiles,[],'폐기된 원격 DB migration이 남으면 안 됩니다.');
 for(const retired of ['supabase_config.js','js/auth-init.js','js/cloud-sync.js','js/sync-safety.js','js/shared-storage.js'])assert.equal(fs.existsSync(path.join(root,retired)),false,`${retired}는 LOCAL ONLY 배포에 남으면 안 됩니다.`);
 assert.ok(fs.existsSync(path.join(root,'docs','ENCRYPTED_BACKUP_v10.60.0.md')));assert.ok(fs.existsSync(path.join(root,'CHANGELOG_v11.0.0.md')));

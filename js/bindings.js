@@ -8,7 +8,7 @@ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=
   if(page==='form' && typeof window.openNewApplicantForm==='function') window.openNewApplicantForm();
   else setPage(page);
 }));
-bind('applicantForm','input',()=>{ updateScorePreview(); checkDuplicate(); });
+bind('applicantForm','input',()=>{ updateApplicantFormDerivedFields(); checkDuplicate(); });
 bind('applicantForm','keydown', e=>{
   if(e.key !== 'Enter') return;
   const tag = e.target.tagName;
@@ -25,8 +25,7 @@ bind('applicantForm','submit',e=>{
   if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
   const f=getForm();
   if(!f.name){ alert('성명을 입력해주세요.'); return; }
-  const fPhone=normalizePhone(f.phone);
-  const dup=applicants.find(a=>a.id!==f.editId&&((fPhone&&fPhone.length>=8&&normalizePhone(a.phone)===fPhone)||(f.email&&a.email===f.email)));
+  const dup=findApplicantPhoneEmailDuplicate(f,f.editId);
   if(dup&&!confirm(`중복 가능성이 있습니다: ${dup.name}\n그래도 저장할까요?`)) return;
   const excelPending=String(window.__erpExcelPastePendingApplicant||'');
   const applicantsBeforeSave=applicants.slice();

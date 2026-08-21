@@ -10,8 +10,8 @@
   const SETTINGS_KEY='recruit_erp_applicant_worksheet_view_v1';
   const VIEW_MODES=['normal','stage','worksheet'];
   const WORKPLACES=['all','천안','평택','기타'];
-  const FILTERS=['all','todayAction','active','docpass','interview','hire','finished','contact','decision','duplicate','priority','hold','rejected'];
-  const SORTS=['recent','applyDesc','applyAsc','interviewAsc','scoreDesc','nameAsc'];
+  const FILTERS=['all','todayAction','active','docpass','interview','hire','finished','contact','decision','duplicate','hold','rejected'];
+  const SORTS=['recent','applyDesc','applyAsc','interviewAsc','nameAsc'];
   const PAGE_SIZES=[30,50,100];
   const EDITABLE_FIELDS=['name','phone','email','region','workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo'];
   const COLUMNS=[
@@ -26,7 +26,7 @@
     {key:'interviewTime',label:'면접시간',type:'select',width:105},
     {key:'hireDate',label:'입사일',type:'date',width:126},
     {key:'source',label:'지원경로',type:'text',width:140},
-    {key:'careerType',label:'경력구분',type:'select',width:105},
+    {key:'careerType',label:'지원구분',type:'select',width:105},
     {key:'dormUse',label:'출근방법',type:'select',width:112},
     {key:'memo',label:'메모',type:'text',width:280}
   ];
@@ -555,7 +555,7 @@
   function ensureUi(){
     const section=root.document.getElementById('applicants');if(!section||root.document.getElementById('applicantWorksheet'))return;
     const header=section.querySelector('.applicant-list-header-row'),metrics=section.querySelector('.applicant-list-header-metrics');
-    const toggle=root.document.createElement('div');toggle.className='worksheet-view-toggle applicant-view-tabs';toggle.setAttribute('aria-label','지원자 목록 보기 방식');toggle.innerHTML='<button type="button" id="btnApplicantNormalView">전체 지원자</button><button type="button" id="btnApplicantPostingView" disabled aria-disabled="true" title="공고 데이터 연동 후 제공됩니다.">공고별</button><button type="button" id="btnApplicantStageView">채용 단계</button><button type="button" id="btnApplicantWorksheetView">워크시트</button>';
+    const toggle=root.document.createElement('div');toggle.className='worksheet-view-toggle applicant-view-tabs';toggle.setAttribute('aria-label','지원자 목록 보기 방식');toggle.innerHTML='<button type="button" id="btnApplicantNormalView">전체 지원자</button><button type="button" id="btnApplicantStageView">채용 단계</button><button type="button" id="btnApplicantWorksheetView">워크시트</button>';
     if(header)header.insertBefore(toggle,metrics||null);
     const normalWrap=section.querySelector('#applicantTbody')?.closest('.table-wrap'),host=root.document.createElement('div');host.id='applicantWorksheet';host.className='applicant-worksheet-shell';host.hidden=true;
     normalWrap?.insertAdjacentElement('afterend',host);

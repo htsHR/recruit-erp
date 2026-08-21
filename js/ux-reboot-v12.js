@@ -2,7 +2,6 @@
 (function(root){
   'use strict';
 
-  const MANAGER_KEY='recruit_erp_applicant_manager_assignments';
   const NAV_GROUPS=[
     {key:'today',label:'오늘',pages:['home','today']},
     {key:'applicants',label:'지원자',pages:['applicants','form','advancedSearch']},
@@ -42,23 +41,11 @@
     root.document.body.classList.toggle('ux12-desktop-shell',isDesktopShell());
   }
 
-  function managerAssignments(){
-    try{
-      const parsed=JSON.parse(root.localStorage.getItem(MANAGER_KEY)||'{}');
-      return parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?parsed:{};
-    }catch{return {};}
-  }
-  function postingOf(applicant){
-    return text(applicant?.jobPosting||applicant?.jobTitle||applicant?.recruitmentTitle||applicant?.postingName||applicant?.positionApplied);
-  }
-  function managerOf(applicant,map=managerAssignments()){
-    return text(applicant?.manager||map[String(applicant?.id)]||map[applicant?.id]);
-  }
   function nextActionOf(applicant){
     const status=text(applicant?.status);
     if(applicant?.nextContactDate)return {label:'연락 예정',detail:text(applicant.nextContactDate)};
     if(['면접예정','다음면접'].includes(status))return {label:'면접 준비',detail:text(applicant.interviewDate)||'일정 확인'};
-    if(status==='면접완료')return {label:'결과 입력',detail:'판정 확인'};
+    if(status==='면접완료')return {label:'결과 입력',detail:applicant?.finalDecision||'면접 결과 미입력'};
     if(status==='입사예정')return {label:'입사 확인',detail:text(applicant.hireDate)||'일정 확인'};
     if(status==='부재중')return {label:'재연락',detail:'연락일 지정'};
     if(status==='서류검토')return {label:'서류 검토',detail:'검토 진행'};
@@ -120,7 +107,7 @@
     context.appendChild(contextActions);main.insertBefore(context,main.querySelector('.page'));
 
     const left=root.document.createElement('div');left.className='ux12-top-search';
-    left.innerHTML='<label class="ux12-global-search"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z"></path></svg><span class="sr-only">전체 검색</span><input id="globalSearchInput" type="search" autocomplete="off" placeholder="지원자·공고·담당자 검색" aria-controls="globalSearchResults" aria-expanded="false"></label><div class="ux12-global-search-results" id="globalSearchResults" role="listbox" hidden></div>';
+    left.innerHTML='<label class="ux12-global-search"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z"></path></svg><span class="sr-only">전체 검색</span><input id="globalSearchInput" type="search" autocomplete="off" placeholder="지원자·연락처·지원경로 검색" aria-controls="globalSearchResults" aria-expanded="false"></label><div class="ux12-global-search-results" id="globalSearchResults" role="listbox" hidden></div>';
     const right=root.document.createElement('div');right.className='ux12-top-actions';
     const notice=iconButton('ux12Notifications','오늘 처리 목록','M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4');
     const help=iconButton('ux12Help','도움말','M9.2 9a3 3 0 1 1 4.8 2.4c-1.2.8-2 1.2-2 2.6M12 18h.01');
@@ -167,10 +154,8 @@
   }
 
   function searchMatches(query){
-    const needle=query.toLocaleLowerCase('ko'),map=managerAssignments();
-    return rows().map(applicant=>({applicant,manager:managerOf(applicant,map),posting:postingOf(applicant)})).filter(item=>[
-      item.applicant.name,item.applicant.phone,item.applicant.school,item.applicant.status,item.applicant.source,item.manager,item.posting
-    ].some(value=>text(value).toLocaleLowerCase('ko').includes(needle))).slice(0,8);
+    const needle=query.toLocaleLowerCase('ko');
+    return rows().filter(applicant=>[applicant.name,applicant.phone,applicant.source].some(value=>text(value).toLocaleLowerCase('ko').includes(needle))).slice(0,8);
   }
   function bindGlobalSearch(){
     const input=$('globalSearchInput'),host=$('globalSearchResults');if(!input||!host)return;
@@ -178,7 +163,7 @@
     const openApplicant=id=>{close();input.value='';root.openApplicantQuickDetailFromWorkflow?.(id,input);};
     input.addEventListener('input',()=>{
       const query=text(input.value);if(!query){close();return;}
-      const matches=searchMatches(query);host.innerHTML=matches.length?matches.map(({applicant,manager,posting})=>`<button type="button" role="option" data-applicant-id="${escapeHtml(applicant.id)}"><strong>${escapeHtml(applicant.name||'이름 미입력')}</strong><span>${escapeHtml([posting||applicant.status||'상태 미입력',manager&&`담당 ${manager}`].filter(Boolean).join(' · '))}</span></button>`).join(''):'<p>일치하는 지원자가 없습니다.</p>';
+      const matches=searchMatches(query);host.innerHTML=matches.length?matches.map(applicant=>`<button type="button" role="option" data-applicant-id="${escapeHtml(applicant.id)}"><strong>${escapeHtml(applicant.name||'이름 미입력')}</strong><span>${escapeHtml(applicant.source||applicant.status||'미입력')}</span></button>`).join(''):'<p>일치하는 지원자가 없습니다.</p>';
       host.hidden=false;input.setAttribute('aria-expanded','true');
     });
     input.addEventListener('keydown',event=>{if(event.key==='Escape'){close();return;}if(event.key==='ArrowDown'){event.preventDefault();host.querySelector('button')?.focus();}if(event.key==='Enter'){const first=host.querySelector('button');if(first){event.preventDefault();openApplicant(first.dataset.applicantId);}}});
@@ -190,8 +175,8 @@
   function rebuildApplicantTable(){
     const table=root.document.querySelector('#applicants .applicant-table');if(!table)return;
     const colgroup=table.querySelector('colgroup'),head=table.querySelector('thead');
-    if(colgroup)colgroup.innerHTML='<col class="applicant-col-no"><col class="applicant-col-name"><col class="applicant-col-phone"><col class="applicant-col-posting"><col class="applicant-col-stage"><col class="applicant-col-next"><col class="applicant-col-schedule"><col class="applicant-col-manager"><col class="applicant-col-apply-date"><col class="applicant-col-decision"><col class="applicant-col-actions">';
-    if(head)head.innerHTML='<tr><th class="no-head">NO</th><th class="name-head">성명</th><th class="phone-head">연락처</th><th class="posting-head">지원 공고</th><th class="stage-head">현재 단계</th><th class="next-head">다음 조치</th><th class="schedule-head">예정 일정</th><th class="manager-head">담당자</th><th class="apply-date-head">지원일</th><th class="decision-head">판정</th><th class="actions-head">더보기</th></tr>';
+    if(colgroup)colgroup.innerHTML='<col class="applicant-col-no"><col class="applicant-col-name"><col class="applicant-col-phone"><col class="applicant-col-source"><col class="applicant-col-stage"><col class="applicant-col-next"><col class="applicant-col-schedule"><col class="applicant-col-apply-date"><col class="applicant-col-actions">';
+    if(head)head.innerHTML='<tr><th class="no-head">NO</th><th class="name-head">성명</th><th class="phone-head">연락처</th><th class="source-head">지원경로</th><th class="stage-head">현재 단계</th><th class="next-head">다음 조치</th><th class="schedule-head">예정 일정</th><th class="apply-date-head">지원일</th><th class="actions-head">더보기</th></tr>';
   }
   function organizeApplicantFilters(){
     const quick=$('quickFilters'),fixed=quick?.querySelector('.applicant-fixed-presets'),core=quick?.querySelector('.applicant-core-status-filters'),details=quick?.querySelector('.applicant-auxiliary-filters'),row=details?.querySelector('.applicant-auxiliary-filter-row');
@@ -329,7 +314,8 @@
   function hasUnsavedChanges(){
     const worksheetDirty=Boolean(root.erpApplicantWorksheet?.state?.dirty?.size);
     const formDirty=typeof root.erpApplicantFormIsDirty==='function'&&root.erpApplicantFormIsDirty();
-    return worksheetDirty||formDirty;
+    const quickDirty=Boolean(root.erpApplicantQuickDetail?.isDirty?.());
+    return worksheetDirty||formDirty||quickDirty;
   }
   function restoreAfterHistory(targetState){
     const target=resolveRoute(targetState),targetIndex=Number.isFinite(Number(targetState?.erpIndex))?Number(targetState.erpIndex):routing.index;
@@ -346,7 +332,10 @@
     }
     if(target.page==='applicants'){
       if(target.quickId){if(!root.erpApplicantQuickDetail?.isOpen?.())root.openApplicantQuickDetail?.(target.quickId,null);}
-      else if(root.erpApplicantQuickDetail?.isOpen?.())root.closeApplicantQuickDetail?.({restoreFocus:false,restoreScroll:false});
+      else if(root.erpApplicantQuickDetail?.isOpen?.()){
+        const closed=root.closeApplicantQuickDetail?.({restoreFocus:false,restoreScroll:false});
+        if(closed===false){routing.suppress=false;const delta=routing.index-targetIndex;if(delta){routing.reverting=true;root.history.go(delta);}return false;}
+      }
     }
     routing.suppress=false;routing.index=targetIndex;routing.currentPage=target.page;
     root.requestAnimationFrame(()=>root.scrollTo(Number(targetState?.scrollX)||0,Number(targetState?.scrollY)||0));
@@ -408,7 +397,7 @@
     syncDesktopShell();root.addEventListener('resize',syncDesktopShell,{passive:true});
     auditPhotoFreeShell();buildNavigation();buildShell();rebuildApplicantTable();organizeApplicantFilters();installHome();installTodaySummary();installWrappers();bindAdvancedSearchRouting();bindHomeSummary();
     root.erpUx12Router={onQuickOpen:pushQuickRoute,onQuickClose:replaceQuickWithList,onQuickChange:updateQuickState,resolveRoute,routeForPage,activePageId,hasUnsavedChanges,state:routing};
-    root.erpUx12={managerAssignments,postingOf,managerOf,nextActionOf,scheduleOf,renderStageOverview,renderHomeSummary,updateTodaySummary,router:root.erpUx12Router};
+    root.erpUx12={nextActionOf,scheduleOf,renderStageOverview,renderHomeSummary,updateTodaySummary,router:root.erpUx12Router};
     installRouting();
     root.renderStats?.();root.renderHomeLists?.();root.renderToday?.();root.renderTable?.();updateActiveNavigation();
     root.__erpUx12FirstShownAt=root.performance?.now?.()||Date.now();

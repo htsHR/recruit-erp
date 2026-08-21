@@ -32,8 +32,8 @@
       }
     </style>
     <link href="favicon.svg" rel="icon" type="image/svg+xml" />
-    <title>채용관리 시스템 v12.0.3</title>
-    <script src="js/app-version.js?v=12.0.3"></script>
+    <title>채용관리 시스템 v12.1.0</title>
+    <script src="js/app-version.js?v=12.1.0"></script>
     <script src="js/factory-reset-v12.js?v=12.0.2"></script>
     <script src="js/safety.js?v=12.0.2"></script>
     <script src="js/security.js?v=12.0.2"></script>
@@ -63,11 +63,11 @@
     <link rel="stylesheet" href="css/school-workforce-analytics.css?v=12.0.2" />
     <link rel="stylesheet" href="css/applicant-worksheet.css?v=12.0.2" />
     <link rel="stylesheet" href="css/ui-density-navigation.css?v=12.0.2" />
-    <link rel="stylesheet" href="css/applicant-quick-detail.css?v=12.0.2" />
+    <link rel="stylesheet" href="css/applicant-quick-detail.css?v=12.1.0" />
     <link rel="stylesheet" href="css/recruiter-daily-usability.css?v=12.0.2" />
     <link rel="stylesheet" href="css/production-gate-responsive-polish.css?v=12.0.2" />
     <link rel="stylesheet" href="css/recruiter-ui-stability.css?v=12.0.2" />
-    <link rel="stylesheet" href="css/ux-reboot-v12.css?v=12.0.2" />
+    <link rel="stylesheet" href="css/ux-reboot-v12.css?v=12.1.0" />
   </head>
   <body>
     <div class="app-shell">
@@ -76,7 +76,7 @@
           <div aria-hidden="true" class="brand-mark">R</div>
           <div class="brand-copy">
             <h1>Recruit ERP</h1>
-            <p>v12.0.3</p>
+            <p>v12.1.0</p>
           </div>
         </div>
         <nav class="nav">
@@ -349,7 +349,7 @@
                 aria-label="지원자 검색"
                 class="search"
                 id="searchInput"
-                placeholder="이름, 연락처, 학교, 지역, 메모 검색"
+                placeholder="지원자·연락처·지원경로 검색"
               /><select
                 aria-label="지원자 정렬"
                 class="sort-select"
@@ -359,7 +359,6 @@
                 <option value="applyDesc">지원일 최신순</option>
                 <option value="applyAsc">지원일 오래된순</option>
                 <option value="interviewAsc">면접일 빠른순</option>
-                <option value="scoreDesc">검토점수 높은순</option>
                 <option value="nameAsc">이름순</option></select
               ><label class="check-inline compact-check-inline"
                 ><input id="hideFinished" type="checkbox" /> 종료/불합격
@@ -489,7 +488,7 @@
                     </summary>
                     <div class="applicant-auxiliary-filter-row">
                       <button class="chip" data-filter="decision" type="button">
-                        <span>판정 필요</span
+                        <span>면접 결과 미입력</span
                         ><span class="filter-count" data-filter-count="decision"
                           >0</span
                         >
@@ -554,15 +553,11 @@
                 <col class="applicant-col-no" />
                 <col class="applicant-col-name" />
                 <col class="applicant-col-phone" />
-                <col class="applicant-col-email" />
-                <col class="applicant-col-region" />
-                <col class="applicant-col-workplace" />
-                <col class="applicant-col-status" />
-                <col class="applicant-col-apply-date" />
+                <col class="applicant-col-source" />
+                <col class="applicant-col-stage" />
+                <col class="applicant-col-next" />
                 <col class="applicant-col-schedule" />
-                <col class="applicant-col-hire-date" />
-                <col class="applicant-col-commute" />
-                <col class="applicant-col-decision" />
+                <col class="applicant-col-apply-date" />
                 <col class="applicant-col-actions" />
               </colgroup>
               <thead>
@@ -570,16 +565,12 @@
                   <th class="no-head">NO</th>
                   <th class="name-head">성명</th>
                   <th class="phone-head">연락처</th>
-                  <th class="email-head">이메일</th>
-                  <th class="region-head">지역</th>
-                  <th class="workplace-head">근무지</th>
-                  <th class="status-head">상태</th>
+                  <th class="source-head">지원경로</th>
+                  <th class="stage-head">현재 단계</th>
+                  <th class="next-head">다음 조치</th>
+                  <th class="schedule-head">예정 일정</th>
                   <th class="apply-date-head">지원일</th>
-                  <th class="schedule-head">면접일정</th>
-                  <th class="hire-date-head">입사예정일</th>
-                  <th class="commute-head">출근방법</th>
-                  <th class="decision-head">판정</th>
-                  <th class="actions-head">관리</th>
+                  <th class="actions-head">더보기</th>
                 </tr>
               </thead>
               <tbody id="applicantTbody"></tbody>
@@ -651,7 +642,7 @@
                       <option>기타</option>
                     </select></label
                   ><label
-                    >경력구분<select id="careerType">
+                    >지원구분<select id="careerType">
                       <option value="">선택</option>
                       <option>신입</option>
                       <option>경력</option>
@@ -971,15 +962,6 @@
                     >
                   </div>
                 </div>
-                <div class="wide score-preview" id="scorePreview">
-                  검토점수 미리보기: 0점
-                </div>
-                <div class="wide score-note">
-                  전공(경력사항·학력)·경력(경력사항)·자격(자격증)·현장(자소서
-                  키워드) 4개 항목을 입력하신 내용에서 키워드로 자동 인식해
-                  채점합니다. 참고용이며 최종 판단은 담당자가 직접 확인합니다.
-                  성별·연령은 반영하지 않습니다.
-                </div>
               </div>
             </details>
           </form>
@@ -1079,7 +1061,7 @@
             >
               <span>결과 미입력</span
               ><strong id="dailyResultPendingCount">0</strong
-              ><small>면접 후 판정 필요</small>
+              ><small>면접 후 결과 미입력</small>
             </button>
             <button
               class="daily-metric is-good"
@@ -3237,10 +3219,6 @@
                     >학교<select id="asSchool">
                       <option value="all">전체</option>
                     </select></label
-                  ><label
-                    >담당자<select id="asManager">
-                      <option value="all">전체</option>
-                    </select></label
                   >
                 </div>
               </section>
@@ -3262,7 +3240,7 @@
                       <option value="pending">확인 필요</option>
                     </select></label
                   ><label class="advanced-wide"
-                    >이름·연락처·학교 통합검색<input
+                    >지원자·연락처·학교·지원경로 통합검색<input
                       id="asKeyword"
                       placeholder="검색어 입력"
                   /></label>
@@ -3767,7 +3745,7 @@
                           class="excel-paste-apply"
                           data-field="careerType"
                           type="checkbox"
-                        />경력구분</span
+                        />지원구분</span
                       ><select id="xpCareerType">
                         <option value="">선택</option>
                         <option>신입</option>
@@ -4260,16 +4238,9 @@
                 <label
                   >변경 항목<select id="bulkField">
                     <option value="status">상태</option>
-                    <option value="manager">담당자</option>
                     <option value="workplace">근무지</option>
                   </select></label
-                ><label
-                  >변경 값<select id="bulkValueSelect"></select
-                  ><input
-                    id="bulkValueInput"
-                    placeholder="변경 값 입력"
-                    style="display: none"
-                /></label>
+                ><label>변경 값<select id="bulkValueSelect"></select></label>
               </div>
               <div class="bulk-preview" id="bulkPreview"></div>
               <label class="bulk-confirm"
@@ -5645,21 +5616,21 @@
     <script src="js/school-workforce-analytics.js?v=12.0.2"></script>
     <script src="js/employee-master-xlsx-import.js?v=12.0.2"></script>
     <script src="js/employees.js?v=12.0.2"></script>
-    <script src="js/applicants.js?v=12.0.2"></script>
+    <script src="js/applicants.js?v=12.1.0"></script>
     <script src="js/tasks.js?v=12.0.2"></script>
     <script src="js/calendar.js?v=12.0.2"></script>
     <script src="js/hire-waiting-automation.js?v=12.0.2"></script>
     <script src="js/hire-waiting-list.js?v=12.0.2"></script>
     <script src="js/statistics.js?v=12.0.2"></script>
-    <script src="js/school-relations.js?v=12.0.2"></script>
-    <script src="js/detail-views.js?v=12.0.2"></script>
+    <script src="js/school-relations.js?v=12.1.0"></script>
+    <script src="js/detail-views.js?v=12.1.0"></script>
     <script src="js/school-workforce-ui.js?v=12.0.2"></script>
     <script src="js/school-management-core.js?v=12.0.2"></script>
     <script src="js/school-analytics.js?v=12.0.2"></script>
     <script src="js/state-init.js?v=12.0.2"></script>
     <script src="js/reports.js?v=12.0.2"></script>
     <script src="js/school-data-control.js?v=12.0.2"></script>
-    <script src="js/bindings.js?v=12.0.2"></script>
+    <script src="js/bindings.js?v=12.1.0"></script>
     <script src="js/applicant-quick-entry.js?v=12.0.2"></script>
     <script src="js/recruiter-daily-usability.js?v=12.0.2"></script>
     <script src="js/local-only-init.js?v=12.0.2"></script>
@@ -5668,18 +5639,18 @@
     <script src="js/backup-center.js?v=12.0.2"></script>
     <script src="js/encrypted-backup-ui.js?v=12.0.2"></script>
     <script src="js/data-health.js?v=12.0.2"></script>
-    <script src="js/advanced-bulk.js?v=12.0.2"></script>
+    <script src="js/advanced-bulk.js?v=12.1.0"></script>
     <script src="js/applicant-filter.js?v=12.0.2"></script>
     <script src="js/school-report.js?v=12.0.2"></script>
     <script src="js/applicant-progress-history.js?v=12.0.2"></script>
     <script src="js/form-flow-stability.js?v=12.0.2"></script>
-    <script src="js/screening-workbench.js?v=12.0.2"></script>
+    <script src="js/screening-workbench.js?v=12.1.0"></script>
     <script src="js/phone-interview.js?v=12.0.2"></script>
     <script src="js/privacy-security.js?v=12.0.2"></script>
     <script src="js/storage-performance.js?v=12.0.2"></script>
     <script src="js/onboarding-management.js?v=12.0.2"></script>
-    <script src="js/production-readiness.js?v=12.0.2"></script>
-    <script src="js/applicant-worksheet.js?v=12.0.2"></script>
-    <script src="js/ux-reboot-v12.js?v=12.0.2"></script>
+    <script src="js/production-readiness.js?v=12.1.0"></script>
+    <script src="js/applicant-worksheet.js?v=12.1.0"></script>
+    <script src="js/ux-reboot-v12.js?v=12.1.0"></script>
   </body>
 </html>
