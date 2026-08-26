@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v12.2.1**이며, 외부 계정·원격 데이터베이스 없이 브라우저 안에서만 동작하는 **LOCAL ONLY** 버전입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v12.2.2**이며, 외부 계정·원격 데이터베이스 없이 브라우저 안에서만 동작하는 **LOCAL ONLY** 버전입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -67,6 +67,6 @@ npm run check
 npm run test:ui-layout
 ```
 
-로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v12.2.1`에 저장됩니다. 실제 개인정보가 포함된 화면·로그·trace·artifact는 만들지 않습니다.
+로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v12.2.2`에 저장됩니다. 실제 개인정보가 포함된 화면·로그·trace·artifact는 만들지 않습니다.
 
-자세한 변경 내역은 `CHANGELOG_v12.2.1.md`를 확인하세요.
+자세한 변경 내역은 `CHANGELOG_v12.2.2.md`를 확인하세요.

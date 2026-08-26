@@ -128,9 +128,13 @@ function rosterOrderEditorSetFeedback(message='',tone=''){
 }
 function rosterOrderEditorUpdateDirty(){
   rosterOrderEditorState.dirty=rosterOrderEditorSignature(rosterOrderEditorState.rows)!==rosterOrderEditorState.baseline;
-  const status=$('rosterOrderEditorStatus'),saveButton=$('btnRosterOrderSave');
+  const status=$('rosterOrderEditorStatus'),saveButton=$('btnRosterOrderSave'),printButton=$('btnRosterOrderSavePrint');
   if(status)status.textContent=rosterOrderEditorState.dirty?'저장되지 않은 변경 있음':'변경 없음';
   if(saveButton)saveButton.disabled=!rosterOrderEditorState.dirty||!rosterOrderEditorState.rows.length||!rosterOrderEditorCanWrite();
+  if(printButton){
+    printButton.disabled=!rosterOrderEditorState.rows.length||!rosterOrderEditorCanWrite();
+    printButton.textContent=rosterOrderEditorState.dirty?'저장 후 평가표 보기/인쇄':'평가표 보기/인쇄';
+  }
 }
 function rosterOrderEditorRowHtml(row,index){
   const applicant=applicants.find(item=>String(item.id)===row.id)||{};
@@ -248,9 +252,9 @@ function rosterOrderEditorKeydown(event){
 }
 function openRosterPrint(){
   const dateStr=$('rosterDate').value;
-  if(!dateStr){ alert('명단표를 뽑을 면접 날짜를 먼저 선택해주세요.'); return; }
+  if(!dateStr){ alert('명단표를 뽑을 면접 날짜를 먼저 선택해주세요.'); return false; }
   const list=rosterApplicantsOn(dateStr);
-  if(!list.length && !confirm('선택하신 날짜에 면접예정 상태인 지원자가 없습니다. 빈 양식으로 출력할까요?')) return;
+  if(!list.length && !confirm('선택하신 날짜에 면접예정 상태인 지원자가 없습니다. 빈 양식으로 출력할까요?')) return false;
   $('rosterPrintArea').innerHTML=buildRosterHtml(dateStr);
   document.body.classList.remove('school-report-printing');
   document.body.classList.add('roster-printing');
@@ -258,6 +262,15 @@ function openRosterPrint(){
   // 다 그리기 전이라 미리보기가 흰 화면으로 뜨는 경우가 있어, 두 번의 화면
   // 갱신(requestAnimationFrame)을 기다린 뒤 인쇄를 실행하도록 안전하게 처리.
   requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ window.print(); }); });
+  return true;
+}
+function openRosterPrintFromOrderEditor(){
+  if(!rosterOrderEditorState.open||!rosterOrderEditorState.rows.length||!rosterOrderEditorCanWrite())return false;
+  const dateStr=rosterOrderEditorState.date;
+  if(rosterOrderEditorState.dirty&&!saveRosterOrderEditor())return false;
+  if($('rosterDate'))$('rosterDate').value=dateStr;
+  closeRosterOrderEditor({force:true,restoreFocus:false});
+  return openRosterPrint();
 }
 window.addEventListener('afterprint', ()=>{ document.body.classList.remove('roster-printing'); });
 bind('btnRosterPrint','click', openRosterPrint);
@@ -266,6 +279,7 @@ bind('btnRosterOrderClose','click',()=>closeRosterOrderEditor());
 bind('btnRosterOrderCancel','click',()=>closeRosterOrderEditor());
 bind('btnRosterOrderTimeSort','click',rosterOrderEditorSortByTime);
 bind('btnRosterOrderSave','click',saveRosterOrderEditor);
+bind('btnRosterOrderSavePrint','click',openRosterPrintFromOrderEditor);
 bind('rosterDate','change',event=>{
   if(!rosterOrderEditorState.open||event.target.value===rosterOrderEditorState.date)return;
   if(!closeRosterOrderEditor()){event.target.value=rosterOrderEditorState.date;return;}
@@ -307,7 +321,7 @@ bind('btnCalendarRosterOrderEdit','click',openCalendarRosterOrderEditor);
 bind('btnCalendarPrintRoster','click',()=>{ if(!selectedCalendarDate){ alert('날짜를 먼저 선택해주세요.'); return; } if($('rosterDate')) $('rosterDate').value=selectedCalendarDate; openRosterPrint(); });
 
 window.erpRosterOrderEditor={
-  open:openRosterOrderEditor,openFromCalendar:openCalendarRosterOrderEditor,close:closeRosterOrderEditor,move:rosterOrderEditorMove,setPosition:rosterOrderEditorSetPosition,setTime:rosterOrderEditorSetTime,sortByTime:rosterOrderEditorSortByTime,editApplicant:rosterOrderEditorEditApplicant,save:saveRosterOrderEditor,render:renderRosterOrderEditor,state:rosterOrderEditorState,
+  open:openRosterOrderEditor,openFromCalendar:openCalendarRosterOrderEditor,close:closeRosterOrderEditor,move:rosterOrderEditorMove,setPosition:rosterOrderEditorSetPosition,setTime:rosterOrderEditorSetTime,sortByTime:rosterOrderEditorSortByTime,editApplicant:rosterOrderEditorEditApplicant,save:saveRosterOrderEditor,saveAndPrint:openRosterPrintFromOrderEditor,render:renderRosterOrderEditor,state:rosterOrderEditorState,
   orderedApplicants:rosterOrderedApplicants,
   __test:{rosterDateIsValid,rosterTimeIsValid,rosterOrderValue,rosterStableCompare,rosterTimeCompare,validate:rosterOrderEditorValidate,signature:rosterOrderEditorSignature,rows:rosterOrderEditorRows,targetIds:rosterOrderEditorTargetIds}
 };
