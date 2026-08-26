@@ -6,7 +6,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
 
-  const VERSION=String(root.erpAppVersion?.VERSION||'12.2.2');
+  const VERSION=String(root.erpAppVersion?.VERSION||'12.3.0');
   const UNCHANGED_ASSET_VERSIONS=new Set(['12.0.2','12.0.3','12.1.0','12.2.0']);
   const STATE_KEY='recruit_erp_production_readiness_v1100';
   const STATE_SCHEMA=3;
