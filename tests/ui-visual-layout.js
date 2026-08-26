@@ -936,6 +936,7 @@ async function verifyRosterOrderEditor(page,label,{exercise=false}={}){
         const expected=window.erpRosterOrderEditor.state.rows.map(row=>row.id);
         const ok=window.erpRosterOrderEditor.saveAndPrint();
         const closedAfterPrint=!window.erpRosterOrderEditor.state.open;
+        window.dispatchEvent(new Event('afterprint'));
         applicants=load();window.erpRosterOrderEditor.open(date);
         const reopened=window.erpRosterOrderEditor.state.rows.map(row=>row.id);
         const persisted=JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')||'[]').filter(row=>row.interviewDate===date).sort((a,b)=>a.rosterOrder-b.rosterOrder).map(row=>row.id);
