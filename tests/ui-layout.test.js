@@ -106,7 +106,7 @@ assert.match(visualTest,/1280x720/);assert.match(visualTest,/1024x768/);assert.m
 assert.match(reboot,/setTimeout\(\(\)=>\{if\(root\.document\.body\.classList\.contains\('sidebar-collapsed'\)\)root\.document\.body\.classList\.add\('sidebar-preview-expanded'\);\},150\)/);
 assert.match(reboot,/\},500\)/);assert.match(reboot,/aria-pressed/);assert.match(rebootCss,/sidebar-preview-expanded \.sidebar/);
 assert.match(reboot,/function isDesktopShell\(\)/);assert.match(reboot,/root\.devicePixelRatio/);assert.match(reboot,/ux12-desktop-shell/);assert.match(rebootCss,/\.ux12-ready\.ux12-desktop-shell \.app-shell/);
-assert.match(index,/<h1>Recruit ERP<\/h1>/);assert.match(index,/<p>v12\.2\.2<\/p>/);assert.doesNotMatch(index,/\bPreview\b|VERSION 2\.0|TODAY WORK OPERATIONS · ACTION FIRST/);assert.doesNotMatch(applicants,/QUICK REVIEW/);
+assert.match(index,/<h1>Recruit ERP<\/h1>/);assert.match(index,/<p>v12\.3\.0<\/p>/);assert.doesNotMatch(index,/\bPreview\b|VERSION 2\.0|TODAY WORK OPERATIONS · ACTION FIRST/);assert.doesNotMatch(applicants,/QUICK REVIEW/);
 assert.match(index,/<html class="ux12-booting"/);assert.match(index,/id="ux12BootGuard"/);assert.match(index,/js\/local-only-init\.js\?v=12\.0\.2/);
 assert.doesNotMatch(index,/js\/auth-init\.js|supabase_config\.js|@supabase\/supabase-js/);
 assert.match(rebootCss,/\.applicant-my-views\{[^}]*min-width:220px!important;max-width:240px!important/);assert.equal(fs.existsSync(path.join(root,'js','shared-storage.js')),false);
