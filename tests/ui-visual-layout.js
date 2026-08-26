@@ -913,6 +913,7 @@ async function verifyRosterOrderEditor(page,label,{exercise=false}={}){
   },date);
   const calendarShortcut=page.locator('#btnCalendarRosterOrderEdit');
   await calendarShortcut.click();await page.locator('#rosterOrderEditor:not([hidden])').waitFor();
+  await page.waitForFunction(()=>document.activeElement?.id==='btnRosterOrderClose');
   assert.deepEqual(await page.evaluate(()=>({date:window.erpRosterOrderEditor.state.date,rosterDate:document.getElementById('rosterDate').value,active:document.activeElement?.id})),{date,rosterDate:date,active:'btnRosterOrderClose'},`${label} 일정관리 바로가기는 선택 날짜로 같은 편집기를 열어야 합니다.`);
   await page.keyboard.press('Escape');await page.locator('#rosterOrderEditor').waitFor({state:'hidden'});
   assert.equal(await page.evaluate(()=>document.activeElement?.id),'btnCalendarRosterOrderEdit',`${label} 일정관리에서 닫으면 바로가기 버튼으로 포커스가 돌아가야 합니다.`);
