@@ -34,7 +34,7 @@ function createHarness(){
     addEventListener(type,handler){this.events[type]=handler;},setAttribute(name,value){this.attributes[name]=String(value);},getAttribute(name){return this.attributes[name]??null;},
     querySelectorAll(){return [];},querySelector(){return null;},getClientRects(){return [{}];},focus(){document.activeElement=this;}
   });
-  const ids=['rosterDate','rosterOrderEditor','rosterOrderEditorList','rosterOrderEditorDate','rosterOrderEditorCount','rosterOrderEditorStatus','rosterOrderEditorFeedback','btnRosterOrderEdit','btnCalendarRosterOrderEdit','btnRosterOrderClose','btnRosterOrderCancel','btnRosterOrderTimeSort','btnRosterOrderSave'];
+  const ids=['rosterDate','rosterPrintArea','rosterOrderEditor','rosterOrderEditorList','rosterOrderEditorDate','rosterOrderEditorCount','rosterOrderEditorStatus','rosterOrderEditorFeedback','btnRosterOrderEdit','btnCalendarRosterOrderEdit','btnRosterOrderClose','btnRosterOrderCancel','btnRosterOrderTimeSort','btnRosterOrderSave','btnRosterOrderSavePrint'];
   const nodes=Object.fromEntries(ids.map(id=>[id,makeNode(id)]));
   const backdrop=makeNode('rosterOrderEditorBackdrop');
   const body=makeNode('body');
@@ -43,14 +43,14 @@ function createHarness(){
     querySelector(selector){return selector==='[data-roster-order-close]'?backdrop:null;},
     addEventListener(type,handler){listeners.set(type,handler);}
   };
-  let canWrite=true,requireCalls=0,saveCalls=0,alerts=[],confirms=[],confirmResult=true;
+  let canWrite=true,requireCalls=0,saveCalls=0,printCalls=0,alerts=[],confirms=[],confirmResult=true;
   let saveBehavior=null;
   const context={
     applicants:[],normalizeStatus:value=>String(value||''),formatBirthDisplay:value=>String(value||''),
     esc:value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char])),
     document,localStorage:{getItem:key=>storage.has(key)?storage.get(key):null,setItem:(key,value)=>storage.set(key,String(value)),removeItem:key=>storage.delete(key)},STORAGE_KEY,
     window:{
-      addEventListener(){},requestAnimationFrame:callback=>callback(),print(){},editApplicant(){},
+      addEventListener(){},requestAnimationFrame:callback=>callback(),print(){printCalls++;},editApplicant(){},
       erpPermissions:{has:permission=>permission==='applicant.write'&&canWrite,require(){requireCalls++;return canWrite;}}
     },
     $:id=>nodes[id]||null,
@@ -67,8 +67,8 @@ function createHarness(){
     context,api,nodes,storage,listeners,
     setApplicants(rows,{persist=true}={}){context.applicants=clone(rows);nodes.rosterDate.value=DATE_A;if(persist)storage.set(STORAGE_KEY,JSON.stringify(context.applicants));},setCalendarDate(value){context.selectedCalendarDate=value;},
     setCanWrite(value){canWrite=value;},setConfirm(value){confirmResult=value;},setSaveBehavior(fn){saveBehavior=fn;},
-    resetCounters(){saveCalls=0;requireCalls=0;alerts=[];confirms=[];},
-    counts(){return{saveCalls,requireCalls,alerts:[...alerts],confirms:[...confirms]};}
+    resetCounters(){saveCalls=0;printCalls=0;requireCalls=0;alerts=[];confirms=[];},
+    counts(){return{saveCalls,printCalls,requireCalls,alerts:[...alerts],confirms:[...confirms]};}
   };
 }
 
@@ -150,8 +150,20 @@ for(const previous of beforeObjects){
 }
 api.close({force:true});context.applicants=clone(persisted);assert.equal(api.open(DATE_A),true);assert.deepEqual(ids(api.state.rows),expectedSavedOrder,'저장·새로고침·재열기 순서가 같아야 합니다.');api.close({force:true});
 
+// 편집창에서 무변경이면 저장 없이 바로 평가표를 열고, 변경이 있으면 성공 저장 1회 뒤에만 인쇄한다.
+h.setApplicants(defaultRows);h.resetCounters();assert.equal(api.open(DATE_A),true);
+assert.equal(api.saveAndPrint(),true);assert.equal(h.counts().saveCalls,0);assert.equal(h.counts().printCalls,1);assert.equal(api.state.open,false);
+h.resetCounters();assert.equal(api.open(DATE_A),true);assert.equal(api.move('2',0),true);
+h.setSaveBehavior((ctx,store)=>{store.set(STORAGE_KEY,JSON.stringify(ctx.applicants));return true;});
+assert.equal(api.saveAndPrint(),true);assert.equal(h.counts().saveCalls,1);assert.equal(h.counts().printCalls,1);assert.equal(api.state.open,false);
+
+// 저장 실패 시 편집 초안과 창을 유지하며 평가표를 열지 않는다.
+h.setApplicants(defaultRows);h.resetCounters();assert.equal(api.open(DATE_A),true);assert.equal(api.move('2',0),true);
+h.setSaveBehavior((ctx,store)=>{store.set(STORAGE_KEY,'synthetic-print-partial-write');return false;});
+assert.equal(api.saveAndPrint(),false);assert.equal(h.counts().saveCalls,1);assert.equal(h.counts().printCalls,0);assert.equal(api.state.open,true);assert.equal(api.state.dirty,true);api.close({force:true});
+
 // 명시적 시간순 재배치는 저장 전 write 0회이며 저장 뒤에만 유지된다.
-h.setApplicants(savedFive.map((row,index)=>({...row,rosterOrder:savedFive.length-index})));h.resetCounters();assert.equal(api.open(DATE_A),true);const preSortStorage=storage.get(STORAGE_KEY);
+h.setApplicants(savedFive.map((row,index)=>({...row,rosterOrder:savedFive.length-index})));h.setSaveBehavior(null);h.resetCounters();assert.equal(api.open(DATE_A),true);const preSortStorage=storage.get(STORAGE_KEY);
 assert.equal(api.sortByTime(),true);assert.equal(h.counts().saveCalls,0);assert.equal(storage.get(STORAGE_KEY),preSortStorage);
 assert.equal(api.save(),true);assert.equal(h.counts().saveCalls,1);api.close({force:true});
 

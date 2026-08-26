@@ -70,6 +70,7 @@ body.roster-order-editor-open{overflow:hidden}
 .roster-order-editor-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 20px 16px;border-top:1px solid #e2e8f0;background:#fff}
 .roster-order-editor-footer>div{display:flex;justify-content:flex-end;gap:8px}
 .roster-order-editor-footer button{min-height:38px}
+#rosterOrderEditor #btnRosterOrderSavePrint{min-width:148px;white-space:nowrap}
 
 /* 홈: 숫자 카드 대신 동일 선택기가 만든 실행 대상만 표시한다. */
 #home .dashboard-stats{margin-bottom:10px}

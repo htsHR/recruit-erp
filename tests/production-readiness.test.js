@@ -19,8 +19,8 @@ const version=require('../js/app-version.js');
 globalThis.erpAppVersion=version;
 const readiness=require('../js/production-readiness.js');
 
-assert.equal(readiness.VERSION,'12.2.1');
-assert.equal(version.VERSION,'12.2.1');
+assert.equal(readiness.VERSION,'12.2.2');
+assert.equal(version.VERSION,'12.2.2');
 assert.equal(readiness.MANUAL_CHECKS.length,7);
 assert.equal(readiness.context().verificationSource,'local');
 assert.equal(readiness.context().operationEnvironment,'local-only');
