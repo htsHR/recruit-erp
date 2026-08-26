@@ -2,7 +2,7 @@
 
 [![ERP 자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v12.2.0**이며, 외부 계정·원격 데이터베이스 없이 브라우저 안에서만 동작하는 **LOCAL ONLY** 버전입니다.
+채용 지원자, 일정, 사원명부와 협력학교를 관리하는 웹 ERP입니다. 현재 운영 버전은 **v12.2.1**이며, 외부 계정·원격 데이터베이스 없이 브라우저 안에서만 동작하는 **LOCAL ONLY** 버전입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -54,7 +54,7 @@ Pull Request와 `main` 변경에서는 다음을 검사합니다.
 - Playwright 기반 화면·라우팅·역할별 UI 검사
 - 지원자 9열 목록, 13개 허용 필드 빠른 수정, 미저장 이탈 보호
 - 지원구분 명시값 유지와 자동평가·지원자 담당자 UI 제거
-- 날짜별 채용면접 평가표 순서 편집, 면접시간 수정, 신규 면접자 후순위 배치
+- 오늘 할 일·일정관리에서 여는 날짜별 채용면접 평가표 순서 편집, 면접시간 수정, 신규 면접자 후순위 배치
 - Vercel 보안 헤더와 Production 응답
 
 ### 로컬 테스트
@@ -67,6 +67,6 @@ npm run check
 npm run test:ui-layout
 ```
 
-로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v12.2.0`에 저장됩니다. 실제 개인정보가 포함된 화면·로그·trace·artifact는 만들지 않습니다.
+로컬 UI 스크린샷은 기본적으로 `artifacts/ui-v12.2.1`에 저장됩니다. 실제 개인정보가 포함된 화면·로그·trace·artifact는 만들지 않습니다.
 
-자세한 변경 내역은 `CHANGELOG_v12.2.0.md`를 확인하세요.
+자세한 변경 내역은 `CHANGELOG_v12.2.1.md`를 확인하세요.

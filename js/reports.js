@@ -165,6 +165,11 @@ function openRosterOrderEditor(dateValue){
   document.body.classList.add('roster-order-editor-open');renderRosterOrderEditor();
   const frame=window.requestAnimationFrame||((callback)=>callback());frame(()=>$('btnRosterOrderClose')?.focus());return true;
 }
+function openCalendarRosterOrderEditor(){
+  const dateStr=String(selectedCalendarDate||'').trim();
+  if($('rosterDate'))$('rosterDate').value=dateStr;
+  return openRosterOrderEditor(dateStr);
+}
 function closeRosterOrderEditor(options={}){
   const force=options.force===true,restoreFocus=options.restoreFocus!==false;
   if(!rosterOrderEditorState.open)return true;
@@ -298,11 +303,11 @@ bind('calendarWorkplaceFilter','change',e=>{ calendarWorkplaceFilter=e.target.va
 bind('calendarEventForm','submit',saveCalendarEventFromForm);
 bind('btnCalendarReset','click',resetCalendarEventForm);
 bind('btnCalendarDelete','click',()=>deleteCalendarEvent());
+bind('btnCalendarRosterOrderEdit','click',openCalendarRosterOrderEditor);
 bind('btnCalendarPrintRoster','click',()=>{ if(!selectedCalendarDate){ alert('날짜를 먼저 선택해주세요.'); return; } if($('rosterDate')) $('rosterDate').value=selectedCalendarDate; openRosterPrint(); });
 
 window.erpRosterOrderEditor={
-  open:openRosterOrderEditor,close:closeRosterOrderEditor,move:rosterOrderEditorMove,setPosition:rosterOrderEditorSetPosition,setTime:rosterOrderEditorSetTime,sortByTime:rosterOrderEditorSortByTime,editApplicant:rosterOrderEditorEditApplicant,save:saveRosterOrderEditor,render:renderRosterOrderEditor,state:rosterOrderEditorState,
+  open:openRosterOrderEditor,openFromCalendar:openCalendarRosterOrderEditor,close:closeRosterOrderEditor,move:rosterOrderEditorMove,setPosition:rosterOrderEditorSetPosition,setTime:rosterOrderEditorSetTime,sortByTime:rosterOrderEditorSortByTime,editApplicant:rosterOrderEditorEditApplicant,save:saveRosterOrderEditor,render:renderRosterOrderEditor,state:rosterOrderEditorState,
   orderedApplicants:rosterOrderedApplicants,
   __test:{rosterDateIsValid,rosterTimeIsValid,rosterOrderValue,rosterStableCompare,rosterTimeCompare,validate:rosterOrderEditorValidate,signature:rosterOrderEditorSignature,rows:rosterOrderEditorRows,targetIds:rosterOrderEditorTargetIds}
 };
-
