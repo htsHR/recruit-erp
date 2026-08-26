@@ -32,6 +32,10 @@
 
 /* 오늘 할 일 · 채용면접 평가표 순서 편집: 데스크톱 전용 신규 UI */
 #today .roster-tool-row #btnRosterOrderEdit{min-height:38px;white-space:nowrap}
+#calendar .calendar-day-panel .panel-head{align-items:flex-start}
+#calendar .calendar-day-actions{min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+#calendar #btnCalendarRosterOrderEdit{height:32px!important;min-height:32px;padding:0 12px!important;border:1px solid #bfdbfe!important;border-radius:8px!important;background:#eef3fd!important;color:#1d4ed8!important;font-size:12px!important;font-weight:700!important;white-space:nowrap}
+#calendar #btnCalendarRosterOrderEdit:hover{border-color:#93c5fd!important;background:#dbeafe!important}
 body.roster-order-editor-open{overflow:hidden}
 .roster-order-editor[hidden]{display:none!important}
 .roster-order-editor{position:fixed;inset:0;z-index:2850;display:grid;place-items:center;padding:24px}

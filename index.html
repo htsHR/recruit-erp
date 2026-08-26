@@ -32,8 +32,8 @@
       }
     </style>
     <link href="favicon.svg" rel="icon" type="image/svg+xml" />
-    <title>채용관리 시스템 v12.2.0</title>
-    <script src="js/app-version.js?v=12.2.0"></script>
+    <title>채용관리 시스템 v12.2.1</title>
+    <script src="js/app-version.js?v=12.2.1"></script>
     <script src="js/factory-reset-v12.js?v=12.0.2"></script>
     <script src="js/safety.js?v=12.0.2"></script>
     <script src="js/security.js?v=12.0.2"></script>
@@ -64,7 +64,7 @@
     <link rel="stylesheet" href="css/applicant-worksheet.css?v=12.0.2" />
     <link rel="stylesheet" href="css/ui-density-navigation.css?v=12.0.2" />
     <link rel="stylesheet" href="css/applicant-quick-detail.css?v=12.1.0" />
-    <link rel="stylesheet" href="css/recruiter-daily-usability.css?v=12.2.0" />
+    <link rel="stylesheet" href="css/recruiter-daily-usability.css?v=12.2.1" />
     <link rel="stylesheet" href="css/production-gate-responsive-polish.css?v=12.0.2" />
     <link rel="stylesheet" href="css/recruiter-ui-stability.css?v=12.0.2" />
     <link rel="stylesheet" href="css/ux-reboot-v12.css?v=12.1.0" />
@@ -76,7 +76,7 @@
           <div aria-hidden="true" class="brand-mark">R</div>
           <div class="brand-copy">
             <h1>Recruit ERP</h1>
-            <p>v12.2.0</p>
+            <p>v12.2.1</p>
           </div>
         </div>
         <nav class="nav">
@@ -1322,19 +1322,28 @@
               <div class="panel calendar-day-panel">
                 <div class="panel-head">
                   <h3 id="calendarSelectedTitle">선택 날짜 일정</h3>
-                  <button
-                    class="mini"
-                    id="btnCalendarPrintRoster"
-                    type="button"
-                  >
-                    이 날짜 명단표</button
-                  ><button
-                    class="mini calendar-hire-waiting-btn"
-                    id="btnCalendarHireWaiting"
-                    type="button"
-                  >
-                    입사대기자 명단
-                  </button>
+                  <div class="calendar-day-actions">
+                    <button
+                      class="mini calendar-roster-order-btn"
+                      data-required-permission="applicant.write"
+                      id="btnCalendarRosterOrderEdit"
+                      type="button"
+                    >
+                      평가표 순서 편집</button
+                    ><button
+                      class="mini"
+                      id="btnCalendarPrintRoster"
+                      type="button"
+                    >
+                      이 날짜 명단표</button
+                    ><button
+                      class="mini calendar-hire-waiting-btn"
+                      id="btnCalendarHireWaiting"
+                      type="button"
+                    >
+                      입사대기자 명단
+                    </button>
+                  </div>
                 </div>
                 <div
                   class="calendar-bulk-decision-bar"
@@ -5698,7 +5707,7 @@
     <script src="js/school-management-core.js?v=12.0.2"></script>
     <script src="js/school-analytics.js?v=12.0.2"></script>
     <script src="js/state-init.js?v=12.0.2"></script>
-    <script src="js/reports.js?v=12.2.0"></script>
+    <script src="js/reports.js?v=12.2.1"></script>
     <script src="js/school-data-control.js?v=12.0.2"></script>
     <script src="js/bindings.js?v=12.1.0"></script>
     <script src="js/applicant-quick-entry.js?v=12.0.2"></script>
@@ -5719,7 +5728,7 @@
     <script src="js/privacy-security.js?v=12.0.2"></script>
     <script src="js/storage-performance.js?v=12.0.2"></script>
     <script src="js/onboarding-management.js?v=12.0.2"></script>
-    <script src="js/production-readiness.js?v=12.2.0"></script>
+    <script src="js/production-readiness.js?v=12.2.1"></script>
     <script src="js/applicant-worksheet.js?v=12.1.0"></script>
     <script src="js/ux-reboot-v12.js?v=12.1.0"></script>
   </body>

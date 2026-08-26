@@ -34,7 +34,7 @@ function createHarness(){
     addEventListener(type,handler){this.events[type]=handler;},setAttribute(name,value){this.attributes[name]=String(value);},getAttribute(name){return this.attributes[name]??null;},
     querySelectorAll(){return [];},querySelector(){return null;},getClientRects(){return [{}];},focus(){document.activeElement=this;}
   });
-  const ids=['rosterDate','rosterOrderEditor','rosterOrderEditorList','rosterOrderEditorDate','rosterOrderEditorCount','rosterOrderEditorStatus','rosterOrderEditorFeedback','btnRosterOrderEdit','btnRosterOrderClose','btnRosterOrderCancel','btnRosterOrderTimeSort','btnRosterOrderSave'];
+  const ids=['rosterDate','rosterOrderEditor','rosterOrderEditorList','rosterOrderEditorDate','rosterOrderEditorCount','rosterOrderEditorStatus','rosterOrderEditorFeedback','btnRosterOrderEdit','btnCalendarRosterOrderEdit','btnRosterOrderClose','btnRosterOrderCancel','btnRosterOrderTimeSort','btnRosterOrderSave'];
   const nodes=Object.fromEntries(ids.map(id=>[id,makeNode(id)]));
   const backdrop=makeNode('rosterOrderEditorBackdrop');
   const body=makeNode('body');
@@ -65,7 +65,7 @@ function createHarness(){
   const api=context.window.erpRosterOrderEditor;
   return {
     context,api,nodes,storage,listeners,
-    setApplicants(rows,{persist=true}={}){context.applicants=clone(rows);nodes.rosterDate.value=DATE_A;if(persist)storage.set(STORAGE_KEY,JSON.stringify(context.applicants));},
+    setApplicants(rows,{persist=true}={}){context.applicants=clone(rows);nodes.rosterDate.value=DATE_A;if(persist)storage.set(STORAGE_KEY,JSON.stringify(context.applicants));},setCalendarDate(value){context.selectedCalendarDate=value;},
     setCanWrite(value){canWrite=value;},setConfirm(value){confirmResult=value;},setSaveBehavior(fn){saveBehavior=fn;},
     resetCounters(){saveCalls=0;requireCalls=0;alerts=[];confirms=[];},
     counts(){return{saveCalls,requireCalls,alerts:[...alerts],confirms:[...confirms]};}
@@ -123,6 +123,11 @@ assert.equal(api.open(),true);assert.equal(api.move('2',0),true);assert.equal(ap
 assert.equal(api.sortByTime(),true);assert.equal(api.setTime('3','08:45'),true);assert.equal(api.setTime('3','25:10'),false);
 assert.equal(h.counts().saveCalls,0);assert.equal(storage.get(STORAGE_KEY),storageBeforeDraft,'편집 초안은 localStorage를 변경하면 안 됩니다.');
 h.setConfirm(true);assert.equal(api.close(),true);assert.equal(h.counts().saveCalls,0);
+
+// 일정관리의 선택 날짜 바로가기는 같은 편집기를 열고 숨은 오늘 할 일 날짜도 동기화하며 조회만으로 저장하지 않는다.
+h.setApplicants(defaultRows);h.resetCounters();h.setCalendarDate(DATE_A);nodes.rosterDate.value='';context.document.activeElement=nodes.btnCalendarRosterOrderEdit;
+assert.equal(api.openFromCalendar(),true);assert.equal(nodes.rosterDate.value,DATE_A);assert.equal(api.state.date,DATE_A);assert.equal(h.counts().saveCalls,0);
+assert.equal(api.close(),true);assert.equal(context.document.activeElement,nodes.btnCalendarRosterOrderEdit);h.setCalendarDate('');
 
 // 드래그와 위·아래가 사용하는 동일 move, 직접 순번, 시간 변경을 한 번 저장하고 재열기에도 유지한다.
 h.setApplicants(defaultRows);h.resetCounters();assert.equal(api.open(DATE_A),true);
