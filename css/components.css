@@ -737,10 +737,11 @@ tbody tr.applicant-row td{
    v10.11.3: 앱의 일반 표 스타일(파란 배경, 최소너비 1460px 등)이 그대로 상속돼서
    회사 원본 양식과 다르게 보이던 문제 수정 - 명단표 전용 스타일을 전부 명시적으로
    지정해서 다른 곳의 스타일이 끼어들 수 없게 완전히 격리함.
-   v10.11.10: 회사 원본 Word 양식 기준 A4 가로방향으로 복구하고, 원본 여백/컬럼/행 높이에 맞춰 재보정함. */
+   v10.11.10: 회사 원본 Word 양식 기준 A4 가로방향으로 복구하고, 원본 여백/컬럼/행 높이에 맞춰 재보정함.
+   v12.3.1: PDF·프린터에서 칸 선이 옅게 보이지 않도록 순흑색 공통 인쇄선을 0.50mm로 강화함. */
 #rosterPrintArea{
   --roster-print-line-color:#000;
-  --roster-print-line-width:0.35mm;
+  --roster-print-line-width:0.50mm;
   display:none;
   -webkit-print-color-adjust:exact;
   print-color-adjust:exact;
