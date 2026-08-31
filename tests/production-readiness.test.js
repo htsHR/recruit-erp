@@ -19,8 +19,8 @@ const version=require('../js/app-version.js');
 globalThis.erpAppVersion=version;
 const readiness=require('../js/production-readiness.js');
 
-assert.equal(readiness.VERSION,'12.3.1');
-assert.equal(version.VERSION,'12.3.1');
+assert.equal(readiness.VERSION,'12.3.2');
+assert.equal(version.VERSION,'12.3.2');
 assert.match(source,/UNCHANGED_ASSET_VERSIONS=new Set\(\['12\.0\.2','12\.0\.3','12\.1\.0','12\.2\.0','12\.2\.1','12\.2\.2'\]\)/);
 assert.equal(readiness.MANUAL_CHECKS.length,7);
 assert.equal(readiness.context().verificationSource,'local');

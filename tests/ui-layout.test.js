@@ -82,6 +82,7 @@ assert.match(recruiterDailyCss,/\.roster-order-editor-dialog/);assert.match(recr
 assert.match(recruiterDailyCss,/#calendar \.calendar-day-actions\{[^}]*flex-wrap:wrap/);assert.match(recruiterDailyCss,/#calendar #btnCalendarRosterOrderEdit\{[^}]*white-space:nowrap/);
 assert.match(recruiterDailyCss,/#rosterOrderEditor #btnRosterOrderSavePrint\{[^}]*white-space:nowrap/);
 assert.match(visualTest,/verifyRosterOrderEditor/);
+assert.match(visualTest,/verifyRosterPrintContrast/);assert.match(visualTest,/roster-print-contrast\.png/);assert.match(visualTest,/PNG\.sync\.read/);
 assert.match(visualTest,/formWorkflowBanner/);assert.match(visualTest,/formActions\.overlaps,false/);
 assert.match(visualTest,/390x844-status-modal\.png'\),fullPage:false/);
 assert.match(index,/css\/applicant-worksheet\.css\?v=12\.0\.2/);assert.match(index,/js\/applicant-worksheet\.js\?v=12\.1\.0/);assert.match(index,/css\/ui-density-navigation\.css\?v=12\.0\.2/);assert.match(index,/css\/recruiter-ui-stability\.css\?v=12\.0\.2/);
@@ -106,7 +107,7 @@ assert.match(visualTest,/1280x720/);assert.match(visualTest,/1024x768/);assert.m
 assert.match(reboot,/setTimeout\(\(\)=>\{if\(root\.document\.body\.classList\.contains\('sidebar-collapsed'\)\)root\.document\.body\.classList\.add\('sidebar-preview-expanded'\);\},150\)/);
 assert.match(reboot,/\},500\)/);assert.match(reboot,/aria-pressed/);assert.match(rebootCss,/sidebar-preview-expanded \.sidebar/);
 assert.match(reboot,/function isDesktopShell\(\)/);assert.match(reboot,/root\.devicePixelRatio/);assert.match(reboot,/ux12-desktop-shell/);assert.match(rebootCss,/\.ux12-ready\.ux12-desktop-shell \.app-shell/);
-assert.match(index,/<h1>Recruit ERP<\/h1>/);assert.match(index,/<p>v12\.3\.1<\/p>/);assert.doesNotMatch(index,/\bPreview\b|VERSION 2\.0|TODAY WORK OPERATIONS · ACTION FIRST/);assert.doesNotMatch(applicants,/QUICK REVIEW/);
+assert.match(index,/<h1>Recruit ERP<\/h1>/);assert.match(index,/<p>v12\.3\.2<\/p>/);assert.doesNotMatch(index,/\bPreview\b|VERSION 2\.0|TODAY WORK OPERATIONS · ACTION FIRST/);assert.doesNotMatch(applicants,/QUICK REVIEW/);
 assert.match(index,/<html class="ux12-booting"/);assert.match(index,/id="ux12BootGuard"/);assert.match(index,/js\/local-only-init\.js\?v=12\.0\.2/);
 assert.doesNotMatch(index,/js\/auth-init\.js|supabase_config\.js|@supabase\/supabase-js/);
 assert.match(rebootCss,/\.applicant-my-views\{[^}]*min-width:220px!important;max-width:240px!important/);assert.equal(fs.existsSync(path.join(root,'js','shared-storage.js')),false);

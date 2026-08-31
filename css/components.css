@@ -738,7 +738,9 @@ tbody tr.applicant-row td{
    회사 원본 양식과 다르게 보이던 문제 수정 - 명단표 전용 스타일을 전부 명시적으로
    지정해서 다른 곳의 스타일이 끼어들 수 없게 완전히 격리함.
    v10.11.10: 회사 원본 Word 양식 기준 A4 가로방향으로 복구하고, 원본 여백/컬럼/행 높이에 맞춰 재보정함.
-   v12.3.1: PDF·프린터에서 칸 선이 옅게 보이지 않도록 순흑색 공통 인쇄선을 0.50mm로 강화함. */
+   v12.3.1: PDF·프린터에서 칸 선이 옅게 보이지 않도록 순흑색 공통 인쇄선을 0.50mm로 강화함.
+   v12.3.2: Chrome 인쇄에서 collapsed border가 회색으로 합성되는 문제를 막기 위해
+   표 외곽선과 셀의 오른쪽·아래쪽 선을 각각 한 번씩 독립적으로 그리도록 변경함. */
 #rosterPrintArea{
   --roster-print-line-color:#000;
   --roster-print-line-width:0.50mm;
@@ -764,9 +766,18 @@ tbody tr.applicant-row td{
 .roster-oath-line{display:flex;align-items:baseline;}
 .roster-oath-line + .roster-oath-line{margin-top:2px;}
 .roster-oath-label{display:inline-block;width:3.2em;flex:0 0 3.2em;text-align:left;}
-.roster-table{width:100% !important;min-width:0 !important;border:var(--roster-print-line-width) solid var(--roster-print-line-color) !important;border-collapse:collapse;table-layout:fixed;}
-.roster-table th,.roster-table td{
+#rosterPrintArea .roster-table{
+  width:100% !important;
+  min-width:0 !important;
   border:var(--roster-print-line-width) solid var(--roster-print-line-color) !important;
+  border-collapse:separate !important;
+  border-spacing:0 !important;
+  table-layout:fixed;
+}
+#rosterPrintArea .roster-table th,#rosterPrintArea .roster-table td{
+  border:0 !important;
+  border-right:var(--roster-print-line-width) solid var(--roster-print-line-color) !important;
+  border-bottom:var(--roster-print-line-width) solid var(--roster-print-line-color) !important;
   padding:3px 4px;
   font-size:11.5px;
   font-weight:400;
@@ -774,6 +785,10 @@ tbody tr.applicant-row td{
   white-space:normal !important;
   word-break:keep-all;
 }
+#rosterPrintArea .roster-table thead tr:first-child>th:last-child,
+#rosterPrintArea .roster-table tbody td.roster-opinion{border-right:0 !important;}
+#rosterPrintArea .roster-table tbody tr:last-child>td,
+#rosterPrintArea .roster-table tbody tr:nth-last-child(2)>td[rowspan="2"]{border-bottom:0 !important;}
 .roster-table th{font-weight:600;font-size:11.5px;padding:4px 4px;vertical-align:middle;}
 .roster-table th.roster-name-head-cell{padding:0 !important;}
 .roster-table td.roster-no{font-weight:600;font-size:11.5px;}
