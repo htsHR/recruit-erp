@@ -11,7 +11,7 @@ const reports=fs.readFileSync(path.join(root,'js','reports.js'),'utf8');
 const rosterCss=css.slice(css.indexOf('#rosterPrintArea'),css.indexOf('/* =========================================================',css.indexOf('#rosterPrintArea')));
 
 assert.match(rosterCss,/--roster-print-line-color:#000;/);
-assert.match(rosterCss,/--roster-print-line-width:0\.35mm;/);
+assert.match(rosterCss,/--roster-print-line-width:0\.50mm;/);
 assert.match(rosterCss,/#rosterPrintArea[\s\S]*-webkit-print-color-adjust:exact;[\s\S]*print-color-adjust:exact;/);
 assert.match(rosterCss,/\.roster-table\{[^}]*border:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\) !important;[^}]*border-collapse:collapse;/);
 assert.match(rosterCss,/\.roster-table th,\.roster-table td\{\s*border:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\) !important;/);
@@ -78,4 +78,4 @@ const orderedHtml=context.buildRosterHtml(date);
 assert.deepEqual([...orderedHtml.matchAll(/가상수동순서(\d+)/g)].map(match=>Number(match[1])),[6,5,4,3,2,1],'저장된 순서가 인쇄 성명 순서와 일치해야 합니다.');
 assert.deepEqual([...orderedHtml.matchAll(/class="roster-no" rowspan="2">(\d+)</g)].map(match=>Number(match[1])),[1,2,3,4,5,6],'두 번째 페이지에서도 번호는 1부터 연속이어야 합니다.');
 
-console.log('roster-print-border.test.js: 순흑색 0.35mm 인쇄선·고정 문구·자동채움·순서·0/1/5/6/10명 분할 확인 완료');
+console.log('roster-print-border.test.js: 순흑색 0.50mm 인쇄선·고정 문구·자동채움·순서·0/1/5/6/10명 분할 확인 완료');
