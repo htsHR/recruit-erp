@@ -5,12 +5,13 @@ const fs=require('node:fs');
 const path=require('node:path');
 const {spawn}=require('node:child_process');
 const {chromium}=require('playwright-core');
+const {PNG}=require('pngjs');
 const employeeXlsx=require('../js/employee-master-xlsx-import.js');
 
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.3.1');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.3.2');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -450,7 +451,7 @@ async function verifyOwnerVisualDesktopShell(page,label){
   assert.equal(expanded.desktop,true,`${label} 125% 확대에서도 v12 PC 셸을 유지해야 합니다.`);
   assert.ok(Math.abs(expanded.sidebar.width-216)<=1&&Math.abs(expanded.main.left-216)<=1,`${label} 확장 메뉴와 본문 위치 오류: ${JSON.stringify(expanded)}`);
   assert.equal(expanded.sidebar.background,'rgb(255, 255, 255)',`${label} 밝은 PC 메뉴가 어두운 레거시 메뉴로 바뀌면 안 됩니다.`);
-  assert.deepEqual(expanded.brand,['Recruit ERP','v12.3.1'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
+  assert.deepEqual(expanded.brand,['Recruit ERP','v12.3.2'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
   assert.equal(expanded.oldLabels,false,`${label} 중복 영문 업무 라벨이 남아 있습니다.`);
   assert.ok(expanded.overflow<=1,`${label} 확장 메뉴에서 전역 가로 넘침이 있습니다: ${expanded.overflow}`);
   assert.ok(expanded.storage.height<=130,`${label} LOCAL ONLY 상태 안내가 과도한 공간을 차지하면 안 됩니다: ${JSON.stringify(expanded.storage)}`);
@@ -959,6 +960,71 @@ async function verifyRosterOrderEditor(page,label,{exercise=false}={}){
   },snapshot);
 }
 
+async function verifyRosterPrintContrast(page,label){
+  const date='2026-08-22';
+  const snapshot=await page.evaluate(()=>({applicants:JSON.stringify(applicants),storage:localStorage.getItem('recruit_erp_applicants_stable')}));
+  try{
+    await page.evaluate(date=>{
+      window.__rosterContrastOriginalPrint=window.print;
+      window.__rosterContrastOriginalFrame=window.requestAnimationFrame;
+      window.print=()=>{};
+      window.requestAnimationFrame=callback=>{callback();return 0;};
+      applicants=Array.from({length:5},(_,index)=>normalize({
+        id:`76000000-0000-4000-8000-${String(index+1).padStart(12,'0')}`,
+        name:`가상인쇄지원자${index+1}`,
+        phone:`010-7600-${String(index+1).padStart(4,'0')}`,
+        gender:index%2?'여자':'남자',birthYear:`2000-01-0${index+1}`,age:'26',
+        status:'면접예정',interviewDate:date,interviewTime:`${String(9+index).padStart(2,'0')}:00`,
+        createdAt:`2026-08-20T0${index}:00:00.000Z`
+      }));
+      document.getElementById('rosterDate').value=date;
+      renderAll();window.setPage?.('today');openRosterPrint();
+    },date);
+    await page.emulateMedia({media:'print'});await page.waitForTimeout(80);
+    const geometry=await page.locator('.roster-table').first().evaluate(table=>{
+      const rect=table.getBoundingClientRect(),name=table.querySelector('tbody tr.roster-row-top td.roster-name'),grid=table.querySelector('tbody tr.roster-row-top>td:nth-child(3)'),opinion=table.querySelector('tbody td.roster-opinion'),lastName=table.querySelector('tbody tr:last-child>td'),lastSpan=table.querySelector('tbody tr:nth-last-child(2)>td[rowspan="2"]');
+      const nameRect=name.getBoundingClientRect(),gridRect=grid.getBoundingClientRect(),tableStyle=getComputedStyle(table),gridStyle=getComputedStyle(grid),oathStyle=getComputedStyle(document.querySelector('.roster-oath-box'));
+      return {
+        width:rect.width,height:rect.height,
+        vertical:{x:nameRect.right-rect.left,y:nameRect.top-rect.top+nameRect.height/2},
+        horizontal:{x:gridRect.left-rect.left+gridRect.width/2,y:gridRect.bottom-rect.top},
+        table:{collapse:tableStyle.borderCollapse,spacing:tableStyle.borderSpacing,color:tableStyle.borderTopColor,width:tableStyle.borderTopWidth},
+        grid:{rightColor:gridStyle.borderRightColor,rightWidth:gridStyle.borderRightWidth,bottomColor:gridStyle.borderBottomColor,bottomWidth:gridStyle.borderBottomWidth},
+        oath:{color:oathStyle.borderTopColor,width:oathStyle.borderTopWidth},
+        edge:{opinionRight:getComputedStyle(opinion).borderRightWidth,lastNameBottom:getComputedStyle(lastName).borderBottomWidth,lastSpanBottom:getComputedStyle(lastSpan).borderBottomWidth}
+      };
+    });
+    await page.locator('#rosterPrintArea').screenshot({path:path.join(outputDir,`${label}-roster-print-contrast.png`)});
+    assert.equal(geometry.table.collapse,'separate','평가표는 회색으로 합성되는 collapsed border를 사용하면 안 됩니다.');
+    assert.match(geometry.table.spacing,/^0px(?: 0px)?$/);
+    assert.deepEqual([geometry.table.color,geometry.grid.rightColor,geometry.grid.bottomColor,geometry.oath.color],Array(4).fill('rgb(0, 0, 0)'),'서약 박스와 표 격자는 모두 순검정이어야 합니다.');
+    const renderedWidths=[geometry.table.width,geometry.grid.rightWidth,geometry.grid.bottomWidth,geometry.oath.width].map(value=>parseFloat(value));
+    assert.ok(renderedWidths.every(value=>value>=1)&&Math.max(...renderedWidths)-Math.min(...renderedWidths)<=0.1,`표 격자와 서약 박스의 인쇄선 실측 굵기가 다릅니다: ${JSON.stringify(geometry)}`);
+    assert.deepEqual(geometry.edge,{opinionRight:'0px',lastNameBottom:'0px',lastSpanBottom:'0px'},'표 오른쪽·아래쪽 외곽선은 셀과 중복해서 그리면 안 됩니다.');
+
+    const tablePng=PNG.sync.read(await page.locator('.roster-table').first().screenshot());
+    const darkestNear=(point,radiusX,radiusY)=>{
+      const scaleX=tablePng.width/geometry.width,scaleY=tablePng.height/geometry.height;
+      const centerX=Math.round(point.x*scaleX),centerY=Math.round(point.y*scaleY);let darkest=255;
+      for(let y=Math.max(0,centerY-radiusY);y<=Math.min(tablePng.height-1,centerY+radiusY);y++)for(let x=Math.max(0,centerX-radiusX);x<=Math.min(tablePng.width-1,centerX+radiusX);x++){
+        const offset=(tablePng.width*y+x)*4,luma=(tablePng.data[offset]+tablePng.data[offset+1]+tablePng.data[offset+2])/3;darkest=Math.min(darkest,luma);
+      }
+      return darkest;
+    };
+    const pixels={vertical:darkestNear(geometry.vertical,4,8),horizontal:darkestNear(geometry.horizontal,8,4),outer:darkestNear({x:geometry.width*.8,y:0},4,4)};
+    assert.ok(Object.values(pixels).every(value=>value<=40),`실제 렌더 격자 픽셀이 진한 검정이 아닙니다: ${JSON.stringify(pixels)}`);
+  }finally{
+    await page.emulateMedia({media:'screen'});
+    await page.evaluate(snapshot=>{
+      window.print=window.__rosterContrastOriginalPrint;window.requestAnimationFrame=window.__rosterContrastOriginalFrame;
+      delete window.__rosterContrastOriginalPrint;delete window.__rosterContrastOriginalFrame;
+      document.body.classList.remove('roster-printing');document.getElementById('rosterPrintArea').innerHTML='';
+      if(snapshot.storage===null)localStorage.removeItem('recruit_erp_applicants_stable');else localStorage.setItem('recruit_erp_applicants_stable',snapshot.storage);
+      applicants=JSON.parse(snapshot.applicants);renderAll();window.setPage?.('today');
+    },snapshot);
+  }
+}
+
 async function verifyProductionGateContentSafety(page,label){
   await page.evaluate(()=>{
     window.__v1151Snapshot={
@@ -1013,8 +1079,8 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v12.3.1');
-      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.3.1','화면은 단일 현재 버전 소스를 사용해야 합니다.');
+      assert.equal(await page.title(),'채용관리 시스템 v12.3.2');
+      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.3.2','화면은 단일 현재 버전 소스를 사용해야 합니다.');
       const localOnlyState=await page.evaluate(()=>({
         active:document.querySelector('.page.active')?.id,
         localOnly:window.erpAppVersion?.LOCAL_ONLY===true&&window.erpLocalOnlyRuntime?.enabled===true,
@@ -1063,6 +1129,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
       }
       await verifyRecruiterDailyUsability(page,viewport.name,{exerciseQuick:viewport.width===1366});
       if([1280,1366,1440,1920].includes(viewport.width))await verifyRosterOrderEditor(page,viewport.name,{exercise:viewport.width===1366});
+      if(viewport.width===1366)await verifyRosterPrintContrast(page,viewport.name);
       if(viewport.width===1366)await verifyProductionGateContentSafety(page,viewport.name);
       if(viewport.width===390||viewport.width===1366){
         await verifyHireWaitingGrid(page,viewport.name,{mobile:viewport.width===390});
@@ -1094,7 +1161,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         await page.evaluate(()=>window.setPage?.('productionReadiness'));await page.waitForTimeout(120);
         const readinessState=await page.evaluate(()=>({automatic:document.querySelectorAll('#productionReadiness .readiness-check').length,manual:document.querySelectorAll('#productionReadiness [data-readiness-manual]').length,text:document.querySelector('#productionReadiness')?.innerText||'',overflow:document.querySelector('#productionReadiness').scrollWidth-document.querySelector('#productionReadiness').clientWidth}));
         assert.deepEqual({automatic:readinessState.automatic,manual:readinessState.manual},{automatic:8,manual:7});assert.ok(readinessState.overflow<=1,`${viewport.name} 운영 준비 화면 가로 넘침: ${JSON.stringify(readinessState)}`);assert.ok(!/000000-0000000|010-0000-0001/.test(readinessState.text),'운영 준비 화면에 가상 개인정보 원문도 표시하면 안 됩니다.');
-        assert.ok(readinessState.text.includes('v12.3.1 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.'),'운영 준비 화면이 v12.3.1 선택적 캐시 일치 결과를 보여야 합니다.');
+        assert.ok(readinessState.text.includes('v12.3.2 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.'),'운영 준비 화면이 v12.3.2 선택적 캐시 일치 결과를 보여야 합니다.');
         assert.ok(readinessState.text.includes('LOCAL ONLY')&&!/Supabase|클라우드 검증/i.test(readinessState.text),'운영 준비 화면은 LOCAL ONLY 독립 상태만 보여야 합니다.');
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-production-readiness.png`),fullPage:true});
       }

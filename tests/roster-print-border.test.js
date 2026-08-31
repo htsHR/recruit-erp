@@ -13,8 +13,11 @@ const rosterCss=css.slice(css.indexOf('#rosterPrintArea'),css.indexOf('/* ======
 assert.match(rosterCss,/--roster-print-line-color:#000;/);
 assert.match(rosterCss,/--roster-print-line-width:0\.50mm;/);
 assert.match(rosterCss,/#rosterPrintArea[\s\S]*-webkit-print-color-adjust:exact;[\s\S]*print-color-adjust:exact;/);
-assert.match(rosterCss,/\.roster-table\{[^}]*border:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\) !important;[^}]*border-collapse:collapse;/);
-assert.match(rosterCss,/\.roster-table th,\.roster-table td\{\s*border:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\) !important;/);
+assert.match(rosterCss,/#rosterPrintArea \.roster-table\{[^}]*border:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\) !important;[^}]*border-collapse:separate !important;[^}]*border-spacing:0 !important;/);
+assert.match(rosterCss,/#rosterPrintArea \.roster-table th,#rosterPrintArea \.roster-table td\{\s*border:0 !important;\s*border-right:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\) !important;\s*border-bottom:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\) !important;/);
+assert.match(rosterCss,/#rosterPrintArea \.roster-table thead tr:first-child>th:last-child,[\s\S]*#rosterPrintArea \.roster-table tbody td\.roster-opinion\{border-right:0 !important;\}/);
+assert.match(rosterCss,/#rosterPrintArea \.roster-table tbody tr:last-child>td,[\s\S]*#rosterPrintArea \.roster-table tbody tr:nth-last-child\(2\)>td\[rowspan="2"\]\{border-bottom:0 !important;\}/);
+assert.doesNotMatch(rosterCss,/\.roster-table\{[^}]*border-collapse:collapse/,'평가표는 인쇄 시 회색으로 합성되는 collapsed border를 사용하면 안 됩니다.');
 assert.match(rosterCss,/\.roster-name-head-divider\{[^}]*border-top:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\);/);
 assert.match(rosterCss,/\.roster-oath-box\{[^}]*border:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\);/);
 assert.doesNotMatch(rosterCss,/border(?:-top)?:1px solid/,'면접표 인쇄선에 화면용 1px 선이 남으면 안 됩니다.');
@@ -78,4 +81,4 @@ const orderedHtml=context.buildRosterHtml(date);
 assert.deepEqual([...orderedHtml.matchAll(/가상수동순서(\d+)/g)].map(match=>Number(match[1])),[6,5,4,3,2,1],'저장된 순서가 인쇄 성명 순서와 일치해야 합니다.');
 assert.deepEqual([...orderedHtml.matchAll(/class="roster-no" rowspan="2">(\d+)</g)].map(match=>Number(match[1])),[1,2,3,4,5,6],'두 번째 페이지에서도 번호는 1부터 연속이어야 합니다.');
 
-console.log('roster-print-border.test.js: 순흑색 0.50mm 인쇄선·고정 문구·자동채움·순서·0/1/5/6/10명 분할 확인 완료');
+console.log('roster-print-border.test.js: 독립 순흑색 0.50mm 격자·고정 문구·자동채움·순서·0/1/5/6/10명 분할 확인 완료');
