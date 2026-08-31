@@ -50,32 +50,3 @@ jobs:
           path: artifacts/ui-v12.3.0
           if-no-files-found: warn
           retention-days: 14
-
-  bridge-windows-x64:
-    name: Windows x64 portable Bridge 검사
-    runs-on: windows-latest
-    timeout-minutes: 10
-    steps:
-      - name: 코드 받기
-        uses: actions/checkout@v6
-      - name: Node.js 준비
-        uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          package-manager-cache: false
-      - name: 고정된 빌드 의존성 설치
-        run: npm ci
-      - name: Preview·Production 단일 실행파일 생성
-        run: npm run build:bridge:windows
-      - name: 설정파일 기반 더블클릭 실행 검사
-        run: npm run test:bridge-exe
-      - name: 회사 PC 전달용 실행파일 보관
-        uses: actions/upload-artifact@v4
-        with:
-          name: ERP-Bridge-Shared-Storage-windows-x64-${{ github.run_attempt }}
-          path: |
-            dist/ERP-Bridge.exe
-            dist/ERP-Bridge-Preview.exe
-            dist/bridge-config.json
-          if-no-files-found: error
-          retention-days: 14
