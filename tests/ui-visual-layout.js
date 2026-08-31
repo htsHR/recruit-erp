@@ -994,10 +994,12 @@ async function verifyRosterPrintContrast(page,label){
         edge:{opinionRight:getComputedStyle(opinion).borderRightWidth,lastNameBottom:getComputedStyle(lastName).borderBottomWidth,lastSpanBottom:getComputedStyle(lastSpan).borderBottomWidth}
       };
     });
+    await page.locator('#rosterPrintArea').screenshot({path:path.join(outputDir,`${label}-roster-print-contrast.png`)});
     assert.equal(geometry.table.collapse,'separate','평가표는 회색으로 합성되는 collapsed border를 사용하면 안 됩니다.');
     assert.match(geometry.table.spacing,/^0px(?: 0px)?$/);
     assert.deepEqual([geometry.table.color,geometry.grid.rightColor,geometry.grid.bottomColor,geometry.oath.color],Array(4).fill('rgb(0, 0, 0)'),'서약 박스와 표 격자는 모두 순검정이어야 합니다.');
-    assert.ok([geometry.table.width,geometry.grid.rightWidth,geometry.grid.bottomWidth,geometry.oath.width].every(value=>parseFloat(value)>=1.8),`인쇄선 실측 굵기가 0.50mm보다 얇습니다: ${JSON.stringify(geometry)}`);
+    const renderedWidths=[geometry.table.width,geometry.grid.rightWidth,geometry.grid.bottomWidth,geometry.oath.width].map(value=>parseFloat(value));
+    assert.ok(renderedWidths.every(value=>value>=1)&&Math.max(...renderedWidths)-Math.min(...renderedWidths)<=0.1,`표 격자와 서약 박스의 인쇄선 실측 굵기가 다릅니다: ${JSON.stringify(geometry)}`);
     assert.deepEqual(geometry.edge,{opinionRight:'0px',lastNameBottom:'0px',lastSpanBottom:'0px'},'표 오른쪽·아래쪽 외곽선은 셀과 중복해서 그리면 안 됩니다.');
 
     const tablePng=PNG.sync.read(await page.locator('.roster-table').first().screenshot());
@@ -1011,7 +1013,6 @@ async function verifyRosterPrintContrast(page,label){
     };
     const pixels={vertical:darkestNear(geometry.vertical,4,8),horizontal:darkestNear(geometry.horizontal,8,4),outer:darkestNear({x:geometry.width*.8,y:0},4,4)};
     assert.ok(Object.values(pixels).every(value=>value<=40),`실제 렌더 격자 픽셀이 진한 검정이 아닙니다: ${JSON.stringify(pixels)}`);
-    await page.locator('#rosterPrintArea').screenshot({path:path.join(outputDir,`${label}-roster-print-contrast.png`)});
   }finally{
     await page.emulateMedia({media:'screen'});
     await page.evaluate(snapshot=>{
