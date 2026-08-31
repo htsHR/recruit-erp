@@ -8,9 +8,9 @@
 - 작업 전 원격 `main` 최신 커밋을 확인하고 동기화합니다.
 - 기능 개발은 `main`에서 직접 하지 않고 `agent/...` 작업 브랜치에서 진행합니다.
 - 기존 구현을 먼저 읽고 재사용하며 요청 범위 밖 대규모 리팩터링은 하지 않습니다.
-- 저장소는 공개 저장소로 간주하고 실제 지원자/사원 개인정보, 실제 주민등록번호, 운영 JSON, 공용폴더 master/backup, 토큰/세션/API key/secret을 Git/GitHub/CI/artifact/log/screenshot에 넣지 않습니다.
-- 테스트는 합성 데이터만 사용하고 실제 `ERP_DATA/erp-data.json`이나 backup을 fixture로 사용하지 않습니다.
-- `residentNumber`는 공용 shared snapshot에서 제외 상태를 유지합니다.
+- 저장소는 공개 저장소로 간주하고 실제 지원자/사원 개인정보, 실제 주민등록번호, 운영 JSON, 브라우저 업무 데이터, 암호화 백업, 토큰/세션/API key/secret을 Git/GitHub/CI/artifact/log/screenshot에 넣지 않습니다.
+- 테스트는 합성 데이터만 사용하고 실제 localStorage·IndexedDB 업무 데이터나 암호화 백업 파일을 fixture로 사용하지 않습니다.
+- `residentNumber`를 GitHub·CI·artifact·log·screenshot·자동 백업 미리보기에 노출하지 않습니다.
 
 ## 기본 금지
 개별 task가 명시적으로 허용하지 않는 한 다음을 변경하지 않습니다.
@@ -18,8 +18,8 @@
 - 운영 DB schema/table/RLS
 - 사용자 계정 생성/삭제
 - 권한 체계
-- ERP Bridge API/port/origin/token/rootPath/lock/revision/backup 정책
-- shared-storage 핵심 아키텍처/schemaVersion
+- LOCAL ONLY 저장 계약·업무 localStorage key·IndexedDB 안전 복사/스냅샷 정책
+- 원격 로그인·Supabase·ERP Bridge·공용폴더 자동 연결의 재도입
 - 실제 운영 데이터 일괄 수정
 
 필요해지면 자동 진행하지 말고 중단 후 보고합니다.
@@ -30,15 +30,15 @@
 - 사용자가 직접 입력한 기존 값은 자동화가 임의로 덮어쓰지 않습니다.
 - 일괄 변경은 메모리에서 계산·검증 후 저장하며 저장 실패 시 전체 rollback 합니다.
 
-## 공용폴더 저장
-회사 로컬 운영 기준은 아래 구조입니다.
+## v12.0.2~v12.3.0 LOCAL ONLY 저장
+현재 운영 기준은 아래 구조입니다.
 
-`ERP 웹 → 127.0.0.1 ERP Bridge → 지원팀 공용폴더/RecruitERP/ERP_DATA/erp-data.json`
+`Recruit ERP 웹 → 현재 브라우저 localStorage(업무 master) → IndexedDB 안전 복사·최대 5개 안전 스냅샷(보조)`
 
-- 공용폴더는 durable master입니다.
-- localStorage는 cache/fallback입니다.
-- 기능 작업 때문에 Bridge/공용저장 구조를 재설계하지 않습니다.
-- revision/writeArmed/backup/lock/origin/token 보호를 약화시키지 않습니다.
+- 원격 로그인·Supabase·ERP Bridge·공용폴더 자동 연결을 사용하지 않습니다.
+- 기능 작업 때문에 원격 저장·Bridge를 다시 연결하지 않습니다.
+- v12.0.2의 공장초기화 키 범위, `recruit_erp_data_epoch`, IndexedDB 삭제 검증과 fail-closed 보호를 약화시키지 않습니다.
+- 브라우저 데이터 삭제·기기 교체·시크릿 모드 종료로 자료가 손실될 수 있으므로 중요한 대량 변경 전 암호화 백업을 별도 보관합니다.
 
 ## 테스트
 - task별 핵심 테스트 + `npm run check`를 우선합니다.
@@ -50,7 +50,7 @@
 - `residentNumber`를 편집 허용목록, 임시 변경, 실행취소 기록, 중복 검사, 최종 확인, DOM, 로그, artifact에 넣지 않습니다.
 - 셀 편집과 직사각형 붙여넣기는 각각 한 작업으로 실행취소 기록을 남기며, 편집기가 열린 동안 브라우저 기본 실행취소를 가로채지 않습니다.
 - 연락처·이메일 중복은 경고와 명시적 확인만 제공하고 자동 병합·삭제·대상 변경을 하지 않습니다.
-- 최종 확인 전에는 지원자 배열, 업무 localStorage, Supabase, shared-storage와 Bridge master를 변경하지 않습니다.
+- 최종 확인 전에는 지원자 배열·업무 localStorage·IndexedDB 안전 복사를 변경하지 않습니다.
 - 저장 시 깊은 복제본에서 허용된 변경만 반영한 뒤 기존 `normalizeApplicant()`와 `save()`를 정확히 한 번 사용합니다. 실패하면 전체 rollback하고 임시 변경·실행취소 기록을 유지합니다.
 - 조회 전용 사용자는 화면과 직접 함수 호출 모두에서 편집·붙여넣기·실행취소·다시실행·중복 확인·저장을 사용할 수 없습니다.
 
@@ -58,18 +58,18 @@
 - 워크시트 NO·성명·연락처 고정 열은 실제 렌더 너비의 누적 위치를 사용하고 선택·변경·오류·중복·읽기전용 상태를 가리지 않습니다.
 - 데스크톱 지원자 빠른필터는 내부 가로 스크롤 없이 줄바꿈하며, 모바일에서만 필요한 내부 스크롤을 허용합니다.
 - 달력의 오늘 표시는 색상만으로 구분하지 않고 `오늘` 텍스트와 `aria-current="date"`를 유지합니다.
-- UI 마감 작업으로 업무 배열·localStorage 키·Supabase·Bridge·shared-storage 구조를 변경하지 않습니다.
+- UI 마감 작업으로 업무 배열·localStorage key·IndexedDB 정책·LOCAL ONLY 저장 계약을 변경하지 않습니다.
 
 ## v11.5.0 채용담당자 데일리 업무 보호
 - 홈과 오늘 할 일은 `erpTodayAutomation.buildWorkflowRows()` 공통 선택기를 사용하고 한 지원자를 여러 행으로 중복 표시하지 않습니다.
-- 빠른 등록은 별도 기본값 저장 키를 만들지 않으며, 최종 확인 전에는 지원자 배열·localStorage·공용 저장소를 변경하지 않습니다.
+- 빠른 등록은 별도 기본값 저장 키를 만들지 않으며, 최종 확인 전에는 지원자 배열·localStorage·IndexedDB 안전 복사를 변경하지 않습니다.
 - 빠른 등록 성공은 기존 `save()`를 정확히 한 번 사용하고 실패하면 메모리와 브라우저 저장값을 원상복구하면서 입력을 유지합니다.
 - 조회 전용 사용자는 빠른 등록 UI와 직접 함수 호출 모두 차단합니다.
 - 조회·필터·접기·홈/오늘 업무 이동만으로 업무 데이터나 저장소를 변경하지 않습니다.
 
 ## v11.5.1 운영 점검·반응형 마감 보호
 - 현재 릴리스 기대 버전은 `js/app-version.js`에서 읽고 운영 준비 모듈에 별도 버전 상수를 만들지 않습니다.
-- 입사·온보딩 빈 상태 이동과 안내문 복사는 업무 배열·localStorage·Bridge·공용 저장소를 변경하지 않습니다.
+- 입사·온보딩 빈 상태 이동과 안내문 복사는 업무 배열·localStorage·IndexedDB 안전 복사를 변경하지 않습니다.
 - 반응형 마감은 화면별 선택자에 한정하고 전역 overflow·sticky·권한·저장 로직을 바꾸지 않습니다.
 
 ## v11.5.2 채용담당자 UI 안정화 보호
@@ -77,12 +77,12 @@
 - 빠른 보기의 다음 액션과 최근 진행 이력은 기존 지원자 필드를 읽기만 하며 별도 배열·저장·빠른 기록 기능을 만들지 않습니다.
 - 목록 `내 보기`는 기존 `recruit_erp_saved_advanced_searches`와 상세검색 적용 흐름을 재사용하고 불러오기만으로 저장값을 쓰지 않습니다.
 - 오늘 업무는 기존 공통 선택기와 수치를 그대로 사용하고 요약·KPI를 처리 목록보다 먼저 배치합니다.
-- UI 안정화로 신규 업무 필드·localStorage 키, Supabase, Bridge, shared-storage, 권한 또는 업무 데이터를 변경하지 않습니다.
+- UI 안정화로 신규 업무 필드·localStorage key·IndexedDB 정책·LOCAL ONLY 저장 계약·권한·업무 데이터를 변경하지 않습니다.
 
 ## v11.3.2 지원자 빠른 보기 보호
 - 지원자 빠른 보기는 일반목록에서만 사용하는 읽기 전용 화면입니다. 기존 전체 상세, 상태 변경, 수정, 삭제와 워크시트 저장 흐름을 대체하지 않습니다.
 - 빠른 보기의 이전·다음 순서는 현재 `filtered()` 결과를 사용하며 별도 지원자 배열이나 지속 저장 키를 만들지 않습니다.
-- 열기·닫기·이전·다음만으로 `save()`, 업무 localStorage, shared-storage 또는 Bridge 저장을 호출하지 않습니다.
+- 열기·닫기·이전·다음만으로 `save()`, 업무 localStorage 또는 IndexedDB 안전 복사를 호출하지 않습니다.
 - 표시 필드는 명시적 허용목록으로 구성하고 `residentNumber`를 DOM·로그·스크린샷에 표시하지 않습니다.
 - 수정 동작은 기존 `applicant.write` 권한과 `editApplicant()`를 그대로 사용하고 조회 전용에는 수정·삭제 동작을 노출하지 않습니다.
 - Escape, 패널 내부 포커스 순환, 닫은 뒤 실행 행 포커스 복귀와 모바일 배경 이중 스크롤 차단을 유지합니다.
@@ -92,7 +92,7 @@
 - `storageNote`는 운영·저장 상태 설명을, `authNote`는 이메일과 로그인·로그아웃 동작만 소유합니다. 같은 상태 설명을 두 영역에 중복하지 않습니다.
 - 홈 누적 KPI 4개와 오늘 업무 카드 5개의 의미를 섞지 않습니다.
 - 지원자 목록의 검색·정렬·빠른필터·근무지·카운트·일반보기/워크시트 기능을 유지하고, 넓은 표는 `table-wrap` 안에서만 스크롤합니다.
-- 화면 이동·렌더·필터·사이드바 토글은 업무 배열, 업무 localStorage, shared-storage와 공용 master를 변경하지 않습니다.
+- 화면 이동·렌더·필터·사이드바 토글은 업무 배열·업무 localStorage·IndexedDB 안전 복사를 변경하지 않습니다.
 
 ## 자동 배포
 개별 task에 `AUTO_DEPLOY: YES`가 있을 때만 해당 task에 한해 다음을 진행할 수 있습니다.
@@ -103,9 +103,9 @@
 - 핵심 테스트 또는 CI 실패
 - 데이터 손상/덮어쓰기 위험
 - 개인정보 노출 가능성
-- 예상 밖 DB/Supabase 변경 필요
-- ERP Bridge 변경 필요
-- shared-storage 핵심 구조 변경 필요
+- 예상 밖 DB·Supabase·원격 인증 변경 필요
+- 원격 저장·ERP Bridge 재도입 필요
+- LOCAL ONLY 저장 계약 변경 필요
 - 기존 기능의 명확한 회귀
 
 `AUTO_DEPLOY: YES`는 코드 배포 승인일 뿐 실제 운영 데이터를 자동 수정할 권한은 아닙니다.
@@ -115,7 +115,7 @@
 1. 이 `AGENTS.md`를 적용합니다.
 2. Google Drive의 `00_ERP_MASTER/ERP_COMMON_RULES`와 지정된 task 문서를 처음부터 끝까지 읽습니다.
 3. task 문서의 범위/PASS/중단 조건을 그대로 따릅니다.
-4. 개인정보·운영 데이터·DB·Bridge 안전 규칙은 항상 우선합니다.
+4. 개인정보·운영 데이터·LOCAL ONLY 저장 안전 규칙은 항상 우선합니다.
 
 저장소 `codex-tasks`의 같은 이름 문서는 Drive 문서에 접근할 수 없을 때 맥락을 파악하기 위한 참고용으로만 사용합니다.
 
