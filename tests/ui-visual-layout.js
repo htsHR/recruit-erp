@@ -104,7 +104,10 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         },rosterDate);
         assert.equal(await page.evaluate(()=>window.__rosterPrintStubInstalled),true,'desktop: 브라우저 print 대체가 페이지 로드 전에 준비되어야 합니다.');
         assert.equal(await page.evaluate(date=>rosterApplicantsOn(date).length,rosterDate),6,'desktop: 인쇄 대상 합성 지원자는 6명이어야 합니다.');
+        let rosterPrivacyConfirm='';
+        page.once('dialog',async dialog=>{rosterPrivacyConfirm=dialog.message();await dialog.accept();});
         await page.locator('#btnRosterPrint').click();
+        assert.match(rosterPrivacyConfirm,/지원자 명단 인쇄/,'desktop: 개인정보 인쇄 확인을 거쳐야 합니다.');
         const rosterClickState=await page.evaluate(()=>({calls:window.__rosterPrintCalls,date:document.querySelector('#rosterDate')?.value||'',eligible:rosterApplicantsOn(document.querySelector('#rosterDate')?.value||'').length,active:window.erpRosterOrderEditor.__test.printState.active,pages:document.querySelectorAll('#rosterPrintArea .roster-page').length,buttonDisabled:document.querySelector('#btnRosterPrint')?.disabled===true}));
         console.log('desktop roster print click state:',JSON.stringify(rosterClickState));
         assert.equal(rosterClickState.calls,1,`desktop: 명단표 버튼은 print를 한 번 호출해야 합니다. ${JSON.stringify(rosterClickState)}`);
