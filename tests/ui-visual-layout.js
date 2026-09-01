@@ -57,8 +57,13 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       assert.deepEqual(await page.locator('section.page').evaluateAll(nodes=>nodes.map(node=>node.id)),['home','applicants','form','today','calendar','backup']);
       assert.equal(await page.locator('#stats,#schools,#employees,#templates,#advancedSearch,#dataHealth,#duplicates,#permissions,#auditHistory,#onboarding,#storagePerformance,#productionReadiness').count(),0);
       for(const target of ['home','applicants','calendar','backup']){
+        if(viewport.width<=1020){
+          await page.locator('#sidebarToggle').click();
+          await page.waitForFunction(()=>document.body.classList.contains('sidebar-mobile-open'));
+        }
         await page.locator(`.nav-btn[data-page="${target}"]`).click();
         await page.waitForFunction(id=>document.querySelector('.page.active')?.id===id,target);
+        if(viewport.width<=1020)assert.equal(await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')),false,`${viewport.name}: 메뉴 선택 뒤 사이드바 닫기`);
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-${target}.png`),fullPage:true});
       }
       await page.evaluate(()=>window.setPage('form'));
