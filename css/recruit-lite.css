@@ -1,0 +1,160 @@
+/* Recruit ERP v12.4.0 — day-to-day recruiting workspace diet. */
+:root{
+  --ux12-sidebar:224px;
+}
+
+/* Four daily destinations stay visible; everything else remains available on demand. */
+.ux12-ready .lite-nav-primary{
+  margin-bottom:10px;
+}
+.ux12-ready .lite-nav-primary .ux12-nav-group-label{
+  min-height:26px;
+  padding:3px 10px 5px;
+  color:#667085;
+  cursor:default;
+}
+.ux12-ready .lite-nav-primary .nav-group-items{
+  display:grid;
+  gap:3px;
+}
+.ux12-ready .lite-nav-primary .nav-btn{
+  min-height:44px!important;
+  padding:9px 11px!important;
+}
+.ux12-ready .lite-nav-secondary{
+  padding-top:8px;
+  border-top:1px solid var(--ux12-line);
+}
+.ux12-ready .lite-nav-secondary .ux12-nav-group-label{
+  min-height:36px;
+  padding:6px 10px;
+  border-radius:8px;
+  color:#667085;
+}
+.ux12-ready .lite-nav-secondary .ux12-nav-group-label:hover{
+  background:#f2f4f7;
+}
+.ux12-ready .lite-nav-secondary .ux12-nav-group-label span:last-child{
+  transition:transform 160ms ease;
+}
+.ux12-ready .lite-nav-secondary:not(.collapsed) .ux12-nav-group-label span:last-child{
+  transform:rotate(180deg);
+}
+.ux12-ready .lite-nav-secondary .nav-group-items{
+  padding-top:3px;
+}
+
+/* Compact action-first home strip. */
+.ux12-ready .lite-workspace{
+  margin:0 0 16px;
+}
+.ux12-ready .lite-workspace-heading{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  margin:0 0 8px;
+}
+.ux12-ready .lite-workspace-heading h3{
+  margin:0;
+  color:var(--ux12-text);
+  font-size:15px;
+  line-height:1.35;
+}
+.ux12-ready .lite-workspace-heading p{
+  margin:0;
+  color:var(--ux12-muted);
+  font-size:12px;
+}
+.ux12-ready .lite-quick-actions{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.ux12-ready .lite-action-card{
+  min-width:0;
+  min-height:78px;
+  padding:12px 13px;
+  border:1px solid var(--ux12-line);
+  border-radius:10px;
+  background:#fff;
+  color:var(--ux12-text);
+  box-shadow:none;
+  display:grid;
+  grid-template-columns:30px minmax(0,1fr) auto;
+  align-items:center;
+  gap:9px;
+  text-align:left;
+}
+.ux12-ready .lite-action-card:hover{
+  border-color:#b8d4fa;
+  background:#f8fbff;
+}
+.ux12-ready .lite-action-number{
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:var(--ux12-blue-soft);
+  color:#175cd3;
+  font-size:11px;
+  font-weight:800;
+}
+.ux12-ready .lite-action-copy{
+  min-width:0;
+  display:grid;
+  gap:3px;
+}
+.ux12-ready .lite-action-copy strong{
+  overflow:hidden;
+  color:var(--ux12-text);
+  font-size:14px;
+  line-height:1.3;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ux12-ready .lite-action-copy small{
+  overflow:hidden;
+  color:var(--ux12-muted);
+  font-size:11px;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ux12-ready .lite-action-arrow{
+  color:#98a2b3;
+  font-size:16px;
+}
+
+@media(max-width:1023px){
+  .ux12-ready .lite-quick-actions{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:600px){
+  .ux12-ready .lite-workspace-heading{
+    display:block;
+  }
+  .ux12-ready .lite-workspace-heading p{
+    margin-top:3px;
+  }
+  .ux12-ready .lite-quick-actions{
+    gap:8px;
+  }
+  .ux12-ready .lite-action-card{
+    min-height:72px;
+    padding:10px;
+    grid-template-columns:28px minmax(0,1fr);
+    gap:8px;
+  }
+  .ux12-ready .lite-action-number{
+    width:28px;
+    height:28px;
+  }
+  .ux12-ready .lite-action-arrow{
+    display:none;
+  }
+  .ux12-ready .lite-action-copy small{
+    white-space:normal;
+  }
+}

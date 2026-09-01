@@ -22,14 +22,14 @@ assert.doesNotMatch(index,/VERSION 2\.0/);
 const localAssets=[...index.matchAll(/(?:src|href)="(?!https?:)([^"?]+)\?v=([^"]+)"/g)];
 assert.ok(localAssets.length>=40,'버전이 붙은 로컬 화면 파일을 찾지 못했습니다.');
 const assetVersions=new Map(localAssets.map(([,file,assetVersion])=>[file,assetVersion]));
-const changedAssets=['css/components.css','js/app-version.js','js/production-readiness.js'];
+const changedAssets=['css/recruit-lite.css','js/app-version.js','js/applicants.js','js/production-readiness.js','js/ux-reboot-v12.js'];
 changedAssets.forEach(file=>assert.equal(assetVersions.get(file),version,`${file}의 v${version} 캐시 버전이 일치하지 않습니다.`));
 assert.deepEqual(
   localAssets.filter(([,file,assetVersion])=>assetVersion===version).map(([,file])=>file).sort(),
   [...changedAssets].sort(),
   `v${version}에서 수정된 자산만 새 캐시 버전을 사용해야 합니다.`
 );
-localAssets.filter(([,file])=>!changedAssets.includes(file)).forEach(([,file,assetVersion])=>assert.ok(['12.0.2','12.0.3','12.1.0','12.2.0','12.2.1','12.2.2'].includes(assetVersion),`${file}의 변경 없는 캐시 버전을 불필요하게 올리면 안 됩니다.`));
+localAssets.filter(([,file])=>!changedAssets.includes(file)).forEach(([,file,assetVersion])=>assert.ok(['12.0.2','12.0.3','12.1.0','12.2.0','12.2.1','12.2.2','12.3.2'].includes(assetVersion),`${file}의 변경 없는 캐시 버전을 불필요하게 올리면 안 됩니다.`));
 
 assert.ok(fs.existsSync(path.join(root,`CHANGELOG_v${version}.md`)),'현재 버전 변경 기록이 없습니다.');
 assert.match(workflow,/npm run check/);
