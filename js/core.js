@@ -11,9 +11,7 @@ const EMPLOYEES_KEY = 'recruit_erp_employees';
 const STATUS_OPTIONS = ['서류검토','서류합격','부재중','면접예정','면접완료','다음면접','입사예정','출근','불합격','서류탈락','면접거절','면접불참','입사철회'];
 const LEGACY_STATUS_OPTIONS = ['철회','연락두절'];
 let schools = [];
-let editingSchoolId = '';
 let employees = [];
-let editingEmployeeId = '';
 let applicants = [];
 let hireWaitingProfiles = [];
 let messageTemplates = [];
@@ -22,7 +20,6 @@ let currentFilter = 'all';
 let currentSearch = '';
 let currentSort = 'recent';
 let hideFinished = false;
-let currentSchoolFilterId = '';
 let currentApplicantPage = 1;
 let applicantPageSize = 30;
 let lastApplicantFilterSignature = '';
@@ -153,4 +150,3 @@ function save(){
   renderAll();
   return true;
 }
-

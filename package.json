@@ -1,15 +1,13 @@
 {
   "name": "recruit-erp",
-  "version": "12.4.0",
+  "version": "12.5.0",
   "private": true,
-  "description": "채용·인사 운영을 위한 정적 웹 ERP",
+  "description": "지원자·면접·평가표 중심의 로컬 전용 채용 업무 도구",
   "scripts": {
     "check": "npm run check:syntax && npm test",
     "check:syntax": "node tests/check-syntax.js",
     "test": "node tests/run-all.js",
-    "test:ui-layout": "node tests/ui-visual-layout.js",
-    "build:bridge:windows": "powershell -NoProfile -ExecutionPolicy Bypass -File bridge/build-windows.ps1",
-    "test:bridge-exe": "node tests/bridge-portable-exe.js"
+    "test:ui-layout": "node tests/ui-visual-layout.js"
   },
   "engines": {
     "node": ">=20"

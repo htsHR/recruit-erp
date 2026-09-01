@@ -2,25 +2,14 @@
 (function(root){
   'use strict';
 
-  const NAV_GROUPS=[
-    {key:'primary',label:'주요 업무',pages:['home','applicants','calendar','backup'],collapsible:false},
-    {key:'other',label:'기타 기능',pages:['form','today','advancedSearch','templates','stats','onboarding','employees','schools','dataHealth','duplicates','permissions','auditHistory','storagePerformance','productionReadiness'],defaultCollapsed:true}
-  ];
+  const NAV_GROUPS=[{key:'primary',label:'핵심 업무',pages:['home','applicants','calendar','backup'],collapsible:false}];
   const PAGE_ROUTES={
-    home:'#/today',today:'#/today/tasks',applicants:'#/applicants',form:'#/applicants/new',advancedSearch:'#/applicants/search',
-    calendar:'#/calendar',templates:'#/contact/templates',onboarding:'#/hire/onboarding',employees:'#/employees',schools:'#/schools',stats:'#/analytics',
-    dataHealth:'#/admin/data-health',duplicates:'#/admin/duplicates',backup:'#/admin/backup',permissions:'#/admin/permissions',auditHistory:'#/admin/audit',
-    storagePerformance:'#/admin/storage',productionReadiness:'#/admin/readiness'
+    home:'#/today',today:'#/today/tasks',applicants:'#/applicants',form:'#/applicants/new',calendar:'#/calendar',backup:'#/backup'
   };
   const ROUTE_PAGES=Object.fromEntries(Object.entries(PAGE_ROUTES).map(([page,route])=>[route,page]));
   const routing={index:0,suppress:false,reverting:false,initialized:false,currentPage:'home'};
   const menuPreview={openTimer:0,closeTimer:0};
-  const PAGE_LABELS={
-    home:'오늘 업무',today:'오늘 처리 목록',applicants:'지원자',form:'지원자 등록',advancedSearch:'상세 검색',
-    calendar:'일정·평가표',templates:'안내문',onboarding:'입사대기',employees:'사원명부',schools:'학교 관리',stats:'채용 통계',
-    dataHealth:'데이터 점검',duplicates:'중복 관리',backup:'백업',permissions:'사용자 권한',auditHistory:'변경 이력',
-    storagePerformance:'저장소·속도',productionReadiness:'운영 준비'
-  };
+  const PAGE_LABELS={home:'오늘 업무',today:'오늘 처리 목록',applicants:'지원자',form:'지원자 등록',calendar:'일정·평가표',backup:'백업'};
 
   const $=id=>root.document.getElementById(id);
   const rows=()=>typeof applicants!=='undefined'&&Array.isArray(applicants)?applicants:[];
@@ -118,16 +107,13 @@
     const right=root.document.createElement('div');right.className='ux12-top-actions';
     const notice=iconButton('ux12Notifications','오늘 처리 목록','M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4');
     const help=iconButton('ux12Help','도움말','M9.2 9a3 3 0 1 1 4.8 2.4c-1.2.8-2 1.2-2 2.6M12 18h.01');
-    const settings=iconButton('ux12Settings','설정','M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.12 2.12-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.04 1.57V20h-3v-.09a1.7 1.7 0 0 0-1.04-1.57 1.7 1.7 0 0 0-1.88.34l-.06.06-2.12-2.12.06-.06A1.7 1.7 0 0 0 7 14.68a1.7 1.7 0 0 0-1.57-1.04H5.3v-3h.09A1.7 1.7 0 0 0 6.96 9.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.12-2.12.06.06A1.7 1.7 0 0 0 10.62 6a1.7 1.7 0 0 0 1.04-1.57V4.3h3v.09A1.7 1.7 0 0 0 15.7 5.96a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.12 2.12-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.57 1.04H21v3h-.09A1.7 1.7 0 0 0 19.4 15Z');
-    settings.dataset.requiredPermission='storage.manage';
-    notice.addEventListener('click',()=>root.setPage?.('today'));settings.addEventListener('click',()=>root.setPage?.('storagePerformance'));
-    const syncSettings=()=>{settings.hidden=Boolean(root.erpPermissions&&!root.erpPermissions.has('storage.manage'));};syncSettings();root.document.addEventListener('erp:permission-change',syncSettings);
+    notice.addEventListener('click',()=>root.setPage?.('today'));
     const helpPanel=root.document.createElement('div');helpPanel.id='ux12HelpPanel';helpPanel.className='ux12-help-panel';helpPanel.hidden=true;helpPanel.innerHTML='<strong>빠른 사용 안내</strong><p>왼쪽 메뉴에서 업무를 선택하고, 지원자 행을 누르면 빠른 보기가 열립니다.</p><button type="button" class="ghost" id="ux12HelpClose">닫기</button>';
     help.setAttribute('aria-controls','ux12HelpPanel');help.setAttribute('aria-expanded','false');
     help.addEventListener('click',()=>{helpPanel.hidden=!helpPanel.hidden;help.setAttribute('aria-expanded',String(!helpPanel.hidden));if(!helpPanel.hidden)$('ux12HelpClose')?.focus();});
     helpPanel.querySelector('#ux12HelpClose')?.addEventListener('click',()=>{helpPanel.hidden=true;help.setAttribute('aria-expanded','false');help.focus();});
     const user=utilities?.querySelector('#topbarUser');user?.querySelector('#topbarUserMark')?.remove();if(user){user.classList.add('ux12-account');user.setAttribute('aria-label','현재 계정');}
-    if(utilities)right.appendChild(utilities);right.append(notice,help,settings,helpPanel);
+    if(utilities)right.appendChild(utilities);right.append(notice,help,helpPanel);
     topbar.replaceChildren(left,right);topbar.dataset.ux12Ready='true';
 
     const toggle=sidebarToggle;if(toggle){
@@ -260,27 +246,13 @@
   }
 
   function routeForPage(page){return PAGE_ROUTES[page]||`#/${String(page||'today').replace(/[^a-zA-Z0-9_-]/g,'')}`;}
-  function activePageId(){
-    if($('advancedSearch')?.classList.contains('drawer-open'))return 'advancedSearch';
-    return root.document.querySelector('.page.active')?.id||routing.currentPage||'home';
-  }
-  function syncAdvancedSearchShell(){
-    root.document.body.dataset.activePage='advancedSearch';
-    const title=$('page-title'),breadcrumb=root.document.querySelector('.topbar-breadcrumb');
-    if(title)title.textContent='지원자 상세 검색';
-    if(breadcrumb)breadcrumb.textContent='여러 검색조건을 조합하고 자주 쓰는 조건을 저장합니다.';
-    root.document.querySelectorAll('.nav-btn').forEach(button=>button.classList.toggle('active',button.dataset.page==='applicants'));
-    const topActions=root.document.querySelector('.top-actions:not(.form-top-actions)'),formActions=root.document.querySelector('.form-top-actions');
-    if(topActions)topActions.style.display='none';if(formActions)formActions.style.display='none';
-    updateActiveNavigation();
-  }
+  function activePageId(){return root.document.querySelector('.page.active')?.id||routing.currentPage||'home';}
   function firstAccessiblePage(){
-    for(const page of ['home','today','applicants','calendar','employees','schools'])if(routeCanOpen(page))return page;
+    for(const page of ['home','today','applicants','calendar','backup'])if(routeCanOpen(page))return page;
     return 'home';
   }
   function routeCanOpen(page){
     if(!root.document.getElementById(page))return false;
-    if(page==='advancedSearch')return routeCanOpen('applicants');
     const button=root.document.querySelector(`.nav-btn[data-page="${page}"]`);if(!button)return page==='home';
     if(button.hidden||button.classList.contains('erp-permission-hidden')||button.getAttribute('aria-hidden')==='true')return false;
     return root.getComputedStyle(button).display!=='none';
@@ -364,17 +336,6 @@
     if(initial.quickId)root.openApplicantQuickDetail?.(initial.quickId,null);
     routing.suppress=false;
   }
-  function replaceAdvancedSearchWithList(){
-    if(root.location.hash!==PAGE_ROUTES.advancedSearch)return;
-    routing.suppress=true;const result=root.setPage?.('applicants');routing.suppress=false;if(result===false)return;
-    routing.currentPage='applicants';root.history.replaceState({...(root.history.state||{}),erpRoute:PAGE_ROUTES.applicants,erpIndex:routing.index,scrollX:root.scrollX||0,scrollY:root.scrollY||0},'',PAGE_ROUTES.applicants);updateActiveNavigation();
-  }
-  function bindAdvancedSearchRouting(){
-    const openButton=$('btnOpenApplicantFilter');if(openButton)openButton.onclick=event=>{event.preventDefault();root.setPage?.('advancedSearch');};
-    root.document.addEventListener('click',event=>{if(event.target.closest('#btnCloseApplicantFilter,#btnCancelApplicantFilter,#applicantFilterBackdrop,#asRun'))root.setTimeout(replaceAdvancedSearchWithList,0);});
-    root.document.addEventListener('keydown',event=>{if(event.key==='Escape'&&root.location.hash===PAGE_ROUTES.advancedSearch)root.setTimeout(replaceAdvancedSearchWithList,0);});
-  }
-
   function installWrappers(){
     const previousStats=root.renderStats;root.renderStats=function(){renderHomeSummary();};root.renderStats.__ux12=true;root.renderStats.previous=previousStats;
     const previousHome=root.renderHomeLists;root.renderHomeLists=function(){const result=previousHome?.apply(this,arguments);renderHomeSchedule();return result;};
@@ -382,7 +343,7 @@
     const previousPage=root.setPage;root.setPage=function(page){
       const before=activePageId();if(!routing.suppress)rememberScroll();
       const result=previousPage?.apply(this,arguments);
-      const after=activePageId();if(after==='advancedSearch')syncAdvancedSearchShell();
+      const after=activePageId();
       if(page!==before&&after===before)return false;
       if(result!==false&&!routing.suppress&&after!==before)pushPageRoute(after);
       if(result!==false)routing.currentPage=after;
@@ -402,7 +363,7 @@
     if(root.document.body.dataset.ux12Ready==='true')return;
     root.document.body.dataset.ux12Ready='true';root.document.body.classList.add('ux12-ready');
     syncDesktopShell();root.addEventListener('resize',syncDesktopShell,{passive:true});
-    auditPhotoFreeShell();buildNavigation();buildShell();rebuildApplicantTable();organizeApplicantFilters();installHome();installTodaySummary();installWrappers();bindAdvancedSearchRouting();bindHomeSummary();
+    auditPhotoFreeShell();buildNavigation();buildShell();rebuildApplicantTable();organizeApplicantFilters();installHome();installTodaySummary();installWrappers();bindHomeSummary();
     root.erpUx12Router={onQuickOpen:pushQuickRoute,onQuickClose:replaceQuickWithList,onQuickChange:updateQuickState,resolveRoute,routeForPage,activePageId,hasUnsavedChanges,state:routing};
     root.erpUx12={nextActionOf,scheduleOf,renderStageOverview,renderHomeSummary,updateTodaySummary,router:root.erpUx12Router};
     installRouting();

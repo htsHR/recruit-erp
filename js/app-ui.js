@@ -1,14 +1,12 @@
 
 /* ===== CONSOLIDATED SOURCE: complete-ux-v10.37.8.js ===== */
 /* Recruit ERP v10.37.6 ENV_MODE
-   UI/UX enhancement layer only. Core applicant/school/employee storage schemas remain unchanged. */
+   UI/UX enhancement layer only. Legacy datasets remain backup-compatible. */
 (function(){
 'use strict';
 
 const UX_VERSION=window.erpAppVersion?.VERSION||'';
 const OPERATION_ENV_KEY='recruit_erp_ui_operation_environment';
-const TEMPLATE_HISTORY_KEY='recruit_erp_ui_template_history';
-const SCHOOL_FAVORITES_KEY='recruit_erp_ui_school_favorites';
 let uxFormDirty=false;
 let uxFormBaseline='';
 let uxTaskShowEmpty=false;
@@ -17,7 +15,6 @@ let uxCalendarType='전체';
 let uxSubmitSnapshot=null;
 
 function uxEl(id){ return document.getElementById(id); }
-function uxSafeJson(raw,fallback){ try{return JSON.parse(raw)||fallback;}catch{return fallback;} }
 function uxNowLabel(){ return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}); }
 function uxToast(message,type='success'){
   let host=uxEl('uxToastHost');
@@ -283,7 +280,7 @@ renderToday=function(){
   const g=taskGroups();
   if(uxEl('todayOverdueCount')) uxEl('todayOverdueCount').textContent=g.overdue.length;
   if(uxEl('overdueList')) uxEl('overdueList').innerHTML=g.overdue.length?g.overdue.map(card).join(''):'<div class="empty">기한이 지난 미처리 업무가 없습니다.</div>';
-  const counts={today:g.todayInterviews.length,overdue:g.overdue.length,interview:g.upcomingInterviews.length,contact:g.recalls.length,dorm:g.dorms.length,hire:[...g.hireToday,...g.hireD3,...g.hireD7].filter((a,i,arr)=>arr.findIndex(x=>x.id===a.id)===i).length,decision:[...g.decisions,...g.waits].filter((a,i,arr)=>arr.findIndex(x=>x.id===a.id)===i).length,employee:applicantsPendingEmployeeLink().length};
+  const counts={today:g.todayInterviews.length,overdue:g.overdue.length,interview:g.upcomingInterviews.length,contact:g.recalls.length,dorm:g.dorms.length,hire:[...g.hireToday,...g.hireD3,...g.hireD7].filter((a,i,arr)=>arr.findIndex(x=>x.id===a.id)===i).length,decision:[...g.decisions,...g.waits].filter((a,i,arr)=>arr.findIndex(x=>x.id===a.id)===i).length};
   document.querySelectorAll('[data-task-panel]').forEach(p=>{
     const count=counts[p.dataset.taskPanel]||0;
     p.classList.toggle('task-panel-empty',count===0);
@@ -336,7 +333,6 @@ viewApplicant=function(id){
   const a=applicants.find(x=>x.id===id); if(!a) return;
   const sel=uxEl('detailQuickStatus');
   if(sel){ sel.innerHTML=statusOptionsHtml(a.status); sel.value=normalizeStatus(a.status); sel.onchange=()=>uxUpdateApplicantStatus(id,sel.value); }
-  const template=uxEl('btnDetailTemplate'); if(template) template.onclick=()=>uxOpenTemplateForApplicant(id);
   const print=uxEl('btnDetailPrint'); if(print) print.onclick=()=>window.print();
   const body=uxEl('detailBody');
   if(body && !body.querySelector('.detail-progress-strip')){
@@ -392,134 +388,6 @@ const uxBaseRenderCalendar=renderCalendar;
 renderCalendar=function(){ uxBaseRenderCalendar(); uxApplyCalendarView(); };
 window.renderCalendar=renderCalendar;
 
-/* ---------- Stats ---------- */
-renderStatsSummary=function(){
-  const el=uxEl('statsSummaryGrid'); if(!el) return;
-  const scope=statsScope(); const now=today().slice(0,7);
-  const monthApply=scope.filter(a=>String(a.applyDate||'').startsWith(now));
-  const interviewed=monthApply.filter(isInterviewed);
-  const passed=monthApply.filter(isPassed);
-  const hired=monthApply.filter(a=>a.status==='출근');
-  const rate=monthApply.length?Math.round(passed.length/monthApply.length*100):0;
-  const leadRows=scope.filter(a=>{
-    if(!a.applyDate) return false;
-    return (typeof isHireDateMeaningful==='function'&&isHireDateMeaningful(a)) || (typeof isInterviewDateMeaningful==='function'&&isInterviewDateMeaningful(a));
-  }).map(a=>{
-    const useHire=typeof isHireDateMeaningful==='function'&&isHireDateMeaningful(a);
-    const end=useHire?a.hireDate:a.interviewDate; const d1=new Date(a.applyDate+'T00:00:00'),d2=new Date(end+'T00:00:00'); return Math.max(0,Math.round((d2-d1)/86400000));
-  }).filter(Number.isFinite);
-  const avg=leadRows.length?Math.round(leadRows.reduce((x,y)=>x+y,0)/leadRows.length):0;
-  const data=[['이번 달 지원',monthApply.length,'지원일 기준'],['이번 달 면접',interviewed.length,'면접일 경과'],['이번 달 합격',passed.length,'입사예정+출근'],['이번 달 출근',hired.length,'입사 완료'],['합격률',rate+'%','이번 달 지원 대비'],['평균 진행일',avg+'일','지원→면접/입사']];
-  el.innerHTML=data.map(([k,v,s])=>`<div class="stat stats-kpi-card"><span>${k}</span><strong>${v}</strong><small>${s}</small></div>`).join('');
-};
-window.renderStatsSummary=renderStatsSummary;
-
-/* ---------- Template builder ---------- */
-function uxTemplateApplicants(){
-  const sel=uxEl('templateApplicant'); if(!sel) return;
-  const prev=sel.value;
-  const rows=[...applicants].sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
-  sel.innerHTML='<option value="">지원자 없이 작성</option>'+rows.map(a=>`<option value="${a.id}">${esc(a.name||'이름없음')} · ${esc(a.status||'')} · ${esc(a.workplace||'')}</option>`).join('');
-  if(rows.some(x=>x.id===prev)) sel.value=prev;
-}
-function uxTemplateData(){
-  const a=applicants.find(x=>x.id===uxEl('templateApplicant')?.value)||{};
-  return {a,name:a.name||'지원자',wp:uxFieldValue('templateWorkplace')||a.workplace||'지원근무지',date:uxFieldValue('templateDate')||a.interviewDate||a.hireDate||'',time:uxFieldValue('templateTime')||a.interviewTime||'',manager:uxFieldValue('templateManager')||'채용 담당자'};
-}
-function uxTemplateText(){
-  const d=uxTemplateData(); const type=uxEl('templateType')?.value||'면접 안내';
-  const dt=[d.date,d.time].filter(Boolean).join(' ')||'협의된 일정';
-  const map={
-    '면접 안내':`안녕하세요, ${d.name}님.\n에이치티솔루션 ${d.manager}입니다.\n지원해주신 이력서 검토 후 면접 일정을 안내드립니다.\n\n- 지원근무지: ${d.wp}\n- 면접일정: ${dt}\n\n확인 후 가능 여부를 회신 부탁드립니다. 감사합니다.`,
-    '면접 일정 변경':`안녕하세요, ${d.name}님.\n기존에 안내드린 ${dt} 면접 일정 조율이 필요해 연락드립니다.\n가능하신 시간대를 회신해주시면 확인 후 다시 안내드리겠습니다.`,
-    '면접 취소/전형 안내':`안녕하세요, ${d.name}님.\n채용 일정 관련하여 안내드립니다.\n내부 채용 진행 상황이 변경되어 예정된 면접 진행이 어렵게 되었습니다.\n지원해주셔서 감사합니다.`,
-    '천안 → 평택 문의':`안녕하세요, ${d.name}님.\n지원해주신 이력서를 확인하고 연락드립니다.\n현재 천안사업장은 내부 검토 중인 지원자가 있어, 평택사업장 근무도 검토 가능하실지 문의드립니다.`,
-    '평택 → 천안 문의':`안녕하세요, ${d.name}님.\n지원해주신 이력서를 확인하고 연락드립니다.\n평택 외 천안사업장 근무도 검토 가능하실지 문의드립니다.`,
-    '부재중 재연락':`안녕하세요, ${d.name}님.\n에이치티솔루션 채용 관련하여 연락드렸으나 부재중이셔서 문자 남깁니다.\n통화 가능하실 때 회신 부탁드립니다.`,
-    '서류 확인 요청':`안녕하세요, ${d.name}님.\n지원서류 확인 중 추가 확인이 필요한 사항이 있어 연락드립니다.\n확인 가능하실 때 회신 부탁드립니다.`,
-    '보류/검토 안내':`안녕하세요, ${d.name}님.\n지원해주신 서류는 현재 내부 검토 중입니다.\n검토 결과에 따라 추가 안내드리겠습니다. 감사합니다.`,
-    '입사 안내':`안녕하세요, ${d.name}님.\n${d.wp} 입사 관련하여 안내드립니다.\n- 입사 예정일: ${d.date||'별도 협의'}\n준비사항과 세부 일정은 별도로 안내드리겠습니다. 감사합니다.`
-  };
-  return map[type]||'';
-}
-function uxUpdateTemplateCount(){ const out=uxEl('templateOutput'); if(uxEl('templateCharCount')) uxEl('templateCharCount').textContent=`${out?.value.length||0}자`; }
-function uxSaveTemplateHistory(text){
-  if(!text.trim()) return;
-  let rows=uxSafeJson(localStorage.getItem(TEMPLATE_HISTORY_KEY),[]);
-  rows=[{id:Date.now(),type:uxEl('templateType')?.value||'',text,createdAt:new Date().toISOString()},...rows.filter(x=>x.text!==text)].slice(0,8);
-  localStorage.setItem(TEMPLATE_HISTORY_KEY,JSON.stringify(rows)); uxRenderTemplateHistory();
-}
-function uxRenderTemplateHistory(){
-  const el=uxEl('templateRecentList'); if(!el) return;
-  const rows=uxSafeJson(localStorage.getItem(TEMPLATE_HISTORY_KEY),[]);
-  el.innerHTML=rows.length?rows.map(x=>`<button type="button" class="template-recent-item" data-template-history-id="${x.id}"><span>${esc(x.type||'문구')}</span><strong>${esc(String(x.text||'').split('\n')[0])}</strong><small>${new Date(x.createdAt).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}</small></button>`).join(''):'<div class="empty">최근 생성한 문구가 없습니다.</div>';
-  el.querySelectorAll('[data-template-history-id]').forEach(btn=>btn.onclick=()=>{ const row=rows.find(x=>String(x.id)===btn.dataset.templateHistoryId); if(row&&uxEl('templateOutput')){uxEl('templateOutput').value=row.text;uxUpdateTemplateCount();} });
-}
-function uxGenerateTemplate(saveHistory=true){
-  const text=uxTemplateText(); if(uxEl('templateOutput')) uxEl('templateOutput').value=text; uxUpdateTemplateCount(); if(saveHistory) uxSaveTemplateHistory(text);
-}
-function uxSyncTemplateApplicant(){
-  const a=applicants.find(x=>x.id===uxEl('templateApplicant')?.value); if(!a) return;
-  if(uxEl('templateWorkplace')) uxEl('templateWorkplace').value=a.workplace||'';
-  if(uxEl('templateDate')) uxEl('templateDate').value=a.interviewDate||a.hireDate||'';
-  if(uxEl('templateTime')) uxEl('templateTime').value=a.interviewTime||'';
-  uxGenerateTemplate(false);
-}
-function uxOpenTemplateForApplicant(id){
-  if(closeDetail()===false)return; setPage('templates');
-  setTimeout(()=>{ uxTemplateApplicants(); if(uxEl('templateApplicant')) uxEl('templateApplicant').value=id; uxSyncTemplateApplicant(); },20);
-}
-window.uxOpenTemplateForApplicant=uxOpenTemplateForApplicant;
-
-/* ---------- School attention + favorites ---------- */
-function uxSchoolFavorites(){ return new Set(uxSafeJson(localStorage.getItem(SCHOOL_FAVORITES_KEY),[])); }
-function uxToggleSchoolFavorite(id){
-  const set=uxSchoolFavorites(); set.has(id)?set.delete(id):set.add(id); localStorage.setItem(SCHOOL_FAVORITES_KEY,JSON.stringify([...set])); renderSchoolManage(); uxToast(set.has(id)?'중요 학교로 표시했습니다.':'중요 학교 표시를 해제했습니다.');
-}
-window.uxToggleSchoolFavorite=uxToggleSchoolFavorite;
-function uxSchoolIssues(s){
-  const rows=[];
-  if(!String(s.contact||'').trim()) rows.push('담당자 없음');
-  if(!String(s.contactPhone||'').trim()) rows.push('연락처 없음');
-  if(schoolManagementStatusLabel(s.managementStatus)==='미지정') rows.push('상태 미지정');
-  if(!schoolHasManagementHistory(s)) rows.push('이력 없음');
-  if(s.nextContactDate && daysUntil(s.nextContactDate)<0) rows.push('연락일 경과');
-  if(!normalizeSchoolType(s.type)) rows.push('구분 미확인');
-  return rows;
-}
-const uxBaseRenderSchoolManage=renderSchoolManage;
-renderSchoolManage=function(){
-  uxBaseRenderSchoolManage();
-  const fav=uxSchoolFavorites();
-  document.querySelectorAll('#schoolManageBody tr.school-manage-row').forEach(row=>{
-    const onclick=row.getAttribute('data-erp-handler')||''; const m=onclick.match(/openSchoolDetail\('([^']+)'\)/); if(!m) return;
-    const id=m[1], s=schools.find(x=>x.id===id); if(!s) return;
-    row.classList.toggle('school-favorite-row',fav.has(id));
-    const nameCell=row.querySelector('.school-name-cell'); if(!nameCell) return;
-    const nameBtn=nameCell.querySelector('.school-name-link');
-    if(nameBtn && !nameCell.querySelector('.school-favorite-btn')){
-      const star=document.createElement('button'); star.type='button'; star.className='school-favorite-btn'; star.setAttribute('aria-label','중요 학교 표시'); star.textContent=fav.has(id)?'★':'☆'; star.onclick=e=>{e.stopPropagation();uxToggleSchoolFavorite(id);}; nameBtn.before(star);
-    }
-  });
-};
-window.renderSchoolManage=renderSchoolManage;
-
-/* ---------- Employee action/detail ---------- */
-function uxOpenEmployeeEntry(){ resetEmployeeForm(); const d=uxEl('employeeEntryDetails'); if(d){ d.open=true; d.scrollIntoView({behavior:'smooth',block:'start'}); setTimeout(()=>uxEl('empName')?.focus(),350); } }
-function uxSaveEmployeeDetailStatus(){
-  const e=employees.find(x=>x.id===employeeDetailCurrentId); if(!e) return;
-  const next=uxEl('employeeDetailStatus')?.value||e.status;
-  const patch={status:next,updatedAt:new Date().toISOString()};
-  if(next==='퇴사'&&!e.leaveDate){const d=prompt('퇴사일을 입력하세요.',today());if(d===null)return;patch.leaveDate=d.trim();if(!patch.leaveDate){uxToast('퇴사일이 필요합니다.','warn');return;}}
-  if(next==='휴직'&&!e.leaveStartDate){const d=prompt('휴직 시작일을 입력하세요.',today());if(d===null)return;patch.leaveStartDate=d.trim();if(!patch.leaveStartDate){uxToast('휴직일이 필요합니다.','warn');return;}}
-  if(next==='재직중'&&e.status==='휴직'&&!e.returnDate){const d=prompt('복직일을 입력하세요.',today());if(d===null)return;patch.returnDate=d.trim();if(!patch.returnDate){uxToast('복직일이 필요합니다.','warn');return;}}
-  employees=employees.map(x=>x.id===e.id?normalizeEmployee({...x,...patch}):x);
-  saveEmployees();renderEmployeeDetail();uxToast(`${e.name}님의 재직상태를 ${next}(으)로 변경했습니다.`);
-}
-const uxBaseOpenEmployeeDetail=openEmployeeDetail;
-openEmployeeDetail=function(id){ uxBaseOpenEmployeeDetail(id); const e=employees.find(x=>x.id===id); if(e&&uxEl('employeeDetailStatus')) uxEl('employeeDetailStatus').value=e.status||'재직중'; };
-window.openEmployeeDetail=openEmployeeDetail;
-
 /* ---------- Operation environment message ---------- */
 function uxGetOperationEnvironment(){
   return localStorage.getItem(OPERATION_ENV_KEY)==='company'?'company':'home';
@@ -570,16 +438,12 @@ window.updateStorageNote=updateStorageNote;
 window.uxSetOperationEnvironment=uxSetOperationEnvironment;
 
 /* ---------- Initial binding ---------- */
-function uxReplaceButton(id,handler){
-  const old=uxEl(id); if(!old) return null;
-  const clone=old.cloneNode(true); old.replaceWith(clone); clone.addEventListener('click',handler); return clone;
-}
 function uxInit(){
   document.documentElement.dataset.erpVersion=UX_VERSION;
   uxConsolidateSidebarStatus();
   updateStorageNote();
   // 안전·위험 작업 화면만 명시적으로 공통 인트로 카드로 표시합니다.
-  ['#dataHealth .health-hero','#duplicates .duplicate-hero','#backup .backup-center-hero','#employeeOrgImportModal .employee-org-import-notice','#hireWaitingModal .hire-waiting-guide'].forEach(selector=>document.querySelector(selector)?.classList.add('page-intro-card','safety-intro-card'));
+  ['#backup .backup-center-hero'].forEach(selector=>document.querySelector(selector)?.classList.add('page-intro-card','safety-intro-card'));
   // Dashboard interactions
   document.addEventListener('click',e=>{
     const q=e.target.closest('[data-task-target]'); if(q) uxFocusTaskPanel(q.dataset.taskTarget);
@@ -599,26 +463,11 @@ function uxInit(){
   }
   uxEl('btnResetForm')?.addEventListener('click',e=>{ if(uxFormDirty&&!confirm('입력한 내용을 모두 초기화할까요?')){e.preventDefault();e.stopImmediatePropagation();} },true);
   window.addEventListener('beforeunload',e=>{ if(uxFormDirty){e.preventDefault();e.returnValue='';} });
-  // Detail actions
-  uxEl('btnSaveEmployeeDetailStatus')?.addEventListener('click',uxSaveEmployeeDetailStatus);
-  // Templates: replace buttons to remove old app.js listeners captured before enhancement.
-  uxReplaceButton('btnMakeTemplate',()=>uxGenerateTemplate(true));
-  uxReplaceButton('btnCopyTemplate',async()=>{ const text=uxEl('templateOutput')?.value||''; try{await navigator.clipboard.writeText(text);uxToast('안내문을 클립보드에 복사했습니다.');}catch{uxToast('브라우저에서 복사가 차단되었습니다.','warn');} });
-  uxEl('btnClearTemplate')?.addEventListener('click',()=>{ ['templateApplicant','templateWorkplace','templateDate','templateTime','templateManager'].forEach(id=>{if(uxEl(id))uxEl(id).value='';});if(uxEl('templateOutput'))uxEl('templateOutput').value='';uxUpdateTemplateCount();});
-  uxEl('btnClearTemplateHistory')?.addEventListener('click',()=>{if(confirm('최근 생성 문구 기록을 비울까요?')){localStorage.removeItem(TEMPLATE_HISTORY_KEY);uxRenderTemplateHistory();}});
-  ['templateApplicant','templateType','templateWorkplace','templateDate','templateTime','templateManager'].forEach(id=>uxEl(id)?.addEventListener('change',()=>id==='templateApplicant'?uxSyncTemplateApplicant():uxGenerateTemplate(false)));
-  uxEl('templateOutput')?.addEventListener('input',uxUpdateTemplateCount);
-  // Employee toolbar
-  uxEl('btnOpenEmployeeEntry')?.addEventListener('click',uxOpenEmployeeEntry);
-  uxEl('btnTriggerEmployeeImport')?.addEventListener('click',()=>uxEl('employeeJsonImport')?.click());
-  uxEl('btnEmployeeExportTop')?.addEventListener('click',()=>uxEl('btnCsvEmployees')?.click());
   // Re-render all enhanced views
-  uxTemplateApplicants(); uxRenderTemplateHistory(); uxUpdateTemplateCount();
-  renderStats(); renderHomeLists(); renderToday(); renderCalendar(); renderHireStats(); renderSchoolManage(); renderEmployees(); updateFormMode();
+  renderStats(); renderHomeLists(); renderToday(); renderCalendar(); updateFormMode();
 }
 
 try{ uxInit(); }catch(err){ console.error('Recruit ERP ENV_MODE init error',err); }
 })();
 
 ;
-

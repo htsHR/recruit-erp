@@ -224,30 +224,6 @@ textarea:focus,
 .badge.bad{background:#faeeed;color:#b3352e;}
 .badge.hold{background:#f0effa;color:#5a51b8;}
 .workplace-pill{padding:5px 9px;background:#eef3fd;color:#2757d6;border:1px solid #bfdbfe;}
-.school-similar-hint{
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:6px;
-  padding:8px 10px;
-  background:#eef3fd;
-  border:1px solid #bfdbfe;
-  border-radius:10px;
-  font-size:12.5px;
-  color:#2757d6;
-}
-.school-similar-hint strong{color:#2757d6;}
-.school-filter-pill{display:inline-flex;align-items:center;gap:6px;}
-.school-filter-pill button{
-  border:0;
-  background:transparent;
-  color:#2757d6;
-  font-weight:700;
-  font-size:14px;
-  line-height:1;
-  cursor:pointer;
-  padding:0;
-}
 .dorm-pill{padding:5px 9px;border:1px solid #d3d8df;background:#fafbfc;color:#3d4757;}
 .dorm-pill.on{background:#ecf7f1;color:#1a7f57;border-color:#bbf7d0;}
 .dorm-pill.off{background:#fafbfc;color:#3d4757;border-color:#d3d8df;}

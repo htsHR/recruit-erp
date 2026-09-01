@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='12.0.2';
+  const BC_VERSION='12.5.0';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
@@ -23,8 +23,8 @@
 
   const DATASETS=[
     {key:'applicants',label:'지원자',storage:'recruit_erp_applicants_stable',critical:true},
-    {key:'schools',label:'협력학교',storage:'recruit_erp_schools',critical:true},
-    {key:'employees',label:'사원명부',storage:'recruit_erp_employees',critical:true},
+    {key:'schools',label:'협력학교(보존)',storage:'recruit_erp_schools',critical:false},
+    {key:'employees',label:'사원명부(보존)',storage:'recruit_erp_employees',critical:false},
     {key:'calendarEvents',label:'수동 일정',storage:'recruit_erp_calendar_events',critical:false},
     {key:'hireWaitingProfiles',label:'입사대기 입력정보',storage:'recruit_erp_hire_waiting_profiles',critical:false,optional:true},
     {key:'messageTemplates',label:'안내문 문구함',storage:'recruit_erp_message_templates',critical:false,optional:true}
@@ -397,10 +397,7 @@
       <div class="backup-compare-wrap"><table class="backup-compare-table backup-compare-detailed"><thead><tr><th>데이터</th><th>현재</th><th>파일</th><th>신규</th><th>변경</th><th>파일에 없음</th></tr></thead><tbody>${rows.map(r=>`<tr><td><strong>${r.label}</strong></td><td>${r.current}건</td><td>${r.has?`${r.next}건`:'—'}</td><td>${r.has?`${r.diff.added}건`:'—'}</td><td>${r.has?`${r.diff.changed}건`:'—'}</td><td>${r.has?`${r.diff.missing}건`:'—'}</td></tr>`).join('')}</tbody></table></div>
       <div class="backup-apply-explain"><div><strong>병합</strong><span>기존 데이터를 보존하고 신규·최근 수정본을 반영합니다.</span></div><div><strong>전체교체</strong><span>파일에 포함된 데이터 종류만 현재 로컬 데이터와 교체합니다.</span></div><div><strong>전체 ERP 복원</strong><span>네 종류가 모두 들어 있는 전체 백업에서만 가능합니다.</span></div></div>`;
     const actionHtml=c.routeBlocked?`
-      <div class="backup-action-bar">
-        <button class="primary" id="bcGoEmployeeOrgImport" type="button">사원명부로 이동</button>
-        <button class="mini" id="bcClearInspection" type="button">파일 선택 취소</button>
-      </div>`:`
+      <div class="backup-action-bar"><button class="mini" id="bcClearInspection" type="button">파일 선택 취소</button></div>`:`
       <div class="backup-action-bar">
         <button class="primary" id="bcMergeApply" type="button" ${c.valid?'':'disabled'}>데이터 병합 가져오기</button>
         <button class="ghost" id="bcReplaceApply" type="button" ${c.valid?'':'disabled'}>포함 데이터 전체교체</button>
@@ -425,11 +422,6 @@
     bcEl('bcMergeApply')?.addEventListener('click',()=>applyImport('merge'));
     bcEl('bcReplaceApply')?.addEventListener('click',()=>applyImport('replace'));
     bcEl('bcFullRestore')?.addEventListener('click',()=>applyImport('restore'));
-    bcEl('bcGoEmployeeOrgImport')?.addEventListener('click',()=>{
-      clearInspection();
-      if(typeof setPage==='function')setPage('employees');
-      setTimeout(()=>document.getElementById('btnOpenEmployeeOrgImport')?.focus(),120);
-    });
     bcEl('bcClearInspection')?.addEventListener('click',()=>{if(inspected?.encrypted)recordAudit('restore','복원 취소',{encrypted:true,success:false});clearInspection();});
   }
 
@@ -582,7 +574,7 @@
     const ready=storageOk&&criticalEmpty.length===0&&!!lastAt&&sameDay&&changes.known&&changes.total===0;
     const items=[
       {ok:storageOk,label:'브라우저 저장소',detail:storageOk?'읽기·쓰기 정상':'저장소 접근 실패'},
-      {ok:criticalEmpty.length===0,label:'핵심 데이터',detail:criticalEmpty.length?`${criticalEmpty.join(', ')} 0건 — 데이터 로드 상태 확인`:'지원자·학교·사원 데이터 확인'},
+      {ok:criticalEmpty.length===0,label:'핵심 데이터',detail:criticalEmpty.length?`${criticalEmpty.join(', ')} 0건 — 데이터 로드 상태 확인`:'지원자 데이터 확인'},
       {ok:!!lastAt,label:'전체 백업 기록',detail:lastAt?formatDate(lastAt):'전체 JSON 다운로드 기록 없음'},
       {ok:sameDay,label:'오늘 백업 여부',detail:sameDay?'오늘 다운로드 요청 기록 있음':'오늘 전체 백업 필요'},
       {ok:changes.known&&changes.total===0,label:'백업 이후 변경',detail:changes.known?changeSummaryText(changes):'비교 기준 백업 없음'}

@@ -1,7 +1,0 @@
-{
-  "main": "bridge/erp-bridge.js",
-  "output": "dist/erp-bridge-sea.blob",
-  "disableExperimentalSEAWarning": true,
-  "useSnapshot": false,
-  "useCodeCache": false
-}

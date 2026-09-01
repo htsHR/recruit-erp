@@ -32,13 +32,13 @@ assert.equal(safety.csvSafeValue('테스트 값'),'테스트 값');
 assert.equal(safety.csvCell('쉼표,포함',false),'"쉼표,포함"');
 
 const root=path.resolve(__dirname,'..');
-const csvFiles=['advanced-bulk.js','employees.js','detail-views.js','school-data-control.js','school-analytics.js','school-report.js'];
+const csvFiles=['applicant-bulk.js','applicant-tools.js'];
 csvFiles.forEach(file=>{
   const source=fs.readFileSync(path.join(root,'js',file),'utf8');
   assert.match(source,/erpSafety\.csvCell/,`${file} must use the shared CSV defense`);
 });
 
-const bindings=fs.readFileSync(path.join(root,'js','bindings.js'),'utf8');
-assert.match(bindings,/if\(!save\(\)\)\{applicants=applicantsBeforeSave;[\s\S]*?return;\}[\s\S]*resetForm\(\);setPage\('applicants'\)/);
+const bindings=fs.readFileSync(path.join(root,'js','app-bindings.js'),'utf8');
+assert.match(bindings,/const previous=applicants\.slice\(\);[\s\S]*?if\(!save\(\)\)\{[\s\S]*?applicants=previous;[\s\S]*?return;[\s\S]*?resetForm\(\);[\s\S]*?setPage\('applicants'\)/);
 
 console.log('safety.test.js: all checks passed');

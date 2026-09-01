@@ -464,10 +464,6 @@ input::placeholder,textarea::placeholder{color:var(--calm-ink-3)!important;font-
 #form .review-only{border-radius:var(--calm-radius-m)!important;}
 #form .review-only summary{font-weight:600!important;}
 .sticky-save-bar{border-color:var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;background:rgba(255,255,255,.96)!important;box-shadow:none!important;}
-
-/* ---------- Shared management pages ---------- */
-.school-manage-title,.employee-page-title{color:var(--calm-ink)!important;font-weight:600!important;letter-spacing:-.02em!important;}
-.school-manage-note,.employee-page-note{color:var(--calm-ink-2)!important;font-weight:400!important;}
 .stats-summary-grid .stat,.emp-summary-grid .stat{box-shadow:none!important;border-color:var(--calm-line)!important;}
 #schools .table-wrap,#employees .table-wrap,#stats .table-wrap,#calendar .table-wrap,#backup .table-wrap{border:1px solid var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;box-shadow:none!important;}
 #schools thead th,#employees thead th,#stats thead th,#calendar thead th{

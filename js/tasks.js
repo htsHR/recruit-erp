@@ -8,38 +8,6 @@ const DAILY_WORKFLOW_STALE_DAYS = window.erpTodayAutomation?.STALE_DAYS||14;
 let dailyWorkflowFilter = 'all';
 let dailyWorkflowSearch = '';
 
-function applicantsPendingEmployeeLink(){
-  return applicants.filter(a=>a.status==='출근' && !(window.erpOnboarding?.linkedEmployee(a,employees)||a.employeeId));
-}
-function linkApplicantToEmployee(applicantId){
-  const a=applicants.find(x=>x.id===applicantId);
-  if(!a) return;
-  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
-  window.setPage?.('onboarding');
-  window.erpOnboarding?.openModal(applicantId);
-}
-function dismissApplicantEmployeeLink(applicantId){
-  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
-  if(!confirm('이 지원자는 직원명부 자동 등록 대상에서 제외할까요?')) return;
-  const previous=applicants;
-  applicants = applicants.map(x=>x.id===applicantId ? normalize({...x, employeeId:'수동처리', updatedAt:new Date().toISOString()}) : x);
-  if(!save()){applicants=previous;renderAll();}
-}
-function renderEmployeeLinkTask(){
-  const el=$('employeeLinkList');
-  if(!el) return;
-  const rows=applicantsPendingEmployeeLink();
-  setText('employeeLinkCount', rows.length);
-  el.innerHTML = rows.length ? rows.map(a=>`<div class="person-card compact-person-card daily-secondary-card">
-    <div><strong>${esc(a.name||'이름없음')}</strong>
-    <small>${esc(a.school||'출신학교 미입력')} · 입사일 ${esc(a.hireDate||a.applyDate||'미입력')} · ${esc(a.workplace||'근무지 미입력')}</small></div>
-    <div class="row-actions">
-      <button class="mini" data-required-permission="applicant.write" data-erp-handler="linkApplicantToEmployee('${a.id}')">온보딩 관리</button>
-      <button class="mini" data-required-permission="applicant.write" data-erp-handler="dismissApplicantEmployeeLink('${a.id}')">제외</button>
-    </div>
-  </div>`).join('') : '<div class="empty">출근 후 사원명부 등록이 필요한 지원자가 없습니다.</div>';
-}
-
 function dailyDateOnly(value){
   if(window.erpTodayAutomation)return window.erpTodayAutomation.dateOnly(value);
   if(!value) return '';
@@ -343,7 +311,7 @@ window.setDailyWorkflowFilter=setDailyWorkflowFilter;
     const filterButton=e.target.closest('[data-daily-filter]');
     if(filterButton){setDailyWorkflowFilter(filterButton.dataset.dailyFilter);return;}
     if(e.target.closest('#btnDailyStartFirst')){dailyStartFirstWork();return;}
-    if(e.target.closest('#btnDailyWorkflowRefresh')){renderToday();renderEmployeeLinkTask();}
+    if(e.target.closest('#btnDailyWorkflowRefresh'))renderToday();
     const row=e.target.closest('.daily-work-item[data-applicant-id]');
     if(row&&!e.target.closest('button,a,input,select,textarea'))openDailyApplicantDetail(row.dataset.applicantId,row);
   });

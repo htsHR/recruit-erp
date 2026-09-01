@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const audit=require(path.join(root,'js','audit-history.js'));
 const source=fs.readFileSync(path.join(root,'js','audit-history.js'),'utf8');
 
-assert.equal(audit.VERSION,'12.0.2');
+assert.equal(audit.VERSION,'12.5.0');
 assert.equal(audit.scrubText('010-1234-5678 test@example.com 900101-1234567'),'[전화번호 숨김] [이메일 숨김] [주민등록번호 숨김]');
 assert.equal(audit.valueSummary('residentNumber','900101-1234567'),'개인정보/내용 변경됨');
 assert.equal(audit.valueSummary('memo','비밀 메모'),'개인정보/내용 변경됨');
@@ -26,6 +26,7 @@ const deletion=audit.buildDatasetRecords('employee',[{id:'e1',name:'가상사원
 assert.equal(deletion[0].action,'delete');
 assert.equal(deletion[0].reason,'중복 가상 자료 정리');
 assert.doesNotMatch(source,/root\.sb|window\.sb|fetch\(|\.upsert\(|\.delete\(\)\.in\(/);
+assert.doesNotMatch(source,/auditPageBody|auditTypeFilter|permission-page|ensureUi/,'변경이력 관리 화면은 핵심업무판에 남으면 안 됩니다.');
 const retiredDir=path.join(root,'supabase');
 const retiredFiles=fs.existsSync(retiredDir)?fs.readdirSync(retiredDir,{recursive:true}).filter(file=>fs.statSync(path.join(retiredDir,file)).isFile()):[];
 assert.deepEqual(retiredFiles,[],'원격 DB migration 파일이 남으면 안 됩니다.');
