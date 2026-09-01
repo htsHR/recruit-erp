@@ -3,6 +3,7 @@
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const vm=require('node:vm');
 
 const root=path.resolve(__dirname,'..');
 const read=file=>fs.readFileSync(path.join(root,file),'utf8');
@@ -34,4 +35,17 @@ assert.match(backup,/key:'applicants'[^\n]+critical:true/);
 assert.doesNotMatch(backup,/key:'(?:schools|employees)'[^\n]+critical:true/);
 assert.doesNotMatch(index,/btnDetailTemplate|bulkMessages|btnOpenApplicantFilter|applicantMyViews/);
 
-console.log('core-only-scope.test.js: 핵심 6화면·4메뉴·불필요 모듈 삭제·구버전 데이터 백업 보존 확인 완료');
+const storageRows=[{id:'11111111-1111-4111-8111-111111111111',name:'가상지원자',phone:'01000000001',birthYear:'20000102',status:'서류검토'}];
+const storage=new Map([['recruit_erp_applicants_stable',JSON.stringify(storageRows)]]);
+const context={
+  window:{erpSecurity:{isValidId:()=>true}},
+  document:{getElementById:()=>null},
+  localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},
+  console,alert:()=>{},prompt:()=>''
+};
+vm.runInNewContext(`${core}\n;globalThis.__loadedApplicants=load();`,context);
+assert.deepEqual(JSON.parse(JSON.stringify(context.__loadedApplicants.map(row=>({name:row.name,phone:row.phone,birthYear:row.birthYear})))),[
+  {name:'가상지원자',phone:'010-0000-0001',birthYear:'2000.01.02'}
+],'기존 지원자 데이터는 제거된 사원 모듈 없이도 정규화해 로드해야 합니다.');
+
+console.log('core-only-scope.test.js: 핵심 6화면·4메뉴·불필요 모듈 삭제·기존 지원자 및 구버전 데이터 보존 확인 완료');

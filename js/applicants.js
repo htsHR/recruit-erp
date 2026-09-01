@@ -1,25 +1,3 @@
-/* =========================================================
-   v10.12.4 연락처 자동 하이픈 포맷
-   - 010 1234 5678 / 010.1234.5678 / 01012345678 등 어떻게 입력해도
-     저장 시점(normalize)에 010-1234-5678 형태로 통일
-   - 서울 지역번호(02), 그 외 지역번호(0XX), 알 수 없는 형식은
-     원래 숫자만 남긴 값으로 안전하게 폴백(잘못된 자리로 하이픈을
-     끼워넣지 않음)
-   ========================================================= */
-function formatPhoneDisplay(v){
-  const raw = String(v || '').trim();
-  if(!raw) return '';
-  const digits = raw.replace(/\D/g,'');
-  if(!digits) return raw;
-  if(digits.startsWith('02')){
-    if(digits.length === 9) return `${digits.slice(0,2)}-${digits.slice(2,5)}-${digits.slice(5,9)}`;
-    if(digits.length === 10) return `${digits.slice(0,2)}-${digits.slice(2,6)}-${digits.slice(6,10)}`;
-    return digits;
-  }
-  if(digits.length === 10) return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6,10)}`;
-  if(digits.length === 11) return `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7,11)}`;
-  return digits;
-}
 function badgeClass(status){
   if(['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절'].includes(status)) return 'bad';
   if(status==='서류탈락') return 'neutral';
