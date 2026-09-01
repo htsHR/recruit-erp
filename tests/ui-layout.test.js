@@ -20,13 +20,15 @@ for(const page of ['stats','schools','employees','templates','advancedSearch','d
 assert.equal((index.match(/class="nav-btn[^"]*"/g)||[]).length,4);
 assert.match(index,/data-page="home"/);assert.match(index,/data-page="applicants"/);assert.match(index,/data-page="calendar"/);assert.match(index,/data-page="backup"/);
 assert.match(index,/id="btnQuickApplicantEntry"/);assert.match(index,/data-go="form"/);assert.match(index,/data-go="today"/);
+assert.equal((index.match(/data-excel-paste-shortcut/g)||[]).length,2,'홈·지원자 목록 엑셀 등록 바로가기가 모두 있어야 합니다.');
+assert.match(index,/id="btnListExcelRowPaste"/);
 assert.match(index,/id="searchInput"/);assert.match(index,/id="sortSelect"/);assert.match(index,/id="hideFinished"/);assert.match(index,/id="quickFilters"/);assert.match(index,/id="workplaceTabs"/);
 assert.match(index,/id="btnRosterOrderEdit"/);assert.match(index,/id="btnRosterPrint"/);
 assert.match(reports,/function rosterOrderedApplicants\(/);assert.match(reports,/function saveRosterOrderEditor\(/);assert.match(reports,/erpPermissions\.has\('applicant\.write'\)/);
 assert.match(components,/--roster-print-line-color:#000/,'평가표 인쇄 격자 색은 검정이어야 합니다.');
 assert.match(components,/border:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\) !important/);
 assert.match(applicants,/applicant-list-empty-state/);assert.match(applicants,/applicant-empty-register/);assert.match(applicants,/applicant-empty-reset/);
-assert.match(bindings,/findApplicantPhoneEmailDuplicate/);assert.match(bindings,/openExcelRowPaste/);assert.match(bindings,/jsonImportMerge/);
+assert.match(bindings,/findApplicantPhoneEmailDuplicate/);assert.match(bindings,/openNewApplicantExcelPaste/);assert.match(bindings,/openExcelRowPaste/);assert.match(bindings,/jsonImportMerge/);
 assert.match(bulk,/bulkField/);assert.match(bulk,/bulkCsv/);assert.match(bulk,/bulkPrint/);assert.doesNotMatch(bulk,/advancedSearch|saved_advanced|messages\(/i);
 assert.match(backup,/exportEncrypted/);assert.match(index,/id="bcEncryptedPanel"|id="bcCompanySection"/);
 assert.match(responsive,/@media/,'핵심 화면의 반응형 스타일은 유지해야 합니다.');

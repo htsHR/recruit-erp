@@ -2,7 +2,7 @@
 
 [![자동 검사](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml/badge.svg?branch=main)](https://github.com/htsHR/recruit-erp/actions/workflows/quality-checks.yml)
 
-지원자·면접 일정·평가표·백업에 집중한 **v12.5.0 핵심업무판**입니다. 외부 로그인이나 원격 데이터베이스 없이 현재 브라우저에서만 동작하는 `LOCAL ONLY` 정적 웹앱입니다.
+지원자·면접 일정·평가표·백업에 집중한 **v12.5.1 핵심업무판**입니다. 외부 로그인이나 원격 데이터베이스 없이 현재 브라우저에서만 동작하는 `LOCAL ONLY` 정적 웹앱입니다.
 
 운영 홈페이지: https://recruit-erp.vercel.app
 
@@ -30,7 +30,7 @@
 - CSV 값이 `=`, `+`, `-`, `@`로 시작하면 수식이 아닌 일반 텍스트로 방어합니다.
 - 브라우저 삭제나 기기 교체에 대비해 암호화 전체 백업을 별도 보관해야 합니다.
 
-v12.0.2를 처음 연 브라우저에 적용된 1회성 공장 초기화 epoch는 변경하지 않았습니다. v12.5.0 업데이트 때문에 저장영역을 다시 초기화하지 않습니다.
+v12.0.2를 처음 연 브라우저에 적용된 1회성 공장 초기화 epoch는 변경하지 않았습니다. v12.5.1 업데이트 때문에 저장영역을 다시 초기화하지 않습니다.
 
 ## 자동 검사
 
@@ -48,4 +48,4 @@ npm run check
 npm run test:ui-layout
 ```
 
-화면 산출물은 `artifacts/ui-v12.5.0`에 저장하며 실제 개인정보는 테스트나 산출물에 사용하지 않습니다. 변경 내역은 `CHANGELOG_v12.5.0.md`에 있습니다.
+화면 산출물은 `artifacts/ui-v12.5.1`에 저장하며 실제 개인정보는 테스트나 산출물에 사용하지 않습니다. 변경 내역은 `CHANGELOG_v12.5.1.md`에 있습니다.
