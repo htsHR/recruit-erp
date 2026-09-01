@@ -93,5 +93,6 @@ assert.doesNotMatch(reports,/bind\('btn(?:RosterPrint|CalendarPrintRoster|Roster
 assert.match(reports,/document\.addEventListener\('click',handleRosterPrintClick\)/,'인쇄 버튼은 document 위임 이벤트로 연결해야 합니다.');
 assert.match(css,/body\.roster-printing #rosterPrintArea\{[\s\S]*display:block;[\s\S]*position:fixed;[\s\S]*visibility:hidden;/,'화면 밖 선레이아웃 규칙이 필요합니다.');
 assert.match(css,/@media print\{[\s\S]*body\.roster-printing #rosterPrintArea\{[^}]*position:static !important;[^}]*visibility:visible !important;/,'실제 인쇄에서는 출력 영역을 보여야 합니다.');
+assert.match(css,/body\.roster-printing #rosterPrintArea \*\{visibility:visible !important;\}/,'실제 인쇄에서는 출력 영역 내부 요소의 숨김 상속도 해제해야 합니다.');
 
 console.log('roster-print-flow.test.js: 위임 클릭·단일 print 호출·중복 차단·선레이아웃·완료/실패 복구 확인 완료');

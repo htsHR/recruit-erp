@@ -793,6 +793,7 @@ body.roster-printing #rosterPrintArea{
   body.roster-printing .app-shell{display:none !important;}
   body.roster-printing #loginOverlay{display:none !important;}
   body.roster-printing #rosterPrintArea{display:block !important;position:static !important;left:auto !important;top:auto !important;width:100% !important;margin:0 !important;padding:0 !important;visibility:visible !important;pointer-events:auto !important;}
+  body.roster-printing #rosterPrintArea *{visibility:visible !important;}
 }
 
 /* =========================================================
