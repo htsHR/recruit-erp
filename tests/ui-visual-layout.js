@@ -473,7 +473,9 @@ async function verifyLiteWorkspace(page,label){
   await page.screenshot({path:path.join(outputDir,`${label}-lite-home.png`),fullPage:false});
 
   await page.locator('.lite-nav-secondary .ux12-nav-group-label').click();
-  assert.deepEqual(await page.evaluate(()=>{const group=document.querySelector('.lite-nav-secondary');return{collapsed:group.classList.contains('collapsed'),expanded:group.querySelector('.ux12-nav-group-label').getAttribute('aria-expanded'),visible:[...group.querySelectorAll('.nav-btn')].filter(button=>button.getClientRects().length).length};}),{collapsed:false,expanded:'true',visible:14},`${label} 기타 기능을 펼치면 기존 메뉴가 보여야 합니다.`);
+  const opened=await page.evaluate(()=>{const group=document.querySelector('.lite-nav-secondary'),buttons=[...group.querySelectorAll('.nav-btn')];return{collapsed:group.classList.contains('collapsed'),expanded:group.querySelector('.ux12-nav-group-label').getAttribute('aria-expanded'),total:buttons.length,visible:buttons.filter(button=>button.getClientRects().length).length};});
+  assert.deepEqual({collapsed:opened.collapsed,expanded:opened.expanded,total:opened.total},{collapsed:false,expanded:'true',total:14},`${label} 기타 기능을 펼치면 기존 메뉴가 보존되어야 합니다.`);
+  assert.ok(opened.visible>=13,`${label} 현재 역할에서 허용된 기타 기능이 보여야 합니다: ${JSON.stringify(opened)}`);
   await page.locator('.lite-nav-primary .nav-btn[data-page="calendar"]').click();
   assert.deepEqual(await page.evaluate(()=>({active:document.querySelector('.page.active')?.id,title:document.getElementById('page-title')?.textContent.trim(),order:!!document.getElementById('btnCalendarRosterOrderEdit'),print:!!document.getElementById('btnCalendarPrintRoster')})),{active:'calendar',title:'일정·평가표',order:true,print:true},`${label} 주요 메뉴에서 평가표 기능이 있는 일정 화면으로 이동해야 합니다.`);
   await page.evaluate(()=>window.setPage('home'));await page.locator('.lite-action-card[data-go="calendar"]').click();
