@@ -11,9 +11,7 @@ const EMPLOYEES_KEY = 'recruit_erp_employees';
 const STATUS_OPTIONS = ['서류검토','서류합격','부재중','면접예정','면접완료','다음면접','입사예정','출근','불합격','서류탈락','면접거절','면접불참','입사철회'];
 const LEGACY_STATUS_OPTIONS = ['철회','연락두절'];
 let schools = [];
-let editingSchoolId = '';
 let employees = [];
-let editingEmployeeId = '';
 let applicants = [];
 let hireWaitingProfiles = [];
 let messageTemplates = [];
@@ -22,7 +20,6 @@ let currentFilter = 'all';
 let currentSearch = '';
 let currentSort = 'recent';
 let hideFinished = false;
-let currentSchoolFilterId = '';
 let currentApplicantPage = 1;
 let applicantPageSize = 30;
 let lastApplicantFilterSignature = '';
@@ -76,6 +73,27 @@ function normalizeDorm(v){
 function dormLabel(a){ return normalizeDorm(a?.dormUse) || '미확인'; }
 function dormClass(v){ const d=normalizeDorm(v); if(d==='기숙사') return 'on'; if(d==='출퇴근') return 'off'; return 'pending'; }
 function displayCheckNeeds(v){ return String(v||'').replaceAll('근무형태 확인','출근방법 확인').replaceAll('근무형태','출근방법'); }
+function formatPhoneDisplay(v){
+  const raw=String(v||'').trim();if(!raw)return '';
+  const digits=raw.replace(/\D/g,'');if(!digits)return raw;
+  if(digits.startsWith('02')){
+    if(digits.length===9)return `${digits.slice(0,2)}-${digits.slice(2,5)}-${digits.slice(5,9)}`;
+    if(digits.length===10)return `${digits.slice(0,2)}-${digits.slice(2,6)}-${digits.slice(6,10)}`;
+    return digits;
+  }
+  if(digits.length===10)return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6,10)}`;
+  if(digits.length===11)return `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7,11)}`;
+  return digits;
+}
+function formatBirthDisplay(v){
+  const raw=String(v||'').trim();if(!raw)return '';
+  const digits=raw.replace(/\D/g,'');
+  if(digits.length===8)return `${digits.slice(0,4)}.${digits.slice(4,6)}.${digits.slice(6,8)}`;
+  if(digits.length===6)return `${digits.slice(0,2)}.${digits.slice(2,4)}.${digits.slice(4,6)}`;
+  const ymd=raw.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);if(ymd)return `${ymd[1]}.${ymd[2].padStart(2,'0')}.${ymd[3].padStart(2,'0')}`;
+  const shortYmd=raw.match(/^(\d{2})[-./](\d{1,2})[-./](\d{1,2})$/);if(shortYmd)return `${shortYmd[1]}.${shortYmd[2].padStart(2,'0')}.${shortYmd[3].padStart(2,'0')}`;
+  return raw.replaceAll('-','.').replaceAll('/','.');
+}
 function normalizeRosterOrderDate(v){
   const s=String(v||'').trim();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(s)) return '';
@@ -153,4 +171,3 @@ function save(){
   renderAll();
   return true;
 }
-

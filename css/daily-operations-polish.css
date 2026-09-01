@@ -335,23 +335,6 @@
   font-size:11px!important;
   font-weight:600!important;
 }
-#applicants .school-filter-inline{
-  display:inline-flex!important;
-  align-items:center!important;
-  gap:6px!important;
-}
-#applicants .school-filter-inline button{
-  width:18px!important;
-  height:18px!important;
-  min-width:18px!important;
-  padding:0!important;
-  border:1px solid #d5dde7!important;
-  border-radius:999px!important;
-  background:#fff!important;
-  color:#5b6571!important;
-  font-size:11px!important;
-  line-height:1!important;
-}
 #applicants .table-wrap{
   position:relative!important;
   isolation:isolate!important;

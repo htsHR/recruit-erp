@@ -17,7 +17,7 @@ const saveAction=applicants.match(/function saveApplicantQuickEdit\(\)[\s\S]*?fu
 const allowed=['name','phone','email','region','workplace','status','interviewDate','interviewTime','hireDate','source','careerType','dormUse','memo'];
 
 assert.ok(feature,'지원자 빠른 보기 구현을 찾지 못했습니다.');
-assert.match(index,/css\/applicant-quick-detail\.css\?v=12\.1\.0/);
+assert.match(index,/css\/applicant-quick-detail\.css\?v=12\.5\.0/);
 assert.match(feature,/if\(document\.getElementById\('applicantQuickDetail'\)\)return/,'빠른 보기 패널은 한 번만 만들어야 합니다.');
 assert.equal((feature.match(/shell\.id='applicantQuickDetail'/g)||[]).length,1,'빠른 보기 패널 생성 지점은 하나여야 합니다.');
 assert.match(feature,/role="dialog"/);assert.match(feature,/aria-modal="true"/);assert.match(feature,/aria-labelledby="applicantQuickDetailTitle"/);

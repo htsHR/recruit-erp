@@ -119,9 +119,6 @@
   box-sizing:border-box;
 }
 .process-wide-card{margin-top:0;}
-.duplicate-box{margin:0;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid var(--erp-line);font-weight:700;}
-.duplicate-box:empty{display:none;}
-.duplicate-box.warn{background:#fbf4e6;border-color:#f59e0b;color:#92400e;}
 
 .review-only{
   overflow:hidden;
@@ -454,13 +451,9 @@
 
 /* v10.28.1: 협력학교 학교등록 폼 실제로 컴팩트하게(우선순위 버그 수정) */
 .rank-toolbar-row{justify-content:space-between;margin-bottom:14px;}
-.form-grid.compact.school-form-compact{grid-template-columns:repeat(4,minmax(0,1fr));gap:11px 12px;}
-.school-form-actions{margin-top:16px;}
-.school-manage-panel{padding-left:28px;}
 .link-like{border:0;background:transparent;color:var(--blue);font-weight:700;cursor:pointer;padding:0;text-decoration:none;font:inherit;text-align:left;}
 .link-like:hover{text-decoration:underline;}
 @media(max-width:900px){
-  .form-grid.compact.school-form-compact{grid-template-columns:repeat(2,minmax(0,1fr));}
 }
 
 #schoolsSummaryGrid{grid-template-columns:repeat(4,minmax(0,1fr));}
@@ -477,13 +470,6 @@
 .emp-pagination{display:flex;gap:4px;flex-wrap:wrap;}
 .emp-pagination .mini[disabled]{opacity:.4;cursor:not-allowed;}
 .emp-pagination .mini.active{background:var(--navy);color:#fff;border-color:var(--navy);}
-.school-rank-table td:nth-child(2){text-align:left;}
-.school-rank-num{color:var(--blue);font-weight:700;font-size:14px;}
-.school-tier-top10 td{background:#eef3fd;}
-.school-tier-top20 td{background:#f5f9ff;}
-.school-tier-chip{padding:5px 9px;}
-.school-tier-chip-top10{background:var(--blue);border-color:var(--blue);color:#fff;}
-.school-tier-chip-top20{background:#eef3fd;border-color:#bfdbfe;color:#2757d6;}
 @media(max-width:920px){
   #schoolsSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
   #employeesSummaryGrid{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -655,7 +641,6 @@
     #calendar .calendar-timeline{display:flex;flex-direction:column;gap:8px;}
     #calendar .calendar-timeline-item{border:1px solid #e5e7eb;border-radius:14px;background:#fff;padding:11px 12px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;}
     #calendar .calendar-timeline-main{min-width:0;}
-
 
 
 /* v10.40.19 사원명부 요약 카드 5종 */

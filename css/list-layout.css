@@ -31,22 +31,6 @@
   font-weight:600!important;
   white-space:nowrap!important;
 }
-
-/* 직원 목록 */
-.employee-table-head{align-items:center!important;}
-.employee-table-head>h3{margin-right:8px!important;}
-.employee-list-summary{
-  display:inline-flex;
-  align-items:center;
-  min-height:28px;
-  padding:0 10px;
-  border:1px solid #dce6f1;
-  border-radius:999px;
-  background:#fafbfc;
-  color:#5c6673;
-  font-size:11.5px;
-  font-weight:600;
-}
 #employeeStatusTabs [data-empstatus]{gap:7px!important;}
 #employeeStatusTabs .tab-count{
   display:inline-flex;
@@ -62,20 +46,6 @@
   font-weight:600;
 }
 #employeeStatusTabs .tab.active .tab-count{background:rgba(255,255,255,.2);}
-.employee-list-table .employee-name-cell small{
-  display:block;
-  margin-top:3px;
-  color:#8a93a0;
-  font-size:10.5px;
-  font-weight:600;
-}
-.employee-list-table tbody tr:hover{background:#f7f8fa!important;box-shadow:none!important;}
-.employee-list-table .employee-row-actions{min-width:145px;}
-.employee-empty-state strong,.employee-empty-state span{display:block;margin-bottom:7px;}
-
-/* 학교 목록 */
-.school-manage-table tbody tr:hover{background:#f7f8fa!important;box-shadow:none!important;}
-.school-manage-table .school-row-actions{min-width:112px;}
 
 
 /* 모바일 카드형 목록 */
@@ -119,117 +89,12 @@
   }
   .row-more-menu.open>.row-more-menu-panel{display:grid!important;}
   .row-more-menu-panel button{width:100%!important;min-height:36px!important;}
-
-  /* 사원명부 카드 */
-  #employees .employee-table-panel>.table-wrap{overflow:visible!important;max-height:none!important;border:0!important;background:transparent!important;}
-  .employee-list-table,.employee-list-table tbody{display:block!important;width:100%!important;min-width:0!important;}
-  .employee-list-table thead{display:none!important;}
-  .employee-list-table .employee-list-row{
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr) auto!important;
-    gap:9px 12px!important;
-    margin-bottom:10px!important;
-    padding:14px!important;
-    border:1px solid var(--list-line)!important;
-    border-radius:14px!important;
-    background:#fff!important;
-    box-shadow:none!important;
-  }
-  .employee-list-table .employee-list-row:hover{background:#fff!important;box-shadow:none!important;}
-  .employee-list-table .employee-list-row>td{
-    display:flex!important;
-    flex-direction:column!important;
-    align-items:flex-start!important;
-    width:auto!important;
-    min-width:0!important;
-    height:auto!important;
-    padding:0!important;
-    border:0!important;
-    white-space:normal!important;
-    background:transparent!important;
-  }
-  .employee-list-table .employee-name-cell{grid-column:1;grid-row:1;}
-  .employee-list-table .employee-status-cell{grid-column:2;grid-row:1;align-items:flex-end!important;}
-  .employee-list-table .employee-no-cell{grid-column:1;grid-row:2;}
-  .employee-list-table .employee-hire-cell{grid-column:2;grid-row:2;align-items:flex-end!important;}
-  .employee-list-table .employee-school-cell{grid-column:1/-1;grid-row:3;padding-top:9px!important;border-top:1px solid #edf0f3!important;}
-  .employee-list-table .employee-discipline-cell{grid-column:1/-1;grid-row:4;}
-  .employee-list-table .employee-notes-cell{grid-column:1/-1;grid-row:5;}
-  .employee-list-table .employee-list-row>.employee-row-actions{grid-column:1/-1;grid-row:6;display:grid!important;grid-template-columns:1fr 1fr 1fr!important;gap:6px!important;padding-top:10px!important;border-top:1px solid #edf0f3!important;}
-  .employee-list-table .employee-list-row>.employee-dept-cell,.employee-list-table .employee-list-row>.employee-role-cell{display:none!important;}
-  .employee-list-table td[data-label]::before{
-    content:attr(data-label);
-    margin-bottom:3px;
-    color:#8a93a0;
-    font-size:10.5px;
-    font-weight:600;
-  }
-  .employee-list-table .employee-name-cell::before,.employee-list-table .employee-status-cell::before{display:none!important;}
-  .employee-list-table .employee-name-link{font-size:15px!important;font-weight:600!important;color:#1c2330!important;}
-  .employee-list-summary{margin-left:auto;}
-  .employee-table-head{flex-wrap:wrap!important;gap:8px!important;}
-  .employee-table-tools{width:100%;display:grid!important;grid-template-columns:1fr 1fr!important;}
-
-  /* 협력학교 관리 카드 */
-  .school-manage-table-wrap{overflow:visible!important;max-height:none!important;border:0!important;background:transparent!important;}
-  .school-manage-table,.school-manage-table tbody{display:block!important;width:100%!important;min-width:0!important;}
-  .school-manage-table thead{display:none!important;}
-  .school-manage-table .school-manage-row{
-    display:grid!important;
-    grid-template-columns:minmax(0,1fr) auto!important;
-    gap:9px 12px!important;
-    margin-bottom:10px!important;
-    padding:14px!important;
-    border:1px solid var(--list-line)!important;
-    border-radius:14px!important;
-    background:#fff!important;
-    box-shadow:none!important;
-  }
-  .school-manage-table .school-manage-row:hover{background:#fff!important;box-shadow:none!important;}
-  .school-manage-table .school-manage-row>td{
-    position:static!important;
-    display:flex!important;
-    flex-direction:column!important;
-    align-items:flex-start!important;
-    width:auto!important;
-    min-width:0!important;
-    height:auto!important;
-    padding:0!important;
-    border:0!important;
-    white-space:normal!important;
-    background:transparent!important;
-    box-shadow:none!important;
-  }
-  .school-manage-table .school-name-cell{grid-column:1;grid-row:1;}
-  .school-manage-table .school-status-cell{grid-column:2;grid-row:1;align-items:flex-end!important;}
-  .school-manage-table .school-type-cell{grid-column:1;grid-row:2;}
-  .school-manage-table .school-region-cell{grid-column:2;grid-row:2;align-items:flex-end!important;}
-  .school-manage-table .school-contact-cell{grid-column:1/-1;grid-row:3;padding-top:9px!important;border-top:1px solid #edf0f3!important;}
-  .school-manage-table .school-mou-cell{grid-column:1/-1;grid-row:4;}
-  .school-manage-table .school-applicant-cell{grid-column:1;grid-row:5;}
-  .school-manage-table .school-employee-cell{grid-column:2;grid-row:5;align-items:flex-end!important;}
-  .school-manage-table .school-manage-row>.school-row-actions{grid-column:1/-1;grid-row:6;display:grid!important;grid-template-columns:1fr 1fr!important;gap:6px!important;padding-top:10px!important;border-top:1px solid #edf0f3!important;}
-  .school-manage-table td[data-label]::before{
-    content:attr(data-label);
-    margin-bottom:3px;
-    color:#8a93a0;
-    font-size:10.5px;
-    font-weight:600;
-  }
-  .school-manage-table .school-name-cell::before,.school-manage-table .school-status-cell::before{display:none!important;}
-  .school-manage-table .school-name-link{font-size:15px!important;font-weight:600!important;color:#1c2330!important;}
-  .school-manage-table .school-name-sub{margin-top:3px!important;}
-  .school-manage-table .count-pill{min-width:72px!important;min-height:34px!important;}
-  .school-manage-table .school-row-actions>.school-action-btn,
-  .school-manage-table .school-row-actions>.row-more-menu>.row-more-toggle{width:100%!important;min-height:38px!important;}
 }
 
 @media(max-width:430px){
   #employeeStatusTabs{overflow-x:auto!important;flex-wrap:nowrap!important;scrollbar-width:none;}
   #employeeStatusTabs::-webkit-scrollbar{display:none;}
   #employeeStatusTabs .tab{flex:0 0 auto!important;}
-  .employee-list-table .employee-notes-cell{display:none!important;}
-  .school-manage-table .school-contact-cell,.school-manage-table .school-mou-cell{font-size:12px!important;}
 }
 
 

@@ -1,25 +1,3 @@
-/* =========================================================
-   v10.12.4 연락처 자동 하이픈 포맷
-   - 010 1234 5678 / 010.1234.5678 / 01012345678 등 어떻게 입력해도
-     저장 시점(normalize)에 010-1234-5678 형태로 통일
-   - 서울 지역번호(02), 그 외 지역번호(0XX), 알 수 없는 형식은
-     원래 숫자만 남긴 값으로 안전하게 폴백(잘못된 자리로 하이픈을
-     끼워넣지 않음)
-   ========================================================= */
-function formatPhoneDisplay(v){
-  const raw = String(v || '').trim();
-  if(!raw) return '';
-  const digits = raw.replace(/\D/g,'');
-  if(!digits) return raw;
-  if(digits.startsWith('02')){
-    if(digits.length === 9) return `${digits.slice(0,2)}-${digits.slice(2,5)}-${digits.slice(5,9)}`;
-    if(digits.length === 10) return `${digits.slice(0,2)}-${digits.slice(2,6)}-${digits.slice(6,10)}`;
-    return digits;
-  }
-  if(digits.length === 10) return `${digits.slice(0,3)}-${digits.slice(3,6)}-${digits.slice(6,10)}`;
-  if(digits.length === 11) return `${digits.slice(0,3)}-${digits.slice(3,7)}-${digits.slice(7,11)}`;
-  return digits;
-}
 function badgeClass(status){
   if(['불합격','서류탈락','면접거절','면접불참','입사철회','철회','연락두절'].includes(status)) return 'bad';
   if(status==='서류탈락') return 'neutral';
@@ -113,27 +91,20 @@ function countText(n){ return `${n}명`; }
 function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 
 function setPage(page){
+  const corePages=new Set(['home','applicants','form','today','calendar','backup']);
+  if(!corePages.has(page))page='home';
   if(page!=='applicants'&&applicantQuickDetailIsOpen()&&closeApplicantQuickDetail({restoreFocus:false})===false)return false;
   document.body.dataset.activePage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'오늘 업무',applicants:'지원자',form:'신규 지원자 등록',today:'오늘 처리 목록',calendar:'일정·평가표',stats:'채용 통계',schools:'학교·채용채널',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'지원자 상세 검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업',permissions:'사용자 권한',auditHistory:'변경 이력',onboarding:'입사대기',storagePerformance:'저장소·속도',productionReadiness:'운영 준비'};
+  const titleMap = {home:'오늘 업무',applicants:'지원자',form:'신규 지원자 등록',today:'오늘 처리 목록',calendar:'일정·평가표',backup:'백업'};
   const descMap = {
     home:'오늘 처리할 일과 주요 현황을 한곳에서 확인합니다.',
     applicants:'지원자 진행상태와 면접·입사 일정을 관리합니다.',
     form:'새 지원자의 기본정보와 전형정보를 등록합니다.',
     today:'오늘 우선 처리할 채용 업무를 확인합니다.',
     calendar:'면접·입사 일정과 선택 날짜의 평가표를 확인·출력합니다.',
-    stats:'채용 흐름과 주요 성과지표를 분석합니다.',
-    schools:'협력학교 현황과 지원자·직원 배출 정보를 관리합니다.',
-    employees:'재직·휴직·퇴사 현황과 출신학교 정보를 확인합니다.',
-    templates:'지원자 안내문을 빠르게 작성하고 복사합니다.',
-    advancedSearch:'여러 검색조건을 조합하고 자주 쓰는 조건을 저장합니다.',
-    dataHealth:'데이터 누락과 상태 불일치를 읽기 전용으로 점검합니다.',
-    duplicates:'중복 후보와 재지원 기록을 사용자 확인 방식으로 검토합니다.',
-    backup:'ERP 데이터를 암호화 백업하고 필요할 때 복원합니다.',
-    permissions:'로그인 계정별 조회·수정·삭제 권한을 관리합니다.',
-    auditHistory:'누가 언제 무엇을 바꿨는지 확인합니다. 민감정보 원문은 기록하지 않습니다.'
+    backup:'ERP 데이터를 암호화 백업하고 필요할 때 복원합니다.'
   };
   $('page-title').textContent = titleMap[page] || '홈';
   const breadcrumb=document.querySelector('.topbar-breadcrumb');
@@ -291,7 +262,6 @@ function filtered(){
     const workplaceOk=currentWorkplace==='all'||(currentWorkplace==='기타'?!['천안','평택'].includes(a.workplace):a.workplace===currentWorkplace);
     const text=[a.name,a.phone,a.source].join(' ').toLowerCase();
     const searchOk=!currentSearch||text.includes(currentSearch.toLowerCase());
-    const schoolOk=!currentSchoolFilterId||a.schoolId===currentSchoolFilterId;
     let filterOk=true;
     if(currentFilter==='contact') filterOk=['서류검토','부재중'].includes(a.status);
     if(currentFilter==='docpass') filterOk=a.status==='서류합격';
@@ -305,7 +275,7 @@ function filtered(){
     if(currentFilter==='rejected') filterOk=a.status==='서류탈락';
     if(currentFilter==='duplicate') filterOk=dupSet.has(normalizePhone(a.phone));
     if(currentFilter==='todayAction') filterOk=todayActionIds.has(String(a.id));
-    return workplaceOk && searchOk && schoolOk && filterOk;
+    return workplaceOk && searchOk && filterOk;
   });
   if(hideFinished) rows = rows.filter(isActive);
   if(Array.isArray(window.__erpAdvancedFilterIds)) {
@@ -327,7 +297,7 @@ function filtered(){
 }
 function resetListFiltersToAll(){
   currentApplicantPage=1; lastApplicantFilterSignature='';
-  currentWorkplace='all'; currentFilter='all'; currentSearch=''; currentSort='recent'; hideFinished=false; currentSchoolFilterId='';
+  currentWorkplace='all'; currentFilter='all'; currentSearch=''; currentSort='recent'; hideFinished=false;
   if($('searchInput')) $('searchInput').value='';
   if($('sortSelect')) $('sortSelect').value='recent';
   if($('hideFinished')) $('hideFinished').checked=false;
@@ -375,7 +345,7 @@ function updateApplicantListFilterCounts(){
   });
 }
 function applicantFilterSignature(){
-  return JSON.stringify([currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished,currentSchoolFilterId,Array.isArray(window.__erpAdvancedFilterIds)?window.__erpAdvancedFilterIds.join('|'):'']);
+  return JSON.stringify([currentWorkplace,currentFilter,currentSearch,currentSort,hideFinished]);
 }
 function applicantPageWindow(totalPages,current){
   if(totalPages<=7) return Array.from({length:totalPages},(_,i)=>i+1);
@@ -635,7 +605,6 @@ function renderTable(){
   // v10.48.1.1: 면접일 존재만으로 카운트하면 서류합격에 남은 과거 면접일도 잡히므로 명시 제외
   const interviewCount=allRows.filter(a=>INTERVIEW_ACTIVE_STATUSES.has(normalizeStatus(a.status)) || isInterviewDateMeaningful(a)).length;
   const pageText=`${currentApplicantPage} / ${totalPages}페이지`;
-  const schoolFilterName = currentSchoolFilterId ? (schools.find(s=>s.id===currentSchoolFilterId)?.name || '선택한 학교') : '';
   $('listSummary').innerHTML = `
     <div class="list-summary-main">
       <strong>${allRows.length}명</strong>
@@ -644,7 +613,6 @@ function renderTable(){
       <span>연락 필요 ${contactCount}명</span>
       <span>면접/예정 ${interviewCount}명</span>
       ${hideFinished ? '<span>종료 숨김 적용</span>' : ''}
-      ${schoolFilterName ? `<span class="school-filter-inline">학교 ${esc(schoolFilterName)} <button type="button" data-erp-handler="currentSchoolFilterId='';renderTable();" aria-label="학교 필터 해제">×</button></span>` : ''}
     </div>
     <div class="list-summary-side">
       <span>${pageText}</span>
@@ -673,7 +641,6 @@ function renderTable(){
   applicantQuickDetailAfterListRender(allRows);
 }
 function resetAndRenderList(){ resetListFiltersToAll(); renderTable(); }
-function clearApplicantSchoolFilter(){ currentSchoolFilterId=''; renderTable(); }
 
 /* =========================================================
    v10.40.7 엑셀 다중 행·지원자 UI 안정화

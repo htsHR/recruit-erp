@@ -85,10 +85,6 @@
 #calendar .calendar-day:hover{background:#fafbfd!important;}
 #calendar .calendar-day.today{background:var(--calm-accent-bg)!important;box-shadow:none!important;}
 
-#employees .employee-page-hero,#duplicates .duplicate-hero{
-  background:#fff!important;border-color:var(--calm-line)!important;border-radius:var(--calm-radius-m)!important;box-shadow:none!important;
-}
-
 @media(max-width:900px){
   #applicants .applicant-list-filter-stack{grid-template-columns:1fr!important;}
   #applicants .applicant-workplace-filter-group{min-width:0!important;}
@@ -693,22 +689,6 @@ input[type="checkbox"],input[type="radio"]{
 }
 
 /* ============================================================
-   v10.48.1.3 — SCHOOL FUNNEL + PASS QUICK FILTER + MINI STEPPER
-   ============================================================ */
-
-/* 학교 상세: 채용 퍼널(막대) */
-.school-funnel{display:flex;flex-direction:column;gap:8px;padding:14px 20px 4px;}
-.school-funnel-row{display:grid;grid-template-columns:56px 1fr 30px;align-items:center;gap:10px;}
-.school-funnel-row span{font-size:11.5px;font-weight:600;color:#5c6673;}
-.school-funnel-track{height:14px;background:#f5f6f8;border-radius:4px;overflow:hidden;}
-.school-funnel-bar{display:block;height:100%;border-radius:4px;background:#8a93a0;}
-.school-funnel-bar.tone-neutral{background:#8a93a0;}
-.school-funnel-bar.tone-pass{background:#0f766e;}
-.school-funnel-bar.tone-info{background:#1a7f57;}
-.school-funnel-bar.tone-good{background:#5a51b8;}
-.school-funnel-row b{font-size:12px;font-weight:700;color:#1c2330;text-align:right;font-variant-numeric:tabular-nums;}
-
-/* ============================================================
    v10.48.1.3 — SCREEN DRIFT FIXES (백업센터·사원명부 잔여 이색 요소)
    ============================================================ */
 
@@ -727,10 +707,6 @@ input[type="checkbox"],input[type="radio"]{
 #backup .backup-validation-banner.ok{background:#ecf7f1!important;color:#1a7f57!important;border-color:#cde8db!important;}
 #backup .backup-validation-banner.warn{background:#fbf4e6!important;color:#a16a12!important;border-color:#eeddba!important;}
 #backup .backup-validation-banner.error{background:#faeeed!important;color:#b3352e!important;border-color:#ecc9c6!important;}
-
-/* 사원명부: 히어로 반경을 카드 표준(12px)에 맞추고 장식용 원형 블롭 제거 */
-#employees .employee-page-hero{border-radius:12px!important;border-color:#e3e6eb!important;}
-#employees .emp-summary-grid .stat::after{display:none!important;}
 
 /* ============================================================
    v10.48.2 — SCREENING WORKBENCH (기존 modal/panel/badge/button 재사용)
