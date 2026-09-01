@@ -54,7 +54,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       },fakeApplicants);
       await page.reload({waitUntil:'networkidle'});
       await page.waitForFunction(()=>document.body?.classList.contains('ux12-ready'));
-      assert.deepEqual(await page.evaluate(()=>({stored:JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')||'[]').length,loaded:applicants.length})),{stored:3,loaded:3},`${viewport.name}: 기존 지원자 데이터 복원`);
+      assert.deepEqual(await page.evaluate(()=>({stored:JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')||'[]').length,loaded:applicants.length})),{stored:fakeApplicants.length,loaded:fakeApplicants.length},`${viewport.name}: 기존 지원자 데이터 복원`);
       assert.equal(await page.evaluate(()=>document.body.innerText.trim().length>0),true,`${viewport.name}: 빈 화면`);
       assert.equal(await page.locator('.nav-btn').count(),4,`${viewport.name}: 메뉴는 4개여야 합니다.`);
       assert.deepEqual(await page.locator('section.page').evaluateAll(nodes=>nodes.map(node=>node.id)),['home','applicants','form','today','calendar','backup']);
