@@ -1445,10 +1445,10 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
     assert.deepEqual(previewUnchanged,{applicants:true,profiles:true,storage:true},'자동작성 미리보기는 브라우저 데이터와 배열을 변경하면 안 됩니다.');
     await page.locator('[data-automation-measurement="heightCm"]').fill('182');await page.locator('[data-automation-measurement="weightKg"]').fill('78');await page.locator('[data-automation-measurement="weightKg"]').press('Tab');
     await page.screenshot({path:path.join(outputDir,'390x844-hire-waiting-automation.png'),fullPage:false});
-    await page.locator('#btnHireWaitingAutomationCancel').click();
+    await page.locator('#btnHireWaitingAutomationCancel').click();await page.locator('#hireWaitingAutomationModal').waitFor({state:'hidden'});
     const cancelUnchanged=await page.evaluate(()=>({applicants:JSON.stringify(applicants)===window.__hireAutomationBefore.applicants,profiles:JSON.stringify(hireWaitingProfiles)===window.__hireAutomationBefore.profiles,storage:localStorage.getItem('recruit_erp_hire_waiting_profiles')===window.__hireAutomationBefore.storage}));
     assert.deepEqual(cancelUnchanged,{applicants:true,profiles:true,storage:true},'자동작성 취소는 브라우저 데이터와 배열을 변경하면 안 됩니다.');
-    await page.locator('#btnHireWaitingAutomation').click();await page.locator('#hireWaitingAutomationModal.show').waitFor();
+    const automationReopened=await page.evaluate(()=>({dirty:hireWaitingDirty,opened:openHireWaitingAutomation()}));assert.deepEqual(automationReopened,{dirty:false,opened:true},'자동작성 취소 후 같은 화면에서 즉시 다시 열 수 있어야 합니다.');await page.locator('#hireWaitingAutomationModal.show').waitFor();
     await page.locator('[data-automation-measurement="heightCm"]').fill('182');await page.locator('[data-automation-measurement="weightKg"]').fill('78');await page.locator('[data-automation-measurement="weightKg"]').press('Tab');
     await page.locator('#btnHireWaitingAutomationApply').click();await page.locator('#hireWaitingAutomationModal.show').waitFor({state:'detached'});
     const appliedHighlight=await page.evaluate(()=>({fields:[...document.querySelectorAll('#hireWaitingBody td.is-auto-filled')].map(cell=>cell.dataset.colKey).sort(),stored:localStorage.getItem('recruit_erp_hire_waiting_profiles')}));
