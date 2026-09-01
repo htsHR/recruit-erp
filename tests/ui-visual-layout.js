@@ -40,6 +40,10 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
     for(const viewport of [{name:'desktop',width:1366,height:768},{name:'mobile',width:390,height:844}]){
       const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height}});
       const page=await context.newPage();
+      await page.addInitScript(()=>{
+        Object.defineProperty(window,'print',{configurable:true,writable:true,value:()=>{window.__rosterPrintCalls=(window.__rosterPrintCalls||0)+1;}});
+        window.__rosterPrintCalls=0;window.__rosterPrintStubInstalled=true;
+      });
       const errors=[];
       page.on('pageerror',error=>errors.push(`pageerror: ${error.message}`));
       page.on('console',message=>{if(message.type()==='error')errors.push(`console: ${message.text()}`);});
@@ -95,10 +99,10 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         const rosterDate='2099-09-03';
         await page.evaluate(date=>{
           window.__rosterPrintCalls=0;
-          window.print=()=>{window.__rosterPrintCalls+=1;};
           window.setPage('today');
           document.querySelector('#rosterDate').value=date;
         },rosterDate);
+        assert.equal(await page.evaluate(()=>window.__rosterPrintStubInstalled),true,'desktop: 브라우저 print 대체가 페이지 로드 전에 준비되어야 합니다.');
         assert.equal(await page.evaluate(date=>rosterApplicantsOn(date).length,rosterDate),6,'desktop: 인쇄 대상 합성 지원자는 6명이어야 합니다.');
         await page.locator('#btnRosterPrint').click();
         assert.equal(await page.evaluate(()=>window.__rosterPrintCalls),1,'desktop: 명단표 버튼은 print를 한 번 호출해야 합니다.');
