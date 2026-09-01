@@ -63,7 +63,10 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         }
         await page.locator(`.nav-btn[data-page="${target}"]`).click();
         await page.waitForFunction(id=>document.querySelector('.page.active')?.id===id,target);
-        if(viewport.width<=1020)assert.equal(await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')),false,`${viewport.name}: 메뉴 선택 뒤 사이드바 닫기`);
+        if(viewport.width<=1020){
+          assert.equal(await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')),false,`${viewport.name}: 메뉴 선택 뒤 사이드바 닫기`);
+          await page.waitForFunction(()=>document.querySelector('.sidebar')?.getBoundingClientRect().right<=1);
+        }
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-${target}.png`),fullPage:true});
       }
       await page.evaluate(()=>window.setPage('form'));
