@@ -117,13 +117,13 @@ function setPage(page){
   document.body.dataset.activePage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'오늘의 채용 업무',applicants:'지원자',form:'신규 지원자 등록',today:'오늘 처리 목록',calendar:'일정·연락',stats:'채용 통계',schools:'학교·채용채널',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'지원자 상세 검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업·복원',permissions:'사용자 권한',auditHistory:'변경 이력',onboarding:'입사대기',storagePerformance:'저장소·속도',productionReadiness:'운영 준비'};
+  const titleMap = {home:'오늘 업무',applicants:'지원자',form:'신규 지원자 등록',today:'오늘 처리 목록',calendar:'일정·평가표',stats:'채용 통계',schools:'학교·채용채널',employees:'사원명부',templates:'안내문 템플릿',advancedSearch:'지원자 상세 검색',dataHealth:'데이터 점검센터',duplicates:'중복 지원자 관리',backup:'백업',permissions:'사용자 권한',auditHistory:'변경 이력',onboarding:'입사대기',storagePerformance:'저장소·속도',productionReadiness:'운영 준비'};
   const descMap = {
-    home:'오늘의 채용 업무와 주요 현황을 확인합니다.',
+    home:'오늘 처리할 일과 주요 현황을 한곳에서 확인합니다.',
     applicants:'지원자 진행상태와 면접·입사 일정을 관리합니다.',
     form:'새 지원자의 기본정보와 전형정보를 등록합니다.',
     today:'오늘 우선 처리할 채용 업무를 확인합니다.',
-    calendar:'면접·입사·관리 일정을 한눈에 확인합니다.',
+    calendar:'면접·입사 일정과 선택 날짜의 평가표를 확인·출력합니다.',
     stats:'채용 흐름과 주요 성과지표를 분석합니다.',
     schools:'협력학교 현황과 지원자·직원 배출 정보를 관리합니다.',
     employees:'재직·휴직·퇴사 현황과 출신학교 정보를 확인합니다.',
@@ -131,7 +131,7 @@ function setPage(page){
     advancedSearch:'여러 검색조건을 조합하고 자주 쓰는 조건을 저장합니다.',
     dataHealth:'데이터 누락과 상태 불일치를 읽기 전용으로 점검합니다.',
     duplicates:'중복 후보와 재지원 기록을 사용자 확인 방식으로 검토합니다.',
-    backup:'ERP 데이터를 안전하게 백업하고 복원합니다.',
+    backup:'ERP 데이터를 암호화 백업하고 필요할 때 복원합니다.',
     permissions:'로그인 계정별 조회·수정·삭제 권한을 관리합니다.',
     auditHistory:'누가 언제 무엇을 바꿨는지 확인합니다. 민감정보 원문은 기록하지 않습니다.'
   };
@@ -1570,4 +1570,3 @@ ${value}`:value;
   if(typeof uxToast==='function')uxToast(current?'선택한 엑셀 값을 수정 폼에 적용했습니다. 저장 버튼을 눌러 확정하세요.':'검증된 엑셀 값을 신규 지원자 폼에 적용했습니다. 내용을 확인한 뒤 등록하세요.');
   setTimeout(()=>$('name')?.focus(),0);
 }
-

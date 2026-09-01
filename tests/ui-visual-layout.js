@@ -11,7 +11,7 @@ const employeeXlsx=require('../js/employee-master-xlsx-import.js');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.3.2');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.4.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -259,7 +259,7 @@ async function verifyUiDensity(page,label){
       workplaceCounts:[...document.querySelectorAll('#workplaceTabs [data-workplace-count]')].map(node=>node.dataset.workplaceCount)
     };
   });
-  assert.ok(Math.abs(density.sidebarWidth-216)<=1,`${label} 데스크톱 사이드바는 216px이어야 합니다: ${density.sidebarWidth}`);
+  assert.ok(Math.abs(density.sidebarWidth-224)<=1,`${label} 데스크톱 사이드바는 224px이어야 합니다: ${density.sidebarWidth}`);
   assert.ok(density.navHeights.length&&density.navHeights.every(height=>height>=36),`${label} 데스크톱 메뉴 버튼은 36px 이상이어야 합니다.`);
   assert.ok(density.sidebarBounds.stateBottom<=density.sidebarBounds.bottom+1&&density.sidebarBounds.navBottom<=density.sidebarBounds.stateTop+1,`${label} 메뉴와 하단 상태 영역이 잘리거나 겹치면 안 됩니다: ${JSON.stringify(density.sidebarBounds)}`);
   assert.deepEqual({areas:density.stateAreas,children:density.stateChildren,authNodes:density.authNodes},{areas:1,children:true,authNodes:0},`${label} 사이드바에 인증 UI가 남아 있습니다.`);
@@ -290,15 +290,15 @@ async function verifyUiDensity(page,label){
   const collapsed=await page.evaluate(()=>({labels:[...document.querySelectorAll('.nav-btn>span:last-child')].filter(node=>node.getClientRects().length).length,icons:[...document.querySelectorAll('.nav-btn .nav-ico')].filter(node=>node.getClientRects().length).length,width:document.querySelector('.sidebar').getBoundingClientRect().width}));
   assert.ok(collapsed.icons>0&&collapsed.labels===0&&Math.abs(collapsed.width-72)<=1,`데스크톱 메뉴 접기는 글자를 숨기고 아이콘 레일을 유지해야 합니다: ${JSON.stringify(collapsed)}`);
   await page.screenshot({path:path.join(outputDir,`${label}-sidebar-collapsed.png`),fullPage:false});
-  await page.locator('.sidebar').hover();await page.waitForFunction(()=>document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-216)<=1);
+  await page.locator('.sidebar').hover();await page.waitForFunction(()=>document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-224)<=1);
   const preview=await page.evaluate(()=>({expanded:document.body.classList.contains('sidebar-preview-expanded'),sidebar:document.querySelector('.sidebar').getBoundingClientRect().width,main:document.querySelector('.main').getBoundingClientRect().left,labelRects:[...document.querySelectorAll('.nav-btn>span:last-child')].filter(node=>node.getClientRects().length).map(node=>{const rect=node.getBoundingClientRect();return{width:rect.width,height:rect.height};})}));
-  assert.ok(preview.expanded&&Math.abs(preview.sidebar-216)<=1&&Math.abs(preview.main-72)<=1&&preview.labelRects.every(rect=>rect.width>0&&rect.height<=20),`${label} 접힌 메뉴 호버는 정상 한 줄 문구를 보이며 본문을 밀지 않는 임시 오버레이여야 합니다: ${JSON.stringify(preview)}`);
+  assert.ok(preview.expanded&&Math.abs(preview.sidebar-224)<=1&&Math.abs(preview.main-72)<=1&&preview.labelRects.every(rect=>rect.width>0&&rect.height<=20),`${label} 접힌 메뉴 호버는 정상 한 줄 문구를 보이며 본문을 밀지 않는 임시 오버레이여야 합니다: ${JSON.stringify(preview)}`);
   await page.screenshot({path:path.join(outputDir,`${label}-sidebar-hover-preview.png`),fullPage:false});
-  await page.locator('#sidebarToggle').click();await page.waitForFunction(()=>!document.body.classList.contains('sidebar-collapsed')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-216)<=1);assert.ok(!await page.evaluate(()=>document.body.classList.contains('sidebar-collapsed')),'핀 버튼은 임시 확장을 고정해야 합니다.');
+  await page.locator('#sidebarToggle').click();await page.waitForFunction(()=>!document.body.classList.contains('sidebar-collapsed')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-224)<=1);assert.ok(!await page.evaluate(()=>document.body.classList.contains('sidebar-collapsed')),'핀 버튼은 임시 확장을 고정해야 합니다.');
   await page.locator('#sidebarToggle').click();await page.mouse.move(800,400);await page.waitForFunction(()=>!document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-72)<=1);
-  await page.locator('.nav-btn[data-page="home"]').focus();await page.waitForFunction(()=>document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-216)<=1);assert.ok(await page.evaluate(()=>document.body.classList.contains('sidebar-preview-expanded')),'아이콘 레일에 키보드 포커스가 들어오면 임시 확장되어야 합니다.');
+  await page.locator('.nav-btn[data-page="home"]').focus();await page.waitForFunction(()=>document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-224)<=1);assert.ok(await page.evaluate(()=>document.body.classList.contains('sidebar-preview-expanded')),'아이콘 레일에 키보드 포커스가 들어오면 임시 확장되어야 합니다.');
   await page.locator('#globalSearchInput').focus();await page.waitForFunction(()=>!document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-72)<=1,null,{timeout:1000});assert.ok(!await page.evaluate(()=>document.body.classList.contains('sidebar-preview-expanded')),'포인터와 포커스가 빠지면 400~600ms 후 아이콘 레일로 돌아가야 합니다.');
-  await page.locator('#sidebarToggle').click();await page.waitForFunction(()=>!document.body.classList.contains('sidebar-collapsed')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-216)<=1);
+  await page.locator('#sidebarToggle').click();await page.waitForFunction(()=>!document.body.classList.contains('sidebar-collapsed')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-224)<=1);
   const readOnlyState=await page.evaluate(snapshot=>({
     memory:JSON.stringify(applicants)===window.__densityApplicantsJson,
     employeeMemory:JSON.stringify(employees)===window.__densityEmployeesJson,
@@ -440,18 +440,58 @@ async function verifyApplicantMyViews(page,label,{exercise=false}={}){
   assert.deepEqual(emptyStates,{legacy:'내 보기 없음',empty:'내 보기 없음'});
   await page.evaluate(filters=>{currentWorkplace=filters.currentWorkplace;currentFilter=filters.currentFilter;currentSearch=filters.currentSearch;currentSort=filters.currentSort;hideFinished=filters.hideFinished;currentSchoolFilterId=filters.currentSchoolFilterId;window.__erpAdvancedFilterIds=null;renderTable();},before.filters);
 }
+async function verifyLiteWorkspace(page,label){
+  await page.evaluate(()=>{window.setPage('home');document.body.classList.remove('sidebar-collapsed','sidebar-preview-expanded');window.dispatchEvent(new Event('resize'));window.scrollTo(0,0);});
+  await page.waitForFunction(()=>document.querySelectorAll('.lite-nav-primary .nav-btn').length===4&&document.querySelectorAll('.lite-action-card').length===4);
+  const initial=await page.evaluate(()=>{
+    const primary=document.querySelector('.lite-nav-primary'),secondary=document.querySelector('.lite-nav-secondary'),secondaryItems=secondary.querySelector('.nav-group-items');
+    const cards=[...document.querySelectorAll('.lite-action-card')].map(node=>{const rect=node.getBoundingClientRect();return{page:node.dataset.go,left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,height:rect.height};});
+    const overlaps=[];for(let i=0;i<cards.length;i++)for(let j=i+1;j<cards.length;j++){const a=cards[i],b=cards[j];if(!(a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom))overlaps.push([a.page,b.page]);}
+    return {
+      groups:[...document.querySelectorAll('.ux12-nav-group')].map(group=>group.dataset.navgroup),
+      primary:[...primary.querySelectorAll('.nav-btn')].map(button=>button.dataset.page),
+      secondary:[...secondary.querySelectorAll('.nav-btn')].map(button=>button.dataset.page),
+      secondaryCollapsed:secondary.classList.contains('collapsed'),
+      secondaryExpanded:secondary.querySelector('.ux12-nav-group-label').getAttribute('aria-expanded'),
+      secondaryDisplay:getComputedStyle(secondaryItems).display,
+      quick:cards.map(card=>card.page),cards,overlaps,
+      active:document.querySelector('.page.active')?.id,
+      title:document.getElementById('page-title')?.textContent.trim(),
+      pageCount:document.querySelectorAll('main .page').length,
+      width:innerWidth,
+      overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth
+    };
+  });
+  assert.deepEqual(initial.groups,['primary','other'],`${label} 전면 메뉴 그룹은 주요 업무와 기타 기능 두 개여야 합니다.`);
+  assert.deepEqual(initial.primary,['home','applicants','calendar','backup'],`${label} 주요 업무 메뉴는 네 개만 보여야 합니다.`);
+  for(const pageId of ['form','today','advancedSearch','templates','stats','onboarding','employees','schools','dataHealth','duplicates','permissions','auditHistory','storagePerformance','productionReadiness'])assert.ok(initial.secondary.includes(pageId),`${label} 기타 기능에 ${pageId} 화면이 보존되어야 합니다.`);
+  assert.deepEqual({collapsed:initial.secondaryCollapsed,expanded:initial.secondaryExpanded,display:initial.secondaryDisplay},{collapsed:true,expanded:'false',display:'none'},`${label} 기타 기능은 처음에 접혀 있어야 합니다.`);
+  assert.deepEqual(initial.quick,['today','applicants','calendar','backup'],`${label} 홈 바로가기는 네 가지 실무 동선이어야 합니다.`);
+  assert.deepEqual(initial.overlaps,[],`${label} 홈 바로가기 카드가 겹치면 안 됩니다: ${JSON.stringify(initial.cards)}`);
+  assert.ok(initial.cards.every(card=>card.left>=-1&&card.right<=initial.width+1&&card.height>=44),`${label} 홈 바로가기가 잘리거나 너무 작습니다: ${JSON.stringify(initial.cards)}`);
+  assert.equal(initial.active,'home');assert.equal(initial.title,'오늘 업무');assert.ok(initial.pageCount>=18,'기존 업무 화면이 삭제되면 안 됩니다.');assert.ok(initial.overflow<=1,`${label} Lite 홈에 전역 가로 넘침이 있습니다.`);
+  await page.screenshot({path:path.join(outputDir,`${label}-lite-home.png`),fullPage:false});
+
+  await page.locator('.lite-nav-secondary .ux12-nav-group-label').click();
+  assert.deepEqual(await page.evaluate(()=>{const group=document.querySelector('.lite-nav-secondary');return{collapsed:group.classList.contains('collapsed'),expanded:group.querySelector('.ux12-nav-group-label').getAttribute('aria-expanded'),visible:[...group.querySelectorAll('.nav-btn')].filter(button=>button.getClientRects().length).length};}),{collapsed:false,expanded:'true',visible:14},`${label} 기타 기능을 펼치면 기존 메뉴가 보여야 합니다.`);
+  await page.locator('.lite-nav-primary .nav-btn[data-page="calendar"]').click();
+  assert.deepEqual(await page.evaluate(()=>({active:document.querySelector('.page.active')?.id,title:document.getElementById('page-title')?.textContent.trim(),order:!!document.getElementById('btnCalendarRosterOrderEdit'),print:!!document.getElementById('btnCalendarPrintRoster')})),{active:'calendar',title:'일정·평가표',order:true,print:true},`${label} 주요 메뉴에서 평가표 기능이 있는 일정 화면으로 이동해야 합니다.`);
+  await page.evaluate(()=>window.setPage('home'));await page.locator('.lite-action-card[data-go="calendar"]').click();
+  assert.equal(await page.evaluate(()=>document.querySelector('.page.active')?.id),'calendar',`${label} 홈 일정·평가표 바로가기가 작동해야 합니다.`);
+  await page.evaluate(()=>window.setPage('home'));
+}
 async function verifyOwnerVisualDesktopShell(page,label){
   await page.evaluate(()=>{window.setPage('home');document.body.classList.remove('sidebar-collapsed','sidebar-preview-expanded');window.dispatchEvent(new Event('resize'));window.scrollTo(0,0);});
-  await page.waitForFunction(()=>document.body.classList.contains('ux12-desktop-shell')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-216)<=1);
+  await page.waitForFunction(()=>document.body.classList.contains('ux12-desktop-shell')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-224)<=1);
   const expanded=await page.evaluate(()=>{
     const sidebar=document.querySelector('.sidebar'),main=document.querySelector('.main'),storage=document.getElementById('storageNote'),sideStyle=getComputedStyle(sidebar),storageStyle=getComputedStyle(storage);
     const side=sidebar.getBoundingClientRect(),content=main.getBoundingClientRect();
     return{desktop:document.body.classList.contains('ux12-desktop-shell'),sidebar:{left:side.left,right:side.right,width:side.width,background:sideStyle.backgroundColor,color:sideStyle.color},main:{left:content.left,right:content.right},brand:[document.querySelector('.brand-copy h1')?.textContent.trim(),document.querySelector('.brand-copy p')?.textContent.trim()],storage:{className:storage.className,height:storage.getBoundingClientRect().height,background:storageStyle.backgroundColor},width:innerWidth,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth,oldLabels:document.body.innerText.includes('TODAY WORK OPERATIONS · ACTION FIRST')||document.body.innerText.includes('QUICK REVIEW')};
   });
   assert.equal(expanded.desktop,true,`${label} 125% 확대에서도 v12 PC 셸을 유지해야 합니다.`);
-  assert.ok(Math.abs(expanded.sidebar.width-216)<=1&&Math.abs(expanded.main.left-216)<=1,`${label} 확장 메뉴와 본문 위치 오류: ${JSON.stringify(expanded)}`);
+  assert.ok(Math.abs(expanded.sidebar.width-224)<=1&&Math.abs(expanded.main.left-224)<=1,`${label} 확장 메뉴와 본문 위치 오류: ${JSON.stringify(expanded)}`);
   assert.equal(expanded.sidebar.background,'rgb(255, 255, 255)',`${label} 밝은 PC 메뉴가 어두운 레거시 메뉴로 바뀌면 안 됩니다.`);
-  assert.deepEqual(expanded.brand,['Recruit ERP','v12.3.2'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
+  assert.deepEqual(expanded.brand,['Recruit ERP','v12.4.0'],`${label} 브랜드와 버전 표기가 중복되거나 일치하지 않습니다.`);
   assert.equal(expanded.oldLabels,false,`${label} 중복 영문 업무 라벨이 남아 있습니다.`);
   assert.ok(expanded.overflow<=1,`${label} 확장 메뉴에서 전역 가로 넘침이 있습니다: ${expanded.overflow}`);
   assert.ok(expanded.storage.height<=130,`${label} LOCAL ONLY 상태 안내가 과도한 공간을 차지하면 안 됩니다: ${JSON.stringify(expanded.storage)}`);
@@ -480,11 +520,11 @@ async function verifyOwnerVisualDesktopShell(page,label){
   const collapsed=await page.evaluate(()=>({sidebar:document.querySelector('.sidebar').getBoundingClientRect().width,main:document.querySelector('.main').getBoundingClientRect().left,statusVisible:!!document.querySelector('.sidebar-status-area')?.getClientRects().length,overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-innerWidth}));
   assert.ok(Math.abs(collapsed.sidebar-72)<=1&&Math.abs(collapsed.main-72)<=1&&!collapsed.statusVisible,`${label} 접힌 rail 또는 상태영역 오류: ${JSON.stringify(collapsed)}`);assert.ok(collapsed.overflow<=1);
   await page.screenshot({path:path.join(outputDir,`${label}-owner-shell-collapsed.png`),fullPage:false});
-  await page.locator('.sidebar').hover();await page.waitForFunction(()=>document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-216)<=1);
+  await page.locator('.sidebar').hover();await page.waitForFunction(()=>document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.sidebar').getBoundingClientRect().width-224)<=1);
   const preview=await page.evaluate(()=>({sidebar:document.querySelector('.sidebar').getBoundingClientRect().width,main:document.querySelector('.main').getBoundingClientRect().left,labels:[...document.querySelectorAll('.nav-btn>span:last-child')].filter(node=>node.getClientRects().length).length}));
-  assert.ok(Math.abs(preview.sidebar-216)<=1&&Math.abs(preview.main-72)<=1&&preview.labels>0,`${label} 150ms 메뉴 임시 확장이 본문을 밀거나 문구를 숨겼습니다: ${JSON.stringify(preview)}`);
+  assert.ok(Math.abs(preview.sidebar-224)<=1&&Math.abs(preview.main-72)<=1&&preview.labels>0,`${label} 150ms 메뉴 임시 확장이 본문을 밀거나 문구를 숨겼습니다: ${JSON.stringify(preview)}`);
   await page.screenshot({path:path.join(outputDir,`${label}-owner-shell-hover.png`),fullPage:false});
-  await page.locator('#sidebarToggle').click();await page.waitForFunction(()=>!document.body.classList.contains('sidebar-collapsed')&&!document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.main').getBoundingClientRect().left-216)<=1);
+  await page.locator('#sidebarToggle').click();await page.waitForFunction(()=>!document.body.classList.contains('sidebar-collapsed')&&!document.body.classList.contains('sidebar-preview-expanded')&&Math.abs(document.querySelector('.main').getBoundingClientRect().left-224)<=1);
   await page.screenshot({path:path.join(outputDir,`${label}-owner-shell-pinned.png`),fullPage:false});
 }
 async function verifyApplicantQuickDetail(page,label,{exercise=false}={}){
@@ -1079,8 +1119,8 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         localStorage.setItem('recruit_erp_ui_operation_environment','company');
       },{applicants:fakeApplicants,profiles:fakeHireWaitingProfiles,savedViews:savedAdvancedSearchFixture});
       await page.goto(baseUrl,{waitUntil:'domcontentloaded'});await page.waitForTimeout(800);
-      assert.equal(await page.title(),'채용관리 시스템 v12.3.2');
-      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.3.2','화면은 단일 현재 버전 소스를 사용해야 합니다.');
+      assert.equal(await page.title(),'채용관리 시스템 v12.4.0');
+      assert.equal(await page.evaluate(()=>window.erpAppVersion?.VERSION),'12.4.0','화면은 단일 현재 버전 소스를 사용해야 합니다.');
       const localOnlyState=await page.evaluate(()=>({
         active:document.querySelector('.page.active')?.id,
         localOnly:window.erpAppVersion?.LOCAL_ONLY===true&&window.erpLocalOnlyRuntime?.enabled===true,
@@ -1092,6 +1132,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
       }));
       assert.deepEqual(localOnlyState,{active:'home',localOnly:true,cloud:false,supabaseClient:false,authNodes:0,loginAutocomplete:0,badge:'LOCAL ONLY'},`${viewport.name} 초기 LOCAL ONLY 진입 실패`);
       assert.equal(await page.locator('#homeTodayGrid').count(),0,'홈의 중복 숫자 업무 카드는 제거되어야 합니다.');
+      if(viewport.width===1366)await verifyLiteWorkspace(page,viewport.name);
       if([1280,1366].includes(viewport.width))await verifyOwnerVisualDesktopShell(page,`${viewport.name}-zoom100`);
       for(const screen of screens){
         await page.evaluate(id=>window.setPage?.(id),screen);await page.waitForTimeout(30);
@@ -1161,7 +1202,7 @@ function innerWidthForLabel(label){return /^360x/.test(label)?360:/^390x/.test(l
         await page.evaluate(()=>window.setPage?.('productionReadiness'));await page.waitForTimeout(120);
         const readinessState=await page.evaluate(()=>({automatic:document.querySelectorAll('#productionReadiness .readiness-check').length,manual:document.querySelectorAll('#productionReadiness [data-readiness-manual]').length,text:document.querySelector('#productionReadiness')?.innerText||'',overflow:document.querySelector('#productionReadiness').scrollWidth-document.querySelector('#productionReadiness').clientWidth}));
         assert.deepEqual({automatic:readinessState.automatic,manual:readinessState.manual},{automatic:8,manual:7});assert.ok(readinessState.overflow<=1,`${viewport.name} 운영 준비 화면 가로 넘침: ${JSON.stringify(readinessState)}`);assert.ok(!/000000-0000000|010-0000-0001/.test(readinessState.text),'운영 준비 화면에 가상 개인정보 원문도 표시하면 안 됩니다.');
-        assert.ok(readinessState.text.includes('v12.3.2 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.'),'운영 준비 화면이 v12.3.2 선택적 캐시 일치 결과를 보여야 합니다.');
+        assert.ok(readinessState.text.includes('v12.4.0 화면·브랜드와 변경 자산 캐시 버전이 일치합니다.'),'운영 준비 화면이 v12.4.0 선택적 캐시 일치 결과를 보여야 합니다.');
         assert.ok(readinessState.text.includes('LOCAL ONLY')&&!/Supabase|클라우드 검증/i.test(readinessState.text),'운영 준비 화면은 LOCAL ONLY 독립 상태만 보여야 합니다.');
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-production-readiness.png`),fullPage:true});
       }

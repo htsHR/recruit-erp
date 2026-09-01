@@ -27,6 +27,7 @@ const quickDetailCss=read('css/applicant-quick-detail.css');
 const stabilityCss=read('css/recruiter-ui-stability.css');
 const reboot=read('js/ux-reboot-v12.js');
 const rebootCss=read('css/ux-reboot-v12.css');
+const liteCss=read('css/recruit-lite.css');
 const advancedBulk=read('js/advanced-bulk.js');
 const reports=read('js/reports.js');
 const core=read('js/core.js');
@@ -40,6 +41,11 @@ assert.doesNotMatch(uiLayout,/queue-card[^\n{}]*nth-child[^{}]*display\s*:\s*non
 assert.match(enhancements,/today:'interviewToday',overdue:'overdue',contact:'contact',decision:'resultPending',hire:'hireUpcoming'/);
 assert.match(enhancements,/function uxConsolidateSidebarStatus\(\)/);assert.match(enhancements,/dataset\.sidebarStatusArea/);assert.match(enhancements,/LOCAL ONLY/);
 assert.match(rebootCss,/--ux12-sidebar:216px/);assert.match(rebootCss,/--ux12-rail:72px/);assert.match(rebootCss,/transition:width 180ms ease/);assert.match(densityCss,/height:44px!important;min-height:44px!important/);
+assert.match(liteCss,/--ux12-sidebar:224px/);assert.match(liteCss,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);assert.match(liteCss,/@media\(max-width:1023px\)[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+assert.match(reboot,/\{key:'primary',label:'주요 업무',pages:\['home','applicants','calendar','backup'\],collapsible:false\}/);
+assert.match(reboot,/\{key:'other',label:'기타 기능',[\s\S]*defaultCollapsed:true\}/);assert.match(reboot,/group\.dataset\.defaultCollapsed='true'/);
+assert.match(index,/class="lite-quick-actions"/);assert.deepEqual([...index.matchAll(/class="lite-action-card"[\s\S]*?data-go="([^"]+)"/g)].map(match=>match[1]),['today','applicants','calendar','backup']);
+['home','applicants','form','today','calendar','advancedSearch','stats','templates','schools','employees','dataHealth','duplicates','backup'].forEach(id=>assert.match(index,new RegExp(`id="${id}"`),`${id} 기존 화면이 보존되어야 합니다.`));
 assert.match(densityCss,/grid-template-columns:minmax\(0,1fr\) auto/);assert.match(densityCss,/max-height:calc\(100vh - 292px\)/);assert.match(densityCss,/\.applicant-list-empty-state/);assert.doesNotMatch(densityCss,/localStorage|sessionStorage|Supabase|shared-storage/);
 ['searchInput','sortSelect','hideFinished','btnOpenApplicantFilter','bulkModeButton','btnResetFilters'].forEach(id=>assert.match(index,new RegExp(`id="${id}"`)));
 const accessibleNames={searchInput:'지원자 검색',sortSelect:'지원자 정렬',calendarWorkplaceFilter:'일정 근무지 필터',dailyWorkflowSearch:'오늘 할 일 검색',rosterDate:'면접 명단 날짜'};
@@ -107,7 +113,7 @@ assert.match(visualTest,/1280x720/);assert.match(visualTest,/1024x768/);assert.m
 assert.match(reboot,/setTimeout\(\(\)=>\{if\(root\.document\.body\.classList\.contains\('sidebar-collapsed'\)\)root\.document\.body\.classList\.add\('sidebar-preview-expanded'\);\},150\)/);
 assert.match(reboot,/\},500\)/);assert.match(reboot,/aria-pressed/);assert.match(rebootCss,/sidebar-preview-expanded \.sidebar/);
 assert.match(reboot,/function isDesktopShell\(\)/);assert.match(reboot,/root\.devicePixelRatio/);assert.match(reboot,/ux12-desktop-shell/);assert.match(rebootCss,/\.ux12-ready\.ux12-desktop-shell \.app-shell/);
-assert.match(index,/<h1>Recruit ERP<\/h1>/);assert.match(index,/<p>v12\.3\.2<\/p>/);assert.doesNotMatch(index,/\bPreview\b|VERSION 2\.0|TODAY WORK OPERATIONS · ACTION FIRST/);assert.doesNotMatch(applicants,/QUICK REVIEW/);
+assert.match(index,/<h1>Recruit ERP<\/h1>/);assert.match(index,/<p>v12\.4\.0<\/p>/);assert.doesNotMatch(index,/\bPreview\b|VERSION 2\.0|TODAY WORK OPERATIONS · ACTION FIRST/);assert.doesNotMatch(applicants,/QUICK REVIEW/);
 assert.match(index,/<html class="ux12-booting"/);assert.match(index,/id="ux12BootGuard"/);assert.match(index,/js\/local-only-init\.js\?v=12\.0\.2/);
 assert.doesNotMatch(index,/js\/auth-init\.js|supabase_config\.js|@supabase\/supabase-js/);
 assert.match(rebootCss,/\.applicant-my-views\{[^}]*min-width:220px!important;max-width:240px!important/);assert.equal(fs.existsSync(path.join(root,'js','shared-storage.js')),false);

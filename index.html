@@ -26,14 +26,14 @@
         inset: 0;
         visibility: visible;
         background:
-          linear-gradient(#fff, #fff) 0 0 / 216px 100% no-repeat,
-          linear-gradient(#fff, #fff) 216px 0 / calc(100% - 216px) 56px no-repeat,
+          linear-gradient(#fff, #fff) 0 0 / 224px 100% no-repeat,
+          linear-gradient(#fff, #fff) 224px 0 / calc(100% - 224px) 56px no-repeat,
           #f5f6f8;
       }
     </style>
     <link href="favicon.svg" rel="icon" type="image/svg+xml" />
-    <title>채용관리 시스템 v12.3.2</title>
-    <script src="js/app-version.js?v=12.3.2"></script>
+    <title>채용관리 시스템 v12.4.0</title>
+    <script src="js/app-version.js?v=12.4.0"></script>
     <script src="js/factory-reset-v12.js?v=12.0.2"></script>
     <script src="js/safety.js?v=12.0.2"></script>
     <script src="js/security.js?v=12.0.2"></script>
@@ -68,6 +68,7 @@
     <link rel="stylesheet" href="css/production-gate-responsive-polish.css?v=12.0.2" />
     <link rel="stylesheet" href="css/recruiter-ui-stability.css?v=12.0.2" />
     <link rel="stylesheet" href="css/ux-reboot-v12.css?v=12.1.0" />
+    <link rel="stylesheet" href="css/recruit-lite.css?v=12.4.0" />
   </head>
   <body>
     <div class="app-shell">
@@ -76,7 +77,7 @@
           <div aria-hidden="true" class="brand-mark">R</div>
           <div class="brand-copy">
             <h1>Recruit ERP</h1>
-            <p>v12.3.2</p>
+            <p>v12.4.0</p>
           </div>
         </div>
         <nav class="nav">
@@ -272,6 +273,51 @@
             </div>
             <span class="page-intro-badge">HOME · OPERATIONS</span>
           </div>
+          <section class="lite-workspace" aria-labelledby="liteWorkspaceTitle">
+            <div class="lite-workspace-heading">
+              <h3 id="liteWorkspaceTitle">업무 바로가기</h3>
+              <p>자주 쓰는 4가지만 앞에 두고, 나머지는 기타 기능에 보관했습니다.</p>
+            </div>
+            <div class="lite-quick-actions">
+              <button class="lite-action-card" data-go="today" type="button">
+                <span class="lite-action-number" aria-hidden="true">01</span>
+                <span class="lite-action-copy">
+                  <strong>오늘 처리</strong>
+                  <small>마감·면접·재연락 순서대로</small>
+                </span>
+                <span class="lite-action-arrow" aria-hidden="true">→</span>
+              </button>
+              <button class="lite-action-card" data-go="applicants" type="button">
+                <span class="lite-action-number" aria-hidden="true">02</span>
+                <span class="lite-action-copy">
+                  <strong>지원자 관리</strong>
+                  <small>검색·진행상태·빠른 수정</small>
+                </span>
+                <span class="lite-action-arrow" aria-hidden="true">→</span>
+              </button>
+              <button class="lite-action-card" data-go="calendar" type="button">
+                <span class="lite-action-number" aria-hidden="true">03</span>
+                <span class="lite-action-copy">
+                  <strong>일정·평가표</strong>
+                  <small>일정 확인·평가표 출력</small>
+                </span>
+                <span class="lite-action-arrow" aria-hidden="true">→</span>
+              </button>
+              <button
+                class="lite-action-card"
+                data-go="backup"
+                data-required-permission="backup.manage"
+                type="button"
+              >
+                <span class="lite-action-number" aria-hidden="true">04</span>
+                <span class="lite-action-copy">
+                  <strong>백업·복원</strong>
+                  <small>암호화 백업으로 안전하게</small>
+                </span>
+                <span class="lite-action-arrow" aria-hidden="true">→</span>
+              </button>
+            </div>
+          </section>
           <div
             class="schedule-reminder"
             id="scheduleReminder"
@@ -5704,7 +5750,7 @@
     <script defer src="js/school-workforce-analytics.js?v=12.0.2"></script>
     <script defer src="js/employee-master-xlsx-import.js?v=12.0.2"></script>
     <script defer src="js/employees.js?v=12.0.2"></script>
-    <script defer src="js/applicants.js?v=12.1.0"></script>
+    <script defer src="js/applicants.js?v=12.4.0"></script>
     <script defer src="js/tasks.js?v=12.0.2"></script>
     <script defer src="js/calendar.js?v=12.0.2"></script>
     <script defer src="js/hire-waiting-automation.js?v=12.0.2"></script>
@@ -5737,8 +5783,8 @@
     <script defer src="js/privacy-security.js?v=12.0.2"></script>
     <script defer src="js/storage-performance.js?v=12.0.2"></script>
     <script defer src="js/onboarding-management.js?v=12.0.2"></script>
-    <script defer src="js/production-readiness.js?v=12.3.2"></script>
+    <script defer src="js/production-readiness.js?v=12.4.0"></script>
     <script defer src="js/applicant-worksheet.js?v=12.1.0"></script>
-    <script defer src="js/ux-reboot-v12.js?v=12.1.0"></script>
+    <script defer src="js/ux-reboot-v12.js?v=12.4.0"></script>
   </body>
 </html>

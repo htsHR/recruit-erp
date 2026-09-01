@@ -3,12 +3,8 @@
   'use strict';
 
   const NAV_GROUPS=[
-    {key:'today',label:'오늘',pages:['home','today']},
-    {key:'applicants',label:'지원자',pages:['applicants','form','advancedSearch']},
-    {key:'schedule',label:'일정·연락',pages:['calendar','templates']},
-    {key:'hr',label:'입사·직원',pages:['onboarding','employees']},
-    {key:'schools',label:'학교·채용채널',pages:['schools']},
-    {key:'system',label:'분석·관리',pages:['stats','dataHealth','duplicates','backup','permissions','auditHistory','storagePerformance','productionReadiness']}
+    {key:'primary',label:'주요 업무',pages:['home','applicants','calendar','backup'],collapsible:false},
+    {key:'other',label:'기타 기능',pages:['form','today','advancedSearch','templates','stats','onboarding','employees','schools','dataHealth','duplicates','permissions','auditHistory','storagePerformance','productionReadiness'],defaultCollapsed:true}
   ];
   const PAGE_ROUTES={
     home:'#/today',today:'#/today/tasks',applicants:'#/applicants',form:'#/applicants/new',advancedSearch:'#/applicants/search',
@@ -20,9 +16,9 @@
   const routing={index:0,suppress:false,reverting:false,initialized:false,currentPage:'home'};
   const menuPreview={openTimer:0,closeTimer:0};
   const PAGE_LABELS={
-    home:'업무 홈',today:'처리 목록',applicants:'지원자 목록',form:'지원자 등록',advancedSearch:'상세 검색',
-    calendar:'일정 관리',templates:'안내문',onboarding:'입사대기',employees:'사원명부',schools:'학교 관리',stats:'채용 통계',
-    dataHealth:'데이터 점검',duplicates:'중복 관리',backup:'백업·복원',permissions:'사용자 권한',auditHistory:'변경 이력',
+    home:'오늘 업무',today:'오늘 처리 목록',applicants:'지원자',form:'지원자 등록',advancedSearch:'상세 검색',
+    calendar:'일정·평가표',templates:'안내문',onboarding:'입사대기',employees:'사원명부',schools:'학교 관리',stats:'채용 통계',
+    dataHealth:'데이터 점검',duplicates:'중복 관리',backup:'백업',permissions:'사용자 권한',auditHistory:'변경 이력',
     storagePerformance:'저장소·속도',productionReadiness:'운영 준비'
   };
 
@@ -66,26 +62,36 @@
     NAV_GROUPS.forEach(groupDefinition=>{
       const group=root.document.createElement('section');
       group.className='nav-group ux12-nav-group';group.dataset.navgroup=groupDefinition.key;
-      const heading=root.document.createElement('button');
-      heading.type='button';heading.className='nav-group-label ux12-nav-group-label';heading.setAttribute('aria-expanded','true');
-      heading.innerHTML=`<span>${escapeHtml(groupDefinition.label)}</span><span aria-hidden="true">⌄</span>`;
+      group.classList.add(groupDefinition.key==='primary'?'lite-nav-primary':'lite-nav-secondary');
+      const collapsible=groupDefinition.collapsible!==false;
+      const heading=root.document.createElement(collapsible?'button':'div');
+      heading.className='nav-group-label ux12-nav-group-label';
+      if(collapsible){heading.type='button';heading.setAttribute('aria-expanded',String(!groupDefinition.defaultCollapsed));}
+      else{heading.setAttribute('role','heading');heading.setAttribute('aria-level','2');}
+      heading.innerHTML=collapsible?`<span>${escapeHtml(groupDefinition.label)}</span><span aria-hidden="true">⌄</span>`:`<span>${escapeHtml(groupDefinition.label)}</span>`;
       const list=root.document.createElement('div');list.className='nav-group-items';
       groupDefinition.pages.forEach(page=>{
         const button=buttons.get(page);if(!button)return;
         const label=PAGE_LABELS[page]||text(button.textContent);button.title=label;button.setAttribute('aria-label',label);
         list.appendChild(button);buttons.delete(page);
       });
-      heading.addEventListener('click',()=>{const collapsed=group.classList.toggle('collapsed');heading.setAttribute('aria-expanded',String(!collapsed));});
+      if(groupDefinition.defaultCollapsed){group.classList.add('collapsed');group.dataset.defaultCollapsed='true';}
+      if(collapsible)heading.addEventListener('click',()=>{const collapsed=group.classList.toggle('collapsed');heading.setAttribute('aria-expanded',String(!collapsed));});
       group.append(heading,list);nav.appendChild(group);
     });
     if(buttons.size){
-      const fallback=nav.querySelector('[data-navgroup="system"] .nav-group-items');
+      const fallback=nav.querySelector('[data-navgroup="other"] .nav-group-items');
       buttons.forEach((button,page)=>{const label=PAGE_LABELS[page]||text(button.textContent);button.title=label;button.setAttribute('aria-label',label);fallback?.appendChild(button);});
     }
     nav.dataset.ux12Ready='true';updateActiveNavigation();
   }
   function updateActiveNavigation(){
-    root.document.querySelectorAll('.ux12-nav-group').forEach(group=>group.classList.toggle('has-active',Boolean(group.querySelector('.nav-btn.active'))));
+    root.document.querySelectorAll('.ux12-nav-group').forEach(group=>{
+      const hasActive=Boolean(group.querySelector('.nav-btn.active'));group.classList.toggle('has-active',hasActive);
+      if(hasActive&&group.classList.contains('lite-nav-secondary')){
+        group.classList.remove('collapsed');group.querySelector('.ux12-nav-group-label')?.setAttribute('aria-expanded','true');
+      }
+    });
   }
 
   function iconButton(id,label,path){
