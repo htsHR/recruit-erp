@@ -41,14 +41,17 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       page.on('pageerror',error=>errors.push(`pageerror: ${error.message}`));
       page.on('console',message=>{if(message.type()==='error')errors.push(`console: ${message.text()}`);});
       page.on('dialog',dialog=>dialog.dismiss());
-      await page.addInitScript(rows=>{
+      await page.goto(baseUrl,{waitUntil:'networkidle'});
+      await page.waitForFunction(()=>document.body?.classList.contains('ux12-ready'));
+      await page.evaluate(rows=>{
         localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');
         localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(rows));
         localStorage.setItem('recruit_erp_schools',JSON.stringify([{id:'legacy-school',name:'보존학교'}]));
         localStorage.setItem('recruit_erp_employees',JSON.stringify([{id:'legacy-employee',name:'보존사원'}]));
       },fakeApplicants);
-      await page.goto(baseUrl,{waitUntil:'networkidle'});
+      await page.reload({waitUntil:'networkidle'});
       await page.waitForFunction(()=>document.body?.classList.contains('ux12-ready'));
+      assert.deepEqual(await page.evaluate(()=>({stored:JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')||'[]').length,loaded:applicants.length})),{stored:3,loaded:3},`${viewport.name}: 기존 지원자 데이터 복원`);
       assert.equal(await page.evaluate(()=>document.body.innerText.trim().length>0),true,`${viewport.name}: 빈 화면`);
       assert.equal(await page.locator('.nav-btn').count(),4,`${viewport.name}: 메뉴는 4개여야 합니다.`);
       assert.deepEqual(await page.locator('section.page').evaluateAll(nodes=>nodes.map(node=>node.id)),['home','applicants','form','today','calendar','backup']);
