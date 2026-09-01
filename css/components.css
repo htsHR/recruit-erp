@@ -789,10 +789,10 @@ body.roster-printing #rosterPrintArea{
 @page{ size:A4 landscape; margin:12mm 23mm 15mm 23mm; }
 @media print{
   html, body{margin:0 !important;padding:0 !important;}
-  body.roster-printing{background:#fff !important;min-width:0 !important;}
+  body.roster-printing{background:#fff !important;width:251mm !important;min-width:251mm !important;overflow:visible !important;}
   body.roster-printing .app-shell{display:none !important;}
   body.roster-printing #loginOverlay{display:none !important;}
-  body.roster-printing #rosterPrintArea{display:block !important;position:static !important;left:auto !important;top:auto !important;width:100% !important;margin:0 !important;padding:0 !important;visibility:visible !important;pointer-events:auto !important;}
+  body.roster-printing #rosterPrintArea{display:block !important;position:static !important;left:auto !important;top:auto !important;width:251mm !important;min-width:251mm !important;max-width:251mm !important;margin:0 !important;padding:0 !important;visibility:visible !important;pointer-events:auto !important;}
   body.roster-printing #rosterPrintArea *{visibility:visible !important;}
 }
 
