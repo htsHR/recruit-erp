@@ -1,4 +1,4 @@
-/* Recruit ERP v12.5.0 — applicant list selection and bulk updates. */
+/* Recruit ERP v12.5.1 — applicant list selection and bulk updates. */
 (()=>{
   'use strict';
   const selected=new Set();

@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.5.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.5.1');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -75,6 +75,19 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       assert.equal(await page.locator('.page.active').getAttribute('id'),'today');
       await page.evaluate(()=>window.setPage('applicants'));
       assert.equal(await page.locator('#applicantTbody tr.applicant-row').count(),fakeApplicants.length);
+      await page.locator('#btnListExcelRowPaste').click();
+      await page.waitForFunction(()=>document.querySelector('.page.active')?.id==='form'&&document.querySelector('#excelRowPasteModal')?.classList.contains('show'));
+      assert.equal(await page.locator('#excelPasteRaw').isVisible(),true,`${viewport.name}: 엑셀 붙여넣기 창 표시`);
+      const pasteRows=[
+        ['NO','지원날짜','연락상태','면접날짜','시간','입사날짜','지원경로','지원구분','성별','지원파트','성명','이메일','학력구분','학교','학과','연락처','나이','생년월일','지역','경력','자격증','비고'],
+        ['1','2026-09-01','서류검토','','','','사람인','신입','남','천안','가상붙여넣기1','paste1@example.com','대졸','가상대학교','반도체과','010-1234-5001','26','2000-01-01','천안','','','출퇴근'],
+        ['2','2026-09-01','서류검토','','','','잡코리아','경력','여','평택','가상붙여넣기2','paste2@example.com','전졸','가상전문대','전자과','010-1234-5002','27','1999-01-01','평택','가상회사 PM','','기숙사']
+      ].map(row=>row.join('\t')).join('\n');
+      await page.locator('#excelPasteRaw').fill(pasteRows);
+      await page.locator('#btnParseExcelRow').click();
+      assert.equal(await page.locator('#excelPasteBatch').isVisible(),true,`${viewport.name}: 여러 행 검토 화면 표시`);
+      assert.match(await page.locator('#excelBatchCounts').innerText(),/신규\s*2/,`${viewport.name}: 여러 행 신규 분류`);
+      await page.locator('#btnCloseExcelRowPaste').click();
       const overflow=await page.evaluate(()=>({body:document.body.scrollWidth-document.body.clientWidth,html:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
       assert.ok(overflow.body<=1&&overflow.html<=1,`${viewport.name}: 가로 넘침 ${JSON.stringify(overflow)}`);
       assert.deepEqual(errors,[],`${viewport.name}: 브라우저 오류 ${errors.join(' | ')}`);

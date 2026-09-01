@@ -12,7 +12,7 @@ const runtimeSources=[index,...fs.readdirSync(path.join(root,'js')).filter(name=
 
 assert.doesNotMatch(runtimeSources,/(?:<|\s)on(?:click|change|keydown|input|submit|error|load)\s*=\s*["']/i,'HTML 인라인 이벤트 속성이 남아 있습니다.');
 assert.match(runtimeSources,/data-erp-handler=/,'CSP 호환 선언형 화면 동작이 없습니다.');
-assert.match(index,/js\/security\.js\?v=12\.5\.0/);
+assert.match(index,/js\/security\.js\?v=12\.5\.1/);
 assert.doesNotMatch(index,/@supabase\/supabase-js|supabase_config\.js/,'LOCAL ONLY 첫 화면에서 Supabase 초기 자산을 불러오면 안 됩니다.');
 assert.equal(fs.existsSync(path.join(root,'supabase_config.js')),false,'LOCAL ONLY 릴리스에는 Supabase 설정 파일이 남으면 안 됩니다.');
 

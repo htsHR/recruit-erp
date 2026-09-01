@@ -1,6 +1,6 @@
 {
   "name": "recruit-erp",
-  "version": "12.5.0",
+  "version": "12.5.1",
   "private": true,
   "description": "지원자·면접·평가표 중심의 로컬 전용 채용 업무 도구",
   "scripts": {

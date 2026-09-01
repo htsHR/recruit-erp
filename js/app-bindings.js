@@ -1,4 +1,4 @@
-/* Recruit ERP v12.5.0 — core applicant workflow bindings. */
+/* Recruit ERP v12.5.1 — core applicant workflow bindings. */
 document.querySelectorAll('.nav-btn').forEach(button=>button.addEventListener('click',()=>{
   const page=button.dataset.page;
   if(page==='form'&&typeof window.openNewApplicantForm==='function')window.openNewApplicantForm();
@@ -141,6 +141,15 @@ bind('btnCopySummary','click',async()=>{
 });
 
 bind('btnOpenExcelRowPaste','click',openExcelRowPaste);
+const openNewApplicantExcelPaste=()=>{
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
+  const opened=typeof window.openNewApplicantForm==='function'
+    ? window.openNewApplicantForm()
+    : (resetForm(),setPage('form'),true);
+  if(opened===false)return;
+  requestAnimationFrame(()=>openExcelRowPaste());
+};
+document.querySelectorAll('[data-excel-paste-shortcut]').forEach(button=>button.addEventListener('click',openNewApplicantExcelPaste));
 bind('btnCloseExcelRowPaste','click',closeExcelRowPaste);
 bind('btnCancelExcelPaste','click',closeExcelRowPaste);
 bind('excelRowPasteBackdrop','click',closeExcelRowPaste);
