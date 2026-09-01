@@ -11,6 +11,7 @@ const css=fs.readFileSync(path.join(root,'css','components.css'),'utf8');
 const date='2026-09-03';
 const classes=new Set();
 const events={};
+const documentEvents={};
 const timers=new Map();
 let timerSequence=0;
 let layoutReads=0;
@@ -19,7 +20,11 @@ const alerts=[];
 
 function button(id,disabled=false){
   const attributes=new Map();
-  return {id,disabled,attributes,setAttribute(name,value){attributes.set(name,String(value));},removeAttribute(name){attributes.delete(name);}};
+  return {
+    id,disabled,attributes,
+    closest(selector){return selector.split(',').some(item=>item.trim()===`#${id}`)?this:null;},
+    setAttribute(name,value){attributes.set(name,String(value));},removeAttribute(name){attributes.delete(name);}
+  };
 }
 const elements={
   rosterDate:{value:date},
@@ -45,7 +50,7 @@ const context={
   setTimeout(handler){const id=++timerSequence;timers.set(id,handler);return id;},
   clearTimeout(id){timers.delete(id);},
   alert(message){alerts.push(message);},confirm(){return false;},
-  document:{body:{classList:{add(name){classes.add(name);},remove(name){classes.delete(name);}}},activeElement:null,querySelector(){return null;},addEventListener(){}},
+  document:{body:{classList:{add(name){classes.add(name);},remove(name){classes.delete(name);}}},activeElement:null,querySelector(){return null;},addEventListener(name,handler){(documentEvents[name]??=[]).push(handler);}},
   $:id=>elements[id]||null,
   localStorage:{getItem(){return null;},setItem(){},removeItem(){}},STORAGE_KEY:'recruit_erp_applicants_stable',save(){return true;},renderAll(){},
   selectedCalendarDate:'',moveCalendarMonth(){},goCalendarToday(){},resetCalendarEventForm(){},renderCalendar(){},saveCalendarEventFromForm(){},deleteCalendarEvent(){},calendarWorkplaceFilter:'',
@@ -54,7 +59,10 @@ const context={
 context.window.window=context.window;
 vm.runInNewContext(reports,context,{filename:'reports.js'});
 
-assert.equal(context.openRosterPrint(),true,'첫 인쇄 요청은 성공해야 합니다.');
+let defaultPrevented=false;
+assert.equal(documentEvents.click.length,1,'인쇄 버튼 클릭은 교체되지 않는 document에 위임해야 합니다.');
+documentEvents.click[0]({target:elements.btnRosterPrint,preventDefault(){defaultPrevented=true;}});
+assert.equal(defaultPrevented,true,'인쇄 버튼의 기본 동작을 차단해야 합니다.');
 assert.equal(printCalls,1,'인쇄 버튼 한 번은 print를 한 번만 호출해야 합니다.');
 assert.equal(layoutReads,1,'print 호출 전에 출력 영역 레이아웃을 강제로 계산해야 합니다.');
 assert.equal(context.window.erpRosterOrderEditor.__test.printState.active,true,'인쇄 완료 이벤트 전에는 중복 요청을 잠가야 합니다.');
@@ -80,7 +88,9 @@ assert.match(alerts.at(-1),/인쇄 창을 열지 못했습니다/,'print 예외�
 const openPrintSource=reports.slice(reports.indexOf('function openRosterPrint(){'),reports.indexOf('function openRosterPrintFromOrderEditor(){'));
 assert.doesNotMatch(openPrintSource,/requestAnimationFrame/,'print 호출을 화면 갱신 콜백에 중복 예약하면 안 됩니다.');
 assert.match(openPrintSource,/void printArea\.offsetHeight;[\s\S]*window\.print\(\);/,'선레이아웃 뒤 같은 사용자 동작 안에서 print를 호출해야 합니다.');
+assert.doesNotMatch(reports,/bind\('btn(?:RosterPrint|CalendarPrintRoster|RosterOrderSavePrint)'/,'교체될 수 있는 인쇄 버튼에 직접 이벤트를 묶으면 안 됩니다.');
+assert.match(reports,/document\.addEventListener\('click',handleRosterPrintClick\)/,'인쇄 버튼은 document 위임 이벤트로 연결해야 합니다.');
 assert.match(css,/body\.roster-printing #rosterPrintArea\{[\s\S]*display:block;[\s\S]*position:fixed;[\s\S]*visibility:hidden;/,'화면 밖 선레이아웃 규칙이 필요합니다.');
 assert.match(css,/@media print\{[\s\S]*body\.roster-printing #rosterPrintArea\{[^}]*position:static !important;[^}]*visibility:visible !important;/,'실제 인쇄에서는 출력 영역을 보여야 합니다.');
 
-console.log('roster-print-flow.test.js: 단일 print 호출·중복 차단·선레이아웃·완료/실패 복구 확인 완료');
+console.log('roster-print-flow.test.js: 위임 클릭·단일 print 호출·중복 차단·선레이아웃·완료/실패 복구 확인 완료');

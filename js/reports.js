@@ -306,15 +306,32 @@ function openRosterPrintFromOrderEditor(){
   closeRosterOrderEditor({force:true,restoreFocus:false});
   return openRosterPrint();
 }
+function handleRosterPrintClick(event){
+  const trigger=event.target?.closest?.('#btnRosterPrint,#btnCalendarPrintRoster,#btnRosterOrderSavePrint');
+  if(!trigger||trigger.disabled)return;
+  event.preventDefault();
+  if(trigger.id==='btnCalendarPrintRoster'){
+    if(!selectedCalendarDate){alert('날짜를 먼저 선택해주세요.');return;}
+    if($('rosterDate'))$('rosterDate').value=selectedCalendarDate;
+    openRosterPrint();
+    return;
+  }
+  if(trigger.id==='btnRosterOrderSavePrint'){
+    openRosterPrintFromOrderEditor();
+    return;
+  }
+  openRosterPrint();
+}
 window.addEventListener('afterprint',finishRosterPrint);
 window.addEventListener('focus',()=>scheduleRosterPrintCleanup(250));
-bind('btnRosterPrint','click', openRosterPrint);
+// 일부 화면 갱신 과정에서 버튼 노드가 교체되어도 인쇄 기능이 사라지지 않도록
+// 고정된 document에서 인쇄 버튼 클릭을 위임받는다.
+document.addEventListener('click',handleRosterPrintClick);
 bind('btnRosterOrderEdit','click',()=>openRosterOrderEditor());
 bind('btnRosterOrderClose','click',()=>closeRosterOrderEditor());
 bind('btnRosterOrderCancel','click',()=>closeRosterOrderEditor());
 bind('btnRosterOrderTimeSort','click',rosterOrderEditorSortByTime);
 bind('btnRosterOrderSave','click',saveRosterOrderEditor);
-bind('btnRosterOrderSavePrint','click',openRosterPrintFromOrderEditor);
 bind('rosterDate','change',event=>{
   if(!rosterOrderEditorState.open||event.target.value===rosterOrderEditorState.date)return;
   if(!closeRosterOrderEditor()){event.target.value=rosterOrderEditorState.date;return;}
@@ -353,7 +370,6 @@ bind('calendarEventForm','submit',saveCalendarEventFromForm);
 bind('btnCalendarReset','click',resetCalendarEventForm);
 bind('btnCalendarDelete','click',()=>deleteCalendarEvent());
 bind('btnCalendarRosterOrderEdit','click',openCalendarRosterOrderEditor);
-bind('btnCalendarPrintRoster','click',()=>{ if(!selectedCalendarDate){ alert('날짜를 먼저 선택해주세요.'); return; } if($('rosterDate')) $('rosterDate').value=selectedCalendarDate; openRosterPrint(); });
 
 window.erpRosterOrderEditor={
   open:openRosterOrderEditor,openFromCalendar:openCalendarRosterOrderEditor,close:closeRosterOrderEditor,move:rosterOrderEditorMove,setPosition:rosterOrderEditorSetPosition,setTime:rosterOrderEditorSetTime,sortByTime:rosterOrderEditorSortByTime,editApplicant:rosterOrderEditorEditApplicant,save:saveRosterOrderEditor,saveAndPrint:openRosterPrintFromOrderEditor,render:renderRosterOrderEditor,state:rosterOrderEditorState,
