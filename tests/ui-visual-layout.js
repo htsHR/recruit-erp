@@ -105,7 +105,9 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         assert.equal(await page.evaluate(()=>window.__rosterPrintStubInstalled),true,'desktop: 브라우저 print 대체가 페이지 로드 전에 준비되어야 합니다.');
         assert.equal(await page.evaluate(date=>rosterApplicantsOn(date).length,rosterDate),6,'desktop: 인쇄 대상 합성 지원자는 6명이어야 합니다.');
         await page.locator('#btnRosterPrint').click();
-        assert.equal(await page.evaluate(()=>window.__rosterPrintCalls),1,'desktop: 명단표 버튼은 print를 한 번 호출해야 합니다.');
+        const rosterClickState=await page.evaluate(()=>({calls:window.__rosterPrintCalls,date:document.querySelector('#rosterDate')?.value||'',eligible:rosterApplicantsOn(document.querySelector('#rosterDate')?.value||'').length,active:window.erpRosterOrderEditor.__test.printState.active,pages:document.querySelectorAll('#rosterPrintArea .roster-page').length,buttonDisabled:document.querySelector('#btnRosterPrint')?.disabled===true}));
+        console.log('desktop roster print click state:',JSON.stringify(rosterClickState));
+        assert.equal(rosterClickState.calls,1,`desktop: 명단표 버튼은 print를 한 번 호출해야 합니다. ${JSON.stringify(rosterClickState)}`);
         await page.evaluate(()=>{const state=window.erpRosterOrderEditor.__test.printState;if(state.cleanupTimer){clearTimeout(state.cleanupTimer);state.cleanupTimer=0;}});
         assert.equal(await page.locator('#rosterPrintArea .roster-page').count(),2,'desktop: 6명은 2페이지여야 합니다.');
         assert.deepEqual(await page.locator('#rosterPrintArea').evaluate(node=>{const style=getComputedStyle(node);return{display:style.display,position:style.position,visibility:style.visibility};}),{display:'block',position:'fixed',visibility:'hidden'},'desktop: 인쇄 전에 화면 밖에서 레이아웃을 계산해야 합니다.');
