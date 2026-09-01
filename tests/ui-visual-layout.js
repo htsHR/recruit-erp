@@ -123,6 +123,9 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         await page.emulateMedia({media:'print'});
         assert.deepEqual(await page.locator('#rosterPrintArea').evaluate(node=>{const style=getComputedStyle(node);return{display:style.display,position:style.position,visibility:style.visibility};}),{display:'block',position:'static',visibility:'visible'},'desktop: 인쇄 미디어에서는 평가표를 표시해야 합니다.');
         assert.equal(await page.locator('.app-shell').evaluate(node=>getComputedStyle(node).display),'none','desktop: 인쇄에는 앱 화면이 섞이면 안 됩니다.');
+        const rosterPrePdfState=await page.evaluate(()=>{const area=document.querySelector('#rosterPrintArea'),first=area?.querySelector('.roster-page'),areaStyle=getComputedStyle(area),firstStyle=getComputedStyle(first),areaRect=area.getBoundingClientRect(),firstRect=first.getBoundingClientRect();return{area:{display:areaStyle.display,visibility:areaStyle.visibility,opacity:areaStyle.opacity,width:areaRect.width,height:areaRect.height,offsetWidth:area.offsetWidth,offsetHeight:area.offsetHeight},first:{display:firstStyle.display,visibility:firstStyle.visibility,opacity:firstStyle.opacity,width:firstRect.width,height:firstRect.height,offsetWidth:first.offsetWidth,offsetHeight:first.offsetHeight}};});
+        console.log('desktop roster pre-pdf state:',JSON.stringify(rosterPrePdfState));
+        assert.ok(rosterPrePdfState.area.width>0&&rosterPrePdfState.area.height>0&&rosterPrePdfState.first.width>0&&rosterPrePdfState.first.height>0,'desktop: PDF 생성 전에 명단표 레이아웃 크기가 있어야 합니다.');
         const rosterPdfPath=path.join(outputDir,'desktop-roster-print-6.pdf');
         await page.pdf({path:rosterPdfPath,landscape:true,printBackground:true,preferCSSPageSize:true});
         const rosterPdfSize=fs.statSync(rosterPdfPath).size;
