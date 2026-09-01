@@ -78,6 +78,7 @@ assert.equal(elements.btnRosterPrint.disabled,false,'기본 인쇄 버튼 상태
 assert.equal(elements.btnRosterOrderSavePrint.disabled,true,'원래 비활성 버튼은 기존 상태를 유지해야 합니다.');
 assert.equal(elements.btnRosterPrint.attributes.has('aria-busy'),false,'인쇄 완료 뒤 busy 상태를 제거해야 합니다.');
 assert.equal(timers.size,0,'인쇄 완료 뒤 남은 정리 타이머가 없어야 합니다.');
+assert.equal(events.focus,undefined,'인쇄창 focus 복귀로 출력 상태를 조기에 지우면 안 됩니다.');
 
 context.window.print=()=>{throw new Error('synthetic print failure');};
 assert.equal(context.openRosterPrint(),false,'브라우저 print 예외는 실패로 반환해야 합니다.');

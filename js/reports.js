@@ -268,7 +268,7 @@ function finishRosterPrint(){
   rosterPrintState.controls.forEach(({button,disabled})=>{button.disabled=disabled;button.removeAttribute?.('aria-busy');});
   rosterPrintState.controls=[];rosterPrintState.active=false;
 }
-function scheduleRosterPrintCleanup(delay=1200){
+function scheduleRosterPrintCleanup(delay=300000){
   if(!rosterPrintState.active)return;
   if(rosterPrintState.cleanupTimer)clearTimeout(rosterPrintState.cleanupTimer);
   const schedule=typeof setTimeout==='function'?setTimeout:typeof window.setTimeout==='function'?window.setTimeout.bind(window):null;
@@ -323,7 +323,6 @@ function handleRosterPrintClick(event){
   openRosterPrint();
 }
 window.addEventListener('afterprint',finishRosterPrint);
-window.addEventListener('focus',()=>scheduleRosterPrintCleanup(250));
 // 일부 화면 갱신 과정에서 버튼 노드가 교체되어도 인쇄 기능이 사라지지 않도록
 // 고정된 document에서 인쇄 버튼 클릭을 위임받는다.
 document.addEventListener('click',handleRosterPrintClick);
