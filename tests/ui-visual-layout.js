@@ -42,7 +42,9 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       const page=await context.newPage();
       await page.addInitScript(()=>{
         Object.defineProperty(window,'print',{configurable:true,writable:true,value:()=>{window.__rosterPrintCalls=(window.__rosterPrintCalls||0)+1;}});
-        window.__rosterPrintCalls=0;window.__rosterPrintStubInstalled=true;
+        window.__rosterPrintCalls=0;window.__rosterPrintStubInstalled=true;window.__rosterPrintLifecycle=[];
+        window.addEventListener('beforeprint',()=>window.__rosterPrintLifecycle.push({event:'beforeprint',active:document.body?.classList.contains('roster-printing')}),true);
+        window.addEventListener('afterprint',()=>window.__rosterPrintLifecycle.push({event:'afterprint',active:document.body?.classList.contains('roster-printing')}),true);
       });
       const errors=[];
       let rosterPrivacyConfirm='';
@@ -123,7 +125,10 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         assert.equal(await page.locator('.app-shell').evaluate(node=>getComputedStyle(node).display),'none','desktop: 인쇄에는 앱 화면이 섞이면 안 됩니다.');
         const rosterPdfPath=path.join(outputDir,'desktop-roster-print-6.pdf');
         await page.pdf({path:rosterPdfPath,landscape:true,printBackground:true,preferCSSPageSize:true});
-        assert.ok(fs.statSync(rosterPdfPath).size>15000,'desktop: 실제 인쇄 PDF가 비어 있으면 안 됩니다.');
+        const rosterPdfSize=fs.statSync(rosterPdfPath).size;
+        const rosterPdfState=await page.evaluate(()=>{const area=document.querySelector('#rosterPrintArea'),page=area?.querySelector('.roster-page'),style=area?getComputedStyle(area):null,rect=area?.getBoundingClientRect(),pageRect=page?.getBoundingClientRect();return{lifecycle:window.__rosterPrintLifecycle,active:document.body.classList.contains('roster-printing'),text:area?.innerText.length||0,display:style?.display,visibility:style?.visibility,rect:rect&&{width:rect.width,height:rect.height},pageRect:pageRect&&{width:pageRect.width,height:pageRect.height}};});
+        console.log('desktop roster print pdf state:',JSON.stringify({size:rosterPdfSize,...rosterPdfState}));
+        assert.ok(rosterPdfSize>15000,'desktop: 실제 인쇄 PDF가 비어 있으면 안 됩니다.');
         await page.emulateMedia({media:'screen'});
         await page.evaluate(()=>window.dispatchEvent(new Event('afterprint')));
         assert.equal(await page.evaluate(()=>document.body.classList.contains('roster-printing')),false,'desktop: 인쇄 완료 뒤 상태를 정리해야 합니다.');
