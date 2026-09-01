@@ -121,7 +121,9 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         await page.emulateMedia({media:'print'});
         assert.deepEqual(await page.locator('#rosterPrintArea').evaluate(node=>{const style=getComputedStyle(node);return{display:style.display,position:style.position,visibility:style.visibility};}),{display:'block',position:'static',visibility:'visible'},'desktop: 인쇄 미디어에서는 평가표를 표시해야 합니다.');
         assert.equal(await page.locator('.app-shell').evaluate(node=>getComputedStyle(node).display),'none','desktop: 인쇄에는 앱 화면이 섞이면 안 됩니다.');
-        await page.screenshot({path:path.join(outputDir,'desktop-roster-print-6.png'),fullPage:true});
+        const rosterPdfPath=path.join(outputDir,'desktop-roster-print-6.pdf');
+        await page.pdf({path:rosterPdfPath,landscape:true,printBackground:true,preferCSSPageSize:true});
+        assert.ok(fs.statSync(rosterPdfPath).size>15000,'desktop: 실제 인쇄 PDF가 비어 있으면 안 됩니다.');
         await page.emulateMedia({media:'screen'});
         await page.evaluate(()=>window.dispatchEvent(new Event('afterprint')));
         assert.equal(await page.evaluate(()=>document.body.classList.contains('roster-printing')),false,'desktop: 인쇄 완료 뒤 상태를 정리해야 합니다.');
