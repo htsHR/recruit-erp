@@ -8,6 +8,7 @@ const vm=require('node:vm');
 const root=path.resolve(__dirname,'..');
 const reports=fs.readFileSync(path.join(root,'js','reports.js'),'utf8');
 const css=fs.readFileSync(path.join(root,'css','components.css'),'utf8');
+const index=fs.readFileSync(path.join(root,'index.html'),'utf8');
 const date='2026-09-03';
 const classes=new Set();
 const events={};
@@ -94,5 +95,6 @@ assert.match(reports,/document\.addEventListener\('click',handleRosterPrintClick
 assert.match(css,/body\.roster-printing #rosterPrintArea\{[\s\S]*display:block;[\s\S]*position:fixed;[\s\S]*visibility:hidden;/,'화면 밖 선레이아웃 규칙이 필요합니다.');
 assert.match(css,/@media print\{[\s\S]*body\.roster-printing #rosterPrintArea\{[^}]*position:static !important;[^}]*width:251mm !important;[^}]*visibility:visible !important;/,'실제 인쇄에서는 A4 가로 실사용 폭으로 출력 영역을 보여야 합니다.');
 assert.match(css,/body\.roster-printing #rosterPrintArea \*\{visibility:visible !important;\}/,'실제 인쇄에서는 출력 영역 내부 요소의 숨김 상속도 해제해야 합니다.');
+assert.match(index,/<\/main>\s*<\/div>\s*<div id="rosterPrintArea"><\/div>/,'명단 출력 영역은 인쇄 시 숨기는 app-shell 밖에 있어야 합니다.');
 
 console.log('roster-print-flow.test.js: 위임 클릭·단일 print 호출·중복 차단·선레이아웃·완료/실패 복구 확인 완료');
