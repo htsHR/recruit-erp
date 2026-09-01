@@ -129,9 +129,11 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         const rosterPdfPath=path.join(outputDir,'desktop-roster-print-6.pdf');
         await page.pdf({path:rosterPdfPath,landscape:true,printBackground:true,preferCSSPageSize:true});
         const rosterPdfSize=fs.statSync(rosterPdfPath).size;
+        const rosterPhysicalPages=(fs.readFileSync(rosterPdfPath).toString('latin1').match(/\/Type \/Page\b/g)||[]).length;
         const rosterPdfState=await page.evaluate(()=>{const area=document.querySelector('#rosterPrintArea'),page=area?.querySelector('.roster-page'),style=area?getComputedStyle(area):null,rect=area?.getBoundingClientRect(),pageRect=page?.getBoundingClientRect();return{lifecycle:window.__rosterPrintLifecycle,active:document.body.classList.contains('roster-printing'),text:area?.innerText.length||0,display:style?.display,visibility:style?.visibility,rect:rect&&{width:rect.width,height:rect.height},pageRect:pageRect&&{width:pageRect.width,height:pageRect.height}};});
-        console.log('desktop roster print pdf state:',JSON.stringify({size:rosterPdfSize,...rosterPdfState}));
+        console.log('desktop roster print pdf state:',JSON.stringify({size:rosterPdfSize,physicalPages:rosterPhysicalPages,...rosterPdfState}));
         assert.ok(rosterPdfSize>15000,'desktop: 실제 인쇄 PDF가 비어 있으면 안 됩니다.');
+        assert.equal(rosterPhysicalPages,2,'desktop: 6명 평가표는 실제 PDF에서도 2장이어야 합니다.');
         await page.emulateMedia({media:'screen'});
         await page.evaluate(()=>window.dispatchEvent(new Event('afterprint')));
         assert.equal(await page.evaluate(()=>document.body.classList.contains('roster-printing')),false,'desktop: 인쇄 완료 뒤 상태를 정리해야 합니다.');
