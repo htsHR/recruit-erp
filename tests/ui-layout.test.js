@@ -44,6 +44,7 @@ assert.match(rebootCss,/--ux12-sidebar:216px/);assert.match(rebootCss,/--ux12-ra
 assert.match(liteCss,/--ux12-sidebar:224px/);assert.match(liteCss,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);assert.match(liteCss,/@media\(max-width:1023px\)[\s\S]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 assert.match(reboot,/\{key:'primary',label:'주요 업무',pages:\['home','applicants','calendar','backup'\],collapsible:false\}/);
 assert.match(reboot,/\{key:'other',label:'기타 기능',[\s\S]*defaultCollapsed:true\}/);assert.match(reboot,/group\.dataset\.defaultCollapsed='true'/);
+assert.match(reboot,/visibleLabel\.textContent=label/);
 assert.match(index,/class="lite-quick-actions"/);assert.deepEqual([...index.matchAll(/class="lite-action-card"[\s\S]*?data-go="([^"]+)"/g)].map(match=>match[1]),['today','applicants','calendar','backup']);
 ['home','applicants','form','today','calendar','advancedSearch','stats','templates','schools','employees','dataHealth','duplicates','backup'].forEach(id=>assert.match(index,new RegExp(`id="${id}"`),`${id} 기존 화면이 보존되어야 합니다.`));
 assert.match(densityCss,/grid-template-columns:minmax\(0,1fr\) auto/);assert.match(densityCss,/max-height:calc\(100vh - 292px\)/);assert.match(densityCss,/\.applicant-list-empty-state/);assert.doesNotMatch(densityCss,/localStorage|sessionStorage|Supabase|shared-storage/);

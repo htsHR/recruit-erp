@@ -450,6 +450,7 @@ async function verifyLiteWorkspace(page,label){
     return {
       groups:[...document.querySelectorAll('.ux12-nav-group')].map(group=>group.dataset.navgroup),
       primary:[...primary.querySelectorAll('.nav-btn')].map(button=>button.dataset.page),
+      primaryLabels:[...primary.querySelectorAll('.nav-btn')].map(button=>button.querySelector(':scope > span:last-child')?.textContent.trim()),
       secondary:[...secondary.querySelectorAll('.nav-btn')].map(button=>button.dataset.page),
       secondaryCollapsed:secondary.classList.contains('collapsed'),
       secondaryExpanded:secondary.querySelector('.ux12-nav-group-label').getAttribute('aria-expanded'),
@@ -464,6 +465,7 @@ async function verifyLiteWorkspace(page,label){
   });
   assert.deepEqual(initial.groups,['primary','other'],`${label} 전면 메뉴 그룹은 주요 업무와 기타 기능 두 개여야 합니다.`);
   assert.deepEqual(initial.primary,['home','applicants','calendar','backup'],`${label} 주요 업무 메뉴는 네 개만 보여야 합니다.`);
+  assert.deepEqual(initial.primaryLabels,['오늘 업무','지원자','일정·평가표','백업'],`${label} 주요 업무 메뉴 문구가 실무 명칭과 일치해야 합니다.`);
   for(const pageId of ['form','today','advancedSearch','templates','stats','onboarding','employees','schools','dataHealth','duplicates','permissions','auditHistory','storagePerformance','productionReadiness'])assert.ok(initial.secondary.includes(pageId),`${label} 기타 기능에 ${pageId} 화면이 보존되어야 합니다.`);
   assert.deepEqual({collapsed:initial.secondaryCollapsed,expanded:initial.secondaryExpanded,display:initial.secondaryDisplay},{collapsed:true,expanded:'false',display:'none'},`${label} 기타 기능은 처음에 접혀 있어야 합니다.`);
   assert.deepEqual(initial.quick,['today','applicants','calendar','backup'],`${label} 홈 바로가기는 네 가지 실무 동선이어야 합니다.`);

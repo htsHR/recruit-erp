@@ -73,6 +73,7 @@
       groupDefinition.pages.forEach(page=>{
         const button=buttons.get(page);if(!button)return;
         const label=PAGE_LABELS[page]||text(button.textContent);button.title=label;button.setAttribute('aria-label',label);
+        const visibleLabel=button.querySelector(':scope > span:last-child');if(visibleLabel)visibleLabel.textContent=label;
         list.appendChild(button);buttons.delete(page);
       });
       if(groupDefinition.defaultCollapsed){group.classList.add('collapsed');group.dataset.defaultCollapsed='true';}
@@ -81,7 +82,7 @@
     });
     if(buttons.size){
       const fallback=nav.querySelector('[data-navgroup="other"] .nav-group-items');
-      buttons.forEach((button,page)=>{const label=PAGE_LABELS[page]||text(button.textContent);button.title=label;button.setAttribute('aria-label',label);fallback?.appendChild(button);});
+      buttons.forEach((button,page)=>{const label=PAGE_LABELS[page]||text(button.textContent);button.title=label;button.setAttribute('aria-label',label);const visibleLabel=button.querySelector(':scope > span:last-child');if(visibleLabel)visibleLabel.textContent=label;fallback?.appendChild(button);});
     }
     nav.dataset.ux12Ready='true';updateActiveNavigation();
   }
