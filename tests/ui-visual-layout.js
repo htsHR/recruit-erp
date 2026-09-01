@@ -20,7 +20,10 @@ if(!executablePath)throw new Error('자동 UI 검사에 사용할 Chrome/Chromiu
 const fakeApplicants=[
   {id:'11111111-1111-4111-8111-111111111111',name:'가상지원자1',phone:'010-0000-0001',applyDate:'2026-08-01',workplace:'천안',status:'서류검토',school:'가상대학교',createdAt:'2026-08-01T01:00:00.000Z'},
   {id:'22222222-2222-4222-8222-222222222222',name:'가상지원자2',phone:'010-0000-0002',applyDate:'2026-08-02',workplace:'평택',status:'면접예정',interviewDate:'2099-08-02',interviewTime:'10:00',createdAt:'2026-08-02T01:00:00.000Z'},
-  {id:'33333333-3333-4333-8333-333333333333',name:'가상지원자3',phone:'010-0000-0003',applyDate:'2026-08-03',workplace:'천안',status:'입사예정',hireDate:'2099-08-06',createdAt:'2026-08-03T01:00:00.000Z'}
+  {id:'33333333-3333-4333-8333-333333333333',name:'가상지원자3',phone:'010-0000-0003',applyDate:'2026-08-03',workplace:'천안',status:'입사예정',hireDate:'2099-08-06',createdAt:'2026-08-03T01:00:00.000Z'},
+  ...Array.from({length:6},(_,index)=>({
+    id:`synthetic-roster-browser-${index+1}`,name:`가상면접자${index+1}`,phone:`010-0000-10${String(index+1).padStart(2,'0')}`,applyDate:'2099-09-01',workplace:index%2?'평택':'천안',gender:index%2?'여자':'남자',birthYear:'2000-01-01',age:'26',status:'면접예정',interviewDate:'2099-09-03',interviewTime:`${String(9+Math.floor(index/2)).padStart(2,'0')}:${index%2?'30':'00'}`,createdAt:`2099-09-01T00:00:0${index}.000Z`
+  }))
 ];
 const server=spawn(process.execPath,[path.join(__dirname,'serve-static.js')],{cwd:root,env:{...process.env,ERP_TEST_PORT:String(port)},stdio:['ignore','pipe','pipe']});
 const waitForServer=()=>new Promise((resolve,reject)=>{
@@ -91,15 +94,12 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       if(viewport.name==='desktop'){
         const rosterDate='2099-09-03';
         await page.evaluate(date=>{
-          const rosterRows=Array.from({length:6},(_,index)=>({
-            id:`synthetic-roster-browser-${index+1}`,name:`가상면접자${index+1}`,gender:index%2?'여자':'남자',birthYear:'2000-01-01',age:'26',status:'면접예정',interviewDate:date,interviewTime:`${String(9+Math.floor(index/2)).padStart(2,'0')}:${index%2?'30':'00'}`,createdAt:`2099-09-01T00:00:0${index}.000Z`
-          }));
-          applicants=[...applicants,...rosterRows];
-          document.querySelector('#rosterDate').value=date;
           window.__rosterPrintCalls=0;
           window.print=()=>{window.__rosterPrintCalls+=1;};
           window.setPage('today');
+          document.querySelector('#rosterDate').value=date;
         },rosterDate);
+        assert.equal(await page.evaluate(date=>rosterApplicantsOn(date).length,rosterDate),6,'desktop: 인쇄 대상 합성 지원자는 6명이어야 합니다.');
         await page.locator('#btnRosterPrint').click();
         assert.equal(await page.evaluate(()=>window.__rosterPrintCalls),1,'desktop: 명단표 버튼은 print를 한 번 호출해야 합니다.');
         await page.evaluate(()=>{const state=window.erpRosterOrderEditor.__test.printState;if(state.cleanupTimer){clearTimeout(state.cleanupTimer);state.cleanupTimer=0;}});
