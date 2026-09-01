@@ -22,7 +22,7 @@ assert.match(rosterCss,/\.roster-name-head-divider\{[^}]*border-top:var\(--roste
 assert.match(rosterCss,/\.roster-oath-box\{[^}]*border:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\);/);
 assert.doesNotMatch(rosterCss,/border(?:-top)?:1px solid/,'면접표 인쇄선에 화면용 1px 선이 남으면 안 됩니다.');
 assert.doesNotMatch(rosterCss,/border(?:-top)?:[^;]*(?:rgba?\(|#[1-9a-f][0-9a-f]{2,5})/i,'면접표 인쇄선에 회색·알파 색상을 사용하면 안 됩니다.');
-assert.match(rosterCss,/@page\{ size:A4 landscape; margin:12mm 23mm 15mm 23mm; \}/);
+assert.match(rosterCss,/@page\{ size:A4 landscape; margin:6mm 23mm 7mm 23mm; \}/);
 
 const context={
   applicants:[],

@@ -786,7 +786,7 @@ body.roster-printing #rosterPrintArea{
 .roster-row-top td,.roster-row-bottom td{height:35px;}
 .roster-table td.roster-pass{font-weight:600;font-size:11.5px;}
 .roster-legend{font-size:10.5px;margin:4px 0 0;font-weight:400;text-align:left;}
-@page{ size:A4 landscape; margin:12mm 23mm 15mm 23mm; }
+@page{ size:A4 landscape; margin:6mm 23mm 7mm 23mm; }
 @media print{
   html, body{margin:0 !important;padding:0 !important;}
   body.roster-printing{background:#fff !important;width:251mm !important;min-width:251mm !important;overflow:visible !important;}
