@@ -12,7 +12,7 @@ const index=read('index.html');
 const workflow=read('.github/workflows/quality-checks.yml');
 const vercel=JSON.parse(read('vercel.json'));
 
-assert.equal(version,'12.5.1');
+assert.equal(version,'12.5.2');
 assert.equal(packageJson.version,version);
 assert.match(index,new RegExp(`<title>채용 업무 v${version.replaceAll('.','\\.')}</title>`));
 assert.match(index,/<h1>채용 업무<\/h1>/);
@@ -42,4 +42,4 @@ assert.ok(headers['Permissions-Policy']);
 assert.match(headers['Content-Security-Policy'],/script-src-attr 'none'/);
 assert.match(headers['Content-Security-Policy'],/object-src 'none'/);
 
-console.log('release.test.js: v12.5.1 버전·자산·자동검사·Vercel 보안 설정 확인 완료');
+console.log('release.test.js: v12.5.2 버전·자산·자동검사·Vercel 보안 설정 확인 완료');

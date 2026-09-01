@@ -1,11 +1,11 @@
-/* Recruit ERP v12.5.1 append-only local audit engine (no history UI). */
+/* Recruit ERP v12.5.2 append-only local audit engine (no history UI). */
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
   root.erpAudit=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='12.5.1';
+  const VERSION='12.5.2';
   const STORAGE_KEY='recruit_erp_audit_logs_v1';
   const MAX_LOCAL_RECORDS=2000;
   const DATASETS={

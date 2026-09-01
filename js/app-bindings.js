@@ -1,4 +1,4 @@
-/* Recruit ERP v12.5.1 — core applicant workflow bindings. */
+/* Recruit ERP v12.5.2 — core applicant workflow bindings. */
 document.querySelectorAll('.nav-btn').forEach(button=>button.addEventListener('click',()=>{
   const page=button.dataset.page;
   if(page==='form'&&typeof window.openNewApplicantForm==='function')window.openNewApplicantForm();

@@ -1,4 +1,4 @@
-/* Recruit ERP v12.5.1 — core applicant detail and form workflow. */
+/* Recruit ERP v12.5.2 — core applicant detail and form workflow. */
 function renderAll(){
   renderStats();
   backupNotice();

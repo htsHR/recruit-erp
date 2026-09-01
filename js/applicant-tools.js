@@ -1,4 +1,4 @@
-/* Recruit ERP v12.5.1 — applicant form helpers and exports. */
+/* Recruit ERP v12.5.2 — applicant form helpers and exports. */
 window.editApplicant=editApplicant; window.deleteApplicant=deleteApplicant; window.duplicateApplicant=duplicateApplicant;
   window.viewApplicant=viewApplicant; window.updateApplicantStatus=updateApplicantStatus; window.resetAndRenderList=resetAndRenderList;
 

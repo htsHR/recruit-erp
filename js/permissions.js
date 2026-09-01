@@ -1,11 +1,11 @@
-/* Recruit ERP v12.5.1 LOCAL ONLY permission guards (no management UI). */
+/* Recruit ERP v12.5.2 LOCAL ONLY permission guards (no management UI). */
 (function(root,factory){
   const api=factory(root);
   if(typeof module==='object'&&module.exports)module.exports=api;
   root.erpPermissions=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='12.5.1';
+  const VERSION='12.5.2';
   const ROLE_LABELS={admin:'관리자',recruiter:'채용담당자',viewer:'조회 전용',local_admin:'로컬 관리자',legacy_admin:'설정 전 관리자'};
   const PERMISSIONS={
     admin:['*'],local_admin:['*'],legacy_admin:['*'],

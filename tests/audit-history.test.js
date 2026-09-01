@@ -6,7 +6,7 @@ const root=path.resolve(__dirname,'..');
 const audit=require(path.join(root,'js','audit-history.js'));
 const source=fs.readFileSync(path.join(root,'js','audit-history.js'),'utf8');
 
-assert.equal(audit.VERSION,'12.5.1');
+assert.equal(audit.VERSION,'12.5.2');
 assert.equal(audit.scrubText('010-1234-5678 test@example.com 900101-1234567'),'[전화번호 숨김] [이메일 숨김] [주민등록번호 숨김]');
 assert.equal(audit.valueSummary('residentNumber','900101-1234567'),'개인정보/내용 변경됨');
 assert.equal(audit.valueSummary('memo','비밀 메모'),'개인정보/내용 변경됨');
