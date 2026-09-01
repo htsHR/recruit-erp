@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='12.5.1';
+  const BC_VERSION='12.5.2';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;

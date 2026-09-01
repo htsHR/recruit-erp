@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.5.1');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.5.2');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -88,6 +88,34 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       assert.equal(await page.locator('#excelPasteBatch').isVisible(),true,`${viewport.name}: 여러 행 검토 화면 표시`);
       assert.match(await page.locator('#excelBatchCounts').innerText(),/신규\s*2/,`${viewport.name}: 여러 행 신규 분류`);
       await page.locator('#btnCloseExcelRowPaste').click();
+      if(viewport.name==='desktop'){
+        const rosterDate='2099-09-03';
+        await page.evaluate(date=>{
+          const rosterRows=Array.from({length:6},(_,index)=>({
+            id:`synthetic-roster-browser-${index+1}`,name:`가상면접자${index+1}`,gender:index%2?'여자':'남자',birthYear:'2000-01-01',age:'26',status:'면접예정',interviewDate:date,interviewTime:`${String(9+Math.floor(index/2)).padStart(2,'0')}:${index%2?'30':'00'}`,createdAt:`2099-09-01T00:00:0${index}.000Z`
+          }));
+          applicants=[...applicants,...rosterRows];
+          document.querySelector('#rosterDate').value=date;
+          window.__rosterPrintCalls=0;
+          window.print=()=>{window.__rosterPrintCalls+=1;};
+          window.setPage('today');
+        },rosterDate);
+        await page.locator('#btnRosterPrint').click();
+        assert.equal(await page.evaluate(()=>window.__rosterPrintCalls),1,'desktop: 명단표 버튼은 print를 한 번 호출해야 합니다.');
+        await page.evaluate(()=>{const state=window.erpRosterOrderEditor.__test.printState;if(state.cleanupTimer){clearTimeout(state.cleanupTimer);state.cleanupTimer=0;}});
+        assert.equal(await page.locator('#rosterPrintArea .roster-page').count(),2,'desktop: 6명은 2페이지여야 합니다.');
+        assert.deepEqual(await page.locator('#rosterPrintArea').evaluate(node=>{const style=getComputedStyle(node);return{display:style.display,position:style.position,visibility:style.visibility};}),{display:'block',position:'fixed',visibility:'hidden'},'desktop: 인쇄 전에 화면 밖에서 레이아웃을 계산해야 합니다.');
+        assert.equal(await page.evaluate(()=>openRosterPrint()),false,'desktop: 인쇄 중 중복 요청은 거부해야 합니다.');
+        assert.equal(await page.evaluate(()=>window.__rosterPrintCalls),1,'desktop: 중복 요청으로 print가 추가 호출되면 안 됩니다.');
+        await page.emulateMedia({media:'print'});
+        assert.deepEqual(await page.locator('#rosterPrintArea').evaluate(node=>{const style=getComputedStyle(node);return{display:style.display,position:style.position,visibility:style.visibility};}),{display:'block',position:'static',visibility:'visible'},'desktop: 인쇄 미디어에서는 평가표를 표시해야 합니다.');
+        assert.equal(await page.locator('.app-shell').evaluate(node=>getComputedStyle(node).display),'none','desktop: 인쇄에는 앱 화면이 섞이면 안 됩니다.');
+        await page.locator('#rosterPrintArea').screenshot({path:path.join(outputDir,'desktop-roster-print-6.png')});
+        await page.emulateMedia({media:'screen'});
+        await page.evaluate(()=>window.dispatchEvent(new Event('afterprint')));
+        assert.equal(await page.evaluate(()=>document.body.classList.contains('roster-printing')),false,'desktop: 인쇄 완료 뒤 상태를 정리해야 합니다.');
+        assert.equal(await page.locator('#btnRosterPrint').isEnabled(),true,'desktop: 인쇄 완료 뒤 버튼을 복구해야 합니다.');
+      }
       const overflow=await page.evaluate(()=>({body:document.body.scrollWidth-document.body.clientWidth,html:document.documentElement.scrollWidth-document.documentElement.clientWidth}));
       assert.ok(overflow.body<=1&&overflow.html<=1,`${viewport.name}: 가로 넘침 ${JSON.stringify(overflow)}`);
       assert.deepEqual(errors,[],`${viewport.name}: 브라우저 오류 ${errors.join(' | ')}`);

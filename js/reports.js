@@ -250,18 +250,53 @@ function rosterOrderEditorKeydown(event){
   if(event.key==='Escape'){event.preventDefault();closeRosterOrderEditor();return;}
   if(event.key!=='Tab')return;const focusable=rosterOrderEditorFocusable();if(!focusable.length)return;const first=focusable[0],last=focusable[focusable.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
 }
+const rosterPrintState={active:false,controls:[],cleanupTimer:0};
+function rosterPrintControlElements(){
+  return ['btnRosterPrint','btnCalendarPrintRoster','btnRosterOrderSavePrint'].map(id=>$(id)).filter(Boolean);
+}
+function beginRosterPrint(){
+  if(rosterPrintState.active)return false;
+  rosterPrintState.active=true;
+  rosterPrintState.controls=rosterPrintControlElements().map(button=>({button,disabled:!!button.disabled}));
+  rosterPrintState.controls.forEach(({button})=>{button.disabled=true;button.setAttribute?.('aria-busy','true');});
+  document.body.classList.add('roster-printing');
+  return true;
+}
+function finishRosterPrint(){
+  if(rosterPrintState.cleanupTimer){clearTimeout(rosterPrintState.cleanupTimer);rosterPrintState.cleanupTimer=0;}
+  document.body.classList.remove('roster-printing');
+  rosterPrintState.controls.forEach(({button,disabled})=>{button.disabled=disabled;button.removeAttribute?.('aria-busy');});
+  rosterPrintState.controls=[];rosterPrintState.active=false;
+}
+function scheduleRosterPrintCleanup(delay=1200){
+  if(!rosterPrintState.active)return;
+  if(rosterPrintState.cleanupTimer)clearTimeout(rosterPrintState.cleanupTimer);
+  const schedule=typeof setTimeout==='function'?setTimeout:typeof window.setTimeout==='function'?window.setTimeout.bind(window):null;
+  if(!schedule){finishRosterPrint();return;}
+  rosterPrintState.cleanupTimer=schedule(finishRosterPrint,delay);
+}
 function openRosterPrint(){
+  if(rosterPrintState.active)return false;
   const dateStr=$('rosterDate').value;
   if(!dateStr){ alert('명단표를 뽑을 면접 날짜를 먼저 선택해주세요.'); return false; }
   const list=rosterApplicantsOn(dateStr);
   if(!list.length && !confirm('선택하신 날짜에 면접예정 상태인 지원자가 없습니다. 빈 양식으로 출력할까요?')) return false;
-  $('rosterPrintArea').innerHTML=buildRosterHtml(dateStr);
-  document.body.classList.add('roster-printing');
-  // v10.11.1: innerHTML 반영 직후 바로 print()를 부르면 브라우저가 아직 화면을
-  // 다 그리기 전이라 미리보기가 흰 화면으로 뜨는 경우가 있어, 두 번의 화면
-  // 갱신(requestAnimationFrame)을 기다린 뒤 인쇄를 실행하도록 안전하게 처리.
-  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ window.print(); }); });
-  return true;
+  const printArea=$('rosterPrintArea');
+  printArea.innerHTML=buildRosterHtml(dateStr);
+  if(!beginRosterPrint())return false;
+  try{
+    // 화면에서는 보이지 않되 display:block 상태로 먼저 배치해, 인쇄 미리보기가
+    // 열리는 순간 모든 페이지를 한꺼번에 계산하며 멈추는 문제를 방지한다.
+    void printArea.offsetHeight;
+    window.print();
+    if(rosterPrintState.active)scheduleRosterPrintCleanup();
+    return true;
+  }catch(error){
+    finishRosterPrint();
+    console.error('면접 명단표 인쇄 호출 실패',error);
+    alert('인쇄 창을 열지 못했습니다. 브라우저를 새로고침한 뒤 다시 시도해주세요.');
+    return false;
+  }
 }
 function openRosterPrintFromOrderEditor(){
   if(!rosterOrderEditorState.open||!rosterOrderEditorState.rows.length||!rosterOrderEditorCanWrite())return false;
@@ -271,7 +306,8 @@ function openRosterPrintFromOrderEditor(){
   closeRosterOrderEditor({force:true,restoreFocus:false});
   return openRosterPrint();
 }
-window.addEventListener('afterprint', ()=>{ document.body.classList.remove('roster-printing'); });
+window.addEventListener('afterprint',finishRosterPrint);
+window.addEventListener('focus',()=>scheduleRosterPrintCleanup(250));
 bind('btnRosterPrint','click', openRosterPrint);
 bind('btnRosterOrderEdit','click',()=>openRosterOrderEditor());
 bind('btnRosterOrderClose','click',()=>closeRosterOrderEditor());
@@ -322,5 +358,5 @@ bind('btnCalendarPrintRoster','click',()=>{ if(!selectedCalendarDate){ alert('�
 window.erpRosterOrderEditor={
   open:openRosterOrderEditor,openFromCalendar:openCalendarRosterOrderEditor,close:closeRosterOrderEditor,move:rosterOrderEditorMove,setPosition:rosterOrderEditorSetPosition,setTime:rosterOrderEditorSetTime,sortByTime:rosterOrderEditorSortByTime,editApplicant:rosterOrderEditorEditApplicant,save:saveRosterOrderEditor,saveAndPrint:openRosterPrintFromOrderEditor,render:renderRosterOrderEditor,state:rosterOrderEditorState,
   orderedApplicants:rosterOrderedApplicants,
-  __test:{rosterDateIsValid,rosterTimeIsValid,rosterOrderValue,rosterStableCompare,rosterTimeCompare,validate:rosterOrderEditorValidate,signature:rosterOrderEditorSignature,rows:rosterOrderEditorRows,targetIds:rosterOrderEditorTargetIds}
+  __test:{rosterDateIsValid,rosterTimeIsValid,rosterOrderValue,rosterStableCompare,rosterTimeCompare,validate:rosterOrderEditorValidate,signature:rosterOrderEditorSignature,rows:rosterOrderEditorRows,targetIds:rosterOrderEditorTargetIds,printState:rosterPrintState,finishPrint:finishRosterPrint}
 };

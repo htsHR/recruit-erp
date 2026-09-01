@@ -716,13 +716,24 @@ tbody tr.applicant-row td{
    v10.11.10: 회사 원본 Word 양식 기준 A4 가로방향으로 복구하고, 원본 여백/컬럼/행 높이에 맞춰 재보정함.
    v12.3.1: PDF·프린터에서 칸 선이 옅게 보이지 않도록 순흑색 공통 인쇄선을 0.50mm로 강화함.
    v12.3.2: Chrome 인쇄에서 collapsed border가 회색으로 합성되는 문제를 막기 위해
-   표 외곽선과 셀의 오른쪽·아래쪽 선을 각각 한 번씩 독립적으로 그리도록 변경함. */
+   표 외곽선과 셀의 오른쪽·아래쪽 선을 각각 한 번씩 독립적으로 그리도록 변경함.
+   v12.5.2: 출력 영역을 화면 밖에서 먼저 배치해 Chrome 인쇄 미리보기 진입 시
+   숨겨진 페이지 전체를 한꺼번에 계산하며 멈추는 현상을 방지함. */
 #rosterPrintArea{
   --roster-print-line-color:#000;
   --roster-print-line-width:0.50mm;
   display:none;
   -webkit-print-color-adjust:exact;
   print-color-adjust:exact;
+}
+body.roster-printing #rosterPrintArea{
+  display:block;
+  position:fixed;
+  left:-10000px;
+  top:0;
+  width:251mm;
+  visibility:hidden;
+  pointer-events:none;
 }
 #rosterPrintArea, #rosterPrintArea *{
   background:#fff !important;
@@ -781,7 +792,7 @@ tbody tr.applicant-row td{
   body.roster-printing{background:#fff !important;min-width:0 !important;}
   body.roster-printing .app-shell{display:none !important;}
   body.roster-printing #loginOverlay{display:none !important;}
-  body.roster-printing #rosterPrintArea{display:block !important;width:100% !important;margin:0 !important;padding:0 !important;}
+  body.roster-printing #rosterPrintArea{display:block !important;position:static !important;left:auto !important;top:auto !important;width:100% !important;margin:0 !important;padding:0 !important;visibility:visible !important;pointer-events:auto !important;}
 }
 
 /* =========================================================
