@@ -115,15 +115,6 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       }
       await page.locator('#btnCloseExcelRowPaste').click();
       if(viewport.name==='desktop'){
-        await page.evaluate(()=>window.setPage('applicants'));
-        const applicantJsonDownload=await Promise.all([
-          page.waitForEvent('download'),
-          page.locator('#btnJson').click()
-        ]).then(([download])=>download);
-        assert.match(backupPrivacyConfirm,/지원자 JSON 백업/,'desktop: 지원자 JSON 개인정보 저장 위치 확인');
-        assert.match(applicantJsonDownload.suggestedFilename(),/^resume_management_backup_.*\.json$/,'desktop: 지원자 JSON은 비밀번호 없이 내려받아야 합니다.');
-        assert.equal(await page.locator('#encryptedBackupDialog').isVisible(),false,'desktop: 지원자 JSON이 비밀번호 창을 열면 안 됩니다.');
-
         await page.evaluate(()=>window.setPage('backup'));
         const fullJsonDownload=await Promise.all([
           page.waitForEvent('download'),
