@@ -104,7 +104,7 @@ function setPage(page){
     form:'새 지원자의 기본정보와 전형정보를 등록합니다.',
     today:'오늘 우선 처리할 채용 업무를 확인합니다.',
     calendar:'면접·입사 일정과 선택 날짜의 평가표를 확인·출력합니다.',
-    backup:'ERP 데이터를 암호화 백업하고 필요할 때 복원합니다.'
+    backup:'ERP 데이터를 JSON으로 내려받고 필요할 때 복원합니다.'
   };
   $('page-title').textContent = titleMap[page] || '홈';
   const breadcrumb=document.querySelector('.topbar-breadcrumb');

@@ -115,7 +115,7 @@ bind('jsonImportMerge','change',event=>{
 bind('btnClearAll','click',()=>{
   if(window.erpPermissions&&!window.erpPermissions.require('applicant.delete'))return;
   if(!applicants.length){alert('삭제할 지원자가 없습니다.');return;}
-  if(!confirm(`현재 브라우저의 지원자 ${applicants.length}명을 모두 삭제할까요?\n\n필요하면 먼저 암호화 백업을 내려받으세요.`))return;
+  if(!confirm(`현재 브라우저의 지원자 ${applicants.length}명을 모두 삭제할까요?\n\n필요하면 먼저 전체 JSON 백업을 내려받으세요.`))return;
   if(prompt('정말 삭제하려면 아래 문구를 그대로 입력하세요.\n\n전체삭제')!=='전체삭제'){alert('삭제가 취소되었습니다.');return;}
   const previous=applicants;
   applicants=[];
