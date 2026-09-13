@@ -544,7 +544,7 @@
       canonical.warnings.unshift('이 파일은 암호화되지 않은 이전 백업입니다. 안전한 저장 위치에서만 사용하세요.');
       inspected={file,parsed,canonical};renderInspection();
       recordHistory('백업 파일 검사',`${file.name} · ${canonical.fileType?.label||canonical.included.map(k=>datasetInfo(k).label).join(', ')} · ${canonical.valid?'적용 가능':'적용 불가'}`);
-      recordAudit('restore','레거시 평문 백업 파일 검사',{encrypted:false,fileType:canonical.fileType?.kind||'unknown',datasets:canonical.included,counts:canonical.counts,success:canonical.valid});
+      recordAudit('restore','JSON 백업 파일 검사',{encrypted:false,fileType:canonical.fileType?.kind||'unknown',datasets:canonical.included,counts:canonical.counts,success:canonical.valid});
     }catch(err){inspected=null;renderInspection();alert(`백업 파일 검사 실패\n\n${err.message||err}`);}
   }
   function inspectDecryptedFile(file,parsed,password){

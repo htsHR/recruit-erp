@@ -11,6 +11,7 @@ const ui=read('js/encrypted-backup-ui.js');
 const center=read('js/backup-center.js');
 const applicants=read('js/applicants.js');
 const applicantTools=read('js/applicant-tools.js');
+const bindings=read('js/app-bindings.js');
 
 assert.doesNotMatch(ui,/panel\.id='bcEncryptedPanel'/,'암호화 다운로드 패널을 다시 만들면 안 됩니다.');
 assert.doesNotMatch(ui,/openDialog\(\{kind:'export'/,'다운로드가 비밀번호 대화상자를 열면 안 됩니다.');
@@ -18,6 +19,9 @@ assert.match(ui,/erpBackupCenter\?\.exportPlain\?\.\(type\)/,'백업 다운로�
 assert.match(center,/exportPlain:\(type='full'\)=>exportBackup\(type\)/,'전체·부분 JSON 직접 다운로드 API가 있어야 합니다.');
 assert.match(applicants,/safetyBackup\('엑셀 여러 행 신규 등록·기존 지원자 변경 직전'\)/,'엑셀 일괄 등록 직전 JSON 안전백업은 유지해야 합니다.');
 assert.match(applicantTools,/function jsonBackup\(\)[\s\S]*resume_management_backup_[^\n]+\.json/,'지원자 JSON 백업은 직접 JSON 파일을 내려받아야 합니다.');
+assert.match(applicants,/backup:'ERP 데이터를 JSON으로 내려받고 필요할 때 복원합니다\.'/,'백업 화면 설명도 일반 JSON 흐름을 안내해야 합니다.');
+assert.match(bindings,/필요하면 먼저 전체 JSON 백업을 내려받으세요/,'전체 삭제 전 안내도 일반 JSON 백업을 가리켜야 합니다.');
+assert.doesNotMatch(bindings,/먼저 암호화 백업을 내려받으세요/,'일반 다운로드 안내에 예전 암호화 백업 문구가 남으면 안 됩니다.');
 
 const exported=[];
 const context={
