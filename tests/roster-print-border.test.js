@@ -22,6 +22,8 @@ assert.match(rosterCss,/\.roster-name-head-divider\{[^}]*border-top:var\(--roste
 assert.match(rosterCss,/\.roster-oath-box\{[^}]*border:var\(--roster-print-line-width\) solid var\(--roster-print-line-color\);/);
 assert.doesNotMatch(rosterCss,/border(?:-top)?:1px solid/,'면접표 인쇄선에 화면용 1px 선이 남으면 안 됩니다.');
 assert.doesNotMatch(rosterCss,/border(?:-top)?:[^;]*(?:rgba?\(|#[1-9a-f][0-9a-f]{2,5})/i,'면접표 인쇄선에 회색·알파 색상을 사용하면 안 됩니다.');
+assert.match(rosterCss,/\.roster-page\{[^}]*page-break-after:always/,'평가표 페이지는 인쇄 페이지 단위로 분리해야 합니다.');
+assert.match(rosterCss,/\.roster-page:last-child\{[^}]*page-break-after:auto/,'마지막 평가표 뒤에 빈 인쇄 페이지가 생기면 안 됩니다.');
 assert.match(rosterCss,/@page\{ size:A4 landscape; margin:6mm 23mm 7mm 23mm; \}/);
 
 const context={

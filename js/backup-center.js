@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='12.5.2';
+  const BC_VERSION='12.5.3';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
@@ -174,7 +174,7 @@
       const keys=type==='full'?DATASETS.map(d=>d.key):[type];
       const pack=packageFor(keys,reason);
       downloadFile(fileName(type),JSON.stringify(pack,null,2));
-      recordAudit('export','레거시 평문 백업 다운로드 요청',{encrypted:false,backupType:type,datasets:keys,counts:pack.counts,success:true});
+      recordAudit('export','JSON 백업 다운로드 요청',{encrypted:false,backupType:type,datasets:keys,counts:pack.counts,success:true});
       if(type==='full'){
         localStorage.setItem(BC_LAST_FULL_KEY,pack.createdAt);
         localStorage.setItem('recruit_erp_last_backup_date',pack.createdAt.slice(0,10));
@@ -188,7 +188,7 @@
       return pack;
     }catch(err){
       console.error('Backup export error',err);
-      recordAudit('export','레거시 평문 백업 생성 실패',{encrypted:false,backupType:type,success:false});
+      recordAudit('export','JSON 백업 생성 실패',{encrypted:false,backupType:type,success:false});
       alert(`백업 파일 생성 중 오류가 발생했습니다.\n\n${err.message||err}`);
       return null;
     }
@@ -597,15 +597,15 @@
     if(notice){
       notice.className=`backup-mode-notice ${home?'home':'company'}`;
       notice.innerHTML=home
-        ? '<strong>집 개발·복원 모드</strong><span>암호화 백업을 복호화·검사·비교한 뒤 이 브라우저에 적용합니다.</span>'
-        : '<strong>회사 로컬 운영 모드</strong><span>업로드·검사·복원 코드는 차단됩니다. 퇴근 전 점검 후 암호화 전체 백업을 내려받으세요.</span>';
+        ? '<strong>집 개발·복원 모드</strong><span>JSON은 바로 검사하고, 기존 암호화 백업은 비밀번호로 연 뒤 이 브라우저에 적용합니다.</span>'
+        : '<strong>회사 로컬 운영 모드</strong><span>업로드·검사·복원 코드는 차단됩니다. 퇴근 전 비밀번호 없이 전체 JSON을 내려받으세요.</span>';
     }
     const title=bcEl('bcCompanyTitle');const desc=bcEl('bcCompanyDescription');const exportTitle=bcEl('bcExportTitle');const exportDesc=bcEl('bcExportDescription');const exportBtn=bcEl('bcExportFull');
-    if(title)title.textContent=home?'백업 점검 · 이전 평문 호환':'퇴근 전 백업 점검 · 이전 평문 호환';
-    if(desc)desc.textContent=home?'암호화 백업을 우선 사용하고, 이전 업무에 평문 JSON이 꼭 필요할 때만 고급 메뉴를 여세요.':'업무 종료 전 상태를 점검하세요. 평문 JSON은 이전 업무 호환이 꼭 필요한 경우에만 사용합니다.';
-    if(exportTitle)exportTitle.textContent='레거시 ERP 전체 평문 백업';
-    if(exportDesc)exportDesc.textContent='파일을 열면 개인정보를 읽을 수 있습니다. 암호화 백업을 사용할 수 없는 이전 업무 호환에만 제한적으로 사용하세요.';
-    if(exportBtn)exportBtn.textContent='레거시 전체 JSON 다운로드';
+    if(title)title.textContent=home?'백업 점검 · JSON 다운로드':'퇴근 전 백업 점검 · JSON 다운로드';
+    if(desc)desc.textContent=home?'전체 또는 지원자 JSON을 비밀번호 없이 바로 내려받을 수 있습니다.':'업무 종료 전 상태를 점검하고 전체 JSON을 비밀번호 없이 내려받으세요.';
+    if(exportTitle)exportTitle.textContent='ERP 전체 JSON 백업';
+    if(exportDesc)exportDesc.textContent='현재 지원자·일정과 이전 버전의 보존 데이터를 함께 담습니다.';
+    if(exportBtn)exportBtn.textContent='ERP 전체 JSON 다운로드';
     if(!home){clearInspection();}
   }
 
@@ -656,7 +656,7 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 
   window.erpBackupCenter={
-    exportFull:()=>exportBackup('full'),exportEncrypted:exportEncryptedBackup,safetyBackup:(reason='manual safety backup')=>backupCurrentBeforeChange(reason),inspectFile,inspectDecryptedFile,clearInspection,recordAudit,runPreflight,version:BC_VERSION,
+    exportFull:()=>exportBackup('full'),exportPlain:(type='full')=>exportBackup(type),exportEncrypted:exportEncryptedBackup,safetyBackup:(reason='manual safety backup')=>backupCurrentBeforeChange(reason),inspectFile,inspectDecryptedFile,clearInspection,recordAudit,runPreflight,version:BC_VERSION,
     getStatus:()=>({environment:environment(),changes:changesSinceBackup(),inspection:inspected&&inspected.canonical}),
     __test:{canonicalize,classifyJsonPayload,datasetDiff,snapshotOf,compareFingerprints,packageFor,importRisks,encryptedFileName,normalizeRows}
   };
