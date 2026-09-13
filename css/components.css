@@ -743,7 +743,8 @@ body.roster-printing #rosterPrintArea{
   -webkit-print-color-adjust:exact;
   print-color-adjust:exact;
 }
-.roster-page{padding:0;page-break-after:always;width:100%;box-sizing:border-box;}
+.roster-page{padding:0;break-after:page;page-break-after:always;width:100%;box-sizing:border-box;}
+.roster-page:last-child{break-after:auto;page-break-after:auto;}
 .roster-company{margin:0 0 3px;font-size:12px;line-height:1.15;text-align:left;font-weight:400;text-decoration:underline;}
 .roster-title{margin:0 0 7px;font-size:18px;line-height:1.2;text-align:center;font-weight:600;}
 .roster-oath-box{display:flex;align-items:stretch;width:100%;margin:0 0 7px;border:var(--roster-print-line-width) solid var(--roster-print-line-color);box-sizing:border-box;min-height:88px;}
