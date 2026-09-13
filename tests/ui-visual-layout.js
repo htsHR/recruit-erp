@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.5.2');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.5.3');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -48,10 +48,14 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       });
       const errors=[];
       let rosterPrivacyConfirm='';
+      let backupPrivacyConfirm='';
+      let excelBatchConfirm='';
       page.on('pageerror',error=>errors.push(`pageerror: ${error.message}`));
       page.on('console',message=>{if(message.type()==='error')errors.push(`console: ${message.text()}`);});
       page.on('dialog',dialog=>{
         if(/지원자 명단 인쇄/.test(dialog.message())){rosterPrivacyConfirm=dialog.message();return dialog.accept();}
+        if(/JSON 백업/.test(dialog.message())){backupPrivacyConfirm=dialog.message();return dialog.accept();}
+        if(/엑셀 붙여넣기 내용을 적용할까요/.test(dialog.message())){excelBatchConfirm=dialog.message();return dialog.accept();}
         return dialog.dismiss();
       });
       await page.goto(baseUrl,{waitUntil:'networkidle'});
@@ -100,8 +104,43 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       await page.locator('#btnParseExcelRow').click();
       assert.equal(await page.locator('#excelPasteBatch').isVisible(),true,`${viewport.name}: 여러 행 검토 화면 표시`);
       assert.match(await page.locator('#excelBatchCounts').innerText(),/신규\s*2/,`${viewport.name}: 여러 행 신규 분류`);
+      if(viewport.name==='desktop'){
+        const excelSafetyDownload=await Promise.all([
+          page.waitForEvent('download'),
+          page.locator('#btnRegisterExcelBatch').click()
+        ]).then(([download])=>download);
+        assert.match(excelBatchConfirm,/적용 직전 전체 ERP 안전백업 파일을 생성합니다/,'desktop: 엑셀 적용 전 안전백업 안내');
+        assert.match(excelSafetyDownload.suggestedFilename(),/^recruit_erp_safety_before_.*\.json$/,'desktop: 엑셀 등록 안전백업은 비밀번호 없는 JSON이어야 합니다.');
+        assert.equal(await page.locator('#encryptedBackupDialog').isVisible(),false,'desktop: 엑셀 등록이 비밀번호 창을 열면 안 됩니다.');
+      }
       await page.locator('#btnCloseExcelRowPaste').click();
       if(viewport.name==='desktop'){
+        await page.evaluate(()=>window.setPage('applicants'));
+        const applicantJsonDownload=await Promise.all([
+          page.waitForEvent('download'),
+          page.locator('#btnJson').click()
+        ]).then(([download])=>download);
+        assert.match(backupPrivacyConfirm,/지원자 JSON 백업/,'desktop: 지원자 JSON 개인정보 저장 위치 확인');
+        assert.match(applicantJsonDownload.suggestedFilename(),/^resume_management_backup_.*\.json$/,'desktop: 지원자 JSON은 비밀번호 없이 내려받아야 합니다.');
+        assert.equal(await page.locator('#encryptedBackupDialog').isVisible(),false,'desktop: 지원자 JSON이 비밀번호 창을 열면 안 됩니다.');
+
+        await page.evaluate(()=>window.setPage('backup'));
+        const fullJsonDownload=await Promise.all([
+          page.waitForEvent('download'),
+          page.locator('#bcExportFull').click()
+        ]).then(([download])=>download);
+        assert.match(backupPrivacyConfirm,/ERP 전체 JSON 백업/,'desktop: 전체 JSON 개인정보 저장 위치 확인');
+        assert.match(fullJsonDownload.suggestedFilename(),/^recruit_erp_full_backup_.*\.json$/,'desktop: 전체 백업은 비밀번호 없이 JSON으로 내려받아야 합니다.');
+        assert.equal(await page.locator('#encryptedBackupDialog').isVisible(),false,'desktop: 전체 백업이 비밀번호 창을 열면 안 됩니다.');
+
+        const applicantBackupDownload=await Promise.all([
+          page.waitForEvent('download'),
+          page.locator('#bcExport-applicants').click()
+        ]).then(([download])=>download);
+        assert.match(backupPrivacyConfirm,/ERP 부분 JSON 백업/,'desktop: 부분 JSON 개인정보 저장 위치 확인');
+        assert.match(applicantBackupDownload.suggestedFilename(),/^recruit_erp_applicants_.*\.json$/,'desktop: 지원자 부분 백업은 비밀번호 없이 JSON으로 내려받아야 합니다.');
+        assert.equal(await page.locator('#encryptedBackupDialog').isVisible(),false,'desktop: 지원자 부분 백업이 비밀번호 창을 열면 안 됩니다.');
+
         const rosterDate='2099-09-03';
         await page.evaluate(date=>{
           window.__rosterPrintCalls=0;
