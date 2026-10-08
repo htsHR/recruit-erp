@@ -7,30 +7,30 @@
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
   const COLUMNS=[
-    {key:'no',label:'NO',type:'number',width:8},
-    {key:'employeeNo',label:'사원번호',width:14},
-    {key:'contactStatus',label:'연락상태',width:14},
-    {key:'hireDate',label:'입사날짜',type:'date',width:14},
-    {key:'workplace',label:'근무지',width:14},
-    {key:'pmtc',label:'PMTC 입과 대상',width:21},
-    {key:'gender',label:'성별',width:9},
-    {key:'group',label:'그룹',width:14},
-    {key:'product',label:'제품',width:14},
-    {key:'part',label:'파트',width:14},
-    {key:'name',label:'성명',width:12},
-    {key:'grade',label:'직급',width:9},
-    {key:'residentNumber',label:'주민등록번호',width:19},
-    {key:'birthDate',label:'생년월일',type:'date',width:14},
-    {key:'age',label:'(만)나이',type:'number',width:10},
-    {key:'email',label:'이메일',width:28},
-    {key:'education',label:'최종학력',width:13},
-    {key:'school',label:'학교',width:18},
-    {key:'major',label:'학과',width:18},
-    {key:'phone',label:'연락처',width:18},
-    {key:'region',label:'지역(시)',width:14},
-    {key:'commute',label:'통근방법',width:14},
-    {key:'memo',label:'비고',width:48}
-  ];
+    {key:'no',label:'NO',type:'number',width:10.25},
+    {key:'employeeNo',label:'사원번호',width:14.25},
+    {key:'contactStatus',label:'연락상태',width:14.25},
+    {key:'hireDate',label:'입사날짜',type:'date',width:14.25},
+    {key:'workplace',label:'근무지',width:12.625},
+    {key:'pmtc',label:'PMTC 입과 대상',width:20.25},
+    {key:'gender',label:'성별',width:11},
+    {key:'group',label:'그룹',width:11},
+    {key:'product',label:'제품',width:11},
+    {key:'part',label:'파트',width:11},
+    {key:'name',label:'성명',exportLabel:'성  명',width:6.875},
+    {key:'grade',label:'직급',exportLabel:'직 급',width:5.875},
+    {key:'residentNumber',label:'주민등록번호',width:15},
+    {key:'birthDate',label:'생년월일',type:'date',width:12.25},
+    {key:'age',label:'(만)나이',type:'number',width:8},
+    {key:'email',label:'이메일',width:23.375},
+    {key:'education',label:'최종학력',width:8.5},
+    {key:'school',label:'학교',width:13.75},
+    {key:'major',label:'학과',width:15.5},
+    {key:'phone',label:'연락처',width:13.75},
+    {key:'region',label:'지역(시)',width:8},
+    {key:'commute',label:'통근방법',width:8.5},
+    {key:'memo',label:'비고',width:36.875}
+  ].map((column,templateIndex)=>({...column,templateIndex}));
   const PRESETS=[
     {id:'assignment',name:'부서배정',excluded:['residentNumber','grade'],removeMeasurements:false},
     {id:'health-support',name:'안전보건·지원팀',excluded:['grade'],removeMeasurements:false},
@@ -162,6 +162,7 @@
     const dates=new Set(rows.map(row=>root.erpLocalXlsx?.dateValue(row[3])?.iso).filter(Boolean));
     return dates.size===1?[...dates][0]:typeof today==='function'?today():new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Seoul'});
   }
+  function fileName(rows){return `입사대기자명단(${fileDate(rows).slice(2).replaceAll('-','.')}).xlsx`;}
   function download(profileId){
     if(!requirePermission('export.standard')||state.pasteBlocked)return false;
     const rows=currentRows();if(!rows.length){feedback('명단을 먼저 붙여넣어주세요.',true);return false;}
@@ -170,7 +171,7 @@
     try{
       const prepared=buildExport(rows,profile),blob=root.erpLocalXlsx.blob(prepared.columns,prepared.rows);
       const url=root.URL.createObjectURL(blob),link=root.document.createElement('a');
-      link.href=url;link.download=`입사대기자명단_${fileDate(rows)}_${profile.name.replace(/[\\/:*?"<>|]/g,'_')}.xlsx`;root.document.body.appendChild(link);
+      link.href=url;link.download=fileName(rows);root.document.body.appendChild(link);
       try{link.click();}finally{link.remove();root.setTimeout(()=>root.URL.revokeObjectURL(url),30000);}
       feedback(`${profile.name} 파일을 받았어요.`);return true;
     }catch{feedback('파일을 만들지 못했어요. 다시 시도해주세요.',true);return false;}
@@ -223,13 +224,16 @@
     if(!rows.length)$('hwPastePanel').open=true;
     const maxPage=Math.max(0,Math.ceil(rows.length/100)-1);state.page=Math.min(state.page,maxPage);
     const pageRows=rows.slice(state.page*100,state.page*100+100);
-    $('hwTableBody').innerHTML=pageRows.map(row=>`<tr>${COLUMNS.map((column,index)=>`<td class="${index===NAME_INDEX?'hw-name':index===RESIDENT_INDEX?'hw-sensitive':''}">${index===RESIDENT_INDEX?(row[index]?'입력됨':''):escapeHtml(row[index])}</td>`).join('')}</tr>`).join('');
+    const context=root.erpLocalXlsx.formatContext(rows);
+    $('hwTableBody').innerHTML=pageRows.map((row,rowIndex)=>`<tr>${COLUMNS.map((column,index)=>`<td style="${escapeHtml(root.erpLocalXlsx.appearance(column,state.page*100+rowIndex,row[index],context))}" class="${index===RESIDENT_INDEX?'hw-sensitive':''}">${index===RESIDENT_INDEX?(row[index]?'입력됨':''):escapeHtml(root.erpLocalXlsx.displayText(column,row[index]))}</td>`).join('')}</tr>`).join('');
     $('hwPagination').hidden=rows.length<=100;$('hwPageLabel').textContent=`${state.page+1} / ${maxPage+1}`;$('hwPreviousPage').disabled=state.page===0;$('hwNextPage').disabled=state.page===maxPage;
     renderActions();
   }
   function init(){
     if(!$('hireWaiting'))return;
-    $('hwTableHead').innerHTML=`<tr>${COLUMNS.map(column=>`<th scope="col">${escapeHtml(column.label)}</th>`).join('')}</tr>`;
+    $('hwTableColumns').innerHTML=COLUMNS.map(column=>`<col style="width:${Math.floor(root.erpLocalXlsx.columnWidth(column)*7+5)}px">`).join('');
+    $('hwTableColumns').parentElement.style.width=`${COLUMNS.reduce((total,column)=>total+Math.floor(root.erpLocalXlsx.columnWidth(column)*7+5),0)}px`;
+    $('hwTableHead').innerHTML=`<tr>${COLUMNS.map(column=>`<th scope="col" style="${escapeHtml(root.erpLocalXlsx.appearance(column))}">${escapeHtml(column.exportLabel||column.label)}</th>`).join('')}</tr>`;
     $('hwColumnOptions').innerHTML=COLUMNS.map(column=>`<label><input type="checkbox" value="${escapeHtml(column.key)}" checked>${escapeHtml(column.label)}</label>`).join('');
     $('hwPasteRaw').addEventListener('paste',event=>{if(!allowed('applicant.write')){event.preventDefault();return;}const raw=event.clipboardData?.getData('text/plain');if(raw){event.preventDefault();if(!stagePaste(raw)){$('hwPasteRaw').value=raw;$('hwPastePanel').open=true;}}});
     $('hwPasteRaw').addEventListener('input',()=>{state.pasteBlocked=!!$('hwPasteRaw').value;feedback(state.pasteBlocked?'표 불러오기를 눌러주세요.':'');renderActions();});
@@ -248,7 +252,7 @@
     if(currentRows().length)$('hwPastePanel').open=false;
     state.ready=true;render();
   }
-  const api={COLUMNS,PRESETS,parsePaste,removeBodyMeasurements,buildExport,stagePaste,saveRoster,download,render,isDirty:()=>!!state.stage||state.pasteBlocked,openDepartment,saveDepartment,deleteDepartment};
+  const api={COLUMNS,PRESETS,parsePaste,removeBodyMeasurements,buildExport,fileName,stagePaste,saveRoster,download,render,isDirty:()=>!!state.stage||state.pasteBlocked,openDepartment,saveDepartment,deleteDepartment};
   if(root.document)Promise.resolve(root.erpRuntimeReady).then(result=>{if(result?.ok)init();});
   return api;
 });

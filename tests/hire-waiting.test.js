@@ -25,6 +25,20 @@ assert.throws(()=>waiting.parsePaste('가상\t01000000000'),/23열/);
 assert.throws(()=>waiting.parsePaste('성명\t비고\n가상\t"닫히지 않은 셀'),/따옴표/);
 
 const snapshot=JSON.stringify(rows);
+function unzip(bytes){
+  const buffer=Buffer.from(bytes),files=new Map();let offset=0;
+  while(buffer.readUInt32LE(offset)===0x04034b50){
+    const size=buffer.readUInt32LE(offset+18),nameLength=buffer.readUInt16LE(offset+26),extraLength=buffer.readUInt16LE(offset+28),start=offset+30+nameLength+extraLength;
+    assert.equal(buffer.readUInt16LE(offset+8),0);
+    files.set(buffer.subarray(offset+30,offset+30+nameLength).toString(),buffer.subarray(start,start+size).toString());offset=start+size;
+  }
+  return files;
+}
+assert.equal(waiting.fileName(rows),'입사대기자명단(99.10.12).xlsx');
+const filenameRows=rows.map(row=>row.slice());filenameRows.forEach(row=>row[3]='2026.10.12');
+assert.equal(waiting.fileName(filenameRows),'입사대기자명단(26.10.12).xlsx');
+const sourceWidths=[10.25,14.25,14.25,14.25,12.625,20.25,11,11,11,11,6.875,5.875,15,12.25,8,23.375,8.5,13.75,15.5,13.75,8,8.5,36.875];
+assert.deepEqual(waiting.COLUMNS.map(column=>column.width),sourceWidths,'23개 열 너비는 제공된 양식과 동일');
 for(const preset of waiting.PRESETS){
   const result=waiting.buildExport(rows,preset),keys=result.columns.map(column=>column.key);
   assert.equal(keys.includes('grade'),false,`${preset.name}: 직급 제외`);
@@ -34,6 +48,27 @@ for(const preset of waiting.PRESETS){
   assert.equal(memo,preset.id==='final'?'기숙사 희망 / 지원팀 확인':synthetic[0][22]);
   assert.equal(result.rows[1][keys.indexOf('memo')],synthetic[1][22],'날짜·연락 기록·줄바꿈 등 다른 비고는 그대로 보존');
   const bytes=xlsx.bytes(result.columns,result.rows);
+  const files=unzip(bytes),sheet=files.get('xl/worksheets/sheet1.xml'),styles=files.get('xl/styles.xml');
+  assert.match(sheet,/<row r="1" ht="27\.75" customHeight="1">/,'원본 제목행 높이');
+  assert.match(sheet,/<row r="2" ht="30" customHeight="1">/,'원본 본문행 높이');
+  assert.match(sheet,/<pageSetup paperSize="9" orientation="portrait"\/>/,'원본 A4 세로 설정');
+  assert.match(sheet,/left="0\.7" right="0\.7" top="0\.75" bottom="0\.75"/,'원본 페이지 여백');
+  assert.match(styles,/rgb="FFFFC000"/,'원본 주황색 제목');
+  assert.match(styles,/rgb="FF92D050"/,'원본 초록색 연락상태');
+  assert.match(styles,/style="hair"/,'원본 가는 셀 테두리');
+  assert.match(styles,/<name val="맑은 고딕"\/>/,'원본 글꼴');
+  assert.match(styles,/<b\/><sz val="10"\/>/,'원본 제목 글씨 크기 및 굵기');
+  assert.ok(files.has('xl/theme/theme1.xml'),'원본 테마와 색조를 유지');
+  assert.doesNotMatch(sheet,/<pane|state="hidden"|hidden="1"/,'원본에 없는 고정행과 숨긴 열을 추가하지 않음');
+  result.columns.forEach((column,index)=>{
+    assert.match(sheet,new RegExp(`<col min="${index+1}" max="${index+1}" width="${sourceWidths[column.templateIndex]}" customWidth="1"/>`),'열 제거 후에도 각 필드의 원본 너비 유지');
+  });
+  const nameCol=String.fromCharCode(65+keys.indexOf('name'));
+  assert.match(sheet,new RegExp(`<c r="${nameCol}3" s="23"`),'원본 두 번째 명단행의 노란색 성명 강조 유지');
+  assert.match(sheet,/<c r="D2" s="9"><v>/,'입사날짜는 원본 날짜 표시 서식을 사용하는 숫자 셀');
+  for(const ref of sheet.matchAll(/sqref="([^"]+)"/g))for(const range of ref[1].split(' ')){
+    for(const address of range.split(':')){assert.ok(address.charCodeAt(0)-64<=result.columns.length,'조건부 서식은 실제 다운로드 열 범위 안에만 적용');assert.ok(Number(address.match(/\d+/)[0])<=3,'조건부 서식의 빈 백만 행을 복사하지 않음');}
+  }
   assert.equal(Buffer.from(bytes).readUInt32LE(0),0x04034b50,'다운로드는 실제 XLSX ZIP 패키지');
   assert.equal(Buffer.from(bytes).includes(Buffer.from('주민등록번호')),preset.id==='health-support','제외한 열은 패키지에 실제로 포함되지 않아야 함');
   assert.equal(Buffer.from(bytes).includes(Buffer.from('가상직급')),false);
@@ -44,6 +79,11 @@ for(const preset of waiting.PRESETS){
   assert.equal(Buffer.from(bytes).includes(Buffer.from('state="hidden"')),false,'숨긴 시트로 제외 정보를 남기지 않음');
 }
 assert.equal(JSON.stringify(rows),snapshot,'모든 다운로드 준비는 원본을 변경하지 않음');
+const statusRow=rows[0].slice();statusRow[2]='대기';statusRow[6]='여자';
+const appearanceContext=xlsx.formatContext([statusRow]);
+assert.match(xlsx.appearance(waiting.COLUMNS[2],0,statusRow[2],appearanceContext),/background-color:#FFC000/,'연락상태 조건부 색상');
+assert.match(xlsx.appearance(waiting.COLUMNS[6],0,statusRow[6],appearanceContext),/background-color:#C00000/,'성별 조건부 색상');
+assert.equal(xlsx.displayText(waiting.COLUMNS[3],'2026-10-12'),'10월 12일','화면도 원본 입사날짜 표시 사용');
 for(const [input,expected] of [
   ['172.5cm/62.3kg',''],['175㎝ / 80㎏ · 기숙사','기숙사'],['지원팀 확인 / 180CM / 75KG','지원팀 확인'],
   ['기숙사 (180cm / 75kg) 출퇴근','기숙사  출퇴근'],

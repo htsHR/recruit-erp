@@ -10,13 +10,9 @@
   #hireWaiting .hw-paste-content p { margin: 0 0 8px; font-size: 13px; color: #667085; }
   #hireWaiting #hwPasteRaw { width: 100%; min-height: 112px; resize: vertical; font-size: 14px; margin-bottom: 8px; }
   #hireWaiting .hw-table-wrap { max-height: 52vh; overflow: auto; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
-  #hireWaiting .hw-table { width: max-content; min-width: 100%; table-layout: auto; border-collapse: separate; border-spacing: 0; font-size: 14px; }
-  #hireWaiting .hw-table th { position: sticky; top: 0; z-index: 2; background: #f2f4f7; white-space: nowrap; color: #344054; font-weight: 600; padding: 10px 12px; text-align: left; border-bottom: 1px solid #d0d5dd; }
-  #hireWaiting .hw-table td { padding: 9px 12px; border-bottom: 1px solid #eaecf0; white-space: pre-wrap; vertical-align: top; min-width: 90px; max-width: 280px; }
-  #hireWaiting .hw-table td:first-child { min-width: 52px; }
-  #hireWaiting .hw-table .hw-name { font-weight: 600; }
-  #hireWaiting .hw-table .hw-sensitive { color: #667085; }
-  #hireWaiting .hw-table tr:last-child td { border-bottom: 0; }
+  #hireWaiting .hw-table { table-layout: fixed !important; border-collapse: separate; border-spacing: 0; color: #000; }
+  #hireWaiting .hw-table th { position: sticky; top: 0; z-index: 2; height: 37px !important; padding: 2px !important; vertical-align: middle; }
+  #hireWaiting .hw-table td { height: 40px !important; padding: 2px !important; vertical-align: middle; overflow: hidden; text-overflow: clip; }
   #hireWaiting .hw-pagination { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 12px 0; font-size: 13px; }
   #hireWaiting .hw-download-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; padding: 16px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
   #hireWaiting #hwDownloadButtons { display: flex; gap: 8px; flex-wrap: wrap; }
