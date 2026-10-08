@@ -91,13 +91,13 @@ function countText(n){ return `${n}명`; }
 function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 
 function setPage(page){
-  const corePages=new Set(['home','applicants','form','today','calendar','backup']);
+  const corePages=new Set(['home','applicants','form','today','hireWaiting','calendar','backup']);
   if(!corePages.has(page))page='home';
   if(page!=='applicants'&&applicantQuickDetailIsOpen()&&closeApplicantQuickDetail({restoreFocus:false})===false)return false;
   document.body.dataset.activePage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'오늘 업무',applicants:'지원자',form:'신규 지원자 등록',today:'오늘 처리 목록',calendar:'일정·평가표',backup:'백업'};
+  const titleMap = {home:'오늘 업무',applicants:'지원자',form:'신규 지원자 등록',today:'오늘 처리 목록',hireWaiting:'입사대기',calendar:'일정·평가표',backup:'백업'};
   const descMap = {
     home:'오늘 처리할 일과 주요 현황을 한곳에서 확인합니다.',
     applicants:'지원자 진행상태와 면접·입사 일정을 관리합니다.',

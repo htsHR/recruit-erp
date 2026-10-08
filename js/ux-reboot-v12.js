@@ -2,14 +2,14 @@
 (function(root){
   'use strict';
 
-  const NAV_GROUPS=[{key:'primary',label:'핵심 업무',pages:['home','applicants','calendar','backup'],collapsible:false}];
+  const NAV_GROUPS=[{key:'primary',label:'핵심 업무',pages:['home','applicants','hireWaiting','calendar','backup'],collapsible:false}];
   const PAGE_ROUTES={
-    home:'#/today',today:'#/today/tasks',applicants:'#/applicants',form:'#/applicants/new',calendar:'#/calendar',backup:'#/backup'
+    home:'#/today',today:'#/today/tasks',applicants:'#/applicants',form:'#/applicants/new',hireWaiting:'#/hire-waiting',calendar:'#/calendar',backup:'#/backup'
   };
   const ROUTE_PAGES=Object.fromEntries(Object.entries(PAGE_ROUTES).map(([page,route])=>[route,page]));
   const routing={index:0,suppress:false,reverting:false,initialized:false,currentPage:'home'};
   const menuPreview={openTimer:0,closeTimer:0};
-  const PAGE_LABELS={home:'오늘 업무',today:'오늘 처리 목록',applicants:'지원자',form:'지원자 등록',calendar:'일정·평가표',backup:'백업'};
+  const PAGE_LABELS={home:'오늘 업무',today:'오늘 처리 목록',applicants:'지원자',form:'지원자 등록',hireWaiting:'입사대기',calendar:'일정·평가표',backup:'백업'};
 
   const $=id=>root.document.getElementById(id);
   const rows=()=>typeof applicants!=='undefined'&&Array.isArray(applicants)?applicants:[];
@@ -296,7 +296,7 @@
     const worksheetDirty=Boolean(root.erpApplicantWorksheet?.state?.dirty?.size);
     const formDirty=typeof root.erpApplicantFormIsDirty==='function'&&root.erpApplicantFormIsDirty();
     const quickDirty=Boolean(root.erpApplicantQuickDetail?.isDirty?.());
-    return worksheetDirty||formDirty||quickDirty;
+    return worksheetDirty||formDirty||quickDirty||Boolean(root.erpHireWaiting?.isDirty());
   }
   function restoreAfterHistory(targetState){
     const target=resolveRoute(targetState),targetIndex=Number.isFinite(Number(targetState?.erpIndex))?Number(targetState.erpIndex):routing.index;
