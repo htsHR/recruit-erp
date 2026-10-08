@@ -6,7 +6,7 @@
 (function(){
   'use strict';
 
-  const BC_VERSION='12.6.0';
+  const BC_VERSION='12.6.1';
   const BC_FORMAT='recruit-erp-backup';
   const BC_EMPLOYEE_ORG_FORMAT='recruit-erp-employee-org-import';
   const BC_SCHEMA=2;
@@ -184,7 +184,7 @@
       recordHistory(type==='full'?'ERP 전체 백업 다운로드 요청':`${datasetInfo(type)?.label||type} 백업 다운로드 요청`,`${keys.map(k=>`${datasetInfo(k).label} ${pack.counts[k]}건`).join(' · ')} · ${environmentLabel(pack.environment)}`);
       refreshCounts();
       if(type==='full')runPreflight(false);
-      if(typeof uxToast==='function')uxToast(type==='full'?'ERP 전체 JSON 다운로드를 요청했습니다. 저장된 파일을 확인하세요.':'선택 데이터 다운로드를 요청했습니다.');
+      if(typeof uxToast==='function')uxToast('백업 파일 받기를 시작했어요.');
       return pack;
     }catch(err){
       console.error('Backup export error',err);
@@ -385,7 +385,7 @@
     if(!inspected){box.classList.remove('visible');box.innerHTML='';return;}
     const c=inspected.canonical;const rows=comparisonRows(c);const risks=importRisks(c);
     const statusClass=c.errors.length?'error':c.warnings.length?'warn':'ok';
-    const statusTitle=c.routeBlocked?'전용 파일 메뉴가 다릅니다':c.errors.length?'파일 적용 불가':c.warnings.length?'파일 검사 완료 · 확인 필요':'파일 검사 완료';
+    const statusTitle=c.routeBlocked?'다른 종류의 파일입니다':c.errors.length?'복원할 수 없는 파일':c.warnings.length?'확인 후 복원하세요':'복원 가능';
     const messages=[...c.errors,...c.warnings];
     const type=c.fileType||{label:'JSON 파일',summary:'',route:''};
     const compareHtml=c.routeBlocked?`
@@ -394,30 +394,34 @@
         <div><strong>${escHtml(type.label)}</strong><p>${escHtml(type.summary)}</p><span>올바른 위치: ${escHtml(type.route)}</span></div>
       </div>`:`
       ${risks.length?`<div class="backup-risk-list">${risks.map(r=>`<div class="backup-risk ${r.level}"><strong>${r.level==='danger'?'위험':'주의'}</strong><span>${escHtml(r.message)}</span></div>`).join('')}</div>`:''}
-      <div class="backup-compare-wrap"><table class="backup-compare-table backup-compare-detailed"><thead><tr><th>데이터</th><th>현재</th><th>파일</th><th>신규</th><th>변경</th><th>파일에 없음</th></tr></thead><tbody>${rows.map(r=>`<tr><td><strong>${r.label}</strong></td><td>${r.current}건</td><td>${r.has?`${r.next}건`:'—'}</td><td>${r.has?`${r.diff.added}건`:'—'}</td><td>${r.has?`${r.diff.changed}건`:'—'}</td><td>${r.has?`${r.diff.missing}건`:'—'}</td></tr>`).join('')}</tbody></table></div>
-      <div class="backup-apply-explain"><div><strong>병합</strong><span>기존 데이터를 보존하고 신규·최근 수정본을 반영합니다.</span></div><div><strong>전체교체</strong><span>파일에 포함된 데이터 종류만 현재 로컬 데이터와 교체합니다.</span></div><div><strong>전체 ERP 복원</strong><span>네 종류가 모두 들어 있는 전체 백업에서만 가능합니다.</span></div></div>`;
+      <details class="backup-file-details"><summary>자료 비교</summary>
+        <div class="backup-file-summary">
+          <div class="backup-file-meta"><span>백업 일시</span><strong>${escHtml(formatDate(c.meta.createdAt))}</strong></div>
+          <div class="backup-file-meta"><span>파일 크기</span><strong>${formatBytes(inspected.file.size)}</strong></div>
+          <div class="backup-file-meta"><span>버전</span><strong>${escHtml(c.meta.appVersion)}</strong></div>
+        </div>
+        <div class="backup-compare-wrap"><table class="backup-compare-table backup-compare-detailed"><thead><tr><th>자료</th><th>현재</th><th>파일</th><th>추가</th><th>변경</th><th>파일에 없음</th></tr></thead><tbody>${rows.map(r=>`<tr><td><strong>${r.label}</strong></td><td>${r.current}건</td><td>${r.has?`${r.next}건`:'—'}</td><td>${r.has?`${r.diff.added}건`:'—'}</td><td>${r.has?`${r.diff.changed}건`:'—'}</td><td>${r.has?`${r.diff.missing}건`:'—'}</td></tr>`).join('')}</tbody></table></div>
+      </details>`;
     const actionHtml=c.routeBlocked?`
-      <div class="backup-action-bar"><button class="mini" id="bcClearInspection" type="button">파일 선택 취소</button></div>`:`
+      <div class="backup-action-bar"><button class="mini" id="bcClearInspection" type="button">취소</button></div>`:`
       <div class="backup-action-bar">
-        <button class="primary" id="bcMergeApply" type="button" ${c.valid?'':'disabled'}>데이터 병합 가져오기</button>
-        <button class="ghost" id="bcReplaceApply" type="button" ${c.valid?'':'disabled'}>포함 데이터 전체교체</button>
-        <button class="danger" id="bcFullRestore" type="button" ${c.valid&&c.full?'':'disabled'}>전체 ERP 복원</button>
-        <button class="mini" id="bcClearInspection" type="button">파일 선택 취소</button>
-      </div>`;
-    box.innerHTML=`
-      <div class="backup-file-summary">
-        <div class="backup-file-meta"><span>파일명</span><strong>${escHtml(inspected.file.name)}</strong></div>
-        <div class="backup-file-meta"><span>파일 크기</span><strong>${formatBytes(inspected.file.size)}</strong></div>
-        <div class="backup-file-meta backup-file-type"><span>파일 유형</span><strong>${escHtml(type.label)}</strong><small>${escHtml(type.summary||'')}</small></div>
-        <div class="backup-file-meta"><span>백업 버전</span><strong>${escHtml(c.meta.appVersion)}</strong></div>
-        <div class="backup-file-meta"><span>상태값 스키마</span><strong>${c.meta.statusSchemaVersion||0}</strong></div>
-        <div class="backup-file-meta"><span>백업 일시</span><strong>${escHtml(formatDate(c.meta.createdAt))}</strong></div>
-        <div class="backup-file-meta"><span>생성 환경</span><strong>${escHtml(c.meta.environment==='company'?'회사':c.meta.environment==='home'?'집':'확인 불가')}</strong></div>
+        <button class="primary" id="bcMergeApply" type="button" ${c.valid?'':'disabled'}>기존 자료와 합치기</button>
+        <button class="mini" id="bcClearInspection" type="button">취소</button>
       </div>
-      <div class="backup-validation-banner ${statusClass}"><strong>${statusTitle}</strong>${messages.length?`<ul>${messages.map(x=>`<li>${escHtml(x)}</li>`).join('')}</ul>`:'<p>파일 구조·배열·건수·무결성 검사를 통과했습니다.</p>'}</div>
+      <details class="backup-restore-options"><summary>다른 복원 방법</summary>
+        <p>교체·복원하면 기존 자료가 바뀝니다.</p>
+        <div class="backup-action-bar">
+          <button class="ghost" id="bcReplaceApply" type="button" ${c.valid?'':'disabled'}>파일에 있는 자료 교체</button>
+          <button class="danger" id="bcFullRestore" type="button" ${c.valid&&c.full?'':'disabled'}>전체 자료 복원</button>
+        </div>
+      </details>`;
+    const countSummary=c.routeBlocked?'':rows.filter(r=>r.has&&(r.key==='applicants'||r.key==='calendarEvents'||r.next>0)).map(r=>`${r.key==='calendarEvents'?'일정':escHtml(r.label)} ${r.next}건`).join(' · ');
+    box.innerHTML=`
+      <strong class="backup-selected-file">${escHtml(inspected.file.name)}</strong>
+      ${countSummary?`<p class="backup-file-counts">${countSummary}</p>`:''}
+      <div class="backup-validation-banner ${statusClass}"><strong>${statusTitle}</strong>${messages.length?`<ul>${messages.map(x=>`<li>${escHtml(x)}</li>`).join('')}</ul>`:''}</div>
       ${compareHtml}
-      ${actionHtml}
-      <p class="backup-danger-note">${c.routeBlocked?'잘못된 메뉴에서는 병합·전체교체·복원 버튼을 생성하지 않습니다.':'검사 단계에서는 데이터가 바뀌지 않습니다. 적용 직전 현재 ERP 전체 안전 백업 파일을 먼저 다운로드합니다.'}</p>`;
+      ${actionHtml}`;
     box.classList.add('visible');
     bcEl('bcMergeApply')?.addEventListener('click',()=>applyImport('merge'));
     bcEl('bcReplaceApply')?.addEventListener('click',()=>applyImport('replace'));
@@ -541,7 +545,6 @@
     }
     try{
       const text=await file.text();const parsed=window.erpSecurity.parseJson(text,{maxBytes:BC_MAX_FILE_BYTES});const canonical=canonicalize(parsed);
-      canonical.warnings.unshift('이 파일은 암호화되지 않은 이전 백업입니다. 안전한 저장 위치에서만 사용하세요.');
       inspected={file,parsed,canonical};renderInspection();
       recordHistory('백업 파일 검사',`${file.name} · ${canonical.fileType?.label||canonical.included.map(k=>datasetInfo(k).label).join(', ')} · ${canonical.valid?'적용 가능':'적용 불가'}`);
       recordAudit('restore','JSON 백업 파일 검사',{encrypted:false,fileType:canonical.fileType?.kind||'unknown',datasets:canonical.included,counts:canonical.counts,success:canonical.valid});
@@ -581,13 +584,13 @@
     ];
     preflightResult={ready,items,counts,changes,at:new Date().toISOString()};
     renderPreflight();refreshCounts();
-    if(showToast&&typeof uxToast==='function')uxToast(ready?'퇴근 전 백업 점검: 안전 상태입니다.':'퇴근 전 백업 점검: 전체 JSON 백업이 필요합니다.');
+    if(showToast&&typeof uxToast==='function')uxToast(ready?'백업 완료 상태예요.':'백업 상태를 확인하세요.');
     return preflightResult;
   }
   function renderPreflight(){
     const el=bcEl('bcPreflightResult');if(!el)return;
-    if(!preflightResult){el.innerHTML='<div class="backup-preflight-empty">점검 버튼을 눌러 현재 데이터와 백업 상태를 확인하세요.</div>';return;}
-    el.innerHTML=`<div class="backup-preflight-head ${preflightResult.ready?'ready':'need'}"><strong>${preflightResult.ready?'퇴근 가능 · 백업 완료 상태':'백업 또는 확인 필요'}</strong><span>${formatDate(preflightResult.at)}</span></div><div class="backup-preflight-list">${preflightResult.items.map(x=>`<div class="backup-preflight-item ${x.ok?'ok':'warn'}"><span class="backup-preflight-mark">${x.ok?'✓':'!'}</span><strong>${escHtml(x.label)}</strong><small>${escHtml(x.detail)}</small></div>`).join('')}</div>`;
+    if(!preflightResult){el.innerHTML='';return;}
+    el.innerHTML=`<div class="backup-preflight-head ${preflightResult.ready?'ready':'need'}"><strong>${preflightResult.ready?'백업 완료':'백업 또는 확인 필요'}</strong><span>${formatDate(preflightResult.at)}</span></div><div class="backup-preflight-list">${preflightResult.items.map(x=>`<div class="backup-preflight-item ${x.ok?'ok':'warn'}"><span class="backup-preflight-mark">${x.ok?'✓':'!'}</span><strong>${escHtml(x.label)}</strong><small>${escHtml(x.detail)}</small></div>`).join('')}</div>`;
   }
 
   function applyEnvironmentUi(){
@@ -596,16 +599,10 @@
     if(companySection)companySection.classList.toggle('backup-company-active',!home);
     if(notice){
       notice.className=`backup-mode-notice ${home?'home':'company'}`;
-      notice.innerHTML=home
-        ? '<strong>집 개발·복원 모드</strong><span>JSON은 바로 검사하고, 기존 암호화 백업은 비밀번호로 연 뒤 이 브라우저에 적용합니다.</span>'
-        : '<strong>회사 로컬 운영 모드</strong><span>업로드·검사·복원 코드는 차단됩니다. 퇴근 전 비밀번호 없이 전체 JSON을 내려받으세요.</span>';
+      notice.hidden=home;
+      notice.textContent=home?'':'이 모드에서는 파일 받기만 가능합니다.';
     }
-    const title=bcEl('bcCompanyTitle');const desc=bcEl('bcCompanyDescription');const exportTitle=bcEl('bcExportTitle');const exportDesc=bcEl('bcExportDescription');const exportBtn=bcEl('bcExportFull');
-    if(title)title.textContent=home?'백업 점검 · JSON 다운로드':'퇴근 전 백업 점검 · JSON 다운로드';
-    if(desc)desc.textContent=home?'전체 또는 지원자 JSON을 비밀번호 없이 바로 내려받을 수 있습니다.':'업무 종료 전 상태를 점검하고 전체 JSON을 비밀번호 없이 내려받으세요.';
-    if(exportTitle)exportTitle.textContent='ERP 전체 JSON 백업';
-    if(exportDesc)exportDesc.textContent='현재 지원자·일정과 이전 버전의 보존 데이터를 함께 담습니다.';
-    if(exportBtn)exportBtn.textContent='ERP 전체 JSON 다운로드';
+    const exportBtn=bcEl('bcExportFull');if(exportBtn)exportBtn.textContent='전체 백업 받기';
     if(!home){clearInspection();}
   }
 
@@ -614,15 +611,28 @@
     const c=countsOf(currentData());const map={applicants:'bcCurrentApplicants',schools:'bcCurrentSchools',employees:'bcCurrentEmployees',calendarEvents:'bcCurrentEvents'};
     Object.keys(map).forEach(k=>{const el=bcEl(map[k]);if(el)el.textContent=`${c[k].toLocaleString()}건`;});
     const env=bcEl('bcCurrentEnvironment');if(env)env.textContent=environment()==='company'?'회사 모드':'집 모드';
-    const last=bcEl('bcLastFullBackup');if(last)last.textContent=formatDate(localStorage.getItem(BC_LAST_FULL_KEY));
+    const last=bcEl('bcLastFullBackup');if(last){const at=localStorage.getItem(BC_LAST_FULL_KEY);last.textContent=at?formatDate(at):'없음';}
     const changes=changesSinceBackup();const ch=bcEl('bcChangesSinceBackup');if(ch)ch.textContent=changeSummaryText(changes);
     const readiness=bcEl('bcBackupReadiness');
     if(readiness){const lastDay=dateLocalKey(changes.lastAt);const ready=changes.known&&changes.total===0&&lastDay===todayKey();readiness.textContent=ready?'오늘 백업 완료':'백업 필요';readiness.classList.toggle('is-ready',ready);readiness.classList.toggle('is-needed',!ready);}
   }
   function renderHistory(){
     const el=bcEl('bcHistoryList');if(!el)return;let list=[];try{list=JSON.parse(localStorage.getItem(BC_HISTORY_KEY)||'[]');}catch{}
-    if(!Array.isArray(list)||!list.length){el.innerHTML='<div class="backup-empty">이 브라우저의 백업센터 작업 기록이 아직 없습니다.</div>';return;}
-    el.innerHTML=list.slice(0,10).map(x=>`<div class="backup-history-row"><time>${escHtml(formatDate(x.at))}</time><strong>${escHtml(x.action)}</strong><span>${escHtml(x.detail||'')}</span></div>`).join('');
+    if(!Array.isArray(list)||!list.length){el.innerHTML='<div class="backup-empty">아직 없음</div>';return;}
+    const rowHtml=x=>`<div class="backup-history-row"><time>${escHtml(formatDate(x.at))}</time><strong>${escHtml(historyActionLabel(x.action))}</strong></div>`;
+    el.innerHTML=list.slice(0,5).map(rowHtml).join('')+(list.length>5?`<details class="backup-history-older"><summary>이전 기록</summary>${list.slice(5,20).map(rowHtml).join('')}</details>`:'');
+  }
+  function historyActionLabel(action){
+    const value=safeText(action);
+    if(/적용 직전.*백업/.test(value))return '자동 백업';
+    if(/전체 백업.*다운로드/.test(value))return '전체 백업';
+    if(/지원자.*백업.*다운로드/.test(value))return '지원자 백업';
+    if(/파일 검사/.test(value))return '파일 확인';
+    if(/병합/.test(value))return '자료 합치기';
+    if(/전체교체/.test(value))return '자료 교체';
+    if(/전체.*복원/.test(value))return '전체 복원';
+    if(/백업.*다운로드/.test(value))return '백업';
+    return value;
   }
 
   // v12.0.2: 원격 저장 계층을 영구 제거하고 백업·복원은 브라우저 안에서만 처리합니다.

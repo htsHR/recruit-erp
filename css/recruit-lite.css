@@ -134,11 +134,47 @@
   .ux12-ready #applicants .chip, .ux12-ready #applicants .tab { min-height: 36px !important; font-size: 14px !important; }
   .ux12-ready #applicants .list-summary { margin-top: 12px !important; }
 
-  .ux12-ready #backup .backup-center-hero { padding: 16px 18px; margin-bottom: 12px; }
-  .ux12-ready #backup .backup-center-hero h3 { font-size: 18px; }
-  .ux12-ready #backup .backup-center-hero p { font-size: 14px; line-height: 1.6; }
-  .ux12-ready #backup .workspace-backup-history > summary { cursor: pointer; font-size: 16px; font-weight: 600; }
-  .ux12-ready #backup .workspace-backup-history[open] > summary { margin-bottom: 14px; }
+  .ux12-ready #backup .backup-center-page { max-width: 980px; gap: 16px; }
+  .ux12-ready #backup :is(#bcModeNotice,#bcHomeImportSection)[hidden] { display: none !important; }
+  .ux12-ready #backup .backup-workspace-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(min(100%,320px),1fr));
+    gap: 16px;
+    align-items: start;
+  }
+  .ux12-ready #backup .backup-section-card { min-width: 0; padding: 20px !important; }
+  .ux12-ready #backup .backup-section-card h3 { margin: 0 0 18px; font-size: 17px; }
+  .ux12-ready #backup .backup-download-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+  .ux12-ready #backup :is(.backup-download-buttons button,.file-label) { min-height: 44px; font-size: 14px; }
+  .ux12-ready #backup .backup-last-time { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 18px 0 0; color: #667085; font-size: 13px; }
+  .ux12-ready #backup .backup-file-zone {
+    display: block; min-height: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; text-align: left;
+  }
+  .ux12-ready #backup .backup-file-zone.dragover { outline: 2px dashed var(--ux12-blue); outline-offset: 6px; }
+  .ux12-ready #backup .backup-file-zone .file-label { margin: 0; }
+  .ux12-ready #backup .backup-inspection { margin-top: 18px; }
+  .ux12-ready #backup .backup-selected-file { display: block; font-size: 14px; overflow-wrap: anywhere; }
+  .ux12-ready #backup .backup-file-counts { margin: 8px 0; color: #667085; font-size: 13px; }
+  .ux12-ready #backup .backup-validation-banner { padding: 10px 12px; border-radius: 6px; }
+  .ux12-ready #backup :is(.backup-file-details,.backup-restore-options) { margin-top: 14px; }
+  .ux12-ready #backup :is(.backup-file-details,.backup-restore-options,.backup-history-older,.backup-workspace-check) > summary {
+    cursor: pointer; color: #667085; font-size: 13px; padding: 4px 0;
+  }
+  .ux12-ready #backup .backup-file-summary { grid-template-columns: repeat(auto-fit,minmax(100px,1fr)); margin-top: 12px; }
+  .ux12-ready #backup .backup-restore-options p { margin: 12px 0 0; color: #667085; font-size: 13px; }
+  .ux12-ready #backup .backup-action-bar { gap: 8px; margin-top: 12px; padding-top: 0; border: 0; }
+  .ux12-ready #backup .backup-action-bar button { min-height: 40px; font-size: 13px; }
+  .ux12-ready #backup .backup-history-list { gap: 0; }
+  .ux12-ready #backup .backup-history-row {
+    grid-template-columns: 210px minmax(0,1fr); gap: 16px; padding: 12px 0;
+    border: 0; border-bottom: 1px solid #f0f2f5; border-radius: 0; background: transparent; font-size: 13px;
+  }
+  .ux12-ready #backup .backup-history-row strong { font-size: 13px; }
+  .ux12-ready #backup .backup-history-older { margin-top: 8px; }
+  .ux12-ready #backup .backup-empty { padding: 8px 0; border: 0; border-radius: 0; text-align: left; font-size: 13px; }
+  .ux12-ready #backup .backup-workspace-check { padding: 0 4px; }
+  .ux12-ready #backup .backup-workspace-check[open] > summary { margin-bottom: 12px; }
+  .ux12-ready #backup .backup-preflight-result { padding: 0; margin-top: 12px; }
   .ux12-ready summary:focus-visible { outline: 3px solid #1769e04d; outline-offset: 3px; }
 }
 
@@ -165,4 +201,5 @@
   .ux12-ready #applicants .applicant-list-button-row { width: 100%; justify-content: flex-end; }
   .ux12-ready #home .ux12-summary-item { padding: 10px 12px; min-height: 60px; }
   .ux12-ready #home .ux12-summary-item span { font-size: 14px; }
+  .ux12-ready #backup .backup-history-row { grid-template-columns: 1fr; gap: 4px; }
 }

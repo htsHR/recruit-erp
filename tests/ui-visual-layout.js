@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.6.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.6.1');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=[process.env.ERP_CHROMIUM_EXECUTABLE,...(process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -138,6 +138,29 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         assert.match(backupPrivacyConfirm,/ERP 부분 JSON 백업/,'desktop: 부분 JSON 개인정보 저장 위치 확인');
         assert.match(applicantBackupDownload.suggestedFilename(),/^recruit_erp_applicants_.*\.json$/,'desktop: 지원자 부분 백업은 비밀번호 없이 JSON으로 내려받아야 합니다.');
         assert.equal(await page.locator('#encryptedBackupDialog').isVisible(),false,'desktop: 지원자 부분 백업이 비밀번호 창을 열면 안 됩니다.');
+
+        const backupKeys=['recruit_erp_applicants_stable','recruit_erp_schools','recruit_erp_employees','recruit_erp_calendar_events','recruit_erp_hire_waiting_profiles','recruit_erp_message_templates'];
+        const beforeInspection=await page.evaluate(keys=>keys.map(key=>localStorage.getItem(key)),backupKeys);
+        const fullBackupBytes=fs.readFileSync(await fullJsonDownload.path());
+        await page.locator('#bcFileInput').setInputFiles({name:'synthetic-full-backup.json',mimeType:'application/json',buffer:fullBackupBytes});
+        await page.waitForFunction(()=>window.erpBackupCenter?.getStatus().inspection?.valid===true);
+        assert.match(await page.locator('#bcInspection').innerText(),/복원 가능/,'desktop: 정상 JSON 백업은 간단한 복원 상태 표시');
+        assert.equal(await page.locator('#bcMergeApply').isVisible(),true,'desktop: 합치기는 바로 사용');
+        assert.equal(await page.locator('#bcReplaceApply').isVisible(),false,'desktop: 교체는 다른 복원 방법에서 사용');
+        assert.equal(await page.locator('.backup-file-details').getAttribute('open'),null,'desktop: 상세 비교는 접어 둠');
+        assert.deepEqual(await page.evaluate(keys=>keys.map(key=>localStorage.getItem(key)),backupKeys),beforeInspection,'desktop: 파일 검사로 업무 자료를 변경하지 않음');
+        await page.locator('#bcClearInspection').click();
+
+        const damagedBackup=JSON.parse(fullBackupBytes.toString());damagedBackup.integrity.packageDigest='synthetic-damaged-digest';
+        await page.locator('#bcFileInput').setInputFiles({name:'synthetic-damaged-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(damagedBackup))});
+        await page.waitForFunction(()=>window.erpBackupCenter?.getStatus().inspection?.valid===false);
+        assert.equal(await page.locator('#bcMergeApply').isDisabled(),true,'desktop: 손상된 파일의 합치기 차단');
+        await page.locator('.backup-restore-options > summary').click();
+        assert.equal(await page.locator('#bcReplaceApply').isDisabled(),true,'desktop: 손상된 파일의 교체 차단');
+        assert.equal(await page.locator('#bcFullRestore').isDisabled(),true,'desktop: 손상된 파일의 전체 복원 차단');
+        assert.deepEqual(await page.evaluate(keys=>keys.map(key=>localStorage.getItem(key)),backupKeys),beforeInspection,'desktop: 손상된 파일 검사로 업무 자료를 변경하지 않음');
+        await page.locator('#bcClearInspection').click();
+        await page.screenshot({path:path.join(outputDir,'desktop-backup-history.png'),fullPage:true});
 
         const rosterDate='2099-09-03';
         await page.evaluate(date=>{
