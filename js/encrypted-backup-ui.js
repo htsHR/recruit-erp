@@ -19,7 +19,6 @@
   function installPanel(){
     el('bcEncryptedPanel')?.remove();
     const input=el('bcFileInput');if(input)input.accept='.erpbackup,.json,application/json';
-    const zone=el('bcDropZone');if(zone){zone.querySelector('strong').textContent='내려받은 JSON 또는 기존 .erpbackup 파일을 선택하세요.';zone.querySelector('span').textContent='JSON은 바로 검사하고, 기존 암호화 파일만 비밀번호로 연 뒤 구조·건수·무결성을 검사합니다.';zone.querySelector('.file-label').firstChild.textContent='백업 파일 선택 및 검사';}
   }
   function installModal(){
     if(el('encryptedBackupDialog'))return;
