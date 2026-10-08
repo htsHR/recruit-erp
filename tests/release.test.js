@@ -12,11 +12,11 @@ const index=read('index.html');
 const workflow=read('.github/workflows/quality-checks.yml');
 const vercel=JSON.parse(read('vercel.json'));
 
-assert.equal(version,'12.5.3');
+assert.equal(version,'12.6.0');
 assert.equal(packageJson.version,version);
 assert.match(index,new RegExp(`<title>채용 업무 v${version.replaceAll('.','\\.')}</title>`));
 assert.match(index,/<h1>채용 업무<\/h1>/);
-assert.match(index,new RegExp(`<p>v${version.replaceAll('.','\\.')} · CORE<\/p>`));
+assert.match(index,new RegExp(`<p>v${version.replaceAll('.','\\.')} · 개인용<\/p>`));
 assert.doesNotMatch(index,/\bPreview\b|VERSION 2\.0/);
 
 const localAssets=[...index.matchAll(/(?:src|href)="(?!https?:)([^"?]+)\?v=([^"]+)"/g)];
@@ -42,4 +42,4 @@ assert.ok(headers['Permissions-Policy']);
 assert.match(headers['Content-Security-Policy'],/script-src-attr 'none'/);
 assert.match(headers['Content-Security-Policy'],/object-src 'none'/);
 
-console.log('release.test.js: v12.5.3 버전·자산·자동검사·Vercel 보안 설정 확인 완료');
+console.log('release.test.js: v12.6.0 버전·자산·자동검사·Vercel 보안 설정 확인 완료');

@@ -1,170 +1,168 @@
-/* Recruit ERP v12.5.3 — core-only recruiting workspace. */
-
-@media (max-width: 900px) {
-  body:not([data-active-page="form"]) .topbar-actions-shell > .top-actions > .excel-row-paste-launch {
-    display: inline-flex !important;
-  }
-
-  body:not([data-active-page="form"]) .topbar-actions-shell > .top-actions > .top-detail-register {
-    display: none !important;
-  }
-}
-:root{
-  --ux12-sidebar:224px;
+/* Personal recruiting workspace. Layout only; print rules remain in their owner. */
+:root {
+  --ux12-sidebar: 224px;
 }
 
-/* Four daily destinations stay visible; everything else remains available on demand. */
-.ux12-ready .lite-nav-primary{
-  margin-bottom:10px;
-}
-.ux12-ready .lite-nav-primary .ux12-nav-group-label{
-  min-height:26px;
-  padding:3px 10px 5px;
-  color:#667085;
-  cursor:default;
-}
-.ux12-ready .lite-nav-primary .nav-group-items{
-  display:grid;
-  gap:3px;
-}
-.ux12-ready .lite-nav-primary .nav-btn{
-  min-height:44px!important;
-  padding:9px 11px!important;
-}
-.ux12-ready .lite-nav-secondary{
-  padding-top:8px;
-  border-top:1px solid var(--ux12-line);
-}
-.ux12-ready .lite-nav-secondary .ux12-nav-group-label{
-  min-height:36px;
-  padding:6px 10px;
-  border-radius:8px;
-  color:#667085;
-}
-.ux12-ready .lite-nav-secondary .ux12-nav-group-label:hover{
-  background:#f2f4f7;
-}
-.ux12-ready .lite-nav-secondary .ux12-nav-group-label span:last-child{
-  transition:transform 160ms ease;
-}
-.ux12-ready .lite-nav-secondary:not(.collapsed) .ux12-nav-group-label span:last-child{
-  transform:rotate(180deg);
-}
-.ux12-ready .lite-nav-secondary .nav-group-items{
-  padding-top:3px;
+@media screen {
+  body.ux12-ready {
+    font-size: 16px;
+  }
+
+  .ux12-ready .brand-copy h1 { font-size: 16px !important; }
+  .ux12-ready .brand-copy p { font-size: 12px !important; }
+  .ux12-ready .lite-nav-primary { margin-bottom: 10px; }
+  .ux12-ready .lite-nav-primary .ux12-nav-group-label {
+    min-height: 28px;
+    padding: 5px 10px;
+    font-size: 12px;
+    color: #667085;
+  }
+  .ux12-ready .lite-nav-primary .nav-group-items { display: grid; gap: 4px; }
+  .ux12-ready .lite-nav-primary .nav-btn {
+    min-height: 44px !important;
+    padding: 10px 12px !important;
+    font-size: 15px !important;
+  }
+  .ux12-ready .topbar {
+    height: auto !important;
+    min-height: 68px !important;
+    padding: 12px 24px !important;
+    gap: 12px;
+  }
+  .ux12-ready .ux12-top-search {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    min-width: 0;
+    flex: 1;
+    max-width: none;
+  }
+  .ux12-ready .topbar .topbar-title-wrap { display: block !important; min-width: 0; }
+  .ux12-ready .topbar #page-title {
+    margin: 0;
+    font-size: 21px !important;
+    line-height: 1.4;
+    color: #182230 !important;
+    white-space: nowrap;
+  }
+  .ux12-ready .topbar-breadcrumb { display: none !important; }
+  .ux12-ready .ux12-top-actions { gap: 8px; }
+  .ux12-ready .ux12-page-actions .top-actions { gap: 8px !important; }
+  .ux12-ready .ux12-page-actions .top-actions button { min-height: 40px !important; font-size: 14px; }
+  .ux12-ready .topbar .ghost { background: #fff !important; border-color: #d0d5dd !important; color: #344054 !important; }
+  .ux12-ready .topbar .primary { background: var(--ux12-blue) !important; border-color: var(--ux12-blue) !important; color: #fff !important; }
+  .ux12-ready #btnQuickApplicantEntry:not([hidden]):not(.erp-permission-hidden) { display: inline-flex !important; }
+  .ux12-ready #btnListExcelRowPaste { background: var(--ux12-blue) !important; border-color: var(--ux12-blue) !important; color: #fff !important; }
+  .ux12-ready .ux12-top-icon { width: 40px; height: 40px; }
+  .ux12-ready .page { padding: 20px 24px 28px !important; }
+  .ux12-ready .workspace-search { position: relative; font-size: 14px; }
+  .ux12-ready .workspace-search > summary {
+    padding: 9px 12px;
+    color: #475467;
+    cursor: pointer;
+    border-radius: 6px;
+  }
+  .ux12-ready .workspace-search > summary:hover { background: #f2f4f7; }
+  .ux12-ready .workspace-search-popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 340px;
+    padding: 12px;
+    border: 1px solid var(--ux12-line);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 24px #10182814;
+  }
+  .ux12-ready .workspace-search-popover .ux12-global-search { width: 100%; min-width: 0; }
+  .ux12-ready .workspace-search-popover .ux12-global-search input { padding-left: 12px !important; font-size: 14px !important; }
+  .ux12-ready .workspace-search-popover .ux12-global-search-results { position: static; margin-top: 8px; box-shadow: none; }
+  .ux12-ready[data-active-page="applicants"] .workspace-search,
+  .ux12-ready[data-active-page="form"] .workspace-search,
+  .ux12-ready[data-active-page="applicants"] .top-actions .excel-row-paste-launch { display: none !important; }
+
+  /* Show the work immediately; navigation already offers the four destinations. */
+  .ux12-ready #home .dashboard-stats { margin-bottom: 16px !important; }
+  .ux12-ready #home .ux12-summary-item { min-height: 66px; padding: 12px 16px; }
+  .ux12-ready #home .ux12-summary-item span { font-size: 14px; }
+  .ux12-ready #home .panel-head h3 { font-size: 16px !important; }
+  .ux12-ready #home .dashboard-panels { gap: 16px !important; }
+  .ux12-ready #home .ux12-schedule-panel { min-height: 0 !important; }
+  .ux12-ready #home .ux12-recent-panel .card-list { display: flex !important; flex-direction: column !important; max-height: 320px; overflow-y: auto; }
+  .ux12-ready #home .ux12-recent-panel .card-list > * { flex-shrink: 0; }
+
+  /* One search row and compact counts; the list remains the main surface. */
+  .ux12-ready #applicants .applicant-list-header-copy { display: none !important; }
+  .ux12-ready #applicants .applicant-list-header-row {
+    min-height: 0 !important;
+    margin-bottom: 12px !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+  .ux12-ready #applicants .applicant-list-header-metrics {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px 24px !important;
+    width: 100% !important;
+  }
+  .ux12-ready #applicants .applicant-header-metric {
+    display: flex !important;
+    flex-direction: row-reverse !important;
+    align-items: center;
+    justify-content: flex-end !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    gap: 8px;
+  }
+  .ux12-ready #applicants .applicant-header-metric strong { font-size: 16px !important; color: #182230 !important; }
+  .ux12-ready #applicants .applicant-header-metric span { font-size: 14px !important; color: #475467 !important; }
+  .ux12-ready #applicants .list-top-card { padding: 16px 18px !important; }
+  .ux12-ready #applicants .applicant-list-tool-row { display: flex !important; flex-wrap: wrap !important; gap: 10px !important; padding: 12px 0 !important; }
+  .ux12-ready #applicants .applicant-list-tool-row .search { flex: 1 1 280px; width: auto; min-width: 180px !important; }
+  .ux12-ready #applicants .applicant-list-tool-row .sort-select { width: 145px !important; min-width: 145px !important; }
+  .ux12-ready #applicants .compact-check-inline { font-size: 14px !important; }
+  .ux12-ready #applicants .applicant-list-button-row { flex-direction: row !important; flex-wrap: wrap !important; max-width: 100%; min-width: 0; }
+  .ux12-ready #applicants .applicant-list-button-row button { flex: 0 1 auto !important; width: auto !important; }
+  .ux12-ready #applicants #searchInput { min-height: 42px; font-size: 16px !important; }
+  .ux12-ready #applicants .applicant-list-button-row button { min-height: 40px; font-size: 14px; }
+  .ux12-ready #applicants .applicant-list-filter-stack { gap: 10px !important; margin-top: 12px !important; }
+  .ux12-ready #applicants .applicant-filter-group-head { margin-bottom: 6px !important; }
+  .ux12-ready #applicants .applicant-filter-group-title { font-size: 14px !important; }
+  .ux12-ready #applicants .chip, .ux12-ready #applicants .tab { min-height: 36px !important; font-size: 14px !important; }
+  .ux12-ready #applicants .list-summary { margin-top: 12px !important; }
+
+  .ux12-ready #backup .backup-center-hero { padding: 16px 18px; margin-bottom: 12px; }
+  .ux12-ready #backup .backup-center-hero h3 { font-size: 18px; }
+  .ux12-ready #backup .backup-center-hero p { font-size: 14px; line-height: 1.6; }
+  .ux12-ready #backup .workspace-backup-history > summary { cursor: pointer; font-size: 16px; font-weight: 600; }
+  .ux12-ready #backup .workspace-backup-history[open] > summary { margin-bottom: 14px; }
+  .ux12-ready summary:focus-visible { outline: 3px solid #1769e04d; outline-offset: 3px; }
 }
 
-/* Compact action-first home strip. */
-.ux12-ready .lite-workspace{
-  margin:0 0 16px;
-}
-.ux12-ready .lite-workspace-heading{
-  display:flex;
-  align-items:baseline;
-  gap:10px;
-  margin:0 0 8px;
-}
-.ux12-ready .lite-workspace-heading h3{
-  margin:0;
-  color:var(--ux12-text);
-  font-size:15px;
-  line-height:1.35;
-}
-.ux12-ready .lite-workspace-heading p{
-  margin:0;
-  color:var(--ux12-muted);
-  font-size:12px;
-}
-.ux12-ready .lite-quick-actions{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:10px;
-}
-.ux12-ready .lite-action-card{
-  min-width:0;
-  min-height:78px;
-  padding:12px 13px;
-  border:1px solid var(--ux12-line);
-  border-radius:10px;
-  background:#fff;
-  color:var(--ux12-text);
-  box-shadow:none;
-  display:grid;
-  grid-template-columns:30px minmax(0,1fr) auto;
-  align-items:center;
-  gap:9px;
-  text-align:left;
-}
-.ux12-ready .lite-action-card:hover{
-  border-color:#b8d4fa;
-  background:#f8fbff;
-}
-.ux12-ready .lite-action-number{
-  width:30px;
-  height:30px;
-  display:grid;
-  place-items:center;
-  border-radius:8px;
-  background:var(--ux12-blue-soft);
-  color:#175cd3;
-  font-size:11px;
-  font-weight:800;
-}
-.ux12-ready .lite-action-copy{
-  min-width:0;
-  display:grid;
-  gap:3px;
-}
-.ux12-ready .lite-action-copy strong{
-  overflow:hidden;
-  color:var(--ux12-text);
-  font-size:14px;
-  line-height:1.3;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.ux12-ready .lite-action-copy small{
-  overflow:hidden;
-  color:var(--ux12-muted);
-  font-size:11px;
-  line-height:1.35;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.ux12-ready .lite-action-arrow{
-  color:#98a2b3;
-  font-size:16px;
+@media screen and (max-width: 1020px) {
+  .ux12-ready .topbar { padding: 10px 14px !important; }
+  .ux12-ready .ux12-top-search { gap: 12px; }
+  .ux12-ready .page { padding: 16px 14px 24px !important; }
+  .ux12-ready #ux12Notifications { display: none !important; }
 }
 
-@media(max-width:1023px){
-  .ux12-ready .lite-quick-actions{
-    grid-template-columns:repeat(2,minmax(0,1fr));
-  }
-}
-@media(max-width:600px){
-  .ux12-ready .lite-workspace-heading{
-    display:block;
-  }
-  .ux12-ready .lite-workspace-heading p{
-    margin-top:3px;
-  }
-  .ux12-ready .lite-quick-actions{
-    gap:8px;
-  }
-  .ux12-ready .lite-action-card{
-    min-height:72px;
-    padding:10px;
-    grid-template-columns:28px minmax(0,1fr);
-    gap:8px;
-  }
-  .ux12-ready .lite-action-number{
-    width:28px;
-    height:28px;
-  }
-  .ux12-ready .lite-action-arrow{
-    display:none;
-  }
-  .ux12-ready .lite-action-copy small{
-    white-space:normal;
-  }
+@media screen and (max-width: 600px) {
+  .ux12-ready .topbar { min-height: 64px !important; flex-wrap: wrap !important; gap: 8px; }
+  .ux12-ready .ux12-top-search { flex: 1 1 auto; }
+  .ux12-ready .topbar #page-title { font-size: 18px !important; }
+  .ux12-ready .workspace-search-popover { position: fixed; top: 68px; left: 14px; right: 14px; width: auto; }
+  .ux12-ready .ux12-top-actions { flex: 0 1 auto; gap: 4px; }
+  .ux12-ready .ux12-page-actions .top-actions { flex-wrap: wrap; gap: 6px !important; }
+  .ux12-ready .ux12-page-actions .top-actions button { min-height: 40px !important; padding: 8px 10px !important; }
+  .ux12-ready[data-active-page="form"] .ux12-top-actions { width: 100%; }
+  .ux12-ready[data-active-page="form"] .ux12-page-actions { width: 100%; justify-content: flex-start; }
+  .ux12-ready #applicants .list-top-card { padding: 14px !important; }
+  .ux12-ready #applicants .applicant-list-header-metrics { gap: 8px 18px !important; }
+  .ux12-ready #applicants .applicant-list-tool-row { flex-wrap: wrap !important; }
+  .ux12-ready #applicants .applicant-list-button-row { width: 100%; justify-content: flex-end; }
+  .ux12-ready #home .ux12-summary-item { padding: 10px 12px; min-height: 60px; }
+  .ux12-ready #home .ux12-summary-item span { font-size: 14px; }
 }

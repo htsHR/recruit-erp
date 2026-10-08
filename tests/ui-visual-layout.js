@@ -9,11 +9,11 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.5.3');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.6.0');
 fs.mkdirSync(outputDir,{recursive:true});
-const executableCandidates=process.platform==='win32'
+const executableCandidates=[process.env.ERP_CHROMIUM_EXECUTABLE,...(process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
-  :['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'];
+  :['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'])].filter(Boolean);
 const executablePath=executableCandidates.find(file=>fs.existsSync(file));
 if(!executablePath)throw new Error('자동 UI 검사에 사용할 Chrome/Chromium을 찾지 못했습니다.');
 
@@ -37,7 +37,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
   try{
     await waitForServer();
     browser=await chromium.launch({headless:true,executablePath,args:['--no-sandbox']});
-    for(const viewport of [{name:'desktop',width:1366,height:768},{name:'mobile',width:390,height:844}]){
+    for(const viewport of [{name:'wide',width:1920,height:1080},{name:'desktop',width:1366,height:768},{name:'laptop',width:1024,height:768},{name:'tablet',width:768,height:1024},{name:'mobile',width:390,height:844}]){
       const context=await browser.newContext({viewport:{width:viewport.width,height:viewport.height}});
       const page=await context.newPage();
       await page.addInitScript(()=>{
@@ -60,6 +60,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       });
       await page.goto(baseUrl,{waitUntil:'networkidle'});
       await page.waitForFunction(()=>document.body?.classList.contains('ux12-ready'));
+      assert.equal(await page.locator('.page.active').getAttribute('id'),'applicants',`${viewport.name}: 바로 지원자 목록으로 진입`);
       await page.evaluate(rows=>{
         localStorage.setItem('recruit_erp_data_epoch','v12.0.2-reset-1');
         localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(rows));
@@ -73,6 +74,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       assert.equal(await page.locator('.nav-btn').count(),4,`${viewport.name}: 메뉴는 4개여야 합니다.`);
       assert.deepEqual(await page.locator('section.page').evaluateAll(nodes=>nodes.map(node=>node.id)),['home','applicants','form','today','calendar','backup']);
       assert.equal(await page.locator('#stats,#schools,#employees,#templates,#advancedSearch,#dataHealth,#duplicates,#permissions,#auditHistory,#onboarding,#storagePerformance,#productionReadiness').count(),0);
+      const originalBusinessData=await page.evaluate(()=>['recruit_erp_applicants_stable','recruit_erp_schools','recruit_erp_employees'].map(key=>localStorage.getItem(key)));
       for(const target of ['home','applicants','calendar','backup']){
         if(viewport.width<=1020){
           await page.locator('#sidebarToggle').click();
@@ -86,12 +88,17 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         }
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-${target}.png`),fullPage:true});
       }
+      assert.deepEqual(await page.evaluate(()=>['recruit_erp_applicants_stable','recruit_erp_schools','recruit_erp_employees'].map(key=>localStorage.getItem(key))),originalBusinessData,`${viewport.name}: 화면 이동은 업무 자료를 변경하지 않음`);
       await page.evaluate(()=>window.setPage('form'));
       assert.equal(await page.locator('.page.active').getAttribute('id'),'form');
       await page.evaluate(()=>window.setPage('today'));
       assert.equal(await page.locator('.page.active').getAttribute('id'),'today');
       await page.evaluate(()=>window.setPage('applicants'));
       assert.equal(await page.locator('#applicantTbody tr.applicant-row').count(),fakeApplicants.length);
+      if(viewport.width<=767){
+        const phoneRect=await page.locator('#applicantTbody .phone-cell').first().boundingBox();
+        assert.ok(phoneRect&&phoneRect.height>0&&phoneRect.x>=0&&phoneRect.x+phoneRect.width<=viewport.width,`${viewport.name}: 연락처가 카드 안에 보여야 합니다.`);
+      }
       await page.locator('#btnListExcelRowPaste').click();
       await page.waitForFunction(()=>document.querySelector('.page.active')?.id==='form'&&document.querySelector('#excelRowPasteModal')?.classList.contains('show'));
       assert.equal(await page.locator('#excelPasteRaw').isVisible(),true,`${viewport.name}: 엑셀 붙여넣기 창 표시`);

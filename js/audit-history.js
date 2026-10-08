@@ -5,7 +5,7 @@
   root.erpAudit=api;
 })(typeof window!=='undefined'?window:globalThis,function(root){
   'use strict';
-  const VERSION='12.5.3';
+  const VERSION='12.6.0';
   const STORAGE_KEY='recruit_erp_audit_logs_v1';
   const MAX_LOCAL_RECORDS=2000;
   const DATASETS={
