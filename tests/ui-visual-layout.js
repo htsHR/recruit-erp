@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.7.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.7.1');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=[process.env.ERP_CHROMIUM_EXECUTABLE,...(process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -101,6 +101,14 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         const waitingText=[waitingHeaders,...waitingRows].map(row=>row.map(value=>value.includes('"')?`"${value.replaceAll('"','""')}"`:value).join('\t')).join('\n');
         await page.locator('#hwPasteRaw').evaluate((node,raw)=>{const clipboard=new DataTransfer();clipboard.setData('text/plain',raw);node.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));},waitingText);
         assert.equal(await page.locator('#hwTableBody tr').count(),2,'입사대기 Excel 행을 표시');
+        const sheetAppearance=await page.evaluate(()=>{
+          const th=document.querySelector('#hwTableHead th'),status=document.querySelector('#hwTableBody tr td:nth-child(3)'),name=document.querySelector('#hwTableBody tr:nth-child(2) td:nth-child(11)');
+          return {header:getComputedStyle(th).backgroundColor,headerColor:getComputedStyle(th).color,fontSize:getComputedStyle(th).fontSize,status:getComputedStyle(status).backgroundColor,name:getComputedStyle(name).backgroundColor,nameWidth:name.getBoundingClientRect().width};
+        });
+        assert.equal(sheetAppearance.header,'rgb(255, 192, 0)','화면 제목도 원본 주황색');
+        assert.equal(sheetAppearance.headerColor,'rgb(0, 0, 0)');assert.ok(Math.abs(parseFloat(sheetAppearance.fontSize)-40/3)<0.1,'제목은 원본 10pt');
+        assert.equal(sheetAppearance.status,'rgb(146, 208, 80)','원본 연락상태 초록색');assert.equal(sheetAppearance.name,'rgb(255, 255, 0)','원본 강조 색상');
+        assert.ok(Math.abs(sheetAppearance.nameWidth-53)<1,'화면도 성명 열의 원본 너비 유지');
         assert.equal(await page.locator('#hwPastePanel').getAttribute('open'),null,'붙여넣으면 표와 아래 다운로드 버튼으로 바로 이동');
         assert.match(await page.locator('#hwCount').innerText(),/2명 · 저장 전/);
         assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles')),waitingBefore,'미리보기는 기존 명단을 저장하지 않음');
@@ -119,7 +127,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         for(const preset of ['assignment','health-support','final','all']){
           const selector=preset==='all'?'#hwDownloadAll':`[data-waiting-download="${preset}"]`;
           const download=await Promise.all([page.waitForEvent('download'),page.locator(selector).click()]).then(([file])=>file);
-          assert.match(download.suggestedFilename(),/입사대기자명단_2099-10-12_.*\.xlsx$/,'입사날짜를 포함한 XLSX 파일 이름');
+          assert.equal(download.suggestedFilename(),'입사대기자명단(99.10.12).xlsx','모든 부서는 날짜만 포함한 동일한 XLSX 파일 이름');
           const file=path.join(outputDir,`synthetic-waiting-${preset}.xlsx`);await download.saveAs(file);
           const buffer=fs.readFileSync(file);assert.equal(buffer.readUInt32LE(0),0x04034b50,'실제 XLSX 다운로드');
           const sheetXml=extractSheet(buffer);
@@ -129,7 +137,8 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
             return [...document.querySelectorAll('sheetData > row')].map(row=>[...row.querySelectorAll('c')].map(cell=>cell.querySelector('t')?.textContent??cell.querySelector('v')?.textContent??''));
           },sheetXml);
           const headers=matrix[0];
-          assert.equal(headers.includes('직급'),preset==='all',`${preset}: 직급 다운로드 규칙`);
+          assert.equal(headers.includes('직 급'),preset==='all',`${preset}: 원본 제목 및 직급 다운로드 규칙`);
+          assert.equal(headers.includes('성  명'),true,'원본 성명 제목의 띄어쓰기 보존');
           assert.equal(headers.includes('주민등록번호'),['health-support','all'].includes(preset),`${preset}: 주민등록번호 다운로드 규칙`);
           assert.equal(headers.length,preset==='all'?23:preset==='health-support'?22:21);
           assert.equal(matrix[1][headers.indexOf('사원번호')],'0000123');assert.equal(matrix[1][headers.indexOf('연락처')],'01000000001');
@@ -160,7 +169,8 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles')),savedKey,'새로고침으로 저장 자료를 변경하지 않음');
         const customDownload=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'가상추가부서',exact:true}).click()]).then(([file])=>file);
         const customXml=extractSheet(fs.readFileSync(await customDownload.path()));
-        assert.match(customXml,/성명/);assert.match(customXml,/연락처/);assert.doesNotMatch(customXml,/주민등록번호|사원번호|가상직급|180cm/,'추가 부서는 선택한 두 열만 포함');
+        assert.equal(customDownload.suggestedFilename(),'입사대기자명단(99.10.12).xlsx','추가 부서 파일명도 동일한 형식');
+        assert.match(customXml,/성  명/);assert.match(customXml,/연락처/);assert.doesNotMatch(customXml,/주민등록번호|사원번호|가상직급|180cm/,'추가 부서는 선택한 두 열만 포함');
         const backupRoundTrip=await page.evaluate(()=>{
           const rows=window.erpBackupCenter.__test.packageFor(['hireWaitingProfiles'],'synthetic waiting verification').data.hireWaitingProfiles;
           return JSON.stringify(window.erpBackupCenter.__test.normalizeRows('hireWaitingProfiles',rows))===JSON.stringify(rows);
