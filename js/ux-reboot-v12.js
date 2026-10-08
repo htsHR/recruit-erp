@@ -95,15 +95,16 @@
     const standardActions=actionShell?.querySelector('.top-actions:not(.form-top-actions)'),formActions=actionShell?.querySelector('.form-top-actions');
     const utilities=actionShell?.querySelector('.topbar-utils');
     const duplicateRegister=standardActions?.querySelector('[data-go="form"]');duplicateRegister?.remove();
-    const quickRegister=$('btnQuickApplicantEntry');if(quickRegister)quickRegister.textContent='지원자 등록';
+    const quickRegister=$('btnQuickApplicantEntry');if(quickRegister)quickRegister.textContent='직접 등록';
 
-    const context=root.document.createElement('section');context.className='ux12-page-context';context.setAttribute('aria-label','현재 화면');
     const contextActions=root.document.createElement('div');contextActions.className='ux12-page-actions';
-    if(titleWrap)context.appendChild(titleWrap);if(standardActions)contextActions.appendChild(standardActions);if(formActions)contextActions.appendChild(formActions);
-    context.appendChild(contextActions);main.insertBefore(context,main.querySelector('.page'));
+    if(standardActions)contextActions.appendChild(standardActions);if(formActions)contextActions.appendChild(formActions);
 
     const left=root.document.createElement('div');left.className='ux12-top-search';
-    left.innerHTML='<label class="ux12-global-search"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z"></path></svg><span class="sr-only">전체 검색</span><input id="globalSearchInput" type="search" autocomplete="off" placeholder="지원자·연락처·지원경로 검색" aria-controls="globalSearchResults" aria-expanded="false"></label><div class="ux12-global-search-results" id="globalSearchResults" role="listbox" hidden></div>';
+    left.innerHTML='<details class="workspace-search"><summary>지원자 찾기</summary><div class="workspace-search-popover"><label class="ux12-global-search"><span class="sr-only">전체 검색</span><input id="globalSearchInput" type="search" autocomplete="off" placeholder="지원자·연락처·지원경로 검색" aria-controls="globalSearchResults" aria-expanded="false"></label><div class="ux12-global-search-results" id="globalSearchResults" role="listbox" hidden></div></div></details>';
+    if(titleWrap)left.insertBefore(titleWrap,left.firstChild);
+    const searchDisclosure=left.querySelector('.workspace-search');
+    searchDisclosure.addEventListener('toggle',()=>{if(searchDisclosure.open)$('globalSearchInput')?.focus();});
     const right=root.document.createElement('div');right.className='ux12-top-actions';
     const notice=iconButton('ux12Notifications','오늘 처리 목록','M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4');
     const help=iconButton('ux12Help','도움말','M9.2 9a3 3 0 1 1 4.8 2.4c-1.2.8-2 1.2-2 2.6M12 18h.01');
@@ -113,7 +114,8 @@
     help.addEventListener('click',()=>{helpPanel.hidden=!helpPanel.hidden;help.setAttribute('aria-expanded',String(!helpPanel.hidden));if(!helpPanel.hidden)$('ux12HelpClose')?.focus();});
     helpPanel.querySelector('#ux12HelpClose')?.addEventListener('click',()=>{helpPanel.hidden=true;help.setAttribute('aria-expanded','false');help.focus();});
     const user=utilities?.querySelector('#topbarUser');user?.querySelector('#topbarUserMark')?.remove();if(user){user.classList.add('ux12-account');user.setAttribute('aria-label','현재 계정');}
-    if(utilities)right.appendChild(utilities);right.append(notice,help,helpPanel);
+    utilities?.querySelector('.local-mode-badge')?.remove();
+    if(utilities?.children.length)right.appendChild(utilities);right.append(contextActions,notice,help,helpPanel);
     topbar.replaceChildren(left,right);topbar.dataset.ux12Ready='true';
 
     const toggle=sidebarToggle;if(toggle){
@@ -258,7 +260,7 @@
     return root.getComputedStyle(button).display!=='none';
   }
   function resolveRoute(state=root.history.state){
-    const hash=root.location.hash||PAGE_ROUTES.home;
+    const hash=root.location.hash||PAGE_ROUTES.applicants;
     if(hash==='#/applicants/quick'){
       const quickId=text(state?.quickApplicantId);
       if(routeCanOpen('applicants')&&quickId&&rows().some(row=>String(row?.id)===quickId))return {page:'applicants',route:hash,quickId,known:true};

@@ -292,3 +292,44 @@
     padding-right:8px!important;
   }
 }
+
+/* Current nine-column list becomes readable cards; desktop and print keep their table. */
+@media screen and (max-width: 767px) {
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table {
+    display: block !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important;
+  }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table :is(thead,colgroup) { display: none !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table tbody { display: grid !important; gap: 10px; width: 100% !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table tr.applicant-row {
+    display: grid !important; grid-template-columns: minmax(0,1fr) auto !important;
+    grid-template-areas: "name status" "phone phone" "source source" "next next" "schedule schedule" "actions actions";
+    gap: 10px !important; width: 100% !important; min-width: 0 !important; max-width: 100% !important;
+    height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important;
+    padding: 14px !important; border: 1px solid #e1e6ec !important; border-radius: 8px !important;
+  }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table tr.applicant-row td {
+    display: block !important; visibility: visible !important; position: static !important;
+    left: auto !important; right: auto !important; width: auto !important; min-width: 0 !important; max-width: none !important;
+    height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important;
+    margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important;
+    background: transparent !important; white-space: normal !important; font-size: 14px !important;
+    grid-column: auto !important;
+  }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table tr.applicant-row :is(.no-cell,.apply-date-cell) { display: none !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .applicant-name-cell { grid-area: name !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .status-cell { grid-area: status !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .phone-cell { grid-area: phone !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .source-cell { grid-area: source !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .next-action-cell { grid-area: next !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .schedule-cell { grid-area: schedule !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .applicant-actions { grid-area: actions !important; text-align: right !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table td::before {
+    position: static !important; display: inline-block !important; min-width: 64px;
+    margin-right: 6px; color: #667085; font-size: 12px !important; font-weight: 500;
+  }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table :is(.applicant-name-cell,.status-cell,.applicant-actions)::before { display: none !important; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .phone-cell::before { content: '연락처'; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .source-cell::before { content: '지원경로'; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .next-action-cell::before { content: '다음 조치'; }
+  body.ux12-ready #applicants.applicant-list-clarity.ui-system-v20:not(.is-worksheet-mode):not(.is-stage-mode) .applicant-table .schedule-cell::before { content: '일정'; }
+}
