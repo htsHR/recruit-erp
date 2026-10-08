@@ -13,9 +13,9 @@ const backup=read('js/backup-center.js');
 const core=read('js/core.js');
 
 const pageIds=[...index.matchAll(/<section\b[^>]*class="[^"]*\bpage\b[^"]*"[^>]*id="([^"]+)"|<section\b[^>]*id="([^"]+)"[^>]*class="[^"]*\bpage\b[^"]*"/g)].map(match=>match[1]||match[2]);
-assert.deepEqual(pageIds,['home','applicants','form','today','calendar','backup']);
+assert.deepEqual(pageIds,['home','applicants','form','today','hireWaiting','calendar','backup']);
 const navPages=[...index.matchAll(/class="nav-btn[^"]*"[^>]*data-page="([^"]+)"/g)].map(match=>match[1]);
-assert.deepEqual(navPages,['home','applicants','calendar','backup']);
+assert.deepEqual(navPages,['home','applicants','hireWaiting','calendar','backup']);
 
 const retiredPages=['stats','schools','employees','templates','advancedSearch','dataHealth','duplicates','permissions','auditHistory','onboarding','storagePerformance','productionReadiness'];
 retiredPages.forEach(id=>assert.doesNotMatch(index,new RegExp(`id="${id}"`),`${id} 화면이 남아 있습니다.`));
@@ -48,4 +48,4 @@ assert.deepEqual(JSON.parse(JSON.stringify(context.__loadedApplicants.map(row=>(
   {name:'가상지원자',phone:'010-0000-0001',birthYear:'2000.01.02'}
 ],'기존 지원자 데이터는 제거된 사원 모듈 없이도 정규화해 로드해야 합니다.');
 
-console.log('core-only-scope.test.js: 핵심 6화면·4메뉴·불필요 모듈 삭제·기존 지원자 및 구버전 데이터 보존 확인 완료');
+console.log('core-only-scope.test.js: 핵심 7화면·5메뉴·불필요 모듈 삭제·기존 지원자 및 구버전 데이터 보존 확인 완료');

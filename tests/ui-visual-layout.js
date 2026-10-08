@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.6.1');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.7.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=[process.env.ERP_CHROMIUM_EXECUTABLE,...(process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -66,16 +66,17 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         localStorage.setItem('recruit_erp_applicants_stable',JSON.stringify(rows));
         localStorage.setItem('recruit_erp_schools',JSON.stringify([{id:'legacy-school',name:'보존학교'}]));
         localStorage.setItem('recruit_erp_employees',JSON.stringify([{id:'legacy-employee',name:'보존사원'}]));
+        localStorage.setItem('recruit_erp_hire_waiting_profiles',JSON.stringify([{id:'legacy-waiting-profile',applicantId:'legacy-applicant',groupName:'보존그룹',unknownField:'원문 유지'}]));
       },fakeApplicants);
       await page.reload({waitUntil:'networkidle'});
       await page.waitForFunction(()=>document.body?.classList.contains('ux12-ready'));
       assert.deepEqual(await page.evaluate(()=>({stored:JSON.parse(localStorage.getItem('recruit_erp_applicants_stable')||'[]').length,loaded:applicants.length})),{stored:fakeApplicants.length,loaded:fakeApplicants.length},`${viewport.name}: 기존 지원자 데이터 복원`);
       assert.equal(await page.evaluate(()=>document.body.innerText.trim().length>0),true,`${viewport.name}: 빈 화면`);
-      assert.equal(await page.locator('.nav-btn').count(),4,`${viewport.name}: 메뉴는 4개여야 합니다.`);
-      assert.deepEqual(await page.locator('section.page').evaluateAll(nodes=>nodes.map(node=>node.id)),['home','applicants','form','today','calendar','backup']);
+      assert.equal(await page.locator('.nav-btn').count(),5,`${viewport.name}: 메뉴는 5개여야 합니다.`);
+      assert.deepEqual(await page.locator('section.page').evaluateAll(nodes=>nodes.map(node=>node.id)),['home','applicants','form','today','hireWaiting','calendar','backup']);
       assert.equal(await page.locator('#stats,#schools,#employees,#templates,#advancedSearch,#dataHealth,#duplicates,#permissions,#auditHistory,#onboarding,#storagePerformance,#productionReadiness').count(),0);
       const originalBusinessData=await page.evaluate(()=>['recruit_erp_applicants_stable','recruit_erp_schools','recruit_erp_employees'].map(key=>localStorage.getItem(key)));
-      for(const target of ['home','applicants','calendar','backup']){
+      for(const target of ['home','applicants','hireWaiting','calendar','backup']){
         if(viewport.width<=1020){
           await page.locator('#sidebarToggle').click();
           await page.waitForFunction(()=>document.body.classList.contains('sidebar-mobile-open'));
@@ -89,6 +90,90 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         await page.screenshot({path:path.join(outputDir,`${viewport.name}-${target}.png`),fullPage:true});
       }
       assert.deepEqual(await page.evaluate(()=>['recruit_erp_applicants_stable','recruit_erp_schools','recruit_erp_employees'].map(key=>localStorage.getItem(key))),originalBusinessData,`${viewport.name}: 화면 이동은 업무 자료를 변경하지 않음`);
+      if(viewport.name==='desktop'){
+        await page.evaluate(()=>window.setPage('hireWaiting'));
+        const waitingBefore=await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles'));
+        const waitingHeaders=await page.evaluate(()=>window.erpHireWaiting.COLUMNS.map(column=>column.label));
+        const waitingRows=[
+          ['1','0000123','입사대기','2099-10-12','가상근무지','','남','가상그룹','가상제품','가상파트','가상대기1','가상직급','000000-0000000','2000-01-02','25','fake@example.com','대졸','가상대학교','가상학과','01000000001','가상지역','기숙사','180cm / 75kg · 기숙사 희망 / 지원팀 확인'],
+          ['2','0000124','입사대기','2099-10-12','가상근무지','','여','','','','가상대기2','가상직급','000000-0000000','2001-02-03','24','=HYPERLINK("https://example.invalid")','','','','01000000002','','출퇴근','지원팀 확인, 2026/10/12 회신']
+        ];
+        const waitingText=[waitingHeaders,...waitingRows].map(row=>row.map(value=>value.includes('"')?`"${value.replaceAll('"','""')}"`:value).join('\t')).join('\n');
+        await page.locator('#hwPasteRaw').evaluate((node,raw)=>{const clipboard=new DataTransfer();clipboard.setData('text/plain',raw);node.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));},waitingText);
+        assert.equal(await page.locator('#hwTableBody tr').count(),2,'입사대기 Excel 행을 표시');
+        assert.equal(await page.locator('#hwPastePanel').getAttribute('open'),null,'붙여넣으면 표와 아래 다운로드 버튼으로 바로 이동');
+        assert.match(await page.locator('#hwCount').innerText(),/2명 · 저장 전/);
+        assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles')),waitingBefore,'미리보기는 기존 명단을 저장하지 않음');
+        assert.equal(await page.locator('#hireWaiting').innerText().then(value=>value.includes('000000-0000000')),false,'주민등록번호 원문은 화면에 표시하지 않음');
+        const extractSheet=buffer=>{
+          let offset=0;
+          while(buffer.readUInt32LE(offset)===0x04034b50){
+            const method=buffer.readUInt16LE(offset+8),size=buffer.readUInt32LE(offset+18),nameLength=buffer.readUInt16LE(offset+26),extraLength=buffer.readUInt16LE(offset+28);
+            const name=buffer.subarray(offset+30,offset+30+nameLength).toString(),start=offset+30+nameLength+extraLength;
+            const body=buffer.subarray(start,start+size);
+            if(name==='xl/worksheets/sheet1.xml')return method===8?require('node:zlib').inflateRawSync(body).toString():body.toString();
+            offset=start+size;
+          }
+          throw new Error('XLSX 워크시트가 없습니다.');
+        };
+        for(const preset of ['assignment','health-support','final','all']){
+          const selector=preset==='all'?'#hwDownloadAll':`[data-waiting-download="${preset}"]`;
+          const download=await Promise.all([page.waitForEvent('download'),page.locator(selector).click()]).then(([file])=>file);
+          assert.match(download.suggestedFilename(),/입사대기자명단_2099-10-12_.*\.xlsx$/,'입사날짜를 포함한 XLSX 파일 이름');
+          const file=path.join(outputDir,`synthetic-waiting-${preset}.xlsx`);await download.saveAs(file);
+          const buffer=fs.readFileSync(file);assert.equal(buffer.readUInt32LE(0),0x04034b50,'실제 XLSX 다운로드');
+          const sheetXml=extractSheet(buffer);
+          const matrix=await page.evaluate(xml=>{
+            const document=new DOMParser().parseFromString(xml,'application/xml');
+            if(document.querySelector('parsererror'))throw new Error('XLSX XML 오류');
+            return [...document.querySelectorAll('sheetData > row')].map(row=>[...row.querySelectorAll('c')].map(cell=>cell.querySelector('t')?.textContent??cell.querySelector('v')?.textContent??''));
+          },sheetXml);
+          const headers=matrix[0];
+          assert.equal(headers.includes('직급'),preset==='all',`${preset}: 직급 다운로드 규칙`);
+          assert.equal(headers.includes('주민등록번호'),['health-support','all'].includes(preset),`${preset}: 주민등록번호 다운로드 규칙`);
+          assert.equal(headers.length,preset==='all'?23:preset==='health-support'?22:21);
+          assert.equal(matrix[1][headers.indexOf('사원번호')],'0000123');assert.equal(matrix[1][headers.indexOf('연락처')],'01000000001');
+          assert.equal(matrix[1][headers.indexOf('비고')],preset==='final'?'기숙사 희망 / 지원팀 확인':waitingRows[0][22]);
+          assert.equal(matrix[2][headers.indexOf('비고')],waitingRows[1][22]);
+          assert.doesNotMatch(sheetXml,/<f>/,'수식처럼 보이는 텍스트를 실행하지 않음');
+          assert.equal(buffer.includes(Buffer.from('가상직급')),preset==='all','제외한 값은 숨긴 시트에도 남지 않음');
+          assert.equal(buffer.includes(Buffer.from('180cm')),preset!=='final','최종명단 키·몸무게는 파일 패키지에서 삭제');
+        }
+        assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles')),waitingBefore,'4가지 다운로드 후에도 원본 업무 저장소는 그대로');
+        await page.locator('#hwSaveRoster').click();
+        assert.equal(await page.locator('#hwSaveRoster').isDisabled(),true);
+        let savedWaiting=await page.evaluate(()=>JSON.parse(localStorage.getItem('recruit_erp_hire_waiting_profiles')));
+        assert.equal(savedWaiting.length,2);assert.deepEqual(savedWaiting[0],JSON.parse(waitingBefore)[0]);assert.deepEqual(savedWaiting[1].rows,waitingRows);
+        await page.locator('#hwDepartmentPanel > summary').click();
+        await page.locator('#hwDepartmentName').fill('가상추가부서');await page.locator('#hwClearColumns').click();
+        await page.locator('#hwColumnOptions input[value="name"]').check();await page.locator('#hwColumnOptions input[value="phone"]').check();
+        await page.locator('#hwDepartmentForm button[type="submit"]').click();
+        try{await page.getByRole('button',{name:'가상추가부서',exact:true}).waitFor({state:'visible',timeout:5000});}
+        catch{throw new Error(`추가 부서 저장 실패: ${JSON.stringify(await page.evaluate(()=>({feedback:document.querySelector('#hwFeedback').textContent,name:document.querySelector('#hwDepartmentName').value,checked:document.querySelectorAll('#hwColumnOptions input:checked').length,buttons:[...document.querySelectorAll('#hwDownloadButtons button')].map(button=>button.textContent)})))}`);}
+        assert.equal(await page.getByRole('button',{name:'가상추가부서',exact:true}).isVisible(),true,'추가 부서 버튼을 저장 후 바로 표시');
+        const savedKey=await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles'));
+        await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>document.body?.classList.contains('ux12-ready'));
+        assert.equal(await page.locator('.page.active').getAttribute('id'),'hireWaiting','입사대기 주소 직접 진입');
+        assert.equal(await page.locator('#hwTableBody tr').count(),2,'다시 열면 저장된 명단 표시');
+        assert.equal(await page.locator('#hwPastePanel').getAttribute('open'),null,'저장된 명단을 열 때 붙여넣기는 접어 둠');
+        assert.equal(await page.getByRole('button',{name:'가상추가부서',exact:true}).isVisible(),true,'추가 부서 설정 유지');
+        assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles')),savedKey,'새로고침으로 저장 자료를 변경하지 않음');
+        const customDownload=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'가상추가부서',exact:true}).click()]).then(([file])=>file);
+        const customXml=extractSheet(fs.readFileSync(await customDownload.path()));
+        assert.match(customXml,/성명/);assert.match(customXml,/연락처/);assert.doesNotMatch(customXml,/주민등록번호|사원번호|가상직급|180cm/,'추가 부서는 선택한 두 열만 포함');
+        const backupRoundTrip=await page.evaluate(()=>{
+          const rows=window.erpBackupCenter.__test.packageFor(['hireWaitingProfiles'],'synthetic waiting verification').data.hireWaitingProfiles;
+          return JSON.stringify(window.erpBackupCenter.__test.normalizeRows('hireWaitingProfiles',rows))===JSON.stringify(rows);
+        });
+        assert.equal(backupRoundTrip,true,'전체 백업·복원은 명단과 부서 설정, 기존 프로필을 보존');
+        await page.screenshot({path:path.join(outputDir,'desktop-hire-waiting-filled.png'),fullPage:true});
+        await page.evaluate(()=>window.erpPermissions.useLocal('','viewer'));
+        assert.equal(await page.locator('#hwDownloadAll').isDisabled(),true,'조회 전용 다운로드 차단');
+        const denied=await page.evaluate(raw=>[window.erpHireWaiting.stagePaste(raw),window.erpHireWaiting.saveRoster(),window.erpHireWaiting.download('health-support'),window.erpHireWaiting.openDepartment(),window.erpHireWaiting.saveDepartment(),window.erpHireWaiting.deleteDepartment()],waitingText);
+        assert.deepEqual(denied,[false,false,false,false,false,false],'조회 전용의 직접 함수 호출 차단');
+        assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles')),savedKey);
+        await page.evaluate(()=>{window.erpPermissions.useLocal();window.setPage('applicants');});
+      }
       await page.evaluate(()=>window.setPage('form'));
       assert.equal(await page.locator('.page.active').getAttribute('id'),'form');
       await page.evaluate(()=>window.setPage('today'));
@@ -204,7 +289,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       assert.deepEqual(errors,[],`${viewport.name}: 브라우저 오류 ${errors.join(' | ')}`);
       await context.close();
     }
-    console.log('ui-visual-layout.js: 핵심 4메뉴·6화면·데스크톱/모바일·콘솔 오류 0건 확인 완료');
+    console.log('ui-visual-layout.js: 핵심 5메뉴·7화면·입사대기 XLSX/저장/권한·데스크톱/모바일·콘솔 오류 0건 확인 완료');
   }finally{
     if(browser)await browser.close();
     if(!server.killed)server.kill('SIGTERM');

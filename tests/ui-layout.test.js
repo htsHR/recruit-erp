@@ -15,10 +15,11 @@ const backup=read('js/backup-center.js');
 const components=read('css/components.css');
 const responsive=read('css/production-gate-responsive-polish.css');
 
-for(const id of ['home','applicants','form','today','calendar','backup','applicantForm','applicantTbody','detailModal','excelRowPasteModal','bulkModal','calendarDecisionModal','rosterOrderEditor','rosterPrintArea'])assert.match(index,new RegExp(`id="${id}"`),`${id} 핵심 UI가 없습니다.`);
+for(const id of ['home','applicants','form','today','hireWaiting','calendar','backup','applicantForm','applicantTbody','detailModal','excelRowPasteModal','bulkModal','calendarDecisionModal','rosterOrderEditor','rosterPrintArea','hwPasteRaw','hwDownloadButtons','hwSaveRoster'])assert.match(index,new RegExp(`id="${id}"`),`${id} 핵심 UI가 없습니다.`);
 for(const page of ['stats','schools','employees','templates','advancedSearch','dataHealth','duplicates','permissions','auditHistory','onboarding','storagePerformance','productionReadiness'])assert.doesNotMatch(index,new RegExp(`id="${page}"`));
-assert.equal((index.match(/class="nav-btn[^"]*"/g)||[]).length,4);
+assert.equal((index.match(/class="nav-btn[^"]*"/g)||[]).length,5);
 assert.match(index,/data-page="home"/);assert.match(index,/data-page="applicants"/);assert.match(index,/data-page="calendar"/);assert.match(index,/data-page="backup"/);
+assert.match(index,/data-page="hireWaiting"/);
 assert.match(index,/id="btnQuickApplicantEntry"/);assert.match(index,/data-go="form"/);assert.match(index,/data-go="today"/);
 assert.equal((index.match(/data-excel-paste-shortcut/g)||[]).length,2,'홈·지원자 목록 엑셀 등록 바로가기가 모두 있어야 합니다.');
 assert.match(index,/id="btnListExcelRowPaste"/);

@@ -8,6 +8,7 @@ function renderAll(){
   renderToday();
   renderCalendar();
   updateApplicantFormDerivedFields();
+  window.erpHireWaiting?.render();
 }
 
 const fields=['editId','applyDate','source','status','workplace','name','phone','email',
