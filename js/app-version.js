@@ -5,7 +5,7 @@
   root.erpAppVersion=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
   'use strict';
-  const VERSION='12.7.2';
+  const VERSION='12.7.3';
   const LOCAL_ONLY=true;
   return Object.freeze({VERSION,tag:`v${VERSION}`,mode:'local-only',LOCAL_ONLY});
 });

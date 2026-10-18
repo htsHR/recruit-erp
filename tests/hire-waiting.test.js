@@ -63,8 +63,12 @@ for(const preset of waiting.PRESETS){
   result.columns.forEach((column,index)=>{
     assert.match(sheet,new RegExp(`<col min="${index+1}" max="${index+1}" width="${sourceWidths[column.templateIndex]}" customWidth="1"/>`),'열 제거 후에도 각 필드의 원본 너비 유지');
   });
-  const nameCol=String.fromCharCode(65+keys.indexOf('name'));
-  assert.match(sheet,new RegExp(`<c r="${nameCol}3" s="23"`),'원본 두 번째 명단행의 노란색 성명 강조 유지');
+  for(const key of ['group','product','part','name','email']){
+    const col=String.fromCharCode(65+keys.indexOf(key));
+    const styles=[2,3].map(row=>sheet.match(new RegExp(`<c r="${col}${row}" s="(\\d+)"`))[1]);
+    assert.equal(styles[1],styles[0],`${preset.name}: ${key} 서식은 행 번호와 무관하게 동일`);
+    assert.notEqual(styles[1],'28','두 번째 줄에 선택 영역 가운데 맞춤을 복사하지 않음');
+  }
   assert.match(sheet,/<c r="D2" s="9"><v>/,'입사날짜는 원본 날짜 표시 서식을 사용하는 숫자 셀');
   for(const ref of sheet.matchAll(/sqref="([^"]+)"/g))for(const range of ref[1].split(' ')){
     for(const address of range.split(':')){assert.ok(address.charCodeAt(0)-64<=result.columns.length,'조건부 서식은 실제 다운로드 열 범위 안에만 적용');assert.ok(Number(address.match(/\d+/)[0])<=3,'조건부 서식의 빈 백만 행을 복사하지 않음');}
@@ -81,6 +85,11 @@ for(const preset of waiting.PRESETS){
 assert.equal(JSON.stringify(rows),snapshot,'모든 다운로드 준비는 원본을 변경하지 않음');
 const statusRow=rows[0].slice();statusRow[2]='대기';statusRow[6]='여자';
 const appearanceContext=xlsx.formatContext([statusRow]);
+for(const column of waiting.COLUMNS){
+  for(const rowIndex of [1,6,13,14,28,29,100]){
+    assert.equal(xlsx.appearance(column,rowIndex),xlsx.appearance(column,0),`${column.key}: 행 위치에 따른 수동 색상·정렬 차이 없음`);
+  }
+}
 assert.match(xlsx.appearance(waiting.COLUMNS[2],0,statusRow[2],appearanceContext),/background-color:#FFC000/,'연락상태 조건부 색상');
 assert.match(xlsx.appearance(waiting.COLUMNS[6],0,statusRow[6],appearanceContext),/background-color:#C00000/,'성별 조건부 색상');
 assert.equal(xlsx.displayText(waiting.COLUMNS[3],'2026-10-12'),'10월 12일','화면도 원본 입사날짜 표시 사용');
