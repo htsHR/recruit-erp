@@ -151,6 +151,27 @@
     catch(error){state.pasteBlocked=true;feedback(error.message,true);renderActions();return false;}
   }
   function cancelPaste(){state.stage=null;state.page=0;state.error='';state.pasteBlocked=false;if($('hwPasteRaw'))$('hwPasteRaw').value='';feedback('');render();}
+  function resetRoster(){
+    if(!requirePermission('applicant.write'))return false;
+    const key=typeof HIRE_WAITING_PROFILES_KEY!=='undefined'?HIRE_WAITING_PROFILES_KEY:'recruit_erp_hire_waiting_profiles';
+    try{
+      const before=root.localStorage.getItem(key),parsed=before?JSON.parse(before):[];
+      const stored=Array.isArray(parsed)?parsed:Array.isArray(parsed?.rows)?parsed.rows:null;
+      if(!stored)throw new Error('Invalid waiting-list storage');
+      const saved=stored.filter(record=>record?.kind===SHEET_KIND);
+      if(JSON.stringify(saved)!==JSON.stringify(sheets())){feedback('다른 창에서 명단이 바뀌었어요. 새로고침 후 다시 해주세요.',true);return false;}
+      if(!saved.length&&!state.stage&&!state.pasteBlocked&&!$('hwPasteRaw')?.value)return false;
+      const message=saved.length?`입사대기 명단을 모두 비울까요?\n저장된 명단 ${saved.length}개와 입력 중인 내용이 삭제됩니다.`:'입력한 입사대기 명단을 비울까요?';
+      if(!root.confirm(message)||!requirePermission('applicant.write'))return false;
+      if(root.localStorage.getItem(key)!==before){feedback('다른 창에서 자료가 바뀌었어요. 다시 확인해주세요.',true);return false;}
+      if(saved.length){
+        const next=stored.filter(record=>record?.kind!==SHEET_KIND);
+        if(typeof safeLocalStorageSet!=='function'||safeLocalStorageSet(key,JSON.stringify(next))!==true){feedback('초기화하지 못했어요. 명단은 그대로 있어요.',true);return false;}
+        hireWaitingProfiles=next;
+      }
+      state.selectedId='';cancelPaste();feedback('초기화했어요.');$('hwPasteRaw')?.focus();return true;
+    }catch{feedback('초기화하지 못했어요. 명단은 그대로 있어요.',true);return false;}
+  }
   function saveRoster(){
     if(!requirePermission('applicant.write')||!state.stage?.length||state.pasteBlocked)return false;
     const id=typeof uid==='function'?uid():root.crypto.randomUUID();
@@ -211,6 +232,7 @@
     $('hwDownloadButtons').innerHTML=profiles.map(profile=>`<button type="button" class="primary" data-waiting-download="${escapeHtml(profile.id)}" data-required-permission="export.standard" ${canDownload?'':'disabled'}>${escapeHtml(profile.name)}</button>`).join('');
     $('hwDownloadAll').disabled=!canDownload;
     $('hwSaveRoster').disabled=!state.stage?.length||state.pasteBlocked||!allowed('applicant.write');
+    $('hwResetRoster').disabled=!allowed('applicant.write')||(!sheets().length&&!state.stage&&!state.pasteBlocked&&!$('hwPasteRaw')?.value);
     $('hwCancelPaste').hidden=!state.stage&&!state.pasteBlocked;
     $('hwCustomProfiles').innerHTML=customProfiles().map(profile=>`<button type="button" class="ghost" data-waiting-edit="${escapeHtml(profile.id)}">${escapeHtml(profile.name)} 수정</button>`).join('');
   }
@@ -239,6 +261,7 @@
     $('hwPasteRaw').addEventListener('input',()=>{state.pasteBlocked=!!$('hwPasteRaw').value;feedback(state.pasteBlocked?'표 불러오기를 눌러주세요.':'');renderActions();});
     $('hwLoadPaste').addEventListener('click',()=>stagePaste($('hwPasteRaw').value));
     $('hwSaveRoster').addEventListener('click',saveRoster);$('hwCancelPaste').addEventListener('click',cancelPaste);$('hwDownloadAll').addEventListener('click',()=>download('all'));
+    $('hwResetRoster').addEventListener('click',resetRoster);
     $('hwDownloadButtons').addEventListener('click',event=>{const button=event.target.closest('[data-waiting-download]');if(button)download(button.dataset.waitingDownload);});
     $('hwSavedList').addEventListener('change',()=>{if(!state.stage){state.selectedId=$('hwSavedList').value;state.page=0;state.error='';feedback('');render();}});
     $('hwPreviousPage').addEventListener('click',()=>{state.page--;render();});$('hwNextPage').addEventListener('click',()=>{state.page++;render();});
@@ -252,7 +275,7 @@
     if(currentRows().length)$('hwPastePanel').open=false;
     state.ready=true;render();
   }
-  const api={COLUMNS,PRESETS,parsePaste,removeBodyMeasurements,buildExport,fileName,stagePaste,saveRoster,download,render,isDirty:()=>!!state.stage||state.pasteBlocked,openDepartment,saveDepartment,deleteDepartment};
+  const api={COLUMNS,PRESETS,parsePaste,removeBodyMeasurements,buildExport,fileName,stagePaste,saveRoster,resetRoster,download,render,isDirty:()=>!!state.stage||state.pasteBlocked,openDepartment,saveDepartment,deleteDepartment};
   if(root.document)Promise.resolve(root.erpRuntimeReady).then(result=>{if(result?.ok)init();});
   return api;
 });

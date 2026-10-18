@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.7.1');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.7.2');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=[process.env.ERP_CHROMIUM_EXECUTABLE,...(process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -50,9 +50,11 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       let rosterPrivacyConfirm='';
       let backupPrivacyConfirm='';
       let excelBatchConfirm='';
+      let waitingResetConfirm='',acceptWaitingReset=false;
       page.on('pageerror',error=>errors.push(`pageerror: ${error.message}`));
       page.on('console',message=>{if(message.type()==='error')errors.push(`console: ${message.text()}`);});
       page.on('dialog',dialog=>{
+        if(/입사대기 명단.*비울까요/.test(dialog.message())){waitingResetConfirm=dialog.message();return acceptWaitingReset?dialog.accept():dialog.dismiss();}
         if(/지원자 명단 인쇄/.test(dialog.message())){rosterPrivacyConfirm=dialog.message();return dialog.accept();}
         if(/JSON 백업/.test(dialog.message())){backupPrivacyConfirm=dialog.message();return dialog.accept();}
         if(/엑셀 붙여넣기 내용을 적용할까요/.test(dialog.message())){excelBatchConfirm=dialog.message();return dialog.accept();}
@@ -179,10 +181,35 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         await page.screenshot({path:path.join(outputDir,'desktop-hire-waiting-filled.png'),fullPage:true});
         await page.evaluate(()=>window.erpPermissions.useLocal('','viewer'));
         assert.equal(await page.locator('#hwDownloadAll').isDisabled(),true,'조회 전용 다운로드 차단');
-        const denied=await page.evaluate(raw=>[window.erpHireWaiting.stagePaste(raw),window.erpHireWaiting.saveRoster(),window.erpHireWaiting.download('health-support'),window.erpHireWaiting.openDepartment(),window.erpHireWaiting.saveDepartment(),window.erpHireWaiting.deleteDepartment()],waitingText);
-        assert.deepEqual(denied,[false,false,false,false,false,false],'조회 전용의 직접 함수 호출 차단');
+        assert.equal(await page.locator('#hwResetRoster').isDisabled(),true,'조회 전용 초기화 차단');
+        const denied=await page.evaluate(raw=>[window.erpHireWaiting.stagePaste(raw),window.erpHireWaiting.saveRoster(),window.erpHireWaiting.resetRoster(),window.erpHireWaiting.download('health-support'),window.erpHireWaiting.openDepartment(),window.erpHireWaiting.saveDepartment(),window.erpHireWaiting.deleteDepartment()],waitingText);
+        assert.deepEqual(denied,[false,false,false,false,false,false,false],'조회 전용의 직접 함수 호출 차단');
         assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles')),savedKey);
-        await page.evaluate(()=>{window.erpPermissions.useLocal();window.setPage('applicants');});
+        await page.evaluate(()=>window.erpPermissions.useLocal());
+        await page.locator('#hwResetRoster').click();
+        assert.match(waitingResetConfirm,/저장된 명단 1개/,'초기화 확인창에 삭제 범위 표시');
+        assert.equal(await page.evaluate(()=>localStorage.getItem('recruit_erp_hire_waiting_profiles')),savedKey,'초기화 취소는 저장 자료 보존');
+        assert.equal(await page.locator('#hwTableBody tr').count(),2,'취소하면 현재 명단 유지');
+        await page.evaluate(raw=>window.erpHireWaiting.stagePaste(raw),waitingText);await page.locator('#hwSaveRoster').click();
+        await page.locator('#hwPastePanel > summary').click();await page.locator('#hwPasteRaw').fill('잘못된 붙여넣기');await page.locator('#hwLoadPaste').click();
+        assert.equal(await page.locator('#hwResetRoster').isEnabled(),true,'입력 오류가 있어도 초기화 가능');
+        acceptWaitingReset=true;await page.locator('#hwResetRoster').click();
+        assert.match(waitingResetConfirm,/저장된 명단 2개/);
+        assert.equal(await page.locator('#hwTableBody tr').count(),0);assert.equal(await page.locator('#hwPasteRaw').inputValue(),'');
+        assert.equal(await page.locator('#hwFeedback').innerText(),'초기화했어요.');assert.equal(await page.locator('#hwSavedListLabel').isVisible(),false);
+        assert.equal(await page.locator('#hwDownloadAll').isDisabled(),true);assert.equal(await page.locator('#hwSaveRoster').isDisabled(),true);assert.equal(await page.locator('#hwResetRoster').isDisabled(),true);
+        assert.equal(await page.evaluate(()=>document.activeElement.id),'hwPasteRaw','바로 새 명단을 붙여넣도록 포커스 이동');
+        const keptWaiting=JSON.parse(savedKey).filter(record=>record.kind!=='waiting-sheet-v1');
+        assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('recruit_erp_hire_waiting_profiles'))),keptWaiting,'기존 프로필과 부서 설정 유지');
+        await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>document.body?.classList.contains('ux12-ready'));
+        assert.equal(await page.locator('#hwTableBody tr').count(),0,'새로고침해도 비운 상태 유지');assert.notEqual(await page.locator('#hwPastePanel').getAttribute('open'),null);
+        assert.equal(await page.getByRole('button',{name:'가상추가부서',exact:true}).isVisible(),true,'초기화 후에도 부서 버튼 유지');
+        await page.screenshot({path:path.join(outputDir,'desktop-hire-waiting-reset.png'),fullPage:true});
+        await page.locator('#hwPasteRaw').evaluate((node,raw)=>{const clipboard=new DataTransfer();clipboard.setData('text/plain',raw);node.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));},waitingText);
+        assert.equal(await page.locator('#hwDownloadAll').isEnabled(),true,'초기화 후 새 명단 붙여넣기 사용 가능');
+        await page.locator('#hwResetRoster').click();assert.equal(await page.locator('#hwTableBody tr').count(),0);
+        assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('recruit_erp_hire_waiting_profiles'))),keptWaiting,'저장 전 입력 초기화는 기존 자료를 쓰지 않음');
+        await page.evaluate(()=>window.setPage('applicants'));
       }
       await page.evaluate(()=>window.setPage('form'));
       assert.equal(await page.locator('.page.active').getAttribute('id'),'form');

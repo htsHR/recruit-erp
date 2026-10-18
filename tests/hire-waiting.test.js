@@ -99,9 +99,9 @@ assert.throws(()=>waiting.buildExport(rows,{columns:[]}),/열/);
 // Existing storage, explicit save, quota failure and direct permission guards.
 const legacy={id:'legacy-waiting-profile',applicantId:'legacy-applicant',employeeNo:'0001',groupName:'보존그룹',unknownField:'원문 유지'};
 const key='recruit_erp_hire_waiting_profiles',storage=new Map([[key,JSON.stringify([legacy])]]);
-let writable=true,permit=true,writes=0;
+let writable=true,permit=true,writes=0,confirmReset=false,confirmCalls=0,onConfirm=null;
 const context={
-  window:{document:{getElementById:()=>null},localStorage:{getItem:name=>storage.get(name)??null},erpPermissions:{require:()=>permit,has:()=>permit}},
+  window:{document:{getElementById:()=>null},localStorage:{getItem:name=>storage.get(name)??null},erpPermissions:{require:()=>permit,has:()=>permit},confirm(message){confirmCalls++;assert.match(message,/입사대기 명단/);if(onConfirm)onConfirm();return confirmReset;}},
   console,Promise,Date,Set,Map,JSON,crypto:globalThis.crypto,
   uid:()=>`synthetic-sheet-${writes+1}`,
   safeLocalStorageSet(name,value){writes++;if(!writable)return false;storage.set(name,value);return true;}
@@ -120,6 +120,31 @@ assert.equal(api.stagePaste(raw),true);assert.equal(api.saveRoster(),true);
 stored=JSON.parse(storage.get(key));assert.equal(stored.length,3,'새 명단 저장은 기존 명단을 덮어쓰지 않음');
 assert.deepEqual(stored[0],legacy);assert.deepEqual(stored[1].rows,synthetic);
 permit=false;const writeCount=writes;
-assert.equal(api.stagePaste(raw),false);assert.equal(api.saveRoster(),false);assert.equal(api.download('health-support'),false);assert.equal(api.openDepartment(),false);assert.equal(api.saveDepartment(),false);assert.equal(api.deleteDepartment(),false);
+assert.equal(api.stagePaste(raw),false);assert.equal(api.saveRoster(),false);assert.equal(api.resetRoster(),false);assert.equal(api.download('health-support'),false);assert.equal(api.openDepartment(),false);assert.equal(api.saveDepartment(),false);assert.equal(api.deleteDepartment(),false);
 assert.equal(writes,writeCount,'조회 전용의 직접 함수 호출도 쓰기·내보내기 차단');
+assert.equal(confirmCalls,0,'조회 전용은 초기화 확인창도 열지 않음');
+permit=true;assert.equal(api.stagePaste(raw),true);
+const exportSettings={id:'waiting-exports-v1',applicantId:'excel-exports:settings',kind:'waiting-exports-v1',customExports:[{id:'department:synthetic',name:'가상부서',columns:['name','phone']}]};
+stored.push(exportSettings);storage.set(key,JSON.stringify(stored));
+const beforeReset=storage.get(key),beforeMemory=JSON.stringify(context.getProfiles()),beforeResetWrites=writes;
+assert.equal(api.resetRoster(),false,'초기화 확인 취소');
+assert.equal(storage.get(key),beforeReset);assert.equal(JSON.stringify(context.getProfiles()),beforeMemory);assert.equal(api.isDirty(),true);assert.equal(writes,beforeResetWrites);
+confirmReset=true;writable=false;
+assert.equal(api.resetRoster(),false,'저장 실패 시 초기화 중단');
+assert.equal(storage.get(key),beforeReset);assert.equal(JSON.stringify(context.getProfiles()),beforeMemory);assert.equal(api.isDirty(),true);
+writable=true;
+const concurrent=JSON.stringify([...stored,{id:'another-tab',applicantId:'excel-list:another-tab',kind:'waiting-sheet-v1',rows:synthetic}]);
+storage.set(key,concurrent);const beforeConcurrentWrites=writes,beforeConcurrentConfirm=confirmCalls;
+assert.equal(api.resetRoster(),false,'다른 창의 새 명단을 확인 없이 지우지 않음');assert.equal(storage.get(key),concurrent);assert.equal(writes,beforeConcurrentWrites);assert.equal(confirmCalls,beforeConcurrentConfirm);
+storage.set(key,beforeReset);onConfirm=()=>storage.set(key,concurrent);
+assert.equal(api.resetRoster(),false,'확인창이 열린 사이의 변경도 보존');assert.equal(storage.get(key),concurrent);assert.equal(writes,beforeConcurrentWrites);assert.equal(api.isDirty(),true);
+storage.set(key,'invalid-json');onConfirm=null;assert.equal(api.resetRoster(),false);assert.equal(storage.get(key),'invalid-json');assert.equal(writes,beforeConcurrentWrites);
+storage.set(key,beforeReset);const beforeSuccessWrites=writes;
+assert.equal(api.resetRoster(),true);assert.equal(writes,beforeSuccessWrites+1,'초기화 저장은 한 번');assert.equal(api.isDirty(),false);
+assert.deepEqual(JSON.parse(storage.get(key)),[legacy,exportSettings],'입사대기 명단만 삭제하고 기존 자료와 부서 설정 보존');
+assert.equal(JSON.stringify(context.getProfiles()),storage.get(key));
+const afterResetWrites=writes,afterResetConfirms=confirmCalls;
+assert.equal(api.resetRoster(),false,'빈 명단은 초기화하지 않음');assert.equal(writes,afterResetWrites);assert.equal(confirmCalls,afterResetConfirms);
+assert.equal(api.stagePaste(raw),true);assert.equal(api.resetRoster(),true);assert.equal(api.isDirty(),false);assert.equal(writes,afterResetWrites,'저장 전 명단만 비울 때는 업무 저장소를 쓰지 않음');
+assert.equal(api.stagePaste('잘못된 붙여넣기'),false);assert.equal(api.isDirty(),true);assert.equal(api.resetRoster(),true);assert.equal(api.isDirty(),false);assert.equal(writes,afterResetWrites,'붙여넣기 오류도 초기화 가능');
 console.log('hire-waiting.test.js: Excel 원문·3개 다운로드 규칙·비고 선택 삭제·XLSX·기존 자료 및 저장 실패·권한 보호 확인 완료');
