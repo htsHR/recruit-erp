@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.7.2');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.7.3');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=[process.env.ERP_CHROMIUM_EXECUTABLE,...(process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -98,7 +98,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         const waitingHeaders=await page.evaluate(()=>window.erpHireWaiting.COLUMNS.map(column=>column.label));
         const waitingRows=[
           ['1','0000123','입사대기','2099-10-12','가상근무지','','남','가상그룹','가상제품','가상파트','가상대기1','가상직급','000000-0000000','2000-01-02','25','fake@example.com','대졸','가상대학교','가상학과','01000000001','가상지역','기숙사','180cm / 75kg · 기숙사 희망 / 지원팀 확인'],
-          ['2','0000124','입사대기','2099-10-12','가상근무지','','여','','','','가상대기2','가상직급','000000-0000000','2001-02-03','24','=HYPERLINK("https://example.invalid")','','','','01000000002','','출퇴근','지원팀 확인, 2026/10/12 회신']
+          ['2','0000124','입사대기','2099-10-12','가상근무지','','여','가상그룹2','가상제품2','가상파트2','가상대기2','가상직급','000000-0000000','2001-02-03','24','=HYPERLINK("https://example.invalid")','','','','01000000002','','출퇴근','지원팀 확인, 2026/10/12 회신']
         ];
         const waitingText=[waitingHeaders,...waitingRows].map(row=>row.map(value=>value.includes('"')?`"${value.replaceAll('"','""')}"`:value).join('\t')).join('\n');
         await page.locator('#hwPasteRaw').evaluate((node,raw)=>{const clipboard=new DataTransfer();clipboard.setData('text/plain',raw);node.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));},waitingText);
@@ -109,7 +109,10 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         });
         assert.equal(sheetAppearance.header,'rgb(255, 192, 0)','화면 제목도 원본 주황색');
         assert.equal(sheetAppearance.headerColor,'rgb(0, 0, 0)');assert.ok(Math.abs(parseFloat(sheetAppearance.fontSize)-40/3)<0.1,'제목은 원본 10pt');
-        assert.equal(sheetAppearance.status,'rgb(146, 208, 80)','원본 연락상태 초록색');assert.equal(sheetAppearance.name,'rgb(255, 255, 0)','원본 강조 색상');
+        assert.equal(sheetAppearance.status,'rgb(146, 208, 80)','원본 연락상태 초록색');assert.equal(sheetAppearance.name,'rgb(255, 255, 255)','두 번째 줄의 성명에 임의 강조 색상을 붙이지 않음');
+        const bodyStyles=await page.locator('#hwTableBody tr').evaluateAll(rows=>rows.map(row=>Array.from(row.cells,cell=>cell.getAttribute('style'))));
+        assert.deepEqual(bodyStyles[1],bodyStyles[0],'같은 열은 NO 1과 NO 2에서 같은 서식을 사용');
+        for(const index of [0,7,8,9,10])assert.equal(await page.locator(`#hwTableBody tr:nth-child(2) td:nth-child(${index+1})`).textContent(),waitingRows[1][index],'두 번째 줄의 번호·그룹·제품·파트·성명을 각각 제자리 표시');
         assert.ok(Math.abs(sheetAppearance.nameWidth-53)<1,'화면도 성명 열의 원본 너비 유지');
         assert.equal(await page.locator('#hwPastePanel').getAttribute('open'),null,'붙여넣으면 표와 아래 다운로드 버튼으로 바로 이동');
         assert.match(await page.locator('#hwCount').innerText(),/2명 · 저장 전/);
@@ -139,6 +142,9 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
             return [...document.querySelectorAll('sheetData > row')].map(row=>[...row.querySelectorAll('c')].map(cell=>cell.querySelector('t')?.textContent??cell.querySelector('v')?.textContent??''));
           },sheetXml);
           const headers=matrix[0];
+          const exportedStyles=await page.evaluate(xml=>Array.from(new DOMParser().parseFromString(xml,'application/xml').querySelectorAll('sheetData > row')).slice(1).map(row=>Array.from(row.querySelectorAll('c'),cell=>cell.getAttribute('s'))),sheetXml);
+          assert.deepEqual(exportedStyles[1],exportedStyles[0],`${preset}: 실제 다운로드도 두 번째 줄 서식이 동일`);
+          for(const index of [0,7,8,9,10])assert.equal(matrix[2][headers.indexOf(index===10?'성  명':waitingHeaders[index])],waitingRows[1][index],`${preset}: 두 번째 줄의 각 열 내용 보존`);
           assert.equal(headers.includes('직 급'),preset==='all',`${preset}: 원본 제목 및 직급 다운로드 규칙`);
           assert.equal(headers.includes('성  명'),true,'원본 성명 제목의 띄어쓰기 보존');
           assert.equal(headers.includes('주민등록번호'),['health-support','all'].includes(preset),`${preset}: 주민등록번호 다운로드 규칙`);
