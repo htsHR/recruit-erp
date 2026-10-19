@@ -1,25 +1,41 @@
 @media screen {
   #hireWaiting { min-width: 0; }
+  #hireWaiting .hw-workspace { padding: 24px; background: #fff; border: 1px solid var(--ux12-line); border-radius: 14px; box-shadow: 0 3px 14px #21304703; }
+  #hireWaiting .hw-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+  #hireWaiting .hw-heading h3 { margin: 0; color: #213047; font-size: 19px; letter-spacing: -.5px; }
   #hireWaiting [hidden] { display: none !important; }
-  #hireWaiting .hw-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  #hireWaiting .hw-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
   #hireWaiting .hw-header label { display: flex; align-items: center; gap: 8px; color: #475467; font-size: 14px; }
-  #hireWaiting #hwCount { color: #475467; font-size: 14px; }
-  #hireWaiting .hw-paste { border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; margin-bottom: 12px; }
-  #hireWaiting .hw-paste > summary { padding: 12px 16px; color: #344054; cursor: pointer; font-weight: 600; }
-  #hireWaiting .hw-paste-content { padding: 0 16px 16px; }
+  #hireWaiting #hwCount { color: #4d6284; background: #f0f4fa; padding: 5px 9px; border-radius: 6px; font-size: 12px; }
+  #hireWaiting .hw-paste { border: 1px solid #deebe5; border-radius: 10px; background: #f8fbfa; margin-bottom: 20px; }
+  #hireWaiting .hw-paste > summary { display: flex; align-items: center; gap: 10px; padding: 16px 18px; color: #287254; cursor: pointer; font-weight: 600; font-size: 14px; list-style: none; }
+  #hireWaiting .hw-paste > summary::-webkit-details-marker { display: none; }
+  #hireWaiting .hw-paste > summary::after { content: ''; width: 6px; height: 6px; margin-left: auto; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); }
+  #hireWaiting .hw-paste[open] > summary::after { transform: rotate(225deg); }
+  #hireWaiting .hw-paste-icon { width: 20px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  #hireWaiting .hw-paste-content { padding: 0 18px 18px; }
   #hireWaiting .hw-paste-content p { margin: 0 0 8px; font-size: 13px; color: #667085; }
-  #hireWaiting #hwPasteRaw { width: 100%; min-height: 112px; resize: vertical; font-size: 14px; margin-bottom: 8px; }
+  #hireWaiting #hwPasteRaw { width: 100%; min-height: 150px; padding: 18px; resize: vertical; border: 1px dashed #afcbbf !important; background: #fff; font-size: 14px; margin: 6px 0 12px; }
   #hireWaiting .hw-table-wrap { max-height: 52vh; overflow: auto; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
   #hireWaiting .hw-table { table-layout: fixed !important; border-collapse: separate; border-spacing: 0; color: #000; }
   #hireWaiting .hw-table th { position: sticky; top: 0; z-index: 2; height: 37px !important; padding: 2px !important; vertical-align: middle; }
   #hireWaiting .hw-table td { height: 40px !important; padding: 2px !important; vertical-align: middle; overflow: hidden; text-overflow: clip; }
   #hireWaiting .hw-pagination { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 12px 0; font-size: 13px; }
-  #hireWaiting .hw-download-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px; padding: 16px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
+  #hireWaiting .hw-download-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-top: 20px; padding: 20px 0 4px; border: 0; border-top: 1px solid #e8edf4; background: #fff; }
+  #hireWaiting .hw-download-files { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #hireWaiting .hw-download-label { flex-basis: 100%; color: #718096; font-size: 12px; margin-bottom: 4px; }
   #hireWaiting #hwDownloadButtons { display: flex; gap: 8px; flex-wrap: wrap; }
+  #hireWaiting #hwDownloadButtons button { color: #246b50 !important; background: #edf7f1 !important; border-color: #dcece2 !important; }
+  #hireWaiting #hwDownloadButtons button:hover:not(:disabled) { color: #1c573f !important; background: #deefe5 !important; border-color: #b8d8c6 !important; }
   #hireWaiting .hw-download-bar button { min-height: 42px; font-size: 14px; }
-  #hireWaiting .hw-save-actions { display: flex; gap: 8px; margin-left: auto; }
+  #hireWaiting .hw-save-actions { display: flex; gap: 8px; margin-left: auto; align-self: flex-end; }
+  #hireWaiting #hwSaveRoster { background: var(--ux12-blue) !important; border-color: var(--ux12-blue) !important; color: #fff !important; }
+  #hireWaiting #hwSaveRoster:hover:not(:disabled) { background: #244fd2 !important; }
+  #hireWaiting #hwResetRoster { border-color: transparent !important; color: #69758a !important; background: #f5f7fa !important; }
+  #hireWaiting #hwResetRoster:hover:not(:disabled) { background: #fff0ed !important; color: #ad3d2d !important; }
   #hireWaiting #hwFeedback { margin: 10px 0; min-height: 20px; color: #475467; font-size: 14px; }
   #hireWaiting #hwFeedback.is-error { color: #b42318; }
+  #hireWaiting #hwFeedback:empty { display: none; }
   #hireWaiting .hw-departments > summary { padding: 8px 0; cursor: pointer; color: #667085; font-size: 13px; }
   #hireWaiting .hw-department-content { padding: 16px; border: 1px solid #d0d5dd; border-radius: 8px; background: #fff; }
   #hireWaiting .hw-department-title { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
@@ -29,4 +45,9 @@
   #hireWaiting .hw-column-options input, #hireWaiting .hw-measurement-option input { width: 16px; height: 16px; margin: 0; }
   #hireWaiting .hw-department-actions { display: flex; gap: 8px; margin-top: 16px; }
   #hireWaiting #hwCustomProfiles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+}
+
+@media screen and (max-width: 600px) {
+  #hireWaiting .hw-workspace { padding: 16px; }
+  #hireWaiting .hw-save-actions { flex-wrap: wrap; }
 }

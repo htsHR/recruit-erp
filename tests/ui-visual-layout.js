@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.7.3');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.8.0');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=[process.env.ERP_CHROMIUM_EXECUTABLE,...(process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -85,11 +85,14 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         }
         await page.locator(`.nav-btn[data-page="${target}"]`).click();
         await page.waitForFunction(id=>document.querySelector('.page.active')?.id===id,target);
+        assert.equal(await page.locator('.nav-btn[aria-current="page"]').count(),1,'현재 메뉴는 하나만 표시');
+        assert.equal(await page.locator('.nav-btn[aria-current="page"]').getAttribute('data-page'),target);
+        assert.equal(await page.locator('.nav-ico svg').count(),5,'메뉴 아이콘은 글꼴 없이 표시');
         if(viewport.width<=1020){
           assert.equal(await page.evaluate(()=>document.body.classList.contains('sidebar-mobile-open')),false,`${viewport.name}: 메뉴 선택 뒤 사이드바 닫기`);
           await page.waitForFunction(()=>document.querySelector('.sidebar')?.getBoundingClientRect().right<=1);
         }
-        await page.screenshot({path:path.join(outputDir,`${viewport.name}-${target}.png`),fullPage:true});
+        await page.screenshot({path:path.join(outputDir,`${viewport.name}-${target}.png`),fullPage:true,animations:'disabled'});
       }
       assert.deepEqual(await page.evaluate(()=>['recruit_erp_applicants_stable','recruit_erp_schools','recruit_erp_employees'].map(key=>localStorage.getItem(key))),originalBusinessData,`${viewport.name}: 화면 이동은 업무 자료를 변경하지 않음`);
       if(viewport.name==='desktop'){
@@ -184,7 +187,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
           return JSON.stringify(window.erpBackupCenter.__test.normalizeRows('hireWaitingProfiles',rows))===JSON.stringify(rows);
         });
         assert.equal(backupRoundTrip,true,'전체 백업·복원은 명단과 부서 설정, 기존 프로필을 보존');
-        await page.screenshot({path:path.join(outputDir,'desktop-hire-waiting-filled.png'),fullPage:true});
+        await page.screenshot({path:path.join(outputDir,'desktop-hire-waiting-filled.png'),fullPage:true,animations:'disabled'});
         await page.evaluate(()=>window.erpPermissions.useLocal('','viewer'));
         assert.equal(await page.locator('#hwDownloadAll').isDisabled(),true,'조회 전용 다운로드 차단');
         assert.equal(await page.locator('#hwResetRoster').isDisabled(),true,'조회 전용 초기화 차단');
@@ -210,7 +213,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         await page.reload({waitUntil:'networkidle'});await page.waitForFunction(()=>document.body?.classList.contains('ux12-ready'));
         assert.equal(await page.locator('#hwTableBody tr').count(),0,'새로고침해도 비운 상태 유지');assert.notEqual(await page.locator('#hwPastePanel').getAttribute('open'),null);
         assert.equal(await page.getByRole('button',{name:'가상추가부서',exact:true}).isVisible(),true,'초기화 후에도 부서 버튼 유지');
-        await page.screenshot({path:path.join(outputDir,'desktop-hire-waiting-reset.png'),fullPage:true});
+        await page.screenshot({path:path.join(outputDir,'desktop-hire-waiting-reset.png'),fullPage:true,animations:'disabled'});
         await page.locator('#hwPasteRaw').evaluate((node,raw)=>{const clipboard=new DataTransfer();clipboard.setData('text/plain',raw);node.dispatchEvent(new ClipboardEvent('paste',{clipboardData:clipboard,bubbles:true,cancelable:true}));},waitingText);
         assert.equal(await page.locator('#hwDownloadAll').isEnabled(),true,'초기화 후 새 명단 붙여넣기 사용 가능');
         await page.locator('#hwResetRoster').click();assert.equal(await page.locator('#hwTableBody tr').count(),0);
@@ -288,7 +291,7 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         assert.equal(await page.locator('#bcFullRestore').isDisabled(),true,'desktop: 손상된 파일의 전체 복원 차단');
         assert.deepEqual(await page.evaluate(keys=>keys.map(key=>localStorage.getItem(key)),backupKeys),beforeInspection,'desktop: 손상된 파일 검사로 업무 자료를 변경하지 않음');
         await page.locator('#bcClearInspection').click();
-        await page.screenshot({path:path.join(outputDir,'desktop-backup-history.png'),fullPage:true});
+        await page.screenshot({path:path.join(outputDir,'desktop-backup-history.png'),fullPage:true,animations:'disabled'});
 
         const rosterDate='2099-09-03';
         await page.evaluate(date=>{
