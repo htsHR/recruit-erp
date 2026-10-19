@@ -91,13 +91,13 @@ function countText(n){ return `${n}명`; }
 function setText(id, value){ const el=$(id); if(el) el.textContent=value; }
 
 function setPage(page){
-  const corePages=new Set(['home','applicants','form','today','hireWaiting','calendar','backup']);
-  if(!corePages.has(page))page='home';
+  const corePages=new Set(['applicants','calendar','hireWaiting','backup']);
+  if(!corePages.has(page))page='applicants';
   if(page!=='applicants'&&applicantQuickDetailIsOpen()&&closeApplicantQuickDetail({restoreFocus:false})===false)return false;
   document.body.dataset.activePage=page;
   document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===page));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
-  const titleMap = {home:'오늘 업무',applicants:'지원자',form:'신규 지원자 등록',today:'오늘 처리 목록',hireWaiting:'입사대기',calendar:'일정·평가표',backup:'백업'};
+  const titleMap = {home:'오늘 업무',applicants:'명단 등록',form:'신규 지원자 등록',today:'오늘 처리 목록',hireWaiting:'입사대기',calendar:'면접평가표',backup:'백업'};
   const descMap = {
     home:'오늘 처리할 일과 주요 현황을 한곳에서 확인합니다.',
     applicants:'지원자 진행상태와 면접·입사 일정을 관리합니다.',
@@ -1207,6 +1207,7 @@ function excelPasteBatchPersistWithoutHistory(){
   return true;
 }
 function registerExcelPasteBatch(){
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return false;
   excelPasteBatchRecalculate();
   const selected=excelPasteBatchSelected();
   excelPasteBatchUpdateSelectionState();
@@ -1241,6 +1242,7 @@ function registerExcelPasteBatch(){
   if(typeof uxToast==='function')uxToast(`엑셀 붙여넣기: 신규 ${created.length}명 · 변경 ${updatedById.size}명 적용 완료`);
 }
 function undoExcelPasteBatch(){
+  if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return false;
   if(!excelPasteBatchUndoSnapshot)return;
   const summary=excelPasteBatchUndoSummary||{newCount:excelPasteBatchRegisteredIds.length,updateCount:0};
   if(!confirm(`방금 적용한 작업을 모두 취소할까요?\n\n신규 ${summary.newCount}명 등록과 기존 ${summary.updateCount}명 변경을 적용 전 상태로 되돌립니다.`))return;
@@ -1447,7 +1449,7 @@ function parseExcelRowPaste(){
     if(rows.length&&excelPasteIsHeaderRow(rows[0]))headerRow=rows.shift();
     rows=rows.filter(row=>row.some(Boolean));
     if(!rows.length)throw new Error('지원자 데이터 행을 찾지 못했습니다. 헤더가 아닌 지원자 행도 함께 복사해 주세요.');
-    if(rows.length>1){
+    if(rows.length>1||window.erpSimpleWorkspace?.enabled){
       if(excelPasteCurrentApplicant())throw new Error('기존 지원자 수정 중에는 한 행만 붙여넣을 수 있습니다. 여러 행 등록은 신규 등록 화면에서 진행하세요.');
       excelPasteBatchHeaderRow=headerRow;
       excelPastePrepareBatch(rows,headerRow);

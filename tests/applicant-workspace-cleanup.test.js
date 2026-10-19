@@ -13,7 +13,7 @@ const advanced=read('js/applicant-bulk.js');
 const reboot=read('js/ux-reboot-v12.js');
 const index=read('index.html');
 const applicantPageId=index.indexOf('id="applicants"');
-const applicantPage=index.slice(index.lastIndexOf('<section',applicantPageId),index.indexOf('<section class="page" id="form"',applicantPageId));
+const applicantPage=index.slice(index.lastIndexOf('<section',applicantPageId),index.indexOf('<section class="legacy-workspace" id="form"',applicantPageId));
 
 const textFunction=applicants.match(/function excelPasteText\(v\)\{[^\n]+\}/)?.[0]||'';
 const careerFunction=applicants.match(/function excelPasteCareerType\(value\)\{[\s\S]*?\n\}/)?.[0]||'';
