@@ -76,6 +76,9 @@
     nav.dataset.ux12Ready='true';updateActiveNavigation();
   }
   function updateActiveNavigation(){
+    root.document.querySelectorAll('.nav-btn[data-page]').forEach(button=>{
+      if(button.classList.contains('active'))button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+    });
     root.document.querySelectorAll('.ux12-nav-group').forEach(group=>{
       const hasActive=Boolean(group.querySelector('.nav-btn.active'));group.classList.toggle('has-active',hasActive);
       if(hasActive&&group.classList.contains('lite-nav-secondary')){
