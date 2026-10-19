@@ -2,14 +2,14 @@
 (function(root){
   'use strict';
 
-  const NAV_GROUPS=[{key:'primary',label:'핵심 업무',pages:['home','applicants','hireWaiting','calendar','backup'],collapsible:false}];
+  const NAV_GROUPS=[{key:'primary',label:'핵심 업무',pages:['applicants','calendar','hireWaiting','backup'],collapsible:false}];
   const PAGE_ROUTES={
     home:'#/today',today:'#/today/tasks',applicants:'#/applicants',form:'#/applicants/new',hireWaiting:'#/hire-waiting',calendar:'#/calendar',backup:'#/backup'
   };
   const ROUTE_PAGES=Object.fromEntries(Object.entries(PAGE_ROUTES).map(([page,route])=>[route,page]));
-  const routing={index:0,suppress:false,reverting:false,initialized:false,currentPage:'home'};
+  const routing={index:0,suppress:false,reverting:false,initialized:false,currentPage:'applicants'};
   const menuPreview={openTimer:0,closeTimer:0};
-  const PAGE_LABELS={home:'오늘 업무',today:'오늘 처리 목록',applicants:'지원자',form:'지원자 등록',hireWaiting:'입사대기',calendar:'일정·평가표',backup:'백업'};
+  const PAGE_LABELS={home:'오늘 업무',today:'오늘 처리 목록',applicants:'명단 등록',form:'지원자 등록',hireWaiting:'입사대기',calendar:'면접평가표',backup:'백업'};
 
   const $=id=>root.document.getElementById(id);
   const rows=()=>typeof applicants!=='undefined'&&Array.isArray(applicants)?applicants:[];
@@ -112,7 +112,7 @@
     const notice=iconButton('ux12Notifications','오늘 처리 목록','M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4');
     const help=iconButton('ux12Help','도움말','M9.2 9a3 3 0 1 1 4.8 2.4c-1.2.8-2 1.2-2 2.6M12 18h.01');
     notice.addEventListener('click',()=>root.setPage?.('today'));
-    const helpPanel=root.document.createElement('div');helpPanel.id='ux12HelpPanel';helpPanel.className='ux12-help-panel';helpPanel.hidden=true;helpPanel.innerHTML='<strong>빠른 사용 안내</strong><p>왼쪽 메뉴에서 업무를 선택하고, 지원자 행을 누르면 빠른 보기가 열립니다.</p><button type="button" class="ghost" id="ux12HelpClose">닫기</button>';
+    const helpPanel=root.document.createElement('div');helpPanel.id='ux12HelpPanel';helpPanel.className='ux12-help-panel';helpPanel.hidden=true;helpPanel.innerHTML='<strong>빠른 사용 안내</strong><p>명단 등록에서 엑셀을 붙여넣고, 면접평가표에서 날짜를 골라 인쇄하세요.</p><button type="button" class="ghost" id="ux12HelpClose">닫기</button>';
     help.setAttribute('aria-controls','ux12HelpPanel');help.setAttribute('aria-expanded','false');
     help.addEventListener('click',()=>{helpPanel.hidden=!helpPanel.hidden;help.setAttribute('aria-expanded',String(!helpPanel.hidden));if(!helpPanel.hidden)$('ux12HelpClose')?.focus();});
     helpPanel.querySelector('#ux12HelpClose')?.addEventListener('click',()=>{helpPanel.hidden=true;help.setAttribute('aria-expanded','false');help.focus();});
@@ -253,18 +253,18 @@
   function routeForPage(page){return PAGE_ROUTES[page]||`#/${String(page||'today').replace(/[^a-zA-Z0-9_-]/g,'')}`;}
   function activePageId(){return root.document.querySelector('.page.active')?.id||routing.currentPage||'home';}
   function firstAccessiblePage(){
-    for(const page of ['home','today','applicants','calendar','backup'])if(routeCanOpen(page))return page;
-    return 'home';
+    for(const page of ['applicants','calendar','hireWaiting','backup'])if(routeCanOpen(page))return page;
+    return 'applicants';
   }
   function routeCanOpen(page){
-    if(!root.document.getElementById(page))return false;
-    const button=root.document.querySelector(`.nav-btn[data-page="${page}"]`);if(!button)return page==='home';
+    if(!['applicants','calendar','hireWaiting','backup'].includes(page)||!root.document.getElementById(page))return false;
+    const button=root.document.querySelector(`.nav-btn[data-page="${page}"]`);if(!button)return false;
     if(button.hidden||button.classList.contains('erp-permission-hidden')||button.getAttribute('aria-hidden')==='true')return false;
     return root.getComputedStyle(button).display!=='none';
   }
   function resolveRoute(state=root.history.state){
     const hash=root.location.hash||PAGE_ROUTES.applicants;
-    if(hash==='#/applicants/quick'){
+    if(hash==='#/applicants/quick'&&!root.erpSimpleWorkspace?.enabled){
       const quickId=text(state?.quickApplicantId);
       if(routeCanOpen('applicants')&&quickId&&rows().some(row=>String(row?.id)===quickId))return {page:'applicants',route:hash,quickId,known:true};
       if(routeCanOpen('applicants'))return {page:'applicants',route:PAGE_ROUTES.applicants,quickId:'',known:false};
@@ -368,11 +368,16 @@
     if(root.document.body.dataset.ux12Ready==='true')return;
     root.document.body.dataset.ux12Ready='true';root.document.body.classList.add('ux12-ready');
     syncDesktopShell();root.addEventListener('resize',syncDesktopShell,{passive:true});
-    auditPhotoFreeShell();buildNavigation();buildShell();rebuildApplicantTable();organizeApplicantFilters();installHome();installTodaySummary();installWrappers();bindHomeSummary();
+    auditPhotoFreeShell();buildNavigation();buildShell();
+    if(root.erpSimpleWorkspace?.enabled)root.erpSimpleWorkspace.init();
+    else{rebuildApplicantTable();organizeApplicantFilters();installHome();installTodaySummary();bindHomeSummary();}
+    installWrappers();
     root.erpUx12Router={onQuickOpen:pushQuickRoute,onQuickClose:replaceQuickWithList,onQuickChange:updateQuickState,resolveRoute,routeForPage,activePageId,hasUnsavedChanges,state:routing};
     root.erpUx12={nextActionOf,scheduleOf,renderStageOverview,renderHomeSummary,updateTodaySummary,router:root.erpUx12Router};
     installRouting();
-    root.renderStats?.();root.renderHomeLists?.();root.renderToday?.();root.renderTable?.();updateActiveNavigation();
+    if(root.erpSimpleWorkspace?.enabled)root.erpSimpleWorkspace.render();
+    else{root.renderStats?.();root.renderHomeLists?.();root.renderToday?.();root.renderTable?.();}
+    updateActiveNavigation();
     root.__erpUx12FirstShownAt=root.performance?.now?.()||Date.now();
     root.performance?.mark?.('erp-ux12-first-shown');
     root.document.documentElement.classList.remove('ux12-booting');

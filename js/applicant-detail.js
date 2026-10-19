@@ -1,5 +1,10 @@
 /* Recruit ERP v12.5.3 — core applicant detail and form workflow. */
 function renderAll(){
+  if(window.erpSimpleWorkspace?.enabled){
+    window.erpSimpleWorkspace.render();
+    window.erpHireWaiting?.render();
+    return;
+  }
   renderStats();
   backupNotice();
   renderScheduleReminder();

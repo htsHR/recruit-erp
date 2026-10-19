@@ -142,6 +142,7 @@ bind('btnCopySummary','click',async()=>{
 
 bind('btnOpenExcelRowPaste','click',openExcelRowPaste);
 const openNewApplicantExcelPaste=()=>{
+  if(window.erpSimpleWorkspace?.enabled)return window.erpSimpleWorkspace.openPaste();
   if(window.erpPermissions&&!window.erpPermissions.require('applicant.write'))return;
   const opened=typeof window.openNewApplicantForm==='function'
     ? window.openNewApplicantForm()
