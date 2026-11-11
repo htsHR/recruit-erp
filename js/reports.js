@@ -48,7 +48,15 @@ function rosterRow(no, a){
   </tr>`;
 }
 function isRosterEligibleApplicant(a,dateStr){
-  return !!a && a.interviewDate===dateStr && normalizeStatus(a.status)==='면접예정';
+  if(!a||!rosterDateIsValid(dateStr)||a.interviewDate!==dateStr)return false;
+  const status=normalizeStatus(a.status);
+  // Personal Excel workflow: a supplied interview date is sufficient while pending.
+  // Read only; never rewrite the imported contact status to generate a form.
+  if(window.erpSimpleWorkspace?.enabled){
+    return ['','서류검토','서류합격','부재중','면접예정','다음면접'].includes(status)
+      && !['불합격','입사포기','입사철회'].includes(a.finalDecision);
+  }
+  return status==='면접예정';
 }
 function rosterDateIsValid(value){
   const s=String(value||'').trim();
@@ -157,7 +165,7 @@ function renderRosterOrderEditor(){
   list.innerHTML=rosterOrderEditorState.rows.length?`<div class="roster-order-editor-grid" role="table" aria-label="면접자 순서 편집 목록">
     <div class="roster-order-editor-row is-header" role="row"><span>이동</span><span>순번</span><span>성명</span><span>면접시간</span><span>위</span><span>아래</span><span>정보 수정</span></div>
     ${rosterOrderEditorState.rows.map(rosterOrderEditorRowHtml).join('')}
-  </div>`:'<div class="roster-order-editor-empty"><div><strong>선택 날짜의 면접예정자가 없습니다.</strong><span>대상자가 등록되면 이 화면에서 순서를 편집할 수 있습니다.</span></div></div>';
+  </div>`:'<div class="roster-order-editor-empty"><div><strong>선택 날짜에 인쇄할 명단이 없습니다.</strong><span>대상자가 등록되면 이 화면에서 순서를 편집할 수 있습니다.</span></div></div>';
   rosterOrderEditorUpdateDirty();rosterOrderEditorSetFeedback(rosterOrderEditorState.feedback,rosterOrderEditorState.tone);return true;
 }
 function openRosterOrderEditor(dateValue){
@@ -280,7 +288,7 @@ function openRosterPrint(){
   const dateStr=$('rosterDate').value;
   if(!dateStr){ alert('명단표를 뽑을 면접 날짜를 먼저 선택해주세요.'); return false; }
   const list=rosterApplicantsOn(dateStr);
-  if(!list.length && !confirm('선택하신 날짜에 면접예정 상태인 지원자가 없습니다. 빈 양식으로 출력할까요?')) return false;
+  if(!list.length && !confirm('선택하신 날짜에 인쇄할 명단이 없습니다. 빈 양식으로 출력할까요?')) return false;
   const printArea=$('rosterPrintArea');
   printArea.innerHTML=buildRosterHtml(dateStr);
   if(!beginRosterPrint())return false;

@@ -41,7 +41,7 @@
     select.value=counts.has(input.value)?input.value:'';
     const records=rosterDateIsValid(input.value)?rosterApplicantsOn(input.value):[];
     $('simpleInterviewCount').textContent=`${records.length}명 · ${Math.ceil(records.length/5)}장`;
-    tableRows($('simpleInterviewRows'),records,['name','gender','birthYear','interviewTime','workplace'],0,'이 날짜에 면접예정자가 없습니다.');
+    tableRows($('simpleInterviewRows'),records,['name','gender','birthYear','interviewTime','workplace'],0,'이 날짜에 인쇄할 명단이 없습니다.');
     $('btnRosterPrint').disabled=!rosterDateIsValid(input.value);
     $('btnRosterOrderEdit').disabled=records.length===0;
   }
