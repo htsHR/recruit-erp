@@ -83,4 +83,23 @@ const orderedHtml=context.buildRosterHtml(date);
 assert.deepEqual([...orderedHtml.matchAll(/가상수동순서(\d+)/g)].map(match=>Number(match[1])),[6,5,4,3,2,1],'저장된 순서가 인쇄 성명 순서와 일치해야 합니다.');
 assert.deepEqual([...orderedHtml.matchAll(/class="roster-no" rowspan="2">(\d+)</g)].map(match=>Number(match[1])),[1,2,3,4,5,6],'두 번째 페이지에서도 번호는 1부터 연속이어야 합니다.');
 
+// Regression: Excel contact status must not hide a valid interview date in the personal workspace.
+context.window.erpSimpleWorkspace={enabled:true};
+const pending=['','서류검토','서류합격','부재중','면접예정','다음면접'];
+const excluded=['면접거절','면접불참','면접완료','입사예정','출근','불합격','서류탈락','입사철회','철회','연락두절','미정의상태'];
+context.applicants=[
+  ...pending.map((status,index)=>({id:`pending-${index}`,name:`가상대기${index}`,status,interviewDate:date})),
+  ...excluded.map((status,index)=>({id:`excluded-${index}`,name:`제외명단${index}`,status,interviewDate:date})),
+  {id:'declined-result',name:'제외결과',status:'서류검토',finalDecision:'입사포기',interviewDate:date},
+  {id:'other-date',name:'제외다른날짜',status:'서류검토',interviewDate:'2026-08-22'}
+];
+const beforePersonal=JSON.stringify(context.applicants);
+assert.equal(context.rosterApplicantsOn(date).length,6);
+assert.equal((context.buildRosterHtml(date).match(/class="roster-page"/g)||[]).length,2);
+assert.doesNotMatch(context.buildRosterHtml(date),/제외명단|제외결과|제외다른날짜/);
+assert.equal(context.isRosterEligibleApplicant({status:'서류검토',interviewDate:'invalid'},'invalid'),false);
+assert.equal(JSON.stringify(context.applicants),beforePersonal,'날짜 조회·평가표 생성은 상태와 원본 자료를 변경하지 않음');
+context.window.erpSimpleWorkspace.enabled=false;
+assert.equal(context.rosterApplicantsOn(date).length,1,'기존 전체 관리 화면의 명시적 면접예정 기준 보존');
+
 console.log('roster-print-border.test.js: 독립 순흑색 0.50mm 격자·고정 문구·자동채움·순서·0/1/5/6/10명 분할 확인 완료');

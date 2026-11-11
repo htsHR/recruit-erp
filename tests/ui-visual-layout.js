@@ -9,7 +9,7 @@ const {chromium}=require('playwright-core');
 const root=path.resolve(__dirname,'..');
 const port=4183;
 const baseUrl=`http://127.0.0.1:${port}`;
-const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.9.0');
+const outputDir=process.env.UI_SCREENSHOT_DIR||path.join(root,'artifacts','ui-v12.9.1');
 fs.mkdirSync(outputDir,{recursive:true});
 const executableCandidates=[process.env.ERP_CHROMIUM_EXECUTABLE,...(process.platform==='win32'
   ?['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe']
@@ -234,8 +234,8 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
       assert.equal(await page.locator('#excelPasteRaw').isVisible(),true,`${viewport.name}: 엑셀 붙여넣기 창 표시`);
       const pasteRows=[
         ['NO','지원날짜','연락상태','면접날짜','시간','입사날짜','지원경로','지원구분','성별','지원파트','성명','이메일','학력구분','학교','학과','연락처','나이','생년월일','지역','경력','자격증','비고'],
-        ['1','2026-09-01','면접예정','2099-10-12','09:00','','사람인','신입','남','천안','가상붙여넣기1','paste1@example.com','대졸','가상대학교','반도체과','010-1234-5001','26','2000-01-01','천안','','','출퇴근'],
-        ['2','2026-09-01','면접예정','2099-10-12','09:30','','잡코리아','경력','여','평택','가상붙여넣기2','paste2@example.com','전졸','가상전문대','전자과','010-1234-5002','27','1999-01-01','평택','가상회사 PM','','기숙사']
+        ['1','2026-09-01','서류검토','2099-10-12','09:00','','사람인','신입','남','천안','가상붙여넣기1','paste1@example.com','대졸','가상대학교','반도체과','010-1234-5001','26','2000-01-01','천안','','','출퇴근'],
+        ['2','2026-09-01','','2099-10-12','09:30','','잡코리아','경력','여','평택','가상붙여넣기2','paste2@example.com','전졸','가상전문대','전자과','010-1234-5002','27','1999-01-01','평택','가상회사 PM','','기숙사']
       ].map(row=>row.join('\t')).join('\n');
       await page.locator('#excelPasteRaw').fill(pasteRows);
       await page.locator('#btnParseExcelRow').click();
@@ -258,6 +258,11 @@ const waitForServer=()=>new Promise((resolve,reject)=>{
         await page.locator('#simpleInterviewDates').selectOption('2099-10-12');
         assert.equal(await page.locator('#simpleInterviewCount').innerText(),'2명 · 1장');
         assert.equal(await page.locator('#simpleInterviewRows tr').count(),2,'새 명단은 인쇄 미리보기에 바로 표시');
+        const pastedRoster=await page.evaluate(()=>({names:rosterApplicantsOn('2099-10-12').map(a=>a.name),html:buildRosterHtml('2099-10-12'),statuses:applicants.filter(a=>a.interviewDate==='2099-10-12').map(a=>a.status)}));
+        assert.deepEqual(pastedRoster.names.sort(),['가상붙여넣기1','가상붙여넣기2']);
+        assert.deepEqual(pastedRoster.statuses,['서류검토','서류검토'],'기존 상태·빈 상태 기본값을 임의로 변경하지 않음');
+        assert.match(pastedRoster.html,/가상붙여넣기1/);assert.match(pastedRoster.html,/가상붙여넣기2/);
+
         await page.evaluate(()=>window.setPage('applicants'));
         await page.locator('#btnSimplePaste').click();
         const singlePaste=pasteRows.split('\n').slice(0,2).join('\n').replace('가상붙여넣기1','가상한명등록').replace('010-1234-5001','010-0000-9091').replace('paste1@example.com','single@example.com');
